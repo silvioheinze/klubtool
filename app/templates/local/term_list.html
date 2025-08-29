@@ -10,7 +10,17 @@
     <div class="row">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1><i class="bi bi-calendar-event"></i> {% trans "Term Management" %}</h1>
+                <div>
+                    <h1><i class="bi bi-calendar-event"></i> {% trans "Term Management" %}</h1>
+                    {% if filtered_local %}
+                        <p class="text-muted mb-0">
+                            {% trans "Showing terms for" %} <strong>{{ filtered_local.name }}</strong>
+                            <a href="{% url 'local:term-list' %}" class="btn btn-sm btn-outline-secondary ms-2">
+                                <i class="bi bi-x-circle"></i> {% trans "Show All Terms" %}
+                            </a>
+                        </p>
+                    {% endif %}
+                </div>
                 <div>
                     <a href="{% url 'local:term-create' %}" class="btn btn-primary">
                         <i class="bi bi-plus-circle"></i> {% trans "Create New Term" %}
@@ -51,7 +61,7 @@
                             <button type="submit" class="btn btn-primary me-2">
                                 <i class="bi bi-search"></i> {% trans "Search" %}
                             </button>
-                            <a href="{% url 'local:term-list' %}" class="btn btn-outline-secondary">
+                            <a href="{% url 'local:term-list' %}{% if local_filter %}?local={{ local_filter }}{% endif %}" class="btn btn-outline-secondary">
                                 <i class="bi bi-arrow-clockwise"></i> {% trans "Clear" %}
                             </a>
                         </div>

@@ -12,3 +12,4 @@
 [x] add parties to local
 [ ] app motion
 [x] app group
+[x] show sessions in local detail template

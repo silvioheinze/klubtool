@@ -1,0 +1,410 @@
+{% extends "_base.html" %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}
+    {% if form.instance.pk %}
+        {% trans "Edit Session" %} - {{ form.instance.title }}
+    {% else %}
+        {% trans "Create New Session" %}
+    {% endif %}
+{% endblock title %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                {% if form.instance.pk %}
+                    <i class="bi bi-pencil-square"></i> {% trans "Edit Session" %}
+                {% else %}
+                    <i class="bi bi-plus-circle"></i> {% trans "Create New Session" %}
+                {% endif %}
+            </h1>
+            <p class="text-muted">
+                {% if form.instance.pk %}
+                    {% trans "Update session details and information." %}
+                {% else %}
+                    {% trans "Create a new council session for meetings and events." %}
+                {% endif %}
+            </p>
+        </div>
+        <div>
+            <a href="{% url 'local:session-list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> {% trans "Back to Sessions" %}
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Session Form -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        {% if form.instance.pk %}
+                            {% trans "Session Details" %}
+                        {% else %}
+                            {% trans "Session Information" %}
+                        {% endif %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        
+                        <!-- Title -->
+                        <div class="mb-3">
+                            <label for="{{ form.title.id_for_label }}" class="form-label">
+                                {{ form.title.label }} <span class="text-danger">*</span>
+                            </label>
+                            {{ form.title }}
+                            {% if form.title.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.title.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            {% if form.title.help_text %}
+                                <div class="form-text">{{ form.title.help_text }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Council -->
+                        <div class="mb-3">
+                            <label for="{{ form.council.id_for_label }}" class="form-label">
+                                {{ form.council.label }} <span class="text-danger">*</span>
+                            </label>
+                            {{ form.council }}
+                            {% if form.council.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.council.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            {% if form.council.help_text %}
+                                <div class="form-text">{{ form.council.help_text }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Term -->
+                        <div class="mb-3">
+                            <label for="{{ form.term.id_for_label }}" class="form-label">
+                                {{ form.term.label }} <span class="text-danger">*</span>
+                            </label>
+                            {{ form.term }}
+                            {% if form.term.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.term.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            {% if form.term.help_text %}
+                                <div class="form-text">{{ form.term.help_text }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Session Type -->
+                        <div class="mb-3">
+                            <label for="{{ form.session_type.id_for_label }}" class="form-label">
+                                {{ form.session_type.label }} <span class="text-danger">*</span>
+                            </label>
+                            {{ form.session_type }}
+                            {% if form.session_type.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.session_type.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            {% if form.session_type.help_text %}
+                                <div class="form-text">{{ form.session_type.help_text }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Session Date and Time -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.session_date.id_for_label }}" class="form-label">
+                                        {{ form.session_date.label }} <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.session_date }}
+                                    {% if form.session_date.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.session_date.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    {% if form.session_date.help_text %}
+                                        <div class="form-text">{{ form.session_date.help_text }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.session_time.id_for_label }}" class="form-label">
+                                        {{ form.session_time.label }}
+                                    </label>
+                                    {{ form.session_time }}
+                                    {% if form.session_time.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.session_time.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    {% if form.session_time.help_text %}
+                                        <div class="form-text">{{ form.session_time.help_text }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Start and End Time -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.start_time.id_for_label }}" class="form-label">
+                                        {{ form.start_time.label }}
+                                    </label>
+                                    {{ form.start_time }}
+                                    {% if form.start_time.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.start_time.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    {% if form.start_time.help_text %}
+                                        <div class="form-text">{{ form.start_time.help_text }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.end_time.id_for_label }}" class="form-label">
+                                        {{ form.end_time.label }}
+                                    </label>
+                                    {{ form.end_time }}
+                                    {% if form.end_time.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.end_time.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    {% if form.end_time.help_text %}
+                                        <div class="form-text">{{ form.end_time.help_text }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Location -->
+                        <div class="mb-3">
+                            <label for="{{ form.location.id_for_label }}" class="form-label">
+                                {{ form.location.label }}
+                            </label>
+                            {{ form.location }}
+                            {% if form.location.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.location.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            {% if form.location.help_text %}
+                                <div class="form-text">{{ form.location.help_text }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Status -->
+                        <div class="mb-3">
+                            <label for="{{ form.status.id_for_label }}" class="form-label">
+                                {{ form.status.label }} <span class="text-danger">*</span>
+                            </label>
+                            {{ form.status }}
+                            {% if form.status.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.status.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            {% if form.status.help_text %}
+                                <div class="form-text">{{ form.status.help_text }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Agenda -->
+                        <div class="mb-3">
+                            <label for="{{ form.agenda.id_for_label }}" class="form-label">
+                                {{ form.agenda.label }}
+                            </label>
+                            {{ form.agenda }}
+                            {% if form.agenda.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.agenda.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            {% if form.agenda.help_text %}
+                                <div class="form-text">{{ form.agenda.help_text }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Minutes -->
+                        <div class="mb-3">
+                            <label for="{{ form.minutes.id_for_label }}" class="form-label">
+                                {{ form.minutes.label }}
+                            </label>
+                            {{ form.minutes }}
+                            {% if form.minutes.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.minutes.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            {% if form.minutes.help_text %}
+                                <div class="form-text">{{ form.minutes.help_text }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Notes -->
+                        <div class="mb-3">
+                            <label for="{{ form.notes.id_for_label }}" class="form-label">
+                                {{ form.notes.label }}
+                            </label>
+                            {{ form.notes }}
+                            {% if form.notes.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.notes.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            {% if form.notes.help_text %}
+                                <div class="form-text">{{ form.notes.help_text }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Is Active -->
+                        <div class="mb-3">
+                            <div class="form-check">
+                                {{ form.is_active }}
+                                <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+                                    {{ form.is_active.label }}
+                                </label>
+                                {% if form.is_active.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.is_active.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                {% if form.is_active.help_text %}
+                                    <div class="form-text">{{ form.is_active.help_text }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                {% if form.instance.pk %}
+                                    <a href="{% url 'local:session-detail' form.instance.pk %}" class="btn btn-outline-secondary">
+                                        <i class="bi bi-x-circle"></i> {% trans "Cancel" %}
+                                    </a>
+                                {% else %}
+                                    <a href="{% url 'local:session-list' %}" class="btn btn-outline-secondary">
+                                        <i class="bi bi-x-circle"></i> {% trans "Cancel" %}
+                                    </a>
+                                {% endif %}
+                            </div>
+                            <div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-check-circle"></i>
+                                    {% if form.instance.pk %}
+                                        {% trans "Update Session" %}
+                                    {% else %}
+                                        {% trans "Create Session" %}
+                                    {% endif %}
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Help Section -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-question-circle"></i> {% trans "Help" %}</h5>
+                </div>
+                <div class="card-body">
+                    <h6>{% trans "Session Types" %}</h6>
+                    <ul class="list-unstyled small">
+                        <li><strong>{% trans "Regular" %}:</strong> {% trans "Standard council meeting" %}</li>
+                        <li><strong>{% trans "Special" %}:</strong> {% trans "Special or emergency meeting" %}</li>
+                        <li><strong>{% trans "Committee" %}:</strong> {% trans "Committee or working group meeting" %}</li>
+                        <li><strong>{% trans "Public Hearing" %}:</strong> {% trans "Public consultation or hearing" %}</li>
+                    </ul>
+
+                    <h6>{% trans "Session Status" %}</h6>
+                    <ul class="list-unstyled small">
+                        <li><strong>{% trans "Scheduled" %}:</strong> {% trans "Session is planned and confirmed" %}</li>
+                        <li><strong>{% trans "In Progress" %}:</strong> {% trans "Session is currently happening" %}</li>
+                        <li><strong>{% trans "Completed" %}:</strong> {% trans "Session has finished" %}</li>
+                        <li><strong>{% trans "Cancelled" %}:</strong> {% trans "Session was cancelled" %}</li>
+                        <li><strong>{% trans "Postponed" %}:</strong> {% trans "Session was postponed to later date" %}</li>
+                    </ul>
+
+                    <h6>{% trans "Tips" %}</h6>
+                    <ul class="list-unstyled small">
+                        <li>{% trans "Use descriptive titles for easy identification" %}</li>
+                        <li>{% trans "Set the correct date and time for scheduling" %}</li>
+                        <li>{% trans "Include location details for physical meetings" %}</li>
+                        <li>{% trans "Add description for additional context" %}</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block extra_js %}
+<script>
+    // Add Bootstrap classes to form fields
+    document.addEventListener('DOMContentLoaded', function() {
+        const formFields = document.querySelectorAll('input, select, textarea');
+        formFields.forEach(function(field) {
+            if (field.type !== 'hidden' && field.type !== 'checkbox') {
+                field.classList.add('form-control');
+            }
+        });
+        
+        // Add specific classes for select fields
+        const selectFields = document.querySelectorAll('select');
+        selectFields.forEach(function(field) {
+            field.classList.add('form-select');
+        });
+        
+        // Add specific classes for textarea fields
+        const textareaFields = document.querySelectorAll('textarea');
+        textareaFields.forEach(function(field) {
+            field.classList.add('form-control');
+        });
+    });
+</script>
+{% endblock extra_js %}

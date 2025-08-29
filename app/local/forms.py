@@ -225,11 +225,22 @@ class TermSeatDistributionFilterForm(forms.Form):
 class SessionForm(forms.ModelForm):
     """Form for creating and editing Session objects"""
     
+    # Separate date and time fields for better user experience
+    session_date = forms.DateField(
+        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+        help_text="Date of the session"
+    )
+    session_time = forms.TimeField(
+        widget=forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
+        required=False,
+        help_text="Time of the session (optional)"
+    )
+    
     class Meta:
         model = Session
         fields = [
             'title', 'council', 'term', 'session_type', 'status', 
-            'scheduled_date', 'start_time', 'end_time', 'location', 
+            'start_time', 'end_time', 'location', 
             'agenda', 'minutes', 'notes', 'is_active'
         ]
         widgets = {
@@ -238,10 +249,6 @@ class SessionForm(forms.ModelForm):
             'term': forms.Select(attrs={'class': 'form-select'}),
             'session_type': forms.Select(attrs={'class': 'form-select'}),
             'status': forms.Select(attrs={'class': 'form-select'}),
-            'scheduled_date': forms.DateTimeInput(
-                attrs={'type': 'datetime-local', 'class': 'form-control'},
-                format='%Y-%m-%dT%H:%M'
-            ),
             'start_time': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
             'end_time': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
             'location': forms.TextInput(attrs={'class': 'form-control'}),
@@ -255,6 +262,12 @@ class SessionForm(forms.ModelForm):
         # Filter councils and terms to only show active ones
         self.fields['council'].queryset = Council.objects.filter(is_active=True)
         self.fields['term'].queryset = Term.objects.filter(is_active=True)
+        
+        # Set initial values for separate date/time fields if editing
+        if self.instance and self.instance.pk and self.instance.scheduled_date:
+            self.fields['session_date'].initial = self.instance.scheduled_date.date()
+            if self.instance.scheduled_date.time():
+                self.fields['session_time'].initial = self.instance.scheduled_date.time()
 
     def clean(self):
         cleaned_data = super().clean()
@@ -265,6 +278,30 @@ class SessionForm(forms.ModelForm):
             raise forms.ValidationError("End time must be after start time.")
         
         return cleaned_data
+
+    def save(self, commit=True):
+        """Combine date and time fields into scheduled_date"""
+        instance = super().save(commit=False)
+        
+        session_date = self.cleaned_data.get('session_date')
+        session_time = self.cleaned_data.get('session_time')
+        
+        if session_date:
+            from django.utils import timezone
+            import datetime
+            
+            if session_time:
+                # Combine date and time
+                combined_datetime = datetime.datetime.combine(session_date, session_time)
+                instance.scheduled_date = timezone.make_aware(combined_datetime)
+            else:
+                # Use date with default time (00:00)
+                combined_datetime = datetime.datetime.combine(session_date, datetime.time())
+                instance.scheduled_date = timezone.make_aware(combined_datetime)
+        
+        if commit:
+            instance.save()
+        return instance
 
 
 class SessionFilterForm(forms.Form):

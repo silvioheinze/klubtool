@@ -6,8 +6,8 @@ from django.db.models import Q
 from django.shortcuts import render, redirect
 from django.utils import timezone
 
-from .models import Local, Term, Council, TermSeatDistribution, Party
-from .forms import LocalForm, LocalFilterForm, CouncilForm, CouncilFilterForm, TermForm, TermFilterForm, CouncilNameForm, TermSeatDistributionForm, TermSeatDistributionFilterForm, PartyForm, PartyFilterForm
+from .models import Local, Term, Council, TermSeatDistribution, Party, Session
+from .forms import LocalForm, LocalFilterForm, CouncilForm, CouncilFilterForm, TermForm, TermFilterForm, CouncilNameForm, TermSeatDistributionForm, TermSeatDistributionFilterForm, PartyForm, PartyFilterForm, SessionForm
 
 
 class LocalListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
@@ -62,10 +62,15 @@ class LocalDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         return self.request.user.is_superuser or self.request.user.has_role_permission('local.view')
 
     def get_context_data(self, **kwargs):
-        """Add terms and parties data to context"""
+        """Add terms, parties, and sessions data to context"""
         context = super().get_context_data(**kwargs)
         context['terms'] = Term.objects.filter(is_active=True).order_by('-start_date')
         context['parties'] = self.object.parties.filter(is_active=True).order_by('name')
+        # Get the last 3 sessions for the council
+        if self.object.council:
+            context['recent_sessions'] = self.object.council.sessions.filter(is_active=True).order_by('-scheduled_date')[:3]
+        else:
+            context['recent_sessions'] = []
         return context
 
 
@@ -131,9 +136,10 @@ class CouncilNameUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView)
         return self.request.user.is_superuser or self.request.user.has_role_permission('council.edit')
 
     def form_valid(self, form):
-        """Display success message and redirect back to local detail"""
+        """Display success message and save the form"""
+        response = super().form_valid(form)
         messages.success(self.request, f"Council name updated to '{form.instance.name}'.")
-        return redirect('local:local-detail', pk=form.instance.local.pk)
+        return response
 
     def get_success_url(self):
         """Redirect back to the local detail page"""
@@ -279,6 +285,14 @@ class TermListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
         """Filter queryset based on search parameters"""
         queryset = Term.objects.all().order_by('-start_date')
         
+        # Filter by local
+        local_filter = self.request.GET.get('local', '')
+        if local_filter:
+            # Filter terms that have seat distributions with parties belonging to this local
+            queryset = queryset.filter(
+                seat_distributions__party__local_id=local_filter
+            ).distinct()
+        
         # Filter by search query
         search_query = self.request.GET.get('search', '')
         if search_query:
@@ -309,6 +323,17 @@ class TermListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
         context['search_query'] = self.request.GET.get('search', '')
         context['status_filter'] = self.request.GET.get('status', '')
         context['current_filter'] = self.request.GET.get('is_current', '')
+        context['local_filter'] = self.request.GET.get('local', '')
+        
+        # Add local object to context if filtering by local
+        local_filter = self.request.GET.get('local', '')
+        if local_filter:
+            try:
+                from .models import Local
+                context['filtered_local'] = Local.objects.get(pk=local_filter)
+            except Local.DoesNotExist:
+                context['filtered_local'] = None
+        
         return context
 
 
@@ -636,4 +661,131 @@ class PartyDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
         """Display success message on deletion"""
         party_obj = self.get_object()
         messages.success(request, f"Party '{party_obj.name}' deleted successfully.")
+        return super().delete(request, *args, **kwargs)
+
+
+# Session Views
+class SessionListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
+    """View for listing Session objects"""
+    model = Session
+    context_object_name = 'sessions'
+    template_name = 'local/session_list.html'
+    paginate_by = 20
+
+    def test_func(self):
+        """Check if user has permission to view Session objects"""
+        return self.request.user.is_superuser or self.request.user.has_role_permission('session.view')
+
+    def get_queryset(self):
+        """Filter sessions based on search and filter parameters"""
+        queryset = Session.objects.select_related('council', 'council__local', 'term').all()
+        
+        # Search by title
+        search_query = self.request.GET.get('search', '')
+        if search_query:
+            queryset = queryset.filter(
+                Q(title__icontains=search_query) |
+                Q(council__name__icontains=search_query) |
+                Q(council__local__name__icontains=search_query)
+            )
+        
+        # Filter by council
+        council_filter = self.request.GET.get('council', '')
+        if council_filter:
+            queryset = queryset.filter(council_id=council_filter)
+        
+        # Filter by status
+        status_filter = self.request.GET.get('status', '')
+        if status_filter:
+            queryset = queryset.filter(status=status_filter)
+        
+        # Filter by session type
+        session_type_filter = self.request.GET.get('session_type', '')
+        if session_type_filter:
+            queryset = queryset.filter(session_type=session_type_filter)
+        
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        """Add filter form to context"""
+        context = super().get_context_data(**kwargs)
+        context['search_query'] = self.request.GET.get('search', '')
+        context['council_filter'] = self.request.GET.get('council', '')
+        context['status_filter'] = self.request.GET.get('status', '')
+        context['session_type_filter'] = self.request.GET.get('session_type', '')
+        context['councils'] = Council.objects.filter(is_active=True)
+        return context
+
+
+class SessionDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
+    """View for displaying a single Session object"""
+    model = Session
+    context_object_name = 'session'
+    template_name = 'local/session_detail.html'
+
+    def test_func(self):
+        """Check if user has permission to view Session objects"""
+        return self.request.user.is_superuser or self.request.user.has_role_permission('session.view')
+
+
+class SessionCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
+    """View for creating a new Session object"""
+    model = Session
+    form_class = SessionForm
+    template_name = 'local/session_form.html'
+    success_url = reverse_lazy('local:session-list')
+
+    def test_func(self):
+        """Check if user has permission to create Session objects"""
+        return self.request.user.is_superuser or self.request.user.has_role_permission('session.create')
+
+    def get_initial(self):
+        """Set initial council if provided in URL"""
+        initial = super().get_initial()
+        council_id = self.request.GET.get('council')
+        if council_id:
+            try:
+                council = Council.objects.get(pk=council_id)
+                initial['council'] = council
+            except Council.DoesNotExist:
+                pass
+        return initial
+
+    def form_valid(self, form):
+        """Display success message on form validation"""
+        messages.success(self.request, f"Session '{form.instance.title}' created successfully.")
+        return super().form_valid(form)
+
+
+class SessionUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
+    """View for updating an existing Session object"""
+    model = Session
+    form_class = SessionForm
+    template_name = 'local/session_form.html'
+    success_url = reverse_lazy('local:session-list')
+
+    def test_func(self):
+        """Check if user has permission to edit Session objects"""
+        return self.request.user.is_superuser or self.request.user.has_role_permission('session.edit')
+
+    def form_valid(self, form):
+        """Display success message on form validation"""
+        messages.success(self.request, f"Session '{form.instance.title}' updated successfully.")
+        return super().form_valid(form)
+
+
+class SessionDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
+    """View for deleting a Session object"""
+    model = Session
+    template_name = 'local/session_confirm_delete.html'
+    success_url = reverse_lazy('local:session-list')
+
+    def test_func(self):
+        """Check if user has permission to delete Session objects"""
+        return self.request.user.is_superuser or self.request.user.has_role_permission('session.delete')
+
+    def delete(self, request, *args, **kwargs):
+        """Display success message on deletion"""
+        session_obj = self.get_object()
+        messages.success(request, f"Session '{session_obj.title}' deleted successfully.")
         return super().delete(request, *args, **kwargs)

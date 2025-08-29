@@ -8,7 +8,8 @@ from .views import (
     TermUpdateView, TermDeleteView,
     TermSeatDistributionListView, TermSeatDistributionDetailView, TermSeatDistributionCreateView,
     TermSeatDistributionUpdateView, TermSeatDistributionDeleteView, TermSeatDistributionView,
-    PartyListView, PartyDetailView, PartyCreateView, PartyUpdateView, PartyDeleteView
+    PartyListView, PartyDetailView, PartyCreateView, PartyUpdateView, PartyDeleteView,
+    SessionListView, SessionDetailView, SessionCreateView, SessionUpdateView, SessionDeleteView
 )
 
 app_name = 'local'
@@ -50,4 +51,11 @@ urlpatterns = [
     path('parties/<int:pk>/', PartyDetailView.as_view(), name='party-detail'),
     path('parties/<int:pk>/edit/', PartyUpdateView.as_view(), name='party-edit'),
     path('parties/<int:pk>/delete/', PartyDeleteView.as_view(), name='party-delete'),
+    
+    # Session URLs
+    path('sessions/', SessionListView.as_view(), name='session-list'),
+    path('sessions/create/', SessionCreateView.as_view(), name='session-create'),
+    path('sessions/<int:pk>/', SessionDetailView.as_view(), name='session-detail'),
+    path('sessions/<int:pk>/edit/', SessionUpdateView.as_view(), name='session-edit'),
+    path('sessions/<int:pk>/delete/', SessionDeleteView.as_view(), name='session-delete'),
 ]
