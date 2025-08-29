@@ -13,4 +13,6 @@
 [x] app motion
 [x] app group
 [x] show sessions in local detail template
-[ ] comittees for sub council
+[x] comittees for sub council
+[ ] dockerfile prod
+[ ] github action docker prod

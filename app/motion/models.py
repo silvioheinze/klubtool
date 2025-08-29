@@ -33,6 +33,7 @@ class Motion(models.Model):
     
     # Relationships
     session = models.ForeignKey(Session, on_delete=models.CASCADE, related_name='motions', help_text="Session where this motion will be presented")
+    committee = models.ForeignKey('local.Committee', on_delete=models.CASCADE, related_name='motions', blank=True, null=True, help_text="Committee this motion is assigned to (optional)")
     group = models.ForeignKey(Group, on_delete=models.CASCADE, related_name='motions', help_text="Group proposing this motion")
     parties = models.ManyToManyField(Party, related_name='motions', blank=True, help_text="Parties supporting this motion")
     

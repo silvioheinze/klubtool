@@ -14,7 +14,7 @@ class MotionForm(forms.ModelForm):
         model = Motion
         fields = [
             'title', 'description', 'motion_type', 'status',
-            'session', 'group', 'parties'
+            'session', 'committee', 'group', 'parties'
         ]
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control'}),
@@ -22,6 +22,7 @@ class MotionForm(forms.ModelForm):
             'motion_type': forms.Select(attrs={'class': 'form-select'}),
             'status': forms.Select(attrs={'class': 'form-select'}),
             'session': forms.Select(attrs={'class': 'form-select'}),
+            'committee': forms.Select(attrs={'class': 'form-select'}),
             'group': forms.Select(attrs={'class': 'form-select'}),
             'parties': forms.SelectMultiple(attrs={'class': 'form-select'}),
         }
@@ -34,6 +35,8 @@ class MotionForm(forms.ModelForm):
         self.fields['group'].queryset = Group.objects.filter(is_active=True)
         # Filter parties to only show active ones
         self.fields['parties'].queryset = Party.objects.filter(is_active=True)
+        # Filter committees to only show active ones
+        self.fields['committee'].queryset = Committee.objects.filter(is_active=True)
         
         # Set initial session if provided in URL
         session_id = self.initial.get('session') or self.data.get('session')

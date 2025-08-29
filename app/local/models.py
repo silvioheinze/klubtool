@@ -65,6 +65,79 @@ class Council(models.Model):
         return reverse('local:council-detail', kwargs={'pk': self.pk})
 
 
+class Committee(models.Model):
+    """Model representing a committee within a council"""
+    COMMITTEE_TYPE_CHOICES = [
+        ('Ausschuss', 'Ausschuss'),
+        ('Kommission', 'Kommission'),
+    ]
+    
+    name = models.CharField(max_length=200, help_text="Name of the committee")
+    council = models.ForeignKey(Council, on_delete=models.CASCADE, related_name='committees', help_text="Council this committee belongs to")
+    committee_type = models.CharField(max_length=20, choices=COMMITTEE_TYPE_CHOICES, default='standing', help_text="Type of committee")
+    description = models.TextField(blank=True, help_text="Description of the committee's purpose and responsibilities")
+    chairperson = models.CharField(max_length=100, blank=True, help_text="Name of the committee chairperson")
+    is_active = models.BooleanField(default=True, help_text="Whether the committee is currently active")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    history = AuditlogHistoryField()
+
+    class Meta:
+        ordering = ['name']
+        verbose_name = "Committee"
+        verbose_name_plural = "Committees"
+        unique_together = ['name', 'council']
+
+    def __str__(self):
+        return f"{self.name} - {self.council.name}"
+
+    def get_absolute_url(self):
+        from django.urls import reverse
+        return reverse('local:committee-detail', kwargs={'pk': self.pk})
+
+    @property
+    def local(self):
+        """Get the local district through the council"""
+        return self.council.local
+
+    @property
+    def member_count(self):
+        """Number of active members in the committee"""
+        return self.members.filter(is_active=True).count()
+
+
+class CommitteeMember(models.Model):
+    """Model representing membership in a committee"""
+    ROLE_CHOICES = [
+        ('chairperson', 'Chairperson'),
+        ('vice_chairperson', 'Vice Chairperson'),
+        ('member', 'Member'),
+    ]
+
+    committee = models.ForeignKey(Committee, on_delete=models.CASCADE, related_name='members', help_text="Committee the user belongs to")
+    user = models.ForeignKey('user.CustomUser', on_delete=models.CASCADE, related_name='committee_memberships', help_text="User who is a member")
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='member', help_text="Role of the user in the committee")
+    joined_date = models.DateField(auto_now_add=True, help_text="Date when the user joined the committee")
+    is_active = models.BooleanField(default=True, help_text="Whether the membership is currently active")
+    notes = models.TextField(blank=True, help_text="Additional notes about the membership")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    history = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        unique_together = ['committee', 'user']
+        ordering = ['-joined_date']
+        verbose_name = "Committee Member"
+        verbose_name_plural = "Committee Members"
+
+    def __str__(self):
+        return f"{self.user.username} - {self.committee.name} ({self.get_role_display()})"
+
+    def get_absolute_url(self):
+        from django.urls import reverse
+        return reverse('local:committee-member-detail', args=[str(self.pk)])
+
+
 class Term(models.Model):
     """Model representing a political term/period"""
     name = models.CharField(max_length=100)
@@ -98,30 +171,17 @@ class Term(models.Model):
 
     @property
     def allocated_seats(self):
-        """Get total number of allocated seats across all parties"""
-        return self.seat_distributions.aggregate(
-            total=models.Sum('seats')
-        )['total'] or 0
-
-    @property
-    def unallocated_seats(self):
-        """Get number of unallocated seats"""
-        return self.total_seats - self.allocated_seats
-
-    @property
-    def seat_distribution_summary(self):
-        """Get a summary of seat distribution"""
-        distributions = self.seat_distributions.select_related('party').all()
-        return [f"{d.party.name}: {d.seats}" for d in distributions]
+        """Calculate total allocated seats across all parties"""
+        return sum(distribution.seats for distribution in self.seat_distributions.all())
 
 
 class Party(models.Model):
     """Model representing a political party"""
-    name = models.CharField(max_length=200)
-    short_name = models.CharField(max_length=50, blank=True)
-    local = models.ForeignKey(Local, on_delete=models.CASCADE, related_name='parties', null=True, blank=True, help_text="Local district this party belongs to")
+    name = models.CharField(max_length=100)
+    short_name = models.CharField(max_length=20, blank=True)
+    local = models.ForeignKey(Local, on_delete=models.CASCADE, related_name='parties', null=True, blank=True)
     description = models.TextField(blank=True)
-    color = models.CharField(max_length=7, blank=True, help_text="Hex color code (e.g., #FF0000)")
+    color = models.CharField(max_length=7, default='#007bff', help_text="Hex color code for the party")
     logo = models.ImageField(upload_to='party_logos/', blank=True, null=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -129,73 +189,52 @@ class Party(models.Model):
     history = AuditlogHistoryField()
 
     class Meta:
+        unique_together = ['name', 'local']
         ordering = ['name']
         verbose_name = "Party"
         verbose_name_plural = "Parties"
-        unique_together = ['name', 'local']  # Party names must be unique within a local (when local is not null)
 
     def __str__(self):
-        return f"{self.name} ({self.local.name})"
+        return f"{self.name} - {self.local.name}"
 
     def get_absolute_url(self):
         from django.urls import reverse
         return reverse('local:party-detail', kwargs={'pk': self.pk})
 
-    def get_seats_in_term(self, term):
-        """Get number of seats for this party in a specific term"""
-        try:
-            distribution = self.term_seats.get(term=term)
-            return distribution.seats
-        except TermSeatDistribution.DoesNotExist:
-            return 0
-
 
 class TermSeatDistribution(models.Model):
-    """Model representing seat distribution of parties in a term"""
+    """Model representing seat distribution for parties within terms"""
     term = models.ForeignKey(Term, on_delete=models.CASCADE, related_name='seat_distributions')
-    party = models.ForeignKey(Party, on_delete=models.CASCADE, related_name='term_seats')
+    party = models.ForeignKey(Party, on_delete=models.CASCADE, related_name='term_distributions')
     seats = models.PositiveIntegerField(default=0)
-    percentage = models.DecimalField(
-        max_digits=5, 
-        decimal_places=2, 
-        blank=True, 
-        null=True,
-        help_text="Percentage of total seats (auto-calculated)"
-    )
-    notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     history = AuditlogHistoryField()
 
     class Meta:
-        ordering = ['-seats', 'party__name']
+        unique_together = ['term', 'party']
         verbose_name = "Term Seat Distribution"
         verbose_name_plural = "Term Seat Distributions"
-        unique_together = ['term', 'party']
 
     def __str__(self):
-        return f"{self.party.name}: {self.seats} seats in {self.term.name}"
+        return f"{self.party.name} - {self.seats} seats in {self.term.name}"
 
-    def save(self, *args, **kwargs):
-        """Auto-calculate percentage when seats are updated"""
-        if self.term.total_seats > 0:
-            self.percentage = (self.seats / self.term.total_seats) * 100
-        else:
-            self.percentage = None
-        super().save(*args, **kwargs)
-
-    def get_absolute_url(self):
-        from django.urls import reverse
-        return reverse('local:term-seat-detail', kwargs={'pk': self.pk})
+    def clean(self):
+        """Validate that total seats don't exceed term total"""
+        from django.core.exceptions import ValidationError
+        if self.seats > self.term.total_seats:
+            raise ValidationError(f"Seats cannot exceed term total of {self.term.total_seats}")
 
 
 class Session(models.Model):
     """Model representing a council session"""
-    SESSION_TYPES = [
+    SESSION_TYPE_CHOICES = [
         ('regular', 'Regular Session'),
         ('special', 'Special Session'),
         ('emergency', 'Emergency Session'),
         ('committee', 'Committee Meeting'),
+        ('public_hearing', 'Public Hearing'),
+        ('workshop', 'Workshop'),
     ]
     
     STATUS_CHOICES = [
@@ -205,19 +244,19 @@ class Session(models.Model):
         ('cancelled', 'Cancelled'),
         ('postponed', 'Postponed'),
     ]
-
-    title = models.CharField(max_length=200)
-    council = models.ForeignKey(Council, on_delete=models.CASCADE, related_name='sessions')
-    term = models.ForeignKey(Term, on_delete=models.CASCADE, related_name='sessions')
-    session_type = models.CharField(max_length=20, choices=SESSION_TYPES, default='regular')
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='scheduled')
-    scheduled_date = models.DateTimeField()
-    start_time = models.TimeField(blank=True, null=True)
-    end_time = models.TimeField(blank=True, null=True)
-    location = models.CharField(max_length=200, blank=True)
-    agenda = models.TextField(blank=True)
-    minutes = models.TextField(blank=True)
-    notes = models.TextField(blank=True)
+    
+    title = models.CharField(max_length=200, help_text="Title of the session")
+    council = models.ForeignKey(Council, on_delete=models.CASCADE, related_name='sessions', help_text="Council this session belongs to")
+    term = models.ForeignKey(Term, on_delete=models.CASCADE, related_name='sessions', blank=True, null=True, help_text="Term this session belongs to")
+    session_type = models.CharField(max_length=20, choices=SESSION_TYPE_CHOICES, default='regular', help_text="Type of session")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='scheduled', help_text="Current status of the session")
+    scheduled_date = models.DateTimeField(help_text="Scheduled date and time of the session")
+    start_time = models.TimeField(blank=True, null=True, help_text="Actual start time of the session")
+    end_time = models.TimeField(blank=True, null=True, help_text="Actual end time of the session")
+    location = models.CharField(max_length=200, blank=True, help_text="Location where the session will be held")
+    agenda = models.TextField(blank=True, help_text="Agenda items for the session")
+    minutes = models.TextField(blank=True, help_text="Minutes from the session")
+    notes = models.TextField(blank=True, help_text="Additional notes about the session")
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -229,28 +268,24 @@ class Session(models.Model):
         verbose_name_plural = "Sessions"
 
     def __str__(self):
-        return f"{self.title} - {self.council.name} ({self.scheduled_date.strftime('%Y-%m-%d')})"
+        return f"{self.title} - {self.council.name}"
 
     def get_absolute_url(self):
         from django.urls import reverse
         return reverse('local:session-detail', kwargs={'pk': self.pk})
 
-    @property
-    def is_upcoming(self):
-        """Check if this session is in the future"""
-        from django.utils import timezone
-        return self.scheduled_date > timezone.now()
-
-    @property
-    def is_past(self):
-        """Check if this session is in the past"""
-        from django.utils import timezone
-        return self.scheduled_date < timezone.now()
+    def clean(self):
+        """Validate that end time is after start time"""
+        from django.core.exceptions import ValidationError
+        if self.start_time and self.end_time and self.start_time >= self.end_time:
+            raise ValidationError("End time must be after start time")
 
 
-# Register all models for audit logging
+# Register models for audit logging
 auditlog.register(Local)
 auditlog.register(Council)
+auditlog.register(Committee)
+auditlog.register(CommitteeMember)
 auditlog.register(Term)
 auditlog.register(Party)
 auditlog.register(TermSeatDistribution)

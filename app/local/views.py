@@ -6,8 +6,8 @@ from django.db.models import Q
 from django.shortcuts import render, redirect
 from django.utils import timezone
 
-from .models import Local, Term, Council, TermSeatDistribution, Party, Session
-from .forms import LocalForm, LocalFilterForm, CouncilForm, CouncilFilterForm, TermForm, TermFilterForm, CouncilNameForm, TermSeatDistributionForm, TermSeatDistributionFilterForm, PartyForm, PartyFilterForm, SessionForm
+from .models import Local, Term, Council, TermSeatDistribution, Party, Session, Committee, CommitteeMember
+from .forms import LocalForm, LocalFilterForm, CouncilForm, CouncilFilterForm, TermForm, TermFilterForm, CouncilNameForm, TermSeatDistributionForm, TermSeatDistributionFilterForm, PartyForm, PartyFilterForm, SessionForm, SessionFilterForm, CommitteeForm, CommitteeFilterForm, CommitteeMemberForm, CommitteeMemberFilterForm
 
 
 class LocalListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
@@ -206,11 +206,14 @@ class CouncilDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         return self.request.user.is_superuser or self.request.user.has_role_permission('council.view')
 
     def get_context_data(self, **kwargs):
-        """Add sessions data to context"""
+        """Add sessions and committees data to context"""
         context = super().get_context_data(**kwargs)
         # Get sessions for this council
         context['sessions'] = self.object.sessions.filter(is_active=True).order_by('-scheduled_date')[:10]
         context['total_sessions'] = self.object.sessions.count()
+        # Get committees for this council
+        context['committees'] = self.object.committees.filter(is_active=True).order_by('name')
+        context['total_committees'] = self.object.committees.count()
         return context
 
 
@@ -754,7 +757,7 @@ class SessionCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
         if council_id:
             try:
                 council = Council.objects.get(pk=council_id)
-                initial['council'] = council
+                initial['council'] = council.pk
             except Council.DoesNotExist:
                 pass
         return initial
@@ -796,4 +799,259 @@ class SessionDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
         """Display success message on deletion"""
         session_obj = self.get_object()
         messages.success(request, f"Session '{session_obj.title}' deleted successfully.")
+        return super().delete(request, *args, **kwargs)
+
+
+# Committee Views
+class CommitteeListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
+    """View for listing all Committee objects"""
+    model = Committee
+    context_object_name = 'committees'
+    template_name = 'local/committee_list.html'
+    paginate_by = 20
+
+    def test_func(self):
+        """Check if user has permission to view Committee objects"""
+        return self.request.user.is_superuser or self.request.user.has_role_permission('committee.view')
+
+    def get_queryset(self):
+        """Filter queryset based on search parameters"""
+        queryset = Committee.objects.all().select_related('council', 'council__local').order_by('name')
+        
+        # Filter by search query
+        search_query = self.request.GET.get('search', '')
+        if search_query:
+            queryset = queryset.filter(
+                Q(name__icontains=search_query) |
+                Q(description__icontains=search_query) |
+                Q(chairperson__icontains=search_query) |
+                Q(council__name__icontains=search_query)
+            )
+        
+        # Filter by committee type
+        committee_type_filter = self.request.GET.get('committee_type', '')
+        if committee_type_filter:
+            queryset = queryset.filter(committee_type=committee_type_filter)
+        
+        # Filter by council
+        council_filter = self.request.GET.get('council', '')
+        if council_filter:
+            queryset = queryset.filter(council_id=council_filter)
+        
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        """Add filter form to context"""
+        context = super().get_context_data(**kwargs)
+        context['search_query'] = self.request.GET.get('search', '')
+        context['committee_type_filter'] = self.request.GET.get('committee_type', '')
+        context['council_filter'] = self.request.GET.get('council', '')
+        context['councils'] = Council.objects.filter(is_active=True)
+        return context
+
+
+class CommitteeDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
+    """View for displaying a single Committee object"""
+    model = Committee
+    context_object_name = 'committee'
+    template_name = 'local/committee_detail.html'
+
+    def test_func(self):
+        """Check if user has permission to view Committee objects"""
+        return self.request.user.is_superuser or self.request.user.has_role_permission('committee.view')
+
+    def get_context_data(self, **kwargs):
+        """Add committee members and motions data to context"""
+        context = super().get_context_data(**kwargs)
+        # Get active members for this committee
+        context['members'] = self.object.members.filter(is_active=True).select_related('user').order_by('role', 'user__first_name')
+        context['total_members'] = self.object.members.count()
+        # Get motions assigned to this committee
+        context['motions'] = self.object.motions.filter(is_active=True).order_by('-submitted_date')[:5]
+        context['total_motions'] = self.object.motions.count()
+        return context
+
+
+class CommitteeCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
+    """View for creating a new Committee object"""
+    model = Committee
+    form_class = CommitteeForm
+    template_name = 'local/committee_form.html'
+    success_url = reverse_lazy('local:committee-list')
+
+    def test_func(self):
+        """Check if user has permission to create Committee objects"""
+        return self.request.user.is_superuser or self.request.user.has_role_permission('committee.create')
+
+    def get_initial(self):
+        """Set initial council if provided in URL"""
+        initial = super().get_initial()
+        council_id = self.request.GET.get('council')
+        if council_id:
+            try:
+                council = Council.objects.get(pk=council_id)
+                initial['council'] = council.pk
+            except Council.DoesNotExist:
+                pass
+        return initial
+
+    def form_valid(self, form):
+        """Display success message on form validation"""
+        messages.success(self.request, f"Committee '{form.instance.name}' created successfully.")
+        return super().form_valid(form)
+
+
+class CommitteeUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
+    """View for updating an existing Committee object"""
+    model = Committee
+    form_class = CommitteeForm
+    template_name = 'local/committee_form.html'
+    success_url = reverse_lazy('local:committee-list')
+
+    def test_func(self):
+        """Check if user has permission to edit Committee objects"""
+        return self.request.user.is_superuser or self.request.user.has_role_permission('committee.edit')
+
+    def form_valid(self, form):
+        """Display success message on form validation"""
+        messages.success(self.request, f"Committee '{form.instance.name}' updated successfully.")
+        return super().form_valid(form)
+
+
+class CommitteeDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
+    """View for deleting a Committee object"""
+    model = Committee
+    template_name = 'local/committee_confirm_delete.html'
+    success_url = reverse_lazy('local:committee-list')
+
+    def test_func(self):
+        """Check if user has permission to delete Committee objects"""
+        return self.request.user.is_superuser or self.request.user.has_role_permission('committee.delete')
+
+    def delete(self, request, *args, **kwargs):
+        """Display success message on deletion"""
+        committee_obj = self.get_object()
+        messages.success(request, f"Committee '{committee_obj.name}' deleted successfully.")
+        return super().delete(request, *args, **kwargs)
+
+
+# Committee Member Views
+class CommitteeMemberListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
+    """View for listing all CommitteeMember objects"""
+    model = CommitteeMember
+    context_object_name = 'members'
+    template_name = 'local/committee_member_list.html'
+    paginate_by = 20
+
+    def test_func(self):
+        """Check if user has permission to view CommitteeMember objects"""
+        return self.request.user.is_superuser or self.request.user.has_role_permission('committee_member.view')
+
+    def get_queryset(self):
+        """Filter queryset based on search parameters"""
+        queryset = CommitteeMember.objects.all().select_related('committee', 'user').order_by('-joined_date')
+        
+        # Filter by search query
+        search_query = self.request.GET.get('search', '')
+        if search_query:
+            queryset = queryset.filter(
+                Q(user__username__icontains=search_query) |
+                Q(user__first_name__icontains=search_query) |
+                Q(user__last_name__icontains=search_query) |
+                Q(committee__name__icontains=search_query)
+            )
+        
+        # Filter by role
+        role_filter = self.request.GET.get('role', '')
+        if role_filter:
+            queryset = queryset.filter(role=role_filter)
+        
+        # Filter by committee
+        committee_filter = self.request.GET.get('committee', '')
+        if committee_filter:
+            queryset = queryset.filter(committee_id=committee_filter)
+        
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        """Add filter form to context"""
+        context = super().get_context_data(**kwargs)
+        context['search_query'] = self.request.GET.get('search', '')
+        context['role_filter'] = self.request.GET.get('role', '')
+        context['committee_filter'] = self.request.GET.get('committee', '')
+        context['committees'] = Committee.objects.filter(is_active=True)
+        return context
+
+
+class CommitteeMemberDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
+    """View for displaying a single CommitteeMember object"""
+    model = CommitteeMember
+    context_object_name = 'member'
+    template_name = 'local/committee_member_detail.html'
+
+    def test_func(self):
+        """Check if user has permission to view CommitteeMember objects"""
+        return self.request.user.is_superuser or self.request.user.has_role_permission('committee_member.view')
+
+
+class CommitteeMemberCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
+    """View for creating a new CommitteeMember object"""
+    model = CommitteeMember
+    form_class = CommitteeMemberForm
+    template_name = 'local/committee_member_form.html'
+    success_url = reverse_lazy('local:committee-member-list')
+
+    def test_func(self):
+        """Check if user has permission to create CommitteeMember objects"""
+        return self.request.user.is_superuser or self.request.user.has_role_permission('committee_member.create')
+
+    def get_initial(self):
+        """Set initial committee if provided in URL"""
+        initial = super().get_initial()
+        committee_id = self.request.GET.get('committee')
+        if committee_id:
+            try:
+                committee = Committee.objects.get(pk=committee_id)
+                initial['committee'] = committee.pk
+            except Committee.DoesNotExist:
+                pass
+        return initial
+
+    def form_valid(self, form):
+        """Display success message on form validation"""
+        messages.success(self.request, f"Member '{form.instance.user.username}' added to committee '{form.instance.committee.name}' successfully.")
+        return super().form_valid(form)
+
+
+class CommitteeMemberUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
+    """View for updating an existing CommitteeMember object"""
+    model = CommitteeMember
+    form_class = CommitteeMemberForm
+    template_name = 'local/committee_member_form.html'
+    success_url = reverse_lazy('local:committee-member-list')
+
+    def test_func(self):
+        """Check if user has permission to edit CommitteeMember objects"""
+        return self.request.user.is_superuser or self.request.user.has_role_permission('committee_member.edit')
+
+    def form_valid(self, form):
+        """Display success message on form validation"""
+        messages.success(self.request, f"Committee member '{form.instance.user.username}' updated successfully.")
+        return super().form_valid(form)
+
+
+class CommitteeMemberDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
+    """View for deleting a CommitteeMember object"""
+    model = CommitteeMember
+    template_name = 'local/committee_member_confirm_delete.html'
+    success_url = reverse_lazy('local:committee-member-list')
+
+    def test_func(self):
+        """Check if user has permission to delete CommitteeMember objects"""
+        return self.request.user.is_superuser or self.request.user.has_role_permission('committee_member.delete')
+
+    def delete(self, request, *args, **kwargs):
+        """Display success message on deletion"""
+        member_obj = self.get_object()
+        messages.success(request, f"Member '{member_obj.user.username}' removed from committee '{member_obj.committee.name}' successfully.")
         return super().delete(request, *args, **kwargs)

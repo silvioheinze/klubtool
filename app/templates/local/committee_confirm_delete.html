@@ -1,0 +1,137 @@
+{% extends "_base.html" %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}{% trans "Delete Committee" %} - {{ committee.name }}{% endblock title %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1><i class="bi bi-exclamation-triangle"></i> {% trans "Delete Committee" %}</h1>
+                <div>
+                    <a href="{% url 'local:committee-detail' committee.pk %}" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left"></i> {% trans "Back to Committee" %}
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0"><i class="bi bi-exclamation-triangle"></i> {% trans "Confirm Deletion" %}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <h6><i class="bi bi-exclamation-triangle"></i> {% trans "Warning" %}</h6>
+                        <p class="mb-0">{% trans "This action cannot be undone. All committee data will be permanently deleted." %}</p>
+                    </div>
+
+                    <h5>{% trans "Committee Information" %}</h5>
+                    <dl class="row">
+                        <dt class="col-sm-3">{% trans "Name" %}</dt>
+                        <dd class="col-sm-9">{{ committee.name }}</dd>
+                        
+                        <dt class="col-sm-3">{% trans "Council" %}</dt>
+                        <dd class="col-sm-9">{{ committee.council.name }}</dd>
+                        
+                        <dt class="col-sm-3">{% trans "Type" %}</dt>
+                        <dd class="col-sm-9">{{ committee.get_committee_type_display }}</dd>
+                        
+                        <dt class="col-sm-3">{% trans "Chairperson" %}</dt>
+                        <dd class="col-sm-9">
+                            {% if committee.chairperson %}
+                                {{ committee.chairperson }}
+                            {% else %}
+                                <span class="text-muted">{% trans "Not assigned" %}</span>
+                            {% endif %}
+                        </dd>
+                        
+                        <dt class="col-sm-3">{% trans "Members" %}</dt>
+                        <dd class="col-sm-9">
+                            <span class="badge bg-info">{{ committee.member_count }}</span>
+                        </dd>
+                        
+                        <dt class="col-sm-3">{% trans "Created" %}</dt>
+                        <dd class="col-sm-9">{{ committee.created_at|date:"M d, Y H:i" }}</dd>
+                    </dl>
+
+                    {% if committee.description %}
+                        <h6>{% trans "Description" %}</h6>
+                        <p>{{ committee.description|linebreaks }}</p>
+                    {% endif %}
+
+                    <div class="alert alert-danger">
+                        <h6><i class="bi bi-exclamation-triangle"></i> {% trans "What will be deleted" %}</h6>
+                        <ul class="mb-0">
+                            <li>{% trans "The committee itself" %}</li>
+                            <li>{% trans "All committee member records" %}</li>
+                            <li>{% trans "Committee assignments in motions (motions will remain but lose committee assignment)" %}</li>
+                        </ul>
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{% url 'local:committee-detail' committee.pk %}" class="btn btn-secondary me-md-2">
+                                <i class="bi bi-x-circle"></i> {% trans "Cancel" %}
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash"></i> {% trans "Delete Committee" %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">{% trans "Actions" %}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'local:committee-detail' committee.pk %}" class="btn btn-outline-info">
+                            <i class="bi bi-eye"></i> {% trans "View Committee" %}
+                        </a>
+                        <a href="{% url 'local:committee-edit' committee.pk %}" class="btn btn-outline-primary">
+                            <i class="bi bi-pencil"></i> {% trans "Edit Committee" %}
+                        </a>
+                        <a href="{% url 'local:committee-list' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-list"></i> {% trans "View All Committees" %}
+                        </a>
+                        <a href="{% url 'local:council-detail' committee.council.pk %}" class="btn btn-outline-info">
+                            <i class="bi bi-building"></i> {% trans "View Council" %}
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="mb-0">{% trans "Quick Info" %}</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li><strong>{% trans "Status" %}:</strong> 
+                            {% if committee.is_active %}
+                                <span class="text-success">{% trans "Active" %}</span>
+                            {% else %}
+                                <span class="text-danger">{% trans "Inactive" %}</span>
+                            {% endif %}
+                        </li>
+                        <li><strong>{% trans "Council" %}:</strong> {{ committee.council.name }}</li>
+                        <li><strong>{% trans "Local District" %}:</strong> {{ committee.council.local.name }}</li>
+                        <li><strong>{% trans "Created" %}:</strong> {{ committee.created_at|naturaltime }}</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

@@ -9,7 +9,9 @@ from .views import (
     TermSeatDistributionListView, TermSeatDistributionDetailView, TermSeatDistributionCreateView,
     TermSeatDistributionUpdateView, TermSeatDistributionDeleteView, TermSeatDistributionView,
     PartyListView, PartyDetailView, PartyCreateView, PartyUpdateView, PartyDeleteView,
-    SessionListView, SessionDetailView, SessionCreateView, SessionUpdateView, SessionDeleteView
+    SessionListView, SessionDetailView, SessionCreateView, SessionUpdateView, SessionDeleteView,
+    CommitteeListView, CommitteeDetailView, CommitteeCreateView, CommitteeUpdateView, CommitteeDeleteView,
+    CommitteeMemberListView, CommitteeMemberDetailView, CommitteeMemberCreateView, CommitteeMemberUpdateView, CommitteeMemberDeleteView
 )
 
 app_name = 'local'
@@ -58,4 +60,18 @@ urlpatterns = [
     path('sessions/<int:pk>/', SessionDetailView.as_view(), name='session-detail'),
     path('sessions/<int:pk>/edit/', SessionUpdateView.as_view(), name='session-edit'),
     path('sessions/<int:pk>/delete/', SessionDeleteView.as_view(), name='session-delete'),
+    
+    # Committee URLs
+    path('committees/', CommitteeListView.as_view(), name='committee-list'),
+    path('committees/create/', CommitteeCreateView.as_view(), name='committee-create'),
+    path('committees/<int:pk>/', CommitteeDetailView.as_view(), name='committee-detail'),
+    path('committees/<int:pk>/edit/', CommitteeUpdateView.as_view(), name='committee-edit'),
+    path('committees/<int:pk>/delete/', CommitteeDeleteView.as_view(), name='committee-delete'),
+    
+    # Committee Member URLs
+    path('committee-members/', CommitteeMemberListView.as_view(), name='committee-member-list'),
+    path('committee-members/create/', CommitteeMemberCreateView.as_view(), name='committee-member-create'),
+    path('committee-members/<int:pk>/', CommitteeMemberDetailView.as_view(), name='committee-member-detail'),
+    path('committee-members/<int:pk>/edit/', CommitteeMemberUpdateView.as_view(), name='committee-member-edit'),
+    path('committee-members/<int:pk>/delete/', CommitteeMemberDeleteView.as_view(), name='committee-member-delete'),
 ]

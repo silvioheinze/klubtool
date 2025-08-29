@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Local, Council, Session, Term, Party, TermSeatDistribution
+from .models import Local, Council, Committee, CommitteeMember, Session, Term, Party, TermSeatDistribution
 
 
 @admin.register(Local)
@@ -45,7 +45,7 @@ class TermAdmin(admin.ModelAdmin):
     list_display = ['name', 'start_date', 'end_date', 'total_seats', 'allocated_seats', 'is_active', 'is_current']
     list_filter = ['is_active', 'start_date', 'end_date']
     search_fields = ['name', 'description']
-    readonly_fields = ['created_at', 'updated_at', 'allocated_seats', 'unallocated_seats']
+    readonly_fields = ['created_at', 'updated_at', 'allocated_seats']
     ordering = ['-start_date']
     
     fieldsets = (
@@ -53,7 +53,7 @@ class TermAdmin(admin.ModelAdmin):
             'fields': ('name', 'start_date', 'end_date', 'description', 'is_active')
         }),
         ('Seat Management', {
-            'fields': ('total_seats', 'allocated_seats', 'unallocated_seats')
+            'fields': ('total_seats', 'allocated_seats')
         }),
         ('Timestamps', {
             'fields': ('created_at', 'updated_at'),
@@ -95,18 +95,15 @@ class PartyAdmin(admin.ModelAdmin):
 
 @admin.register(TermSeatDistribution)
 class TermSeatDistributionAdmin(admin.ModelAdmin):
-    list_display = ['term', 'party', 'seats', 'percentage', 'created_at']
+    list_display = ['term', 'party', 'seats', 'created_at']
     list_filter = ['term', 'party', 'created_at']
-    search_fields = ['term__name', 'party__name', 'notes']
-    readonly_fields = ['created_at', 'updated_at', 'percentage']
+    search_fields = ['term__name', 'party__name']
+    readonly_fields = ['created_at', 'updated_at']
     ordering = ['-term__start_date', '-seats']
     
     fieldsets = (
         ('Distribution Information', {
-            'fields': ('term', 'party', 'seats', 'percentage')
-        }),
-        ('Additional Information', {
-            'fields': ('notes',)
+            'fields': ('term', 'party', 'seats')
         }),
         ('Timestamps', {
             'fields': ('created_at', 'updated_at'),
@@ -114,11 +111,53 @@ class TermSeatDistributionAdmin(admin.ModelAdmin):
         }),
     )
 
-    def percentage(self, obj):
-        if obj.percentage:
-            return f"{obj.percentage:.1f}%"
-        return "-"
-    percentage.short_description = 'Percentage'
+
+@admin.register(Committee)
+class CommitteeAdmin(admin.ModelAdmin):
+    list_display = ['name', 'council', 'committee_type', 'chairperson', 'member_count', 'is_active']
+    list_filter = ['committee_type', 'is_active', 'council', 'created_at']
+    search_fields = ['name', 'description', 'chairperson', 'council__name']
+    readonly_fields = ['created_at', 'updated_at', 'member_count']
+    ordering = ['name']
+    
+    fieldsets = (
+        ('Basic Information', {
+            'fields': ('name', 'council', 'committee_type', 'description', 'is_active')
+        }),
+        ('Leadership', {
+            'fields': ('chairperson',)
+        }),
+        ('Timestamps', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+
+    def member_count(self, obj):
+        return obj.member_count
+    member_count.short_description = 'Members'
+
+
+@admin.register(CommitteeMember)
+class CommitteeMemberAdmin(admin.ModelAdmin):
+    list_display = ['user', 'committee', 'role', 'joined_date', 'is_active']
+    list_filter = ['role', 'is_active', 'committee', 'joined_date']
+    search_fields = ['user__username', 'user__first_name', 'user__last_name', 'committee__name']
+    readonly_fields = ['joined_date', 'created_at', 'updated_at']
+    ordering = ['-joined_date']
+    
+    fieldsets = (
+        ('Membership Information', {
+            'fields': ('committee', 'user', 'role', 'is_active')
+        }),
+        ('Additional Information', {
+            'fields': ('notes',)
+        }),
+        ('Timestamps', {
+            'fields': ('joined_date', 'created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
 
 
 @admin.register(Session)

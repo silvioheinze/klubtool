@@ -1,5 +1,5 @@
 from django import forms
-from .models import Local, Council, Session, Term, Party, TermSeatDistribution
+from .models import Local, Council, Committee, CommitteeMember, Session, Term, Party, TermSeatDistribution
 
 
 class LocalForm(forms.ModelForm):
@@ -160,12 +160,11 @@ class TermSeatDistributionForm(forms.ModelForm):
     
     class Meta:
         model = TermSeatDistribution
-        fields = ['term', 'party', 'seats', 'notes']
+        fields = ['term', 'party', 'seats']
         widgets = {
             'term': forms.Select(attrs={'class': 'form-select'}),
             'party': forms.Select(attrs={'class': 'form-select'}),
             'seats': forms.NumberInput(attrs={'class': 'form-control', 'min': '0'}),
-            'notes': forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -319,7 +318,7 @@ class SessionFilterForm(forms.Form):
         widget=forms.Select(attrs={'class': 'form-select'})
     )
     session_type = forms.ChoiceField(
-        choices=[('', 'All Types')] + Session.SESSION_TYPES,
+        choices=[('', 'All Types')] + Session.SESSION_TYPE_CHOICES,
         required=False,
         initial=''
     )
@@ -332,4 +331,110 @@ class SessionFilterForm(forms.Form):
         choices=[('', 'All'), ('True', 'Active'), ('False', 'Inactive')],
         required=False,
         initial=''
+    )
+
+
+class CommitteeForm(forms.ModelForm):
+    """Form for creating and editing Committee objects"""
+    
+    class Meta:
+        model = Committee
+        fields = ['name', 'council', 'committee_type', 'description']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control'}),
+            'council': forms.Select(attrs={'class': 'form-select'}),
+            'committee_type': forms.Select(attrs={'class': 'form-select'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Filter councils to only show active ones
+        self.fields['council'].queryset = Council.objects.filter(is_active=True)
+        
+        # Set initial council if provided in URL
+        council_id = self.initial.get('council') or self.data.get('council')
+        if council_id:
+            try:
+                council = Council.objects.get(pk=council_id)
+                self.fields['council'].initial = council
+                # Hide the council field when it's pre-set
+                self.fields['council'].widget = forms.HiddenInput()
+            except Council.DoesNotExist:
+                pass
+
+
+class CommitteeFilterForm(forms.Form):
+    """Form for filtering committees in the committee list view"""
+    search = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Search by name, chairperson, or description'
+        })
+    )
+    committee_type = forms.ChoiceField(
+        choices=[('', 'All Types')] + Committee.COMMITTEE_TYPE_CHOICES,
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    council = forms.ModelChoiceField(
+        queryset=Council.objects.filter(is_active=True),
+        required=False,
+        empty_label="All Councils",
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+
+
+class CommitteeMemberForm(forms.ModelForm):
+    """Form for creating and editing CommitteeMember objects"""
+    
+    class Meta:
+        model = CommitteeMember
+        fields = ['committee', 'user', 'role', 'notes']
+        widgets = {
+            'committee': forms.Select(attrs={'class': 'form-select'}),
+            'user': forms.Select(attrs={'class': 'form-select'}),
+            'role': forms.Select(attrs={'class': 'form-select'}),
+            'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Filter committees to only show active ones
+        self.fields['committee'].queryset = Committee.objects.filter(is_active=True)
+        # Filter users to only show active ones
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        self.fields['user'].queryset = User.objects.filter(is_active=True)
+        
+        # Set initial committee if provided in URL
+        committee_id = self.initial.get('committee') or self.data.get('committee')
+        if committee_id:
+            try:
+                committee = Committee.objects.get(pk=committee_id)
+                self.fields['committee'].initial = committee
+            except Committee.DoesNotExist:
+                pass
+
+
+class CommitteeMemberFilterForm(forms.Form):
+    """Form for filtering committee members in the member list view"""
+    search = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Search by user name or committee name'
+        })
+    )
+    role = forms.ChoiceField(
+        choices=[('', 'All Roles')] + CommitteeMember.ROLE_CHOICES,
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    committee = forms.ModelChoiceField(
+        queryset=Committee.objects.filter(is_active=True),
+        required=False,
+        empty_label="All Committees",
+        widget=forms.Select(attrs={'class': 'form-select'})
     )
