@@ -1,0 +1,49 @@
+{% extends "_base.html" %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}{% trans "Delete Local" %}{% endblock title %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-exclamation-triangle"></i> {% trans "Delete Local" %}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <h5>{% trans "Warning" %}</h5>
+                        <p>{% trans "Are you sure you want to delete the Local" %} <strong>"{{ object.name }}"</strong>?</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6>{% trans "Local Details" %}</h6>
+                        <ul class="list-unstyled">
+                            <li><strong>{% trans "Name" %}:</strong> {{ object.name }}</li>
+                            <li><strong>{% trans "Code" %}:</strong> {{ object.code }}</li>
+                            <li><strong>{% trans "Description" %}:</strong> {{ object.description|default:"-" }}</li>
+                            <li><strong>{% trans "Created" %}:</strong> {{ object.created_at|date:"M d, Y" }}</li>
+                        </ul>
+                    </div>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'local:local-list' %}" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> {% trans "Cancel" %}
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash"></i> {% trans "Delete Local" %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
