@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'user',
     'local',
     'group',
+    'motion', # Added
 ]
 
 MIDDLEWARE = [

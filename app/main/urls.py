@@ -26,6 +26,7 @@ urlpatterns = [
     path('user/', include('user.urls')),
     path('local/', include('local.urls')),
     path('group/', include('group.urls')),
+    path('motion/', include('motion.urls')), # Added
 ]
 
 # Serve static and media files during development

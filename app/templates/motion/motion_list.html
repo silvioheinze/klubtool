@@ -1,0 +1,237 @@
+{% extends "_base.html" %}
+{% load i18n %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}{% trans "Motion Management" %}{% endblock title %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1><i class="bi bi-file-earmark-text"></i> {% trans "Motion Management" %}</h1>
+                <div>
+                    <a href="{% url 'motion:motion-create' %}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i> {% trans "Create Motion" %}
+                    </a>
+                    <a href="{% url 'motion:motion-dashboard' %}" class="btn btn-outline-info">
+                        <i class="bi bi-graph-up"></i> {% trans "Dashboard" %}
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Form -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-funnel"></i> {% trans "Filter Motions" %}</h5>
+                </div>
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-3">
+                            {{ filter_form.search }}
+                        </div>
+                        <div class="col-md-2">
+                            {{ filter_form.motion_type }}
+                        </div>
+                        <div class="col-md-2">
+                            {{ filter_form.status }}
+                        </div>
+
+                        <div class="col-md-3">
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-search"></i> {% trans "Search" %}
+                                </button>
+                                <a href="{% url 'motion:motion-list' %}" class="btn btn-outline-secondary">
+                                    <i class="bi bi-arrow-clockwise"></i> {% trans "Clear" %}
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                    
+                    <!-- Additional Filters -->
+                    <form method="get" class="row g-3 mt-3">
+                        <div class="col-md-3">
+                            {{ filter_form.session }}
+                        </div>
+                        <div class="col-md-3">
+                            {{ filter_form.group }}
+                        </div>
+                        <div class="col-md-3">
+                            {{ filter_form.party }}
+                        </div>
+                        <div class="col-md-3">
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-search"></i> {% trans "Filter" %}
+                                </button>
+                                <a href="{% url 'motion:motion-list' %}" class="btn btn-outline-secondary">
+                                    <i class="bi bi-arrow-clockwise"></i> {% trans "Clear" %}
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Motions Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-list"></i> {% trans "Motions" %}</h5>
+                </div>
+                <div class="card-body">
+                    {% if motions %}
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>{% trans "Title" %}</th>
+                                        <th>{% trans "Type" %}</th>
+                                        <th>{% trans "Status" %}</th>
+
+                                        <th>{% trans "Group" %}</th>
+                                        <th>{% trans "Session" %}</th>
+                                        <th>{% trans "Submitted" %}</th>
+                                        <th>{% trans "Actions" %}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for motion in motions %}
+                                        <tr>
+                                            <td>
+                                                <strong>
+                                                    <a href="{% url 'motion:motion-detail' motion.pk %}">
+                                                        {{ motion.title }}
+                                                    </a>
+                                                </strong>
+
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-secondary">{{ motion.get_motion_type_display }}</span>
+                                            </td>
+                                            <td>
+                                                {% if motion.status == 'draft' %}
+                                                    <span class="badge bg-secondary">{% trans "Draft" %}</span>
+                                                {% elif motion.status == 'submitted' %}
+                                                    <span class="badge bg-primary">{% trans "Submitted" %}</span>
+                                                {% elif motion.status == 'under_review' %}
+                                                    <span class="badge bg-warning">{% trans "Under Review" %}</span>
+                                                {% elif motion.status == 'approved' %}
+                                                    <span class="badge bg-success">{% trans "Approved" %}</span>
+                                                {% elif motion.status == 'rejected' %}
+                                                    <span class="badge bg-danger">{% trans "Rejected" %}</span>
+                                                {% elif motion.status == 'amended' %}
+                                                    <span class="badge bg-info">{% trans "Amended" %}</span>
+                                                {% elif motion.status == 'withdrawn' %}
+                                                    <span class="badge bg-dark">{% trans "Withdrawn" %}</span>
+                                                {% elif motion.status == 'tabled' %}
+                                                    <span class="badge bg-light text-dark">{% trans "Tabled" %}</span>
+                                                {% endif %}
+                                            </td>
+
+                                            <td>
+                                                <a href="{% url 'group:group-detail' motion.group.pk %}">
+                                                    {{ motion.group.name }}
+                                                </a>
+                                                <br><small class="text-muted">{{ motion.group.party.name }}</small>
+                                            </td>
+                                            <td>
+                                                {% if motion.session %}
+                                                    <a href="{% url 'local:session-detail' motion.session.pk %}">
+                                                        {{ motion.session.title }}
+                                                    </a>
+                                                    <br><small class="text-muted">{{ motion.session.scheduled_date|date:"M d, Y" }}</small>
+                                                {% else %}
+                                                    <span class="text-muted">{% trans "No session" %}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <small>{{ motion.submitted_date|naturaltime }}</small>
+                                                {% if motion.submitted_by %}
+                                                    <br><small class="text-muted">by {{ motion.submitted_by.username }}</small>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <a href="{% url 'motion:motion-detail' motion.pk %}" class="btn btn-sm btn-outline-info" title="{% trans 'View Details' %}">
+                                                        <i class="bi bi-eye"></i>
+                                                    </a>
+                                                    {% if motion.can_be_edited %}
+                                                        <a href="{% url 'motion:motion-edit' motion.pk %}" class="btn btn-sm btn-outline-primary" title="{% trans 'Edit Motion' %}">
+                                                            <i class="bi bi-pencil"></i>
+                                                        </a>
+                                                    {% endif %}
+                                                    <a href="{% url 'motion:motion-delete' motion.pk %}" class="btn btn-sm btn-outline-danger" title="{% trans 'Delete Motion' %}">
+                                                        <i class="bi bi-trash"></i>
+                                                    </a>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination -->
+                        {% if is_paginated %}
+                            <nav aria-label="{% trans 'Motion pagination' %}">
+                                <ul class="pagination justify-content-center">
+                                    {% if page_obj.has_previous %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page=1{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}">
+                                                <i class="bi bi-chevron-double-left"></i>
+                                            </a>
+                                        </li>
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}">
+                                                <i class="bi bi-chevron-left"></i>
+                                            </a>
+                                        </li>
+                                    {% endif %}
+
+                                    <li class="page-item active">
+                                        <span class="page-link">
+                                            {% trans "Page" %} {{ page_obj.number }} {% trans "of" %} {{ page_obj.paginator.num_pages }}
+                                        </span>
+                                    </li>
+
+                                    {% if page_obj.has_next %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}">
+                                                <i class="bi bi-chevron-right"></i>
+                                            </a>
+                                        </li>
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}">
+                                                <i class="bi bi-chevron-double-right"></i>
+                                            </a>
+                                        </li>
+                                    {% endif %}
+                                </ul>
+                            </nav>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="bi bi-file-earmark-text fs-1 text-muted"></i>
+                            <h6 class="mt-3">{% trans "No motions found" %}</h6>
+                            <p class="text-muted">{% trans "Create motions to manage council proposals and resolutions." %}</p>
+                            <a href="{% url 'motion:motion-create' %}" class="btn btn-primary">
+                                <i class="bi bi-plus-circle"></i> {% trans "Create First Motion" %}
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

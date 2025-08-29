@@ -10,6 +10,7 @@
 [x] fix local template bug
 [x] improve local detail template
 [x] add parties to local
-[ ] app motion
+[x] app motion
 [x] app group
 [x] show sessions in local detail template
+[ ] comittees for sub council
