@@ -205,6 +205,14 @@ class CouncilDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         """Check if user has permission to view Council objects"""
         return self.request.user.is_superuser or self.request.user.has_role_permission('council.view')
 
+    def get_context_data(self, **kwargs):
+        """Add sessions data to context"""
+        context = super().get_context_data(**kwargs)
+        # Get sessions for this council
+        context['sessions'] = self.object.sessions.filter(is_active=True).order_by('-scheduled_date')[:10]
+        context['total_sessions'] = self.object.sessions.count()
+        return context
+
 
 class CouncilCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     """View for creating a new Council object"""
