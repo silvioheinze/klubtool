@@ -1,0 +1,243 @@
+{% extends "_base.html" %}
+{% load i18n %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}{% trans "User Management" %}{% endblock title %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1><i class="bi bi-people-fill"></i> {% trans "User Management" %}</h1>
+                <div>
+                    <a href="{% url 'user-list' %}" class="btn btn-primary">
+                        <i class="bi bi-list"></i> {% trans "View All Users" %}
+                    </a>
+                    <a href="{% url 'role-list' %}" class="btn btn-secondary">
+                        <i class="bi bi-shield-check"></i> {% trans "Manage Roles" %}
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ total_users }}</h4>
+                            <p class="card-text">{% trans "Total Users" %}</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-people fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ active_users }}</h4>
+                            <p class="card-text">{% trans "Active Users" %}</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-check-circle fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ users_with_roles }}</h4>
+                            <p class="card-text">{% trans "Users with Roles" %}</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-shield-check fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ total_roles }}</h4>
+                            <p class="card-text">{% trans "Total Roles" %}</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-shield fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-lightning"></i> {% trans "Quick Actions" %}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-2">
+                            <a href="{% url 'user-signup' %}" class="btn btn-outline-primary w-100">
+                                <i class="bi bi-person-plus"></i> {% trans "Add New User" %}
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{% url 'role-create' %}" class="btn btn-outline-secondary w-100">
+                                <i class="bi bi-shield-plus"></i> {% trans "Create New Role" %}
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{% url 'user-list' %}?status=inactive" class="btn btn-outline-warning w-100">
+                                <i class="bi bi-person-x"></i> {% trans "Inactive Users" %}
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{% url 'user-list' %}?role=" class="btn btn-outline-info w-100">
+                                <i class="bi bi-person-question"></i> {% trans "Users without Roles" %}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-clock-history"></i> {% trans "Recent Users" %}</h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_users %}
+                        <div class="list-group list-group-flush">
+                            {% for user in recent_users %}
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>{{ user.username }}</strong>
+                                        <br>
+                                        <small class="text-muted">{{ user.email }}</small>
+                                        {% if user.role %}
+                                            <br>
+                                            <span class="badge bg-secondary">{{ user.role.name }}</span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="text-end">
+                                        <small class="text-muted">{{ user.date_joined|date:"M d, Y" }}</small>
+                                        <br>
+                                        <a href="{% url 'user-edit' user.id %}" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted">{% trans "No recent users" %}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-shield-check"></i> {% trans "Recent Roles" %}</h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_roles %}
+                        <div class="list-group list-group-flush">
+                            {% for role in recent_roles %}
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>{{ role.name }}</strong>
+                                        <br>
+                                        <small class="text-muted">{{ role.description|truncatewords:10 }}</small>
+                                        <br>
+                                        <span class="badge {% if role.is_active %}bg-success{% else %}bg-danger{% endif %}">
+                                            {% if role.is_active %}{% trans "Active" %}{% else %}{% trans "Inactive" %}{% endif %}
+                                        </span>
+                                    </div>
+                                    <div class="text-end">
+                                        <small class="text-muted">{{ role.created_at|date:"M d, Y" }}</small>
+                                        <br>
+                                        <a href="{% url 'role-edit' role.id %}" class="btn btn-sm btn-outline-secondary">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted">{% trans "No recent roles" %}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Information -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-info-circle"></i> {% trans "System Information" %}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <h6>{% trans "User Statistics" %}</h6>
+                            <ul class="list-unstyled">
+                                <li><strong>{% trans "Active Users" %}:</strong> {{ active_users }}</li>
+                                <li><strong>{% trans "Inactive Users" %}:</strong> {{ inactive_users }}</li>
+                                <li><strong>{% trans "Users with Roles" %}:</strong> {{ users_with_roles }}</li>
+                                <li><strong>{% trans "Users without Roles" %}:</strong> {{ users_without_roles }}</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-4">
+                            <h6>{% trans "Role Statistics" %}</h6>
+                            <ul class="list-unstyled">
+                                <li><strong>{% trans "Total Roles" %}:</strong> {{ total_roles }}</li>
+                                <li><strong>{% trans "Active Roles" %}:</strong> {{ active_roles }}</li>
+                                <li><strong>{% trans "Inactive Roles" %}:</strong> {{ total_roles|add:"-"|add:active_roles }}</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-4">
+                            <h6>{% trans "Quick Links" %}</h6>
+                            <ul class="list-unstyled">
+                                <li><a href="{% url 'user-list' %}">{% trans "View All Users" %}</a></li>
+                                <li><a href="{% url 'role-list' %}">{% trans "View All Roles" %}</a></li>
+                                <li><a href="{% url 'admin:index' %}">{% trans "Django Admin" %}</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

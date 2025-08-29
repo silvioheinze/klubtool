@@ -1,15 +1,25 @@
 import datetime
 from django.urls import reverse_lazy
-from django.views.generic import CreateView, DeleteView, TemplateView, UpdateView
+from django.views.generic import CreateView, DeleteView, TemplateView, UpdateView, ListView
 from django.views.generic.list import ListView
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth import get_user_model, login
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.db.models import Q
+from django.core.paginator import Paginator
 
-from .forms import CustomUserCreationForm, CustomUserEditForm
-from .models import CustomUser
+from .forms import CustomUserCreationForm, CustomUserEditForm, RoleForm, RoleFilterForm
+from .models import CustomUser, Role
+
+
+def is_superuser_or_has_permission(permission):
+    """Decorator to check if user is superuser or has specific permission"""
+    def check_permission(user):
+        return user.is_superuser or user.has_role_permission(permission)
+    return user_passes_test(check_permission)
 
 
 class AccountDeleteView(LoginRequiredMixin, DeleteView):
@@ -55,7 +65,6 @@ class SignupPageView(CreateView):
 
     def form_valid(self, form):
         user = form.instance
-
         return super().form_valid(form)
 
 
@@ -80,31 +89,160 @@ def SettingsView(request):
                 login(request, user)
                 return redirect("home")
         return render(request, "user/login.html", {"form": form})
-    
+
 
 class UsersUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model = get_user_model()
     form_class = CustomUserEditForm
     template_name = 'user/edit.html'
-    pk_url_kwarg = 'user_id'  # Erwartet in der URL: /users/edit/<user_id>/
+    pk_url_kwarg = 'user_id'
 
     def get_success_url(self):
         return reverse_lazy('user-list')
 
     def test_func(self):
-        # Zugriff erlauben, wenn der angemeldete Benutzer ein Superuser ist
-        return self.request.user.is_superuser
+        # Allow access if user is superuser or has user.edit permission
+        return self.request.user.is_superuser or self.request.user.has_role_permission('user.edit')
 
 
 class UsersListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
     model = CustomUser
     context_object_name = 'users'
     template_name = 'user/list.html'
+    paginate_by = 20
 
     def test_func(self):
-        # Only superusers can access this view
-        return self.request.user.is_authenticated and self.request.user.is_superuser
+        # Allow access if user is superuser or has user.view permission
+        return self.request.user.is_superuser or self.request.user.has_role_permission('user.view')
 
     def get_queryset(self):
-        # Optimize queryset by selecting related 'current_organization'
-        return CustomUser.objects.all().order_by('id')
+        queryset = CustomUser.objects.select_related('role').all().order_by('username')
+        
+        # Filter by search query
+        search_query = self.request.GET.get('search', '')
+        if search_query:
+            queryset = queryset.filter(
+                Q(username__icontains=search_query) |
+                Q(email__icontains=search_query) |
+                Q(first_name__icontains=search_query) |
+                Q(last_name__icontains=search_query)
+            )
+        
+        # Filter by role
+        role_filter = self.request.GET.get('role', '')
+        if role_filter:
+            queryset = queryset.filter(role__name=role_filter)
+        
+        # Filter by status
+        status_filter = self.request.GET.get('status', '')
+        if status_filter == 'active':
+            queryset = queryset.filter(is_active=True)
+        elif status_filter == 'inactive':
+            queryset = queryset.filter(is_active=False)
+        
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['roles'] = Role.objects.filter(is_active=True)
+        context['search_query'] = self.request.GET.get('search', '')
+        context['role_filter'] = self.request.GET.get('role', '')
+        context['status_filter'] = self.request.GET.get('status', '')
+        return context
+
+
+# Role Management Views
+class RoleListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
+    model = Role
+    context_object_name = 'roles'
+    template_name = 'user/role_list.html'
+    paginate_by = 20
+
+    def test_func(self):
+        return self.request.user.is_superuser or self.request.user.has_role_permission('role.view')
+
+    def get_queryset(self):
+        queryset = Role.objects.all().order_by('name')
+        
+        # Filter by search query
+        search_query = self.request.GET.get('search', '')
+        if search_query:
+            queryset = queryset.filter(
+                Q(name__icontains=search_query) |
+                Q(description__icontains=search_query)
+            )
+        
+        # Filter by status
+        status_filter = self.request.GET.get('status', '')
+        if status_filter == 'active':
+            queryset = queryset.filter(is_active=True)
+        elif status_filter == 'inactive':
+            queryset = queryset.filter(is_active=False)
+        
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['search_query'] = self.request.GET.get('search', '')
+        context['status_filter'] = self.request.GET.get('status', '')
+        return context
+
+
+class RoleCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
+    model = Role
+    form_class = RoleForm
+    template_name = 'user/role_form.html'
+    success_url = reverse_lazy('role-list')
+
+    def test_func(self):
+        return self.request.user.is_superuser or self.request.user.has_role_permission('role.create')
+
+    def form_valid(self, form):
+        messages.success(self.request, f"Role '{form.instance.name}' created successfully.")
+        return super().form_valid(form)
+
+
+class RoleUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
+    model = Role
+    form_class = RoleForm
+    template_name = 'user/role_form.html'
+    success_url = reverse_lazy('role-list')
+
+    def test_func(self):
+        return self.request.user.is_superuser or self.request.user.has_role_permission('role.edit')
+
+    def form_valid(self, form):
+        messages.success(self.request, f"Role '{form.instance.name}' updated successfully.")
+        return super().form_valid(form)
+
+
+class RoleDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
+    model = Role
+    template_name = 'user/role_confirm_delete.html'
+    success_url = reverse_lazy('role-list')
+
+    def test_func(self):
+        return self.request.user.is_superuser or self.request.user.has_role_permission('role.delete')
+
+    def delete(self, request, *args, **kwargs):
+        role = self.get_object()
+        messages.success(request, f"Role '{role.name}' deleted successfully.")
+        return super().delete(request, *args, **kwargs)
+
+
+@login_required
+@is_superuser_or_has_permission('user.manage')
+def user_management_view(request):
+    """Comprehensive user management dashboard"""
+    context = {
+        'total_users': CustomUser.objects.count(),
+        'active_users': CustomUser.objects.filter(is_active=True).count(),
+        'inactive_users': CustomUser.objects.filter(is_active=False).count(),
+        'users_with_roles': CustomUser.objects.filter(role__isnull=False).count(),
+        'users_without_roles': CustomUser.objects.filter(role__isnull=True).count(),
+        'total_roles': Role.objects.count(),
+        'active_roles': Role.objects.filter(is_active=True).count(),
+        'recent_users': CustomUser.objects.order_by('-date_joined')[:5],
+        'recent_roles': Role.objects.order_by('-created_at')[:5],
+    }
+    return render(request, 'user/management.html', context)

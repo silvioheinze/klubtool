@@ -15,7 +15,17 @@
                         <div class="card-body">
                             <h5 class="card-title">User Management</h5>
                             <p class="card-text">Manage users and their permissions.</p>
-                            <a href="{% url 'user-list' %}" class="btn btn-primary">View Users</a>
+                            <a href="{% url 'user-management' %}" class="btn btn-primary">User Dashboard</a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Role Management</h5>
+                            <p class="card-text">Manage user roles and permissions.</p>
+                            <a href="{% url 'role-list' %}" class="btn btn-primary">Manage Roles</a>
                         </div>
                     </div>
                 </div>
