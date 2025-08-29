@@ -1,0 +1,145 @@
+{% extends "_base.html" %}
+{% load i18n %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}{{ member.user.get_full_name|default:member.user.username }} - {% trans "Member Details" %}{% endblock title %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1><i class="bi bi-person"></i> {{ member.user.get_full_name|default:member.user.username }}</h1>
+                <div>
+                    <a href="{% url 'group:member-edit' member.pk %}" class="btn btn-primary">
+                        <i class="bi bi-pencil"></i> {% trans "Edit" %}
+                    </a>
+                    <a href="{% url 'group:member-list' %}" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left"></i> {% trans "Back to List" %}
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">{% trans "Membership Information" %}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">{% trans "User" %}</dt>
+                                <dd class="col-sm-8">
+                                    <strong>{{ member.user.get_full_name|default:member.user.username }}</strong>
+                                    <br><small class="text-muted">{{ member.user.email }}</small>
+                                </dd>
+                                
+                                <dt class="col-sm-4">{% trans "Group" %}</dt>
+                                <dd class="col-sm-8">
+                                    <a href="{% url 'group:group-detail' member.group.pk %}">
+                                        {{ member.group.name }}
+                                    </a>
+                                </dd>
+                                
+                                <dt class="col-sm-4">{% trans "Party" %}</dt>
+                                <dd class="col-sm-8">
+                                    <a href="{% url 'local:party-detail' member.group.party.pk %}">
+                                        {{ member.group.party.name }}
+                                    </a>
+                                </dd>
+                                
+                                <dt class="col-sm-4">{% trans "Local District" %}</dt>
+                                <dd class="col-sm-8">
+                                    <a href="{% url 'local:local-detail' member.group.party.local.pk %}">
+                                        {{ member.group.party.local.name }}
+                                    </a>
+                                </dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">{% trans "Role" %}</dt>
+                                <dd class="col-sm-8">
+                                    <span class="badge bg-secondary">{{ member.get_role_display }}</span>
+                                </dd>
+                                
+                                <dt class="col-sm-4">{% trans "Status" %}</dt>
+                                <dd class="col-sm-8">
+                                    {% if member.is_active %}
+                                        <span class="badge bg-success">{% trans "Active" %}</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">{% trans "Inactive" %}</span>
+                                    {% endif %}
+                                </dd>
+                                
+                                <dt class="col-sm-4">{% trans "Joined" %}</dt>
+                                <dd class="col-sm-8">{{ member.joined_date|date:"M d, Y" }}</dd>
+                                
+                                <dt class="col-sm-4">{% trans "Created" %}</dt>
+                                <dd class="col-sm-8">{{ member.created_at|date:"M d, Y H:i" }}</dd>
+                            </dl>
+                        </div>
+                    </div>
+                    
+                    {% if member.notes %}
+                        <hr>
+                        <h6>{% trans "Notes" %}</h6>
+                        <p>{{ member.notes|linebreaks }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">{% trans "Actions" %}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'group:member-edit' member.pk %}" class="btn btn-primary">
+                            <i class="bi bi-pencil"></i> {% trans "Edit Membership" %}
+                        </a>
+                        <a href="{% url 'group:member-delete' member.pk %}" class="btn btn-danger"
+                           onclick="return confirm('{% trans 'Are you sure you want to remove this member?' %}')">
+                            <i class="bi bi-trash"></i> {% trans "Remove Member" %}
+                        </a>
+                        <a href="{% url 'group:member-list' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-list"></i> {% trans "View All Members" %}
+                        </a>
+                        <a href="{% url 'group:group-detail' member.group.pk %}" class="btn btn-outline-info">
+                            <i class="bi bi-people"></i> {% trans "View Group" %}
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="mb-0">{% trans "Quick Info" %}</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li><strong>{% trans "Status" %}:</strong> 
+                            {% if member.is_active %}
+                                <span class="text-success">{% trans "Active" %}</span>
+                            {% else %}
+                                <span class="text-danger">{% trans "Inactive" %}</span>
+                            {% endif %}
+                        </li>
+                        <li><strong>{% trans "Role" %}:</strong> {{ member.get_role_display }}</li>
+                        <li><strong>{% trans "Group" %}:</strong> {{ member.group.name }}</li>
+                        <li><strong>{% trans "Party" %}:</strong> {{ member.group.party.name }}</li>
+                        <li><strong>{% trans "Joined" %}:</strong> {{ member.joined_date|naturaltime }}</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

@@ -1,0 +1,227 @@
+{% extends "_base.html" %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}
+    {% if object %}
+        {% trans "Edit Member" %}
+    {% else %}
+        {% trans "Add Member" %}
+    {% endif %}
+{% endblock title %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1>
+                    <i class="bi bi-person-plus"></i>
+                    {% if object %}
+                        {% trans "Edit Member" %}
+                    {% else %}
+                        {% trans "Add Member" %}
+                    {% endif %}
+                </h1>
+                <div>
+                    <a href="{% url 'group:member-list' %}" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left"></i> {% trans "Back to List" %}
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        {% if object %}
+                            {% trans "Edit Member" %}
+                        {% else %}
+                            {% trans "Add New Member" %}
+                        {% endif %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                {% for error in form.non_field_errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.user.id_for_label }}" class="form-label">
+                                        {{ form.user.label }}
+                                        {% if form.user.field.required %}
+                                            <span class="text-danger">*</span>
+                                        {% endif %}
+                                    </label>
+                                    {{ form.user }}
+                                    {% if form.user.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.user.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    {% if form.user.help_text %}
+                                        <div class="form-text">{{ form.user.help_text }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.group.id_for_label }}" class="form-label">
+                                        {{ form.group.label }}
+                                        {% if form.group.field.required %}
+                                            <span class="text-danger">*</span>
+                                        {% endif %}
+                                    </label>
+                                    {{ form.group }}
+                                    {% if form.group.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.group.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    {% if form.group.help_text %}
+                                        <div class="form-text">{{ form.group.help_text }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.role.id_for_label }}" class="form-label">
+                                        {{ form.role.label }}
+                                        {% if form.role.field.required %}
+                                            <span class="text-danger">*</span>
+                                        {% endif %}
+                                    </label>
+                                    {{ form.role }}
+                                    {% if form.role.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.role.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    {% if form.role.help_text %}
+                                        <div class="form-text">{{ form.role.help_text }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        {{ form.is_active }}
+                                        <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+                                            {{ form.is_active.label }}
+                                        </label>
+                                        {% if form.is_active.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {% for error in form.is_active.errors %}
+                                                    {{ error }}
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                        {% if form.is_active.help_text %}
+                                            <div class="form-text">{{ form.is_active.help_text }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.notes.id_for_label }}" class="form-label">
+                                {{ form.notes.label }}
+                                {% if form.notes.field.required %}
+                                    <span class="text-danger">*</span>
+                                {% endif %}
+                            </label>
+                            {{ form.notes }}
+                            {% if form.notes.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.notes.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            {% if form.notes.help_text %}
+                                <div class="form-text">{{ form.notes.help_text }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'group:member-list' %}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> {% trans "Cancel" %}
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i>
+                                {% if object %}
+                                    {% trans "Update Member" %}
+                                {% else %}
+                                    {% trans "Add Member" %}
+                                {% endif %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">{% trans "Help" %}</h5>
+                </div>
+                <div class="card-body">
+                    <h6>{% trans "Group Membership Information" %}</h6>
+                    <p class="text-muted">
+                        {% trans "Add users to political groups and assign them specific roles within the group." %}
+                    </p>
+                    
+                    <h6>{% trans "Required Fields" %}</h6>
+                    <ul class="text-muted">
+                        <li><strong>{% trans "User" %}:</strong> {% trans "The user to add to the group" %}</li>
+                        <li><strong>{% trans "Group" %}:</strong> {% trans "The political group to add the user to" %}</li>
+                        <li><strong>{% trans "Role" %}:</strong> {% trans "The role of the user within the group" %}</li>
+                    </ul>
+                    
+                    <h6>{% trans "Role Options" %}</h6>
+                    <ul class="text-muted">
+                        <li><strong>{% trans "Member" %}:</strong> {% trans "Regular group member" %}</li>
+                        <li><strong>{% trans "Leader" %}:</strong> {% trans "Group leader with decision-making authority" %}</li>
+                        <li><strong>{% trans "Deputy Leader" %}:</strong> {% trans "Assistant to the group leader" %}</li>
+                        <li><strong>{% trans "Secretary" %}:</strong> {% trans "Handles administrative tasks" %}</li>
+                        <li><strong>{% trans "Treasurer" %}:</strong> {% trans "Manages financial matters" %}</li>
+                        <li><strong>{% trans "Board Member" %}:</strong> {% trans "Member of the group's board" %}</li>
+                    </ul>
+                    
+                    <h6>{% trans "Validation" %}</h6>
+                    <ul class="text-muted">
+                        <li>{% trans "A user can only be a member of a group once" %}</li>
+                        <li>{% trans "Only active users and groups can be selected" %}</li>
+                        <li>{% trans "Role determines the user's responsibilities" %}</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
