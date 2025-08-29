@@ -1,0 +1,144 @@
+{% extends "_base.html" %}
+{% load i18n %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}{{ party.name }} - {% trans "Party Details" %}{% endblock title %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1><i class="bi bi-flag"></i> {{ party.name }}</h1>
+                <div>
+                    <a href="{% url 'local:party-edit' party.pk %}" class="btn btn-primary">
+                        <i class="bi bi-pencil"></i> {% trans "Edit" %}
+                    </a>
+                    <a href="{% url 'local:party-list' %}" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left"></i> {% trans "Back to List" %}
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">{% trans "Party Information" %}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">{% trans "Name" %}</dt>
+                                <dd class="col-sm-8">{{ party.name }}</dd>
+                                
+                                <dt class="col-sm-4">{% trans "Short Name" %}</dt>
+                                <dd class="col-sm-8">{{ party.short_name|default:"-" }}</dd>
+                                
+                                <dt class="col-sm-4">{% trans "Local District" %}</dt>
+                                <dd class="col-sm-8">
+                                    <a href="{% url 'local:local-detail' party.local.pk %}">
+                                        {{ party.local.name }}
+                                    </a>
+                                </dd>
+                                
+                                <dt class="col-sm-4">{% trans "Status" %}</dt>
+                                <dd class="col-sm-8">
+                                    {% if party.is_active %}
+                                        <span class="badge bg-success">{% trans "Active" %}</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">{% trans "Inactive" %}</span>
+                                    {% endif %}
+                                </dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">{% trans "Color" %}</dt>
+                                <dd class="col-sm-8">
+                                    {% if party.color %}
+                                        <span class="badge" style="background-color: {{ party.color }}; color: white;">
+                                            {{ party.color }}
+                                        </span>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </dd>
+                                
+                                <dt class="col-sm-4">{% trans "Created" %}</dt>
+                                <dd class="col-sm-8">{{ party.created_at|date:"M d, Y H:i" }}</dd>
+                                
+                                <dt class="col-sm-4">{% trans "Updated" %}</dt>
+                                <dd class="col-sm-8">{{ party.updated_at|date:"M d, Y H:i" }}</dd>
+                                
+                                <dt class="col-sm-4">{% trans "ID" %}</dt>
+                                <dd class="col-sm-8">{{ party.id }}</dd>
+                            </dl>
+                        </div>
+                    </div>
+                    
+                    {% if party.description %}
+                        <hr>
+                        <h6>{% trans "Description" %}</h6>
+                        <p>{{ party.description|linebreaks }}</p>
+                    {% endif %}
+                    
+                    {% if party.logo %}
+                        <hr>
+                        <h6>{% trans "Logo" %}</h6>
+                        <img src="{{ party.logo.url }}" alt="{{ party.name }} logo" class="img-fluid" style="max-width: 200px;">
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">{% trans "Actions" %}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'local:party-edit' party.pk %}" class="btn btn-primary">
+                            <i class="bi bi-pencil"></i> {% trans "Edit Party" %}
+                        </a>
+                        <a href="{% url 'local:party-delete' party.pk %}" class="btn btn-danger"
+                                                       onclick="return confirm('{% trans 'Are you sure you want to delete this Party?' %}')">
+                            <i class="bi bi-trash"></i> {% trans "Delete Party" %}
+                        </a>
+                        <a href="{% url 'local:party-list' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-list"></i> {% trans "View All Parties" %}
+                        </a>
+                        <a href="{% url 'local:local-detail' party.local.pk %}" class="btn btn-outline-info">
+                            <i class="bi bi-geo-alt"></i> {% trans "View Local District" %}
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="mb-0">{% trans "Quick Info" %}</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li><strong>{% trans "Status" %}:</strong> 
+                            {% if party.is_active %}
+                                <span class="text-success">{% trans "Active" %}</span>
+                            {% else %}
+                                <span class="text-danger">{% trans "Inactive" %}</span>
+                            {% endif %}
+                        </li>
+                        <li><strong>{% trans "Local District" %}:</strong> {{ party.local.name }}</li>
+                        <li><strong>{% trans "Created" %}:</strong> {{ party.created_at|naturaltime }}</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
