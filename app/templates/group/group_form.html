@@ -1,0 +1,243 @@
+{% extends "_base.html" %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}
+    {% if object %}
+        {% trans "Edit Group" %}
+    {% else %}
+        {% trans "Create Group" %}
+    {% endif %}
+{% endblock title %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1>
+                    <i class="bi bi-people"></i>
+                    {% if object %}
+                        {% trans "Edit Group" %}
+                    {% else %}
+                        {% trans "Create Group" %}
+                    {% endif %}
+                </h1>
+                <div>
+                    <a href="{% url 'group:group-list' %}" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left"></i> {% trans "Back to List" %}
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        {% if object %}
+                            {% trans "Edit Group" %}
+                        {% else %}
+                            {% trans "Create New Group" %}
+                        {% endif %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                {% for error in form.non_field_errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.name.id_for_label }}" class="form-label">
+                                        {{ form.name.label }}
+                                        {% if form.name.field.required %}
+                                            <span class="text-danger">*</span>
+                                        {% endif %}
+                                    </label>
+                                    {{ form.name }}
+                                    {% if form.name.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.name.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    {% if form.name.help_text %}
+                                        <div class="form-text">{{ form.name.help_text }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.short_name.id_for_label }}" class="form-label">
+                                        {{ form.short_name.label }}
+                                        {% if form.short_name.field.required %}
+                                            <span class="text-danger">*</span>
+                                        {% endif %}
+                                    </label>
+                                    {{ form.short_name }}
+                                    {% if form.short_name.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.short_name.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    {% if form.short_name.help_text %}
+                                        <div class="form-text">{{ form.short_name.help_text }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.party.id_for_label }}" class="form-label">
+                                        {{ form.party.label }}
+                                        {% if form.party.field.required %}
+                                            <span class="text-danger">*</span>
+                                        {% endif %}
+                                    </label>
+                                    {{ form.party }}
+                                    {% if form.party.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.party.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    {% if form.party.help_text %}
+                                        <div class="form-text">{{ form.party.help_text }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.founded_date.id_for_label }}" class="form-label">
+                                        {{ form.founded_date.label }}
+                                        {% if form.founded_date.field.required %}
+                                            <span class="text-danger">*</span>
+                                        {% endif %}
+                                    </label>
+                                    {{ form.founded_date }}
+                                    {% if form.founded_date.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.founded_date.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    {% if form.founded_date.help_text %}
+                                        <div class="form-text">{{ form.founded_date.help_text }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.description.id_for_label }}" class="form-label">
+                                {{ form.description.label }}
+                                {% if form.description.field.required %}
+                                    <span class="text-danger">*</span>
+                                {% endif %}
+                            </label>
+                            {{ form.description }}
+                            {% if form.description.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.description.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            {% if form.description.help_text %}
+                                <div class="form-text">{{ form.description.help_text }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check">
+                                {{ form.is_active }}
+                                <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+                                    {{ form.is_active.label }}
+                                </label>
+                                {% if form.is_active.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.is_active.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                {% if form.is_active.help_text %}
+                                    <div class="form-text">{{ form.is_active.help_text }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'group:group-list' %}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> {% trans "Cancel" %}
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i>
+                                {% if object %}
+                                    {% trans "Update Group" %}
+                                {% else %}
+                                    {% trans "Create Group" %}
+                                {% endif %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">{% trans "Help" %}</h5>
+                </div>
+                <div class="card-body">
+                    <h6>{% trans "Political Group Information" %}</h6>
+                    <p class="text-muted">
+                        {% trans "A political group represents a faction or subgroup within a political party." %}
+                    </p>
+                    
+                    <h6>{% trans "Required Fields" %}</h6>
+                    <ul class="text-muted">
+                        <li><strong>{% trans "Name" %}:</strong> {% trans "Full name of the political group" %}</li>
+                        <li><strong>{% trans "Party" %}:</strong> {% trans "The party this group belongs to" %}</li>
+                    </ul>
+                    
+                    <h6>{% trans "Optional Fields" %}</h6>
+                    <ul class="text-muted">
+                        <li><strong>{% trans "Short Name" %}:</strong> {% trans "Abbreviated name for display" %}</li>
+                        <li><strong>{% trans "Description" %}:</strong> {% trans "Detailed description of the group's purpose" %}</li>
+                        <li><strong>{% trans "Founded Date" %}:</strong> {% trans "When the group was established" %}</li>
+                    </ul>
+                    
+                    <h6>{% trans "Validation" %}</h6>
+                    <ul class="text-muted">
+                        <li>{% trans "Group names must be unique within each party" %}</li>
+                        <li>{% trans "Only active parties can be selected" %}</li>
+                        <li>{% trans "Founded date should be in the past" %}</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

@@ -1,0 +1,202 @@
+from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.urls import reverse_lazy
+from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
+from django.db.models import Q
+from django.contrib.auth import get_user_model
+from .models import Group, GroupMember
+from .forms import GroupForm, GroupFilterForm, GroupMemberForm, GroupMemberFilterForm
+
+User = get_user_model()
+
+def is_superuser_or_has_permission(permission):
+    """Decorator to check if user is superuser or has specific permission"""
+    def decorator(view_func):
+        def wrapper(request, *args, **kwargs):
+            if request.user.is_superuser or request.user.has_role_permission(permission):
+                return view_func(request, *args, **kwargs)
+            messages.error(request, "You don't have permission to access this page.")
+            return redirect('home')
+        return wrapper
+    return decorator
+
+# Group Views
+class GroupListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
+    model = Group
+    template_name = 'group/group_list.html'
+    context_object_name = 'groups'
+    paginate_by = 20
+
+    def test_func(self):
+        return self.request.user.is_superuser or self.request.user.has_role_permission('group.view')
+
+    def get_queryset(self):
+        queryset = Group.objects.select_related('party', 'party__local').all()
+        
+        # Apply filters
+        form = GroupFilterForm(self.request.GET)
+        if form.is_valid():
+            if form.cleaned_data.get('name'):
+                queryset = queryset.filter(name__icontains=form.cleaned_data['name'])
+            if form.cleaned_data.get('party'):
+                queryset = queryset.filter(party=form.cleaned_data['party'])
+            if form.cleaned_data.get('is_active') in ['True', 'False']:
+                queryset = queryset.filter(is_active=form.cleaned_data['is_active'] == 'True')
+        
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['filter_form'] = GroupFilterForm(self.request.GET)
+        return context
+
+class GroupDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
+    model = Group
+    template_name = 'group/group_detail.html'
+    context_object_name = 'group'
+
+    def test_func(self):
+        return self.request.user.is_superuser or self.request.user.has_role_permission('group.view')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['members'] = self.object.members.select_related('user').filter(is_active=True)
+        context['active_members'] = context['members'].filter(is_active=True)
+        return context
+
+class GroupCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
+    model = Group
+    form_class = GroupForm
+    template_name = 'group/group_form.html'
+    success_url = reverse_lazy('group:group-list')
+
+    def test_func(self):
+        return self.request.user.is_superuser or self.request.user.has_role_permission('group.create')
+
+    def form_valid(self, form):
+        messages.success(self.request, f"Group '{form.instance.name}' created successfully.")
+        return super().form_valid(form)
+
+class GroupUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
+    model = Group
+    form_class = GroupForm
+    template_name = 'group/group_form.html'
+    success_url = reverse_lazy('group:group-list')
+
+    def test_func(self):
+        return self.request.user.is_superuser or self.request.user.has_role_permission('group.edit')
+
+    def form_valid(self, form):
+        messages.success(self.request, f"Group '{form.instance.name}' updated successfully.")
+        return super().form_valid(form)
+
+class GroupDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
+    model = Group
+    template_name = 'group/group_confirm_delete.html'
+    success_url = reverse_lazy('group:group-list')
+
+    def test_func(self):
+        return self.request.user.is_superuser or self.request.user.has_role_permission('group.delete')
+
+    def delete(self, request, *args, **kwargs):
+        group_name = self.get_object().name
+        messages.success(request, f"Group '{group_name}' deleted successfully.")
+        return super().delete(request, *args, **kwargs)
+
+# Group Member Views
+class GroupMemberListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
+    model = GroupMember
+    template_name = 'group/member_list.html'
+    context_object_name = 'members'
+    paginate_by = 20
+
+    def test_func(self):
+        return self.request.user.is_superuser or self.request.user.has_role_permission('group.view')
+
+    def get_queryset(self):
+        queryset = GroupMember.objects.select_related('user', 'group', 'group__party').all()
+        
+        # Apply filters
+        form = GroupMemberFilterForm(self.request.GET)
+        if form.is_valid():
+            if form.cleaned_data.get('user'):
+                queryset = queryset.filter(user=form.cleaned_data['user'])
+            if form.cleaned_data.get('group'):
+                queryset = queryset.filter(group=form.cleaned_data['group'])
+            if form.cleaned_data.get('role'):
+                queryset = queryset.filter(role=form.cleaned_data['role'])
+            if form.cleaned_data.get('is_active') in ['True', 'False']:
+                queryset = queryset.filter(is_active=form.cleaned_data['is_active'] == 'True')
+        
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['filter_form'] = GroupMemberFilterForm(self.request.GET)
+        return context
+
+class GroupMemberDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
+    model = GroupMember
+    template_name = 'group/member_detail.html'
+    context_object_name = 'member'
+
+    def test_func(self):
+        return self.request.user.is_superuser or self.request.user.has_role_permission('group.view')
+
+class GroupMemberCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
+    model = GroupMember
+    form_class = GroupMemberForm
+    template_name = 'group/member_form.html'
+    success_url = reverse_lazy('group:member-list')
+
+    def test_func(self):
+        return self.request.user.is_superuser or self.request.user.has_role_permission('group.create')
+
+    def form_valid(self, form):
+        messages.success(self.request, f"Member '{form.instance.user.username}' added to group '{form.instance.group.name}' successfully.")
+        return super().form_valid(form)
+
+class GroupMemberUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
+    model = GroupMember
+    form_class = GroupMemberForm
+    template_name = 'group/member_form.html'
+    success_url = reverse_lazy('group:member-list')
+
+    def test_func(self):
+        return self.request.user.is_superuser or self.request.user.has_role_permission('group.edit')
+
+    def form_valid(self, form):
+        messages.success(self.request, f"Membership updated successfully.")
+        return super().form_valid(form)
+
+class GroupMemberDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
+    model = GroupMember
+    template_name = 'group/member_confirm_delete.html'
+    success_url = reverse_lazy('group:member-list')
+
+    def test_func(self):
+        return self.request.user.is_superuser or self.request.user.has_role_permission('group.delete')
+
+    def delete(self, request, *args, **kwargs):
+        member = self.get_object()
+        messages.success(request, f"Member '{member.user.username}' removed from group '{member.group.name}' successfully.")
+        return super().delete(request, *args, **kwargs)
+
+# Additional Views
+@login_required
+@is_superuser_or_has_permission('group.view')
+def group_management_view(request):
+    """Comprehensive group management dashboard"""
+    context = {
+        'total_groups': Group.objects.count(),
+        'active_groups': Group.objects.filter(is_active=True).count(),
+        'inactive_groups': Group.objects.filter(is_active=False).count(),
+        'total_members': GroupMember.objects.count(),
+        'active_members': GroupMember.objects.filter(is_active=True).count(),
+        'inactive_members': GroupMember.objects.filter(is_active=False).count(),
+        'recent_groups': Group.objects.order_by('-created_at')[:5],
+        'recent_members': GroupMember.objects.order_by('-created_at')[:5],
+    }
+    return render(request, 'group/management.html', context)

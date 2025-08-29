@@ -42,10 +42,11 @@ INSTALLED_APPS = [
     'django.contrib.humanize',
     'allauth',
     'allauth.account',
-               'auditlog',
-           'pages',
-           'user',
-           'local',
+    'auditlog',
+    'pages',
+    'user',
+    'local',
+    'group',
 ]
 
 MIDDLEWARE = [

@@ -11,4 +11,4 @@
 [x] improve local detail template
 [x] add parties to local
 [ ] app motion
-[ ] app group
+[x] app group
