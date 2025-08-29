@@ -27,13 +27,13 @@ class CustomUserEditForm(UserChangeForm):
 
     class Meta:
         model = CustomUser
-        fields = ('username', 'email', 'first_name', 'last_name', 'role', 'is_active')
+        fields = ('username', 'email', 'first_name', 'last_name', 'role')
 
 
 class RoleForm(forms.ModelForm):
     class Meta:
         model = Role
-        fields = ['name', 'description', 'permissions', 'is_active']
+        fields = ['name', 'description', 'permissions']
         widgets = {
             'description': forms.Textarea(attrs={'rows': 3}),
             'permissions': forms.Textarea(attrs={'rows': 5, 'placeholder': 'Enter permissions as JSON array, e.g.: ["user.view", "user.edit", "user.delete"]'}),

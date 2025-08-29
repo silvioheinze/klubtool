@@ -192,24 +192,7 @@
                             </div>
                             
                             <div class="col-md-6">
-                                <div class="mb-3">
-                                    <div class="form-check">
-                                        {{ form.is_active }}
-                                        <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
-                                            {{ form.is_active.label }}
-                                        </label>
-                                        {% if form.is_active.errors %}
-                                            <div class="invalid-feedback d-block">
-                                                {% for error in form.is_active.errors %}
-                                                    {{ error }}
-                                                {% endfor %}
-                                            </div>
-                                        {% endif %}
-                                        {% if form.is_active.help_text %}
-                                            <div class="form-text">{{ form.is_active.help_text }}</div>
-                                        {% endif %}
-                                    </div>
-                                </div>
+
                             </div>
                         </div>
 

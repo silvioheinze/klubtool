@@ -7,7 +7,7 @@ class LocalForm(forms.ModelForm):
     
     class Meta:
         model = Local
-        fields = ['name', 'code', 'description', 'is_active']
+        fields = ['name', 'code', 'description']
         widgets = {
             'description': forms.Textarea(attrs={'rows': 3}),
         }
@@ -49,7 +49,7 @@ class CouncilForm(forms.ModelForm):
     
     class Meta:
         model = Council
-        fields = ['name', 'local', 'description', 'is_active']
+        fields = ['name', 'local', 'description']
         widgets = {
             'description': forms.Textarea(attrs={'rows': 3}),
             'local': forms.Select(attrs={'class': 'form-select'}),
@@ -77,7 +77,7 @@ class TermForm(forms.ModelForm):
     
     class Meta:
         model = Term
-        fields = ['name', 'start_date', 'end_date', 'total_seats', 'description', 'is_active']
+        fields = ['name', 'start_date', 'end_date', 'total_seats', 'description']
         widgets = {
             'description': forms.Textarea(attrs={'rows': 3}),
             'start_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
@@ -116,7 +116,7 @@ class PartyForm(forms.ModelForm):
     
     class Meta:
         model = Party
-        fields = ['name', 'short_name', 'local', 'description', 'color', 'logo', 'is_active']
+        fields = ['name', 'short_name', 'local', 'description', 'color', 'logo']
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control'}),
             'short_name': forms.TextInput(attrs={'class': 'form-control'}),
@@ -124,7 +124,6 @@ class PartyForm(forms.ModelForm):
             'description': forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
             'color': forms.TextInput(attrs={'class': 'form-control', 'type': 'color'}),
             'logo': forms.FileInput(attrs={'class': 'form-control'}),
-            'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -241,7 +240,7 @@ class SessionForm(forms.ModelForm):
         fields = [
             'title', 'council', 'term', 'session_type', 'status', 
             'start_time', 'end_time', 'location', 
-            'agenda', 'minutes', 'notes', 'is_active'
+            'agenda', 'minutes', 'notes'
         ]
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control'}),

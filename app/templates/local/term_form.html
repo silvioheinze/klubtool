@@ -130,21 +130,7 @@
                             {% endif %}
                         </div>
 
-                        <div class="mb-3">
-                            <div class="form-check">
-                                {{ form.is_active }}
-                                <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
-                                    {% trans "Active" %}
-                                </label>
-                            </div>
-                            {% if form.is_active.errors %}
-                                <div class="text-danger">
-                                    {% for error in form.is_active.errors %}
-                                        {{ error }}
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
-                        </div>
+
 
                         <div class="d-flex justify-content-between">
                             <a href="{% url 'local:term-list' %}" class="btn btn-secondary">
@@ -176,7 +162,7 @@
                         <li><strong>{% trans "Start Date" %}:</strong> {% trans "When this term begins." %}</li>
                         <li><strong>{% trans "End Date" %}:</strong> {% trans "When this term ends (must be after start date)." %}</li>
                         <li><strong>{% trans "Description" %}:</strong> {% trans "Optional description of the term." %}</li>
-                        <li><strong>{% trans "Active" %}:</strong> {% trans "Check this to make the term available for use." %}</li>
+
                     </ul>
                 </div>
             </div>
