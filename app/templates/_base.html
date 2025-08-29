@@ -44,12 +44,12 @@
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end">
                                 <li>
-                                    <a class="dropdown-item" href="{% url 'dashboard' %}">
+                                    <a class="dropdown-item" href="{% url 'user-dashboard' %}">
                                         {% trans "Dashboard" %}
                                     </a>
                                 </li>
                                 <li>
-                                    <a class="dropdown-item" href="{% url 'settings' %}">
+                                    <a class="dropdown-item" href="{% url 'user-settings' %}">
                                         {% trans "Settings" %}
                                     </a>
                                 </li>
@@ -57,9 +57,6 @@
                                 <li><hr class="dropdown-divider"></li>
                                 <li>
                                     <a class="dropdown-item" href="{% url 'user-list' %}">{% trans "Users" %}</a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item" href="/logs">{% trans "Logs" %}</a>
                                 </li>
                                 {% endif %}
                                 <li><hr class="dropdown-divider"></li>
@@ -101,27 +98,12 @@
                     <div class="col-12 col-md-6">
                         <ul class="list-unstyled list-inline mb-0">
                             <li class="list-inline-item">
-                                <a href="https://luftdaten.at/datenschutz/" class="text-white">{% trans "Privacy" %}</a>
+                                <a href="" class="text-white">{% trans "Privacy" %}</a>
                             </li>
                             <li class="list-inline-item">
-                                <a href="https://luftdaten.at/impressum/" class="text-white">{% trans "About Us" %}</a>
+                                <a href="" class="text-white">{% trans "About Us" %}</a>
                             </li>
                         </ul>
-                    </div>
-                    <div class="col-12 col-md-6 text-md-end mt-2 mt-md-0">
-                        <form action="{% url 'set_language' %}" method="post" class="d-flex justify-content-md-end">
-                            {% csrf_token %}
-                            <input name="next" type="hidden" value="{{ request.path }}">
-                            <select name="language" onchange="this.form.submit()" class="form-select w-auto">
-                                {% get_current_language as LANGUAGE_CODE %}
-                                {% get_available_languages as LANGUAGES %}
-                                {% for code, name in LANGUAGES %}
-                                    <option value="{{ code }}" {% if code == LANGUAGE_CODE %}selected{% endif %}>
-                                        {{ name }}
-                                    </option>
-                                {% endfor %}
-                            </select>
-                        </form>
                     </div>
                 </div>
             </nav>
