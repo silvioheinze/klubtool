@@ -27,7 +27,7 @@
         <div class="col-md-8">
             <div class="card">
                 <div class="card-header">
-                    <h5 class="mb-0">{% trans "Bezirk Information" %}</h5>
+                    <h5 class="mb-0">{% trans "Local Information" %}</h5>
                 </div>
                 <div class="card-body">
                     <div class="row">
@@ -100,7 +100,7 @@
                 <div class="card-body">
                     <ul class="list-unstyled">
                         <li><strong>{% trans "Status" %}:</strong> 
-                            {% if bezirk.is_active %}
+                            {% if local.is_active %}
                                 <span class="text-success">{% trans "Active" %}</span>
                             {% else %}
                                 <span class="text-danger">{% trans "Inactive" %}</span>
