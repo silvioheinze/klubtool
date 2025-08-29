@@ -33,6 +33,17 @@ class LocalFilterForm(forms.Form):
     )
 
 
+class CouncilNameForm(forms.ModelForm):
+    """Form for editing only the council name"""
+    
+    class Meta:
+        model = Council
+        fields = ['name']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control'}),
+        }
+
+
 class CouncilForm(forms.ModelForm):
     """Form for creating and editing Council objects"""
     

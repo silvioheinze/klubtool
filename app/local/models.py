@@ -25,11 +25,27 @@ class Local(models.Model):
         from django.urls import reverse
         return reverse('local:local-detail', kwargs={'pk': self.pk})
 
+    def save(self, *args, **kwargs):
+        """Override save to automatically create a council if one doesn't exist"""
+        is_new = self.pk is None
+        super().save(*args, **kwargs)
+        
+        # Create a default council if this is a new local and no council exists
+        if is_new:
+            Council.objects.get_or_create(
+                local=self,
+                defaults={
+                    'name': f"Council of {self.name}",
+                    'description': f"Default council for {self.name}",
+                    'is_active': True
+                }
+            )
+
 
 class Council(models.Model):
     """Model representing a council within a local district"""
     name = models.CharField(max_length=200)
-    local = models.ForeignKey(Local, on_delete=models.CASCADE, related_name='councils')
+    local = models.OneToOneField(Local, on_delete=models.CASCADE, related_name='council')
     description = models.TextField(blank=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -40,7 +56,6 @@ class Council(models.Model):
         ordering = ['name']
         verbose_name = "Council"
         verbose_name_plural = "Councils"
-        unique_together = ['name', 'local']
 
     def __str__(self):
         return f"{self.name} - {self.local.name}"

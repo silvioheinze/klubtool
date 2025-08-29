@@ -8,5 +8,7 @@
 [x] app pages with static home
 [x] import static files
 [x] fix local template bug
+[x] improve local detail template
+[ ] add parties to local
 [ ] app motion
 [ ] app group

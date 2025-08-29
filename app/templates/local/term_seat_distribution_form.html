@@ -1,0 +1,189 @@
+{% extends "_base.html" %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}
+    {% if object %}
+        {% trans "Edit Seat Distribution" %}
+    {% else %}
+        {% trans "Create Seat Distribution" %}
+    {% endif %}
+{% endblock title %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1>
+                    <i class="bi bi-bar-chart"></i>
+                    {% if object %}
+                        {% trans "Edit Seat Distribution" %}
+                    {% else %}
+                        {% trans "Create Seat Distribution" %}
+                    {% endif %}
+                </h1>
+                <div>
+                    <a href="{% url 'local:term-seat-distribution-list' %}" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left"></i> {% trans "Back to List" %}
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        {% if object %}
+                            {% trans "Edit Seat Distribution" %}
+                        {% else %}
+                            {% trans "Create New Seat Distribution" %}
+                        {% endif %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                {% for error in form.non_field_errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.term.id_for_label }}" class="form-label">
+                                        {{ form.term.label }}
+                                        {% if form.term.field.required %}
+                                            <span class="text-danger">*</span>
+                                        {% endif %}
+                                    </label>
+                                    {{ form.term }}
+                                    {% if form.term.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.term.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    {% if form.term.help_text %}
+                                        <div class="form-text">{{ form.term.help_text }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.party.id_for_label }}" class="form-label">
+                                        {{ form.party.label }}
+                                        {% if form.party.field.required %}
+                                            <span class="text-danger">*</span>
+                                        {% endif %}
+                                    </label>
+                                    {{ form.party }}
+                                    {% if form.party.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.party.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    {% if form.party.help_text %}
+                                        <div class="form-text">{{ form.party.help_text }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.seats.id_for_label }}" class="form-label">
+                                        {{ form.seats.label }}
+                                        {% if form.seats.field.required %}
+                                            <span class="text-danger">*</span>
+                                        {% endif %}
+                                    </label>
+                                    {{ form.seats }}
+                                    {% if form.seats.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.seats.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    {% if form.seats.help_text %}
+                                        <div class="form-text">{{ form.seats.help_text }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.notes.id_for_label }}" class="form-label">
+                                {{ form.notes.label }}
+                                {% if form.notes.field.required %}
+                                    <span class="text-danger">*</span>
+                                {% endif %}
+                            </label>
+                            {{ form.notes }}
+                            {% if form.notes.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.notes.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            {% if form.notes.help_text %}
+                                <div class="form-text">{{ form.notes.help_text }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'local:term-seat-distribution-list' %}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> {% trans "Cancel" %}
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i>
+                                {% if object %}
+                                    {% trans "Update Distribution" %}
+                                {% else %}
+                                    {% trans "Create Distribution" %}
+                                {% endif %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">{% trans "Help" %}</h5>
+                </div>
+                <div class="card-body">
+                    <h6>{% trans "Seat Distribution" %}</h6>
+                    <p class="text-muted">
+                        {% trans "A seat distribution defines how many seats a political party has in a specific term." %}
+                    </p>
+                    
+                    <h6>{% trans "Validation" %}</h6>
+                    <ul class="text-muted">
+                        <li>{% trans "Total allocated seats cannot exceed the term's total seats" %}</li>
+                        <li>{% trans "Each party can only have one distribution per term" %}</li>
+                        <li>{% trans "Percentage is automatically calculated" %}</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

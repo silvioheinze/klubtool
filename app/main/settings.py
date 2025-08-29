@@ -116,11 +116,20 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+from django.utils.translation import gettext_lazy as _
+
+LANGUAGE_CODE = 'en'  # Default language
+
+LANGUAGES = [
+    ('en', _('English')),
+    ('de', _('German')),
+    # Add more languages here
+]
 
 TIME_ZONE = os.environ.get('TIME_ZONE', 'Europe/Vienna')
 
 USE_I18N = True
+USE_L10N = False
 
 USE_TZ = True
 
@@ -167,6 +176,3 @@ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'  # For developm
 # Login/Logout URLs
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
-
-# API Configuration
-API_URL = os.environ.get('API_URL', 'http://localhost:8000/api/')
