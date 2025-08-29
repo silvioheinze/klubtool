@@ -1,0 +1,35 @@
+{% extends "_base.html" %}
+
+{% block title %}Help - Antragstool{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-12">
+            <h1>Help & Support</h1>
+            <p class="lead">Get help with using the Antragstool system</p>
+            
+            <div class="mt-4">
+                <h2>Contact Support</h2>
+                <p>If you need help with the system, please contact the system administrator.</p>
+                
+                <h3>Common Issues</h3>
+                <div class="accordion" id="helpAccordion">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="headingOne">
+                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne">
+                                How do I reset my password?
+                            </button>
+                        </h2>
+                        <div id="collapseOne" class="accordion-collapse collapse show" data-bs-parent="#helpAccordion">
+                            <div class="accordion-body">
+                                Use the "Forgot Password" link on the login page to reset your password.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

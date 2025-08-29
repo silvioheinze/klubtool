@@ -1,0 +1,50 @@
+services:
+  app:
+    build: .
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - ./app:/usr/src/app
+      - ./app/media:/usr/src/app/media
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy  
+  db:
+    image: postgres:15
+    volumes:
+#      - ./db_backup/read:/docker-entrypoint-initdb.d/:ro
+      - postgres_data:/var/lib/postgresql/data/
+    env_file:
+      - .env
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U antragstooluser -d antragstool"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  nginx:
+    build: ./nginx
+    volumes:
+      - ./app/staticfiles:/home/app/web/staticfiles
+      - ./app/media:/home/app/web/media
+#      - static_volume:/home/app/web/staticfiles
+    ports:
+      - "80:80"
+    depends_on:
+      - app      
+  # admin:
+  #   image: dpage/pgadmin4:latest
+  #   environment:
+  #     - PGADMIN_DEFAULT_EMAIL=admin@example.com
+  #     - PGADMIN_DEFAULT_PASSWORD=admin
+  #   env_file:
+  #     - .env
+  #   depends_on:
+  #     - db
+  #   volumes:
+  #     - pgadmin-data:/var/lib/pgadmin/
+  #   ports:
+  #     - "8080:80"
+volumes:
+  postgres_data:
+  pgadmin-data:

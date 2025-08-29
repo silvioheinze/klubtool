@@ -1,0 +1,46 @@
+{% extends "_base.html" %}
+
+{% block title %}Home - Antragstool{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-12">
+            <h1>Welcome to Antragstool</h1>
+            <p class="lead">Your application management system</p>
+            
+            <div class="row mt-4">
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">User Management</h5>
+                            <p class="card-text">Manage users and their permissions.</p>
+                            <a href="{% url 'user-list' %}" class="btn btn-primary">View Users</a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Documentation</h5>
+                            <p class="card-text">Read the system documentation.</p>
+                            <a href="{% url 'documentation' %}" class="btn btn-primary">View Docs</a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Help</h5>
+                            <p class="card-text">Get help and support.</p>
+                            <a href="{% url 'help' %}" class="btn btn-primary">Get Help</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

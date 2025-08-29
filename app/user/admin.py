@@ -1,0 +1,1 @@
+# Admin registration is now handled in apps.py ready() method
