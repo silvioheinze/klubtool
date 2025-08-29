@@ -9,6 +9,6 @@
 [x] import static files
 [x] fix local template bug
 [x] improve local detail template
-[ ] add parties to local
+[x] add parties to local
 [ ] app motion
 [ ] app group

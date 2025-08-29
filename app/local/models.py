@@ -117,8 +117,9 @@ class Term(models.Model):
 
 class Party(models.Model):
     """Model representing a political party"""
-    name = models.CharField(max_length=200, unique=True)
+    name = models.CharField(max_length=200)
     short_name = models.CharField(max_length=50, blank=True)
+    local = models.ForeignKey(Local, on_delete=models.CASCADE, related_name='parties', null=True, blank=True, help_text="Local district this party belongs to")
     description = models.TextField(blank=True)
     color = models.CharField(max_length=7, blank=True, help_text="Hex color code (e.g., #FF0000)")
     logo = models.ImageField(upload_to='party_logos/', blank=True, null=True)
@@ -131,9 +132,10 @@ class Party(models.Model):
         ordering = ['name']
         verbose_name = "Party"
         verbose_name_plural = "Parties"
+        unique_together = ['name', 'local']  # Party names must be unique within a local (when local is not null)
 
     def __str__(self):
-        return self.name
+        return f"{self.name} ({self.local.name})"
 
     def get_absolute_url(self):
         from django.urls import reverse

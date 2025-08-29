@@ -7,7 +7,7 @@ from django.shortcuts import render, redirect
 from django.utils import timezone
 
 from .models import Local, Term, Council, TermSeatDistribution, Party
-from .forms import LocalForm, LocalFilterForm, CouncilForm, CouncilFilterForm, TermForm, TermFilterForm, CouncilNameForm, TermSeatDistributionForm, TermSeatDistributionFilterForm
+from .forms import LocalForm, LocalFilterForm, CouncilForm, CouncilFilterForm, TermForm, TermFilterForm, CouncilNameForm, TermSeatDistributionForm, TermSeatDistributionFilterForm, PartyForm, PartyFilterForm
 
 
 class LocalListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
@@ -62,9 +62,10 @@ class LocalDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         return self.request.user.is_superuser or self.request.user.has_role_permission('local.view')
 
     def get_context_data(self, **kwargs):
-        """Add terms data to context"""
+        """Add terms and parties data to context"""
         context = super().get_context_data(**kwargs)
         context['terms'] = Term.objects.filter(is_active=True).order_by('-start_date')
+        context['parties'] = self.object.parties.filter(is_active=True).order_by('name')
         return context
 
 
@@ -512,3 +513,127 @@ class TermSeatDistributionView(LoginRequiredMixin, UserPassesTestMixin, DetailVi
         context['seat_distributions'] = self.object.seat_distributions.select_related('party').all().order_by('-seats')
         context['parties'] = Party.objects.filter(is_active=True)
         return context
+
+
+# Party Views
+class PartyListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
+    """View for listing all Party objects"""
+    model = Party
+    context_object_name = 'parties'
+    template_name = 'local/party_list.html'
+    paginate_by = 20
+
+    def test_func(self):
+        """Check if user has permission to view Party objects"""
+        return self.request.user.is_superuser or self.request.user.has_role_permission('party.view')
+
+    def get_queryset(self):
+        """Filter queryset based on search parameters"""
+        queryset = Party.objects.select_related('local').all().order_by('name')
+        
+        # Filter by search query
+        search_query = self.request.GET.get('search', '')
+        if search_query:
+            queryset = queryset.filter(
+                Q(name__icontains=search_query) |
+                Q(short_name__icontains=search_query) |
+                Q(description__icontains=search_query) |
+                Q(local__name__icontains=search_query)
+            )
+        
+        # Filter by local
+        local_filter = self.request.GET.get('local', '')
+        if local_filter:
+            queryset = queryset.filter(local_id=local_filter)
+        
+        # Filter by status
+        status_filter = self.request.GET.get('status', '')
+        if status_filter == 'active':
+            queryset = queryset.filter(is_active=True)
+        elif status_filter == 'inactive':
+            queryset = queryset.filter(is_active=False)
+        
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        """Add filter form to context"""
+        context = super().get_context_data(**kwargs)
+        context['search_query'] = self.request.GET.get('search', '')
+        context['local_filter'] = self.request.GET.get('local', '')
+        context['status_filter'] = self.request.GET.get('status', '')
+        context['locals'] = Local.objects.filter(is_active=True)
+        return context
+
+
+class PartyDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
+    """View for displaying a single Party object"""
+    model = Party
+    context_object_name = 'party'
+    template_name = 'local/party_detail.html'
+
+    def test_func(self):
+        """Check if user has permission to view Party objects"""
+        return self.request.user.is_superuser or self.request.user.has_role_permission('party.view')
+
+
+class PartyCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
+    """View for creating a new Party object"""
+    model = Party
+    form_class = PartyForm
+    template_name = 'local/party_form.html'
+    success_url = reverse_lazy('local:party-list')
+
+    def test_func(self):
+        """Check if user has permission to create Party objects"""
+        return self.request.user.is_superuser or self.request.user.has_role_permission('party.create')
+
+    def get_initial(self):
+        """Set initial local if provided in URL"""
+        initial = super().get_initial()
+        local_id = self.request.GET.get('local')
+        if local_id:
+            try:
+                local = Local.objects.get(pk=local_id)
+                initial['local'] = local
+            except Local.DoesNotExist:
+                pass
+        return initial
+
+    def form_valid(self, form):
+        """Display success message on form validation"""
+        messages.success(self.request, f"Party '{form.instance.name}' created successfully.")
+        return super().form_valid(form)
+
+
+class PartyUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
+    """View for updating an existing Party object"""
+    model = Party
+    form_class = PartyForm
+    template_name = 'local/party_form.html'
+    success_url = reverse_lazy('local:party-list')
+
+    def test_func(self):
+        """Check if user has permission to edit Party objects"""
+        return self.request.user.is_superuser or self.request.user.has_role_permission('party.edit')
+
+    def form_valid(self, form):
+        """Display success message on form validation"""
+        messages.success(self.request, f"Party '{form.instance.name}' updated successfully.")
+        return super().form_valid(form)
+
+
+class PartyDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
+    """View for deleting a Party object"""
+    model = Party
+    template_name = 'local/party_confirm_delete.html'
+    success_url = reverse_lazy('local:party-list')
+
+    def test_func(self):
+        """Check if user has permission to delete Party objects"""
+        return self.request.user.is_superuser or self.request.user.has_role_permission('party.delete')
+
+    def delete(self, request, *args, **kwargs):
+        """Display success message on deletion"""
+        party_obj = self.get_object()
+        messages.success(request, f"Party '{party_obj.name}' deleted successfully.")
+        return super().delete(request, *args, **kwargs)

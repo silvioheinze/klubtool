@@ -116,28 +116,43 @@ class PartyForm(forms.ModelForm):
     
     class Meta:
         model = Party
-        fields = ['name', 'short_name', 'description', 'color', 'logo', 'is_active']
+        fields = ['name', 'short_name', 'local', 'description', 'color', 'logo', 'is_active']
         widgets = {
-            'description': forms.Textarea(attrs={'rows': 3}),
-            'color': forms.TextInput(attrs={'type': 'color', 'class': 'form-control form-control-color'}),
+            'name': forms.TextInput(attrs={'class': 'form-control'}),
+            'short_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'local': forms.Select(attrs={'class': 'form-select'}),
+            'description': forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
+            'color': forms.TextInput(attrs={'class': 'form-control', 'type': 'color'}),
+            'logo': forms.FileInput(attrs={'class': 'form-control'}),
+            'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 
-    def clean_color(self):
-        """Validate color format"""
-        color = self.cleaned_data.get('color')
-        if color and not color.startswith('#'):
-            color = f"#{color}"
-        return color
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Filter to only show active locals
+        self.fields['local'].queryset = Local.objects.filter(is_active=True)
 
 
 class PartyFilterForm(forms.Form):
     """Form for filtering Party objects"""
-    name = forms.CharField(required=False, widget=forms.TextInput(attrs={'placeholder': 'Search by name'}))
-    short_name = forms.CharField(required=False, widget=forms.TextInput(attrs={'placeholder': 'Search by short name'}))
-    is_active = forms.ChoiceField(
-        choices=[('', 'All'), ('True', 'Active'), ('False', 'Inactive')],
+    search = forms.CharField(
         required=False,
-        initial=''
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Search parties...'})
+    )
+    local = forms.ModelChoiceField(
+        queryset=Local.objects.filter(is_active=True),
+        required=False,
+        empty_label="All Locals",
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    status = forms.ChoiceField(
+        choices=[
+            ('', 'All'),
+            ('active', 'Active'),
+            ('inactive', 'Inactive'),
+        ],
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-select'})
     )
 
 
