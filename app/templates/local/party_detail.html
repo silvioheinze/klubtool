@@ -39,21 +39,7 @@
                                 <dt class="col-sm-4">{% trans "Short Name" %}</dt>
                                 <dd class="col-sm-8">{{ party.short_name|default:"-" }}</dd>
                                 
-                                <dt class="col-sm-4">{% trans "Local District" %}</dt>
-                                <dd class="col-sm-8">
-                                    <a href="{% url 'local:local-detail' party.local.pk %}">
-                                        {{ party.local.name }}
-                                    </a>
-                                </dd>
-                                
-                                <dt class="col-sm-4">{% trans "Status" %}</dt>
-                                <dd class="col-sm-8">
-                                    {% if party.is_active %}
-                                        <span class="badge bg-success">{% trans "Active" %}</span>
-                                    {% else %}
-                                        <span class="badge bg-danger">{% trans "Inactive" %}</span>
-                                    {% endif %}
-                                </dd>
+
                             </dl>
                         </div>
                         <div class="col-md-6">
@@ -68,15 +54,13 @@
                                         <span class="text-muted">-</span>
                                     {% endif %}
                                 </dd>
-                                
-                                <dt class="col-sm-4">{% trans "Created" %}</dt>
-                                <dd class="col-sm-8">{{ party.created_at|date:"M d, Y H:i" }}</dd>
-                                
-                                <dt class="col-sm-4">{% trans "Updated" %}</dt>
-                                <dd class="col-sm-8">{{ party.updated_at|date:"M d, Y H:i" }}</dd>
-                                
-                                <dt class="col-sm-4">{% trans "ID" %}</dt>
-                                <dd class="col-sm-8">{{ party.id }}</dd>
+
+                                <dt class="col-sm-4">{% trans "Local District" %}</dt>
+                                <dd class="col-sm-8">
+                                    <a href="{% url 'local:local-detail' party.local.pk %}">
+                                        {{ party.local.name }}
+                                    </a>
+                                </dd>
                             </dl>
                         </div>
                     </div>
@@ -126,15 +110,7 @@
                 </div>
                 <div class="card-body">
                     <ul class="list-unstyled">
-                        <li><strong>{% trans "Status" %}:</strong> 
-                            {% if party.is_active %}
-                                <span class="text-success">{% trans "Active" %}</span>
-                            {% else %}
-                                <span class="text-danger">{% trans "Inactive" %}</span>
-                            {% endif %}
-                        </li>
                         <li><strong>{% trans "Local District" %}:</strong> {{ party.local.name }}</li>
-                        <li><strong>{% trans "Created" %}:</strong> {{ party.created_at|naturaltime }}</li>
                     </ul>
                 </div>
             </div>
