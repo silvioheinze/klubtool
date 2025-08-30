@@ -1,0 +1,67 @@
+services:  
+  app:
+    image: ghcr.io/silvioheinze/antragstool
+    command: uvicorn main.asgi:application --host 0.0.0.0 --port 8000
+    env_file:
+      - .env
+    volumes:
+      - media_data:/usr/src/app/media
+      - static_data:/usr/src/app/staticfiles
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - internal
+  
+  db:
+    image: postgres:15
+    volumes:
+#      - ./db_backup/read:/docker-entrypoint-initdb.d/:ro
+      - postgres_data:/var/lib/postgresql/data/
+    env_file:
+      - .env
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U antragstooluser -d antragstool"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - internal
+  
+  nginx:
+    build: ./nginx
+    restart: unless-stopped
+    volumes:
+      - static_data:/home/app/web/staticfiles
+      - media_data:/home/app/web/media
+    depends_on:
+      - app
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.neubauergruene-antragstool.entrypoints=https"
+      - "traefik.http.routers.neubauergruene-antragstool.rule=Host(`antragstool.neubauergruene.at`)"
+      - "traefik.http.routers.neubauergruene-antragstool.tls=true"
+      - "traefik.http.routers.neubauergruene-antragstool.tls.certresolver=http"
+      - "traefik.http.routers.neubauergruene-antragstool.service=neubauergruene-antragstool"
+      - "traefik.http.services.neubauergruene-antragstool.loadbalancer.server.port=8000"
+      - "traefik.docker.network=proxy"
+      - "traefik.http.routers.neubauergruene-antragstool.middlewares=default@file"
+    networks:
+      - proxy
+      - internal
+
+networks:
+  internal:
+  proxy:
+    external: true
+
+volumes:
+  postgres_data:
+  media_data:
+  static_data:
