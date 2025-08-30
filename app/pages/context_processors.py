@@ -3,7 +3,8 @@ def group_memberships(request):
     context = {
         'user_group_memberships': [],
         'user_locals': [],
-        'user_councils': []
+        'user_councils': [],
+        'user_group_admin_groups': []
     }
     
     if request.user.is_authenticated:
@@ -22,6 +23,19 @@ def group_memberships(request):
             ).order_by('group__name')
             
             context['user_group_memberships'] = group_memberships
+            
+            # Get user's group admin groups
+            group_admin_groups = GroupMember.objects.filter(
+                user=request.user,
+                roles__name='Group Admin',
+                is_active=True
+            ).select_related(
+                'group',
+                'group__party',
+                'group__party__local'
+            ).order_by('group__name')
+            
+            context['user_group_admin_groups'] = group_admin_groups
             
             # Get unique locals and councils from memberships
             locals_from_memberships = set()
