@@ -79,27 +79,7 @@
                                 </div>
                             </div>
                             
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="{{ form.short_name.id_for_label }}" class="form-label">
-                                        {{ form.short_name.label }}
-                                        {% if form.short_name.field.required %}
-                                            <span class="text-danger">*</span>
-                                        {% endif %}
-                                    </label>
-                                    {{ form.short_name }}
-                                    {% if form.short_name.errors %}
-                                        <div class="invalid-feedback d-block">
-                                            {% for error in form.short_name.errors %}
-                                                {{ error }}
-                                            {% endfor %}
-                                        </div>
-                                    {% endif %}
-                                    {% if form.short_name.help_text %}
-                                        <div class="form-text">{{ form.short_name.help_text }}</div>
-                                    {% endif %}
-                                </div>
-                            </div>
+
                         </div>
 
                         <div class="row">
@@ -125,48 +105,10 @@
                                 </div>
                             </div>
                             
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="{{ form.founded_date.id_for_label }}" class="form-label">
-                                        {{ form.founded_date.label }}
-                                        {% if form.founded_date.field.required %}
-                                            <span class="text-danger">*</span>
-                                        {% endif %}
-                                    </label>
-                                    {{ form.founded_date }}
-                                    {% if form.founded_date.errors %}
-                                        <div class="invalid-feedback d-block">
-                                            {% for error in form.founded_date.errors %}
-                                                {{ error }}
-                                            {% endfor %}
-                                        </div>
-                                    {% endif %}
-                                    {% if form.founded_date.help_text %}
-                                        <div class="form-text">{{ form.founded_date.help_text }}</div>
-                                    {% endif %}
-                                </div>
-                            </div>
+
                         </div>
 
-                        <div class="mb-3">
-                            <label for="{{ form.description.id_for_label }}" class="form-label">
-                                {{ form.description.label }}
-                                {% if form.description.field.required %}
-                                    <span class="text-danger">*</span>
-                                {% endif %}
-                            </label>
-                            {{ form.description }}
-                            {% if form.description.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {% for error in form.description.errors %}
-                                        {{ error }}
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
-                            {% if form.description.help_text %}
-                                <div class="form-text">{{ form.description.help_text }}</div>
-                            {% endif %}
-                        </div>
+
 
 
 
@@ -205,18 +147,10 @@
                         <li><strong>{% trans "Party" %}:</strong> {% trans "The party this group belongs to" %}</li>
                     </ul>
                     
-                    <h6>{% trans "Optional Fields" %}</h6>
-                    <ul class="text-muted">
-                        <li><strong>{% trans "Short Name" %}:</strong> {% trans "Abbreviated name for display" %}</li>
-                        <li><strong>{% trans "Description" %}:</strong> {% trans "Detailed description of the group's purpose" %}</li>
-                        <li><strong>{% trans "Founded Date" %}:</strong> {% trans "When the group was established" %}</li>
-                    </ul>
-                    
                     <h6>{% trans "Validation" %}</h6>
                     <ul class="text-muted">
                         <li>{% trans "Group names must be unique within each party" %}</li>
                         <li>{% trans "Only active parties can be selected" %}</li>
-                        <li>{% trans "Founded date should be in the past" %}</li>
                     </ul>
                 </div>
             </div>

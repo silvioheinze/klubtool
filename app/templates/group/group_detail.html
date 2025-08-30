@@ -36,9 +36,6 @@
                                 <dt class="col-sm-4">{% trans "Name" %}</dt>
                                 <dd class="col-sm-8">{{ group.name }}</dd>
                                 
-                                <dt class="col-sm-4">{% trans "Short Name" %}</dt>
-                                <dd class="col-sm-8">{{ group.short_name|default:"-" }}</dd>
-                                
                                 <dt class="col-sm-4">{% trans "Party" %}</dt>
                                 <dd class="col-sm-8">
                                     <a href="{% url 'local:party-detail' group.party.pk %}">
@@ -46,6 +43,15 @@
                                     </a>
                                 </dd>
                                 
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">{% trans "Members" %}</dt>
+                                <dd class="col-sm-8">
+                                    <span class="badge bg-info">{{ group.member_count }}</span>
+                                </dd>
+
                                 <dt class="col-sm-4">{% trans "Local District" %}</dt>
                                 <dd class="col-sm-8">
                                     <a href="{% url 'local:local-detail' group.party.local.pk %}">
@@ -54,36 +60,9 @@
                                 </dd>
                             </dl>
                         </div>
-                        <div class="col-md-6">
-                            <dl class="row">
-                                <dt class="col-sm-4">{% trans "Status" %}</dt>
-                                <dd class="col-sm-8">
-                                    {% if group.is_active %}
-                                        <span class="badge bg-success">{% trans "Active" %}</span>
-                                    {% else %}
-                                        <span class="badge bg-danger">{% trans "Inactive" %}</span>
-                                    {% endif %}
-                                </dd>
-                                
-                                <dt class="col-sm-4">{% trans "Members" %}</dt>
-                                <dd class="col-sm-8">
-                                    <span class="badge bg-info">{{ group.member_count }}</span>
-                                </dd>
-                                
-                                <dt class="col-sm-4">{% trans "Founded" %}</dt>
-                                <dd class="col-sm-8">{{ group.founded_date|date:"M d, Y"|default:"-" }}</dd>
-                                
-                                <dt class="col-sm-4">{% trans "Created" %}</dt>
-                                <dd class="col-sm-8">{{ group.created_at|date:"M d, Y H:i" }}</dd>
-                            </dl>
-                        </div>
                     </div>
                     
-                    {% if group.description %}
-                        <hr>
-                        <h6>{% trans "Description" %}</h6>
-                        <p>{{ group.description|linebreaks }}</p>
-                    {% endif %}
+
                     
                     <!-- Group Admins Section -->
                     {% with group_admins=group.get_group_admins %}
@@ -125,7 +104,6 @@
                                         <th>{% trans "User" %}</th>
                                         <th>{% trans "Role" %}</th>
                                         <th>{% trans "Joined" %}</th>
-                                        <th>{% trans "Status" %}</th>
                                         <th>{% trans "Actions" %}</th>
                                     </tr>
                                 </thead>
@@ -163,13 +141,6 @@
                                                 {% endfor %}
                                             </td>
                                             <td>{{ member.joined_date|date:"M d, Y" }}</td>
-                                            <td>
-                                                {% if member.is_active %}
-                                                    <span class="badge bg-success">{% trans "Active" %}</span>
-                                                {% else %}
-                                                    <span class="badge bg-danger">{% trans "Inactive" %}</span>
-                                                {% endif %}
-                                            </td>
                                             <td>
                                                 <div class="btn-group" role="group">
                                                     <a href="{% url 'group:member-detail' member.pk %}" class="btn btn-sm btn-outline-info">
@@ -243,17 +214,9 @@
                 </div>
                 <div class="card-body">
                     <ul class="list-unstyled">
-                        <li><strong>{% trans "Status" %}:</strong> 
-                            {% if group.is_active %}
-                                <span class="text-success">{% trans "Active" %}</span>
-                            {% else %}
-                                <span class="text-danger">{% trans "Inactive" %}</span>
-                            {% endif %}
-                        </li>
                         <li><strong>{% trans "Party" %}:</strong> {{ group.party.name }}</li>
                         <li><strong>{% trans "Local District" %}:</strong> {{ group.party.local.name }}</li>
                         <li><strong>{% trans "Members" %}:</strong> {{ group.member_count }}</li>
-                        <li><strong>{% trans "Created" %}:</strong> {{ group.created_at|naturaltime }}</li>
                     </ul>
                 </div>
             </div>

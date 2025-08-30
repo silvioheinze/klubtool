@@ -10,13 +10,10 @@ class GroupForm(forms.ModelForm):
     """Form for creating and editing groups"""
     class Meta:
         model = Group
-        fields = ['name', 'short_name', 'party', 'description', 'founded_date']
+        fields = ['name', 'party']
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control'}),
-            'short_name': forms.TextInput(attrs={'class': 'form-control'}),
             'party': forms.Select(attrs={'class': 'form-select'}),
-            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
-            'founded_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
         }
 
     def __init__(self, *args, **kwargs):

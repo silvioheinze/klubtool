@@ -55,7 +55,6 @@
                 <thead class="table-light">
                     <tr>
                         <th data-sortable="true">{% trans "Name" %}</th>
-                        <th data-sortable="true">{% trans "Short Name" %}</th>
                         <th data-sortable="true">{% trans "Party" %}</th>
                         <th data-sortable="true">{% trans "Local District" %}</th>
                         <th data-sortable="true">{% trans "Members" %}</th>
@@ -69,11 +68,7 @@
                         <tr>
                             <td>
                                 <strong>{{ group.name }}</strong>
-                                {% if group.description %}
-                                    <br><small class="text-muted">{{ group.description|truncatewords:10 }}</small>
-                                {% endif %}
                             </td>
-                            <td>{{ group.short_name|default:"-" }}</td>
                             <td>
                                 <a href="{% url 'local:party-detail' group.party.pk %}">
                                     {{ group.party.name }}

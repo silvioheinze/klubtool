@@ -3,14 +3,14 @@ from .models import Group, GroupMember
 
 @admin.register(Group)
 class GroupAdmin(admin.ModelAdmin):
-    list_display = ['name', 'short_name', 'party', 'local', 'member_count', 'is_active', 'created_at']
-    list_filter = ['is_active', 'party', 'party__local', 'created_at', 'founded_date']
-    search_fields = ['name', 'short_name', 'description', 'party__name']
+    list_display = ['name', 'party', 'local', 'member_count', 'is_active', 'created_at']
+    list_filter = ['is_active', 'party', 'party__local', 'created_at']
+    search_fields = ['name', 'party__name']
     readonly_fields = ['created_at', 'updated_at', 'member_count']
     ordering = ['name']
     fieldsets = (
-        ('Basic Information', {'fields': ('name', 'short_name', 'party', 'description', 'is_active')}),
-        ('Dates', {'fields': ('founded_date', 'created_at', 'updated_at'), 'classes': ('collapse',)}),
+        ('Basic Information', {'fields': ('name', 'party', 'is_active')}),
+        ('Dates', {'fields': ('created_at', 'updated_at'), 'classes': ('collapse',)}),
     )
 
     def local(self, obj):

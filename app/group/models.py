@@ -10,10 +10,7 @@ User = get_user_model()
 class Group(models.Model):
     """Political group within a party"""
     name = models.CharField(max_length=200, help_text="Name of the political group")
-    short_name = models.CharField(max_length=50, blank=True, help_text="Short name or abbreviation")
     party = models.ForeignKey(Party, on_delete=models.CASCADE, related_name='groups', help_text="Party this group belongs to")
-    description = models.TextField(blank=True, help_text="Description of the group's purpose and goals")
-    founded_date = models.DateField(null=True, blank=True, help_text="Date when the group was founded")
     is_active = models.BooleanField(default=True, help_text="Whether the group is currently active")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

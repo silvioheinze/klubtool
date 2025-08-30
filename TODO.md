@@ -29,3 +29,5 @@
 [ ] admin role for locals
 [x] topbar: add link to next session
 [ ] implement ci colors
+[ ] motion export as pdf
+[x] optimize group model and detail
