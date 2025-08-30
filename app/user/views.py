@@ -13,7 +13,9 @@ from django.core.paginator import Paginator
 from django.core.exceptions import PermissionDenied
 
 from .forms import CustomUserCreationForm, CustomUserEditForm, RoleForm, RoleFilterForm
-from .models import CustomUser, Role
+from .models import Role
+
+CustomUser = get_user_model()
 
 
 def is_superuser_or_has_permission(permission):
@@ -24,7 +26,7 @@ def is_superuser_or_has_permission(permission):
 
 
 class AccountDeleteView(LoginRequiredMixin, DeleteView):
-    model = CustomUser
+    model = get_user_model()
     template_name = 'user/confirm_delete.html'
     success_url = reverse_lazy('home')
 
@@ -89,7 +91,7 @@ class UsersUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
 
 
 class UsersListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
-    model = CustomUser
+    model = get_user_model()
     context_object_name = 'users'
     template_name = 'user/list.html'
     paginate_by = 20
@@ -99,7 +101,9 @@ class UsersListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
         return self.request.user.is_superuser
 
     def get_queryset(self):
-        queryset = CustomUser.objects.select_related('role').all().order_by('username')
+        queryset = CustomUser.objects.select_related('role').prefetch_related(
+            'group_memberships__roles'
+        ).all().order_by('username')
         
         # Filter by search query
         search_query = self.request.GET.get('search', '')
@@ -223,15 +227,16 @@ def user_management_view(request):
     if not request.user.is_superuser:
         raise PermissionDenied
     """Comprehensive user management dashboard"""
+    User = get_user_model()
     context = {
-        'total_users': CustomUser.objects.count(),
-        'active_users': CustomUser.objects.filter(is_active=True).count(),
-        'inactive_users': CustomUser.objects.filter(is_active=False).count(),
-        'users_with_roles': CustomUser.objects.filter(role__isnull=False).count(),
-        'users_without_roles': CustomUser.objects.filter(role__isnull=True).count(),
+        'total_users': User.objects.count(),
+        'active_users': User.objects.filter(is_active=True).count(),
+        'inactive_users': User.objects.filter(is_active=False).count(),
+        'users_with_roles': User.objects.filter(role__isnull=False).count(),
+        'users_without_roles': User.objects.filter(role__isnull=True).count(),
         'total_roles': Role.objects.count(),
         'active_roles': Role.objects.filter(is_active=True).count(),
-        'recent_users': CustomUser.objects.order_by('-date_joined')[:5],
+        'recent_users': User.objects.prefetch_related('group_memberships__roles').order_by('-date_joined')[:5],
         'recent_roles': Role.objects.order_by('-created_at')[:5],
     }
     return render(request, 'user/management.html', context)

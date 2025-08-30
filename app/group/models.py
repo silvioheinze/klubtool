@@ -78,7 +78,7 @@ class GroupMember(models.Model):
         verbose_name_plural = "Group Members"
 
     def __str__(self):
-        roles_display = ', '.join([role.get_name_display() for role in self.roles.all()])
+        roles_display = ', '.join([role.name for role in self.roles.all()])
         return f"{self.user.username} - {self.group.name} ({roles_display})"
 
     def get_absolute_url(self):

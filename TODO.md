@@ -25,3 +25,4 @@
 [ ] in local detail show seat distribution from current term in council section
 [ ] local management superuser only
 [x] adapt topbar
+[x] fix user list and management
