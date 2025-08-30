@@ -66,6 +66,23 @@ class LocalDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context = super().get_context_data(**kwargs)
         context['terms'] = Term.objects.filter(is_active=True).order_by('-start_date')
         context['parties'] = self.object.parties.filter(is_active=True).order_by('name')
+        
+        # Get the current term and its seat distribution
+        from django.utils import timezone
+        today = timezone.now().date()
+        current_term = Term.objects.filter(
+            start_date__lte=today,
+            end_date__gte=today,
+            is_active=True
+        ).first()
+        
+        if current_term:
+            context['current_term'] = current_term
+            # Get seat distributions for parties in this local
+            context['current_term_seat_distributions'] = current_term.seat_distributions.filter(
+                party__local=self.object
+            ).select_related('party').order_by('-seats')
+        
         # Get the last 3 sessions for the council
         if self.object.council:
             context['recent_sessions'] = self.object.council.sessions.filter(is_active=True).order_by('-scheduled_date')[:3]
@@ -214,6 +231,29 @@ class CouncilDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         # Get committees for this council
         context['committees'] = self.object.committees.filter(is_active=True).order_by('name')
         context['total_committees'] = self.object.committees.count()
+        
+        # Get the current term and its seat distribution
+        from django.utils import timezone
+        today = timezone.now().date()
+        current_term = Term.objects.filter(
+            start_date__lte=today,
+            end_date__gte=today,
+            is_active=True
+        ).first()
+        
+        if current_term:
+            context['current_term'] = current_term
+            # Get seat distributions for parties in this council's local
+            if self.object.local:
+                context['current_term_seat_distributions'] = current_term.seat_distributions.filter(
+                    party__local=self.object.local
+                ).select_related('party').order_by('-seats')
+            else:
+                context['current_term_seat_distributions'] = []
+        else:
+            context['current_term'] = None
+            context['current_term_seat_distributions'] = []
+        
         return context
 
 

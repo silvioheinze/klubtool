@@ -25,13 +25,13 @@ class LocalAdmin(admin.ModelAdmin):
 class CouncilAdmin(admin.ModelAdmin):
     list_display = ['name', 'local', 'is_active', 'created_at']
     list_filter = ['is_active', 'local', 'created_at']
-    search_fields = ['name', 'description', 'local__name']
+    search_fields = ['name', 'local__name']
     readonly_fields = ['created_at', 'updated_at']
     ordering = ['name']
     
     fieldsets = (
         ('Basic Information', {
-            'fields': ('name', 'local', 'description', 'is_active')
+            'fields': ('name', 'local', 'is_active')
         }),
         ('Timestamps', {
             'fields': ('created_at', 'updated_at'),

@@ -83,19 +83,7 @@
                             </div>
                         </div>
 
-                        <div class="mb-3">
-                            <label for="{{ form.description.id_for_label }}" class="form-label">
-                                {% trans "Description" %}
-                            </label>
-                            {{ form.description }}
-                            {% if form.description.errors %}
-                                <div class="text-danger">
-                                    {% for error in form.description.errors %}
-                                        {{ error }}
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
-                        </div>
+
 
 
 
@@ -126,8 +114,6 @@
                     <ul class="list-unstyled">
                         <li><strong>{% trans "Council Name" %}:</strong> {% trans "Enter a descriptive name for the council." %}</li>
                         <li><strong>{% trans "Local District" %}:</strong> {% trans "Select the local district this council belongs to." %}</li>
-                        <li><strong>{% trans "Description" %}:</strong> {% trans "Optional description of the council's purpose or responsibilities." %}</li>
-
                     </ul>
                 </div>
             </div>

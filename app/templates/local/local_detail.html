@@ -15,9 +15,6 @@
                     <a href="{% url 'local:local-edit' local.pk %}" class="btn btn-primary">
                         <i class="bi bi-pencil"></i> {% trans "Edit" %}
                     </a>
-                    <a href="{% url 'local:local-list' %}" class="btn btn-secondary">
-                        <i class="bi bi-arrow-left"></i> {% trans "Back to List" %}
-                    </a>
                 </div>
             </div>
         </div>
@@ -32,12 +29,103 @@
                 </div>
                 <div class="card-body">
                     {% if local.council %}
-                        <div class="d-flex justify-content-between align-items-center">
-                            <h6 class="mb-0">{{ local.council.name }}</h6>
-                            <a href="{% url 'local:council-edit-name' local.council.pk %}" class="btn btn-sm btn-outline-primary">
-                                <i class="bi bi-pencil"></i> {% trans "Edit" %}
-                            </a>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="mb-0"><a href="{% url 'local:council-detail' local.council.pk %}">{{ local.council.name }}</a></h6>
                         </div>
+                        
+                        <!-- Current Term Seat Distribution -->
+                        {% if current_term %}
+                            <div class="mt-4">
+                                <h6 class="mb-3">
+                                    <i class="bi bi-bar-chart"></i> 
+                                    {% trans "Current Term Seat Distribution" %} 
+                                    <span class="badge bg-primary">{{ current_term.name }}</span>
+                                </h6>
+                                
+                                {% if current_term_seat_distributions %}
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="table-responsive">
+                                                <table class="table table-sm">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>{% trans "Party" %}</th>
+                                                            <th>{% trans "Seats" %}</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {% for distribution in current_term_seat_distributions %}
+                                                            <tr>
+                                                                <td>
+                                                                    <div class="d-flex align-items-center">
+                                                                        {% if distribution.party.color %}
+                                                                            <div class="me-2" style="width: 12px; height: 12px; background-color: {{ distribution.party.color }}; border-radius: 2px;"></div>
+                                                                        {% endif %}
+                                                                        <strong>{{ distribution.party.name }}</strong>
+                                                                        {% if distribution.party.short_name %}
+                                                                            <small class="text-muted ms-1">({{ distribution.party.short_name }})</small>
+                                                                        {% endif %}
+                                                                    </div>
+                                                                </td>
+                                                                <td>
+                                                                    <span class="badge bg-primary">{{ distribution.seats }}</span>
+                                                                </td>
+                                                            </tr>
+                                                        {% endfor %}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6 d-flex justify-content-center align-items-center">
+                                            <div class="seat-distribution-chart" 
+                                                    data-total-seats="{{ current_term.total_seats }}"
+                                                    data-allocated-seats="{{ current_term.allocated_seats }}">
+                                                <svg width="300" height="200" viewBox="0 0 300 200">
+                                                    <!-- Hemicycle background arcs -->
+                                                    <path d="M 50 150 A 100 100 0 0 1 250 150" 
+                                                            fill="none" 
+                                                            stroke="#e9ecef" 
+                                                            stroke-width="1"/>
+                                                    <path d="M 60 150 A 90 90 0 0 1 240 150" 
+                                                            fill="none" 
+                                                            stroke="#e9ecef" 
+                                                            stroke-width="1"/>
+                                                    <path d="M 70 150 A 80 80 0 0 1 230 150" 
+                                                            fill="none" 
+                                                            stroke="#e9ecef" 
+                                                            stroke-width="1"/>
+                                                    <path d="M 80 150 A 70 70 0 0 1 220 150" 
+                                                            fill="none" 
+                                                            stroke="#e9ecef" 
+                                                            stroke-width="1"/>
+                                                    <path d="M 90 150 A 60 60 0 0 1 210 150" 
+                                                            fill="none" 
+                                                            stroke="#e9ecef" 
+                                                            stroke-width="1"/>
+                                                </svg>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% else %}
+                                    <div class="text-center py-3">
+                                        <i class="bi bi-bar-chart fs-1 text-muted"></i>
+                                        <p class="text-muted mt-2">{% trans "No seat distribution configured for the current term." %}</p>
+                                        <a href="{% url 'local:term-seat-distribution' current_term.pk %}" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-plus-circle"></i> {% trans "Configure Seats" %}
+                                        </a>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% else %}
+                            <div class="mt-3">
+                                <div class="alert alert-info">
+                                    <i class="bi bi-info-circle"></i>
+                                    <strong>{% trans "No Current Term" %}</strong>
+                                    <br>
+                                    <small class="text-muted">{% trans "There is no active term for the current date range." %}</small>
+                                </div>
+                            </div>
+                        {% endif %}
                     {% else %}
                         <div class="text-center py-4">
                             <i class="bi bi-building fs-1 text-muted"></i>
@@ -195,7 +283,6 @@
                                         <th>{% trans "Name" %}</th>
                                         <th>{% trans "Period" %}</th>
                                         <th>{% trans "Total Seats" %}</th>
-                                        <th>{% trans "Allocated Seats" %}</th>
                                         <th>{% trans "Status" %}</th>
                                         <th>{% trans "Actions" %}</th>
                                     </tr>
@@ -207,17 +294,7 @@
                                             <td>{{ term.start_date|date:"M Y" }} - {{ term.end_date|date:"M Y" }}</td>
                                             <td>{{ term.total_seats }}</td>
                                             <td>
-                                                {{ term.allocated_seats }} / {{ term.total_seats }}
-                                                {% if term.unallocated_seats > 0 %}
-                                                    <small class="text-muted">({{ term.unallocated_seats }} unallocated)</small>
-                                                {% endif %}
-                                            </td>
-                                            <td>
-                                                {% if term.is_active %}
-                                                    <span class="badge bg-success">{% trans "Active" %}</span>
-                                                {% else %}
-                                                    <span class="badge bg-danger">{% trans "Inactive" %}</span>
-                                                {% endif %}
+                                                
                                                 {% if term.is_current %}
                                                     <span class="badge bg-primary">{% trans "Current" %}</span>
                                                 {% endif %}
@@ -255,4 +332,135 @@
         </div>
     </div>
 </div>
+
+<script src="https://d3js.org/d3.v3.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Get seat distribution data
+    const seatDistributions = [
+        {% for distribution in current_term_seat_distributions %}
+            {
+                partyName: '{{ distribution.party.name }}',
+                seats: {{ distribution.seats }},
+                color: '{{ distribution.party.color|default:"#6c757d" }}'
+            }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ];
+    
+    const totalSeats = {{ current_term.total_seats|default:0 }};
+    const allocatedSeats = {{ current_term.allocated_seats|default:0 }};
+    
+    if (totalSeats > 0 && seatDistributions.length > 0) {
+        // D3.js Hemicycle Layout
+        const margin = {top: 0, right: 0, bottom: 0, left: 0};
+        const width = 300 - margin.left - margin.right;
+        const height = 200 - margin.top - margin.bottom;
+        
+        // Clear existing content
+        const chartContainer = document.querySelector('.seat-distribution-chart svg');
+        chartContainer.innerHTML = '';
+        
+        // Create D3 SVG
+        const svg = d3.select(chartContainer)
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+        
+        // Optimal hemicycle parameters based on total seats
+        let h;
+        if (totalSeats <= 10) {
+            h = { 'n': [totalSeats], 'g': 1.40, 'w': 0.25 };
+        } else if (totalSeats <= 20) {
+            h = { 'n': [Math.ceil(totalSeats/2), totalSeats], 'g': 1.40, 'w': 0.25 };
+        } else if (totalSeats <= 40) {
+            h = { 'n': [8, 11, 15, 19, 22, 26, 29, 33, 37].slice(0, Math.ceil(totalSeats/5)), 'g': 1.40, 'w': 0.25 };
+        } else {
+            h = { 'n': [8, 11, 15, 19, 22, 26, 29, 33, 37], 'g': 1.40, 'w': 0.25 };
+        }
+        
+        // Adjust h.n to match total seats
+        let currentTotal = 0;
+        const adjustedN = [];
+        for (let i = 0; i < h.n.length && currentTotal < totalSeats; i++) {
+            const seatsInRow = Math.min(h.n[i], totalSeats - currentTotal);
+            if (seatsInRow > 0) {
+                adjustedN.push(seatsInRow);
+                currentTotal += seatsInRow;
+            }
+        }
+        h.n = adjustedN;
+        
+        // D3 scales
+        const rmax = 1 + h.n.length * h.g * h.w;
+        const xScale = d3.scale.linear()
+            .domain([-1 * rmax, rmax])
+            .range([0, width]);
+        const yScale = d3.scale.linear()
+            .domain([0, rmax])
+            .range([height, 0]);
+        const x0Scale = d3.scale.linear()
+            .domain([0, 2 * rmax])
+            .range([0, width]);
+        
+        // Generate seat positions using D3 algorithm
+        const data = [];
+        const s = [];
+        
+        for (let i = 0; i < h.n.length; i++) {
+            s.push((Math.PI / h.w + Math.PI * i * h.g - h.n[i]) / (h.n[i] - 1));
+            const ninrow = h.n[i];
+            const radwidth = Math.PI / (h.n[i] + (h.n[i] - 1) * s[i]);
+            const radspace = radwidth * s[i];
+            const r = 1 + i * h.g * h.w;
+            
+            for (let j = 0; j < ninrow; j++) {
+                const x = Math.cos(radwidth * (0.5 + j) + j * radspace) * r;
+                const y = Math.sin(radwidth * (0.5 + j) + j * radspace) * r;
+                const rot = -1 * (radwidth * (0.5 + j) + j * radspace) / Math.PI * 180 + 90;
+                data.push({'x': x, 'y': y, 'rot': rot});
+            }
+        }
+        
+        // Sort data by rotation (representatives from same party together)
+        data.sort(function(x, y) {
+            if (x.rot < y.rot) return -1;
+            if (x.rot > y.rot) return 1;
+            return 0;
+        });
+        
+        // Add colors and names to data
+        let dataIndex = 0;
+        seatDistributions.forEach(function(group) {
+            for (let j = 0; j < group.seats; j++) {
+                if (data[dataIndex]) {
+                    data[dataIndex].color = group.color;
+                    data[dataIndex].name = group.partyName;
+                    dataIndex++;
+                }
+            }
+        });
+        
+        // Create hemicycle seats
+        const icons = svg.selectAll(".icon")
+            .data(data)
+            .enter().append("circle")
+            .attr("r", x0Scale(h.w * 0.4))
+            .attr("fill", function(d) { return d.color; })
+            .attr("stroke", "white")
+            .attr("stroke-width", 1)
+            .attr("cx", function(d) { return xScale(d.x); })
+            .attr("cy", function(d) { return yScale(d.y); })
+            .attr("title", function(d) { return d.name; })
+            .style("cursor", "pointer");
+        
+        // Add hover effects
+        icons.on("mouseover", function(d) {
+            d3.select(this).attr("r", x0Scale(h.w * 0.6));
+        }).on("mouseout", function(d) {
+            d3.select(this).attr("r", x0Scale(h.w * 0.4));
+        });
+    }
+});
+</script>
 {% endblock content %}

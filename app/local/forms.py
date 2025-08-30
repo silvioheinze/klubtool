@@ -49,9 +49,8 @@ class CouncilForm(forms.ModelForm):
     
     class Meta:
         model = Council
-        fields = ['name', 'local', 'description']
+        fields = ['name', 'local']
         widgets = {
-            'description': forms.Textarea(attrs={'rows': 3}),
             'local': forms.Select(attrs={'class': 'form-select'}),
         }
 

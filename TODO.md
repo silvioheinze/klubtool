@@ -22,7 +22,8 @@
 [x] create group admin role
 [ ] motion detail
 [ ] motion management delete only own motions and as group admin
-[ ] in local detail show seat distribution from current term in council section
+[x] in local detail show seat distribution from current term in council section
 [ ] local management superuser only
 [x] adapt topbar
 [x] fix user list and management
+[ ] admin role for locals

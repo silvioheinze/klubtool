@@ -79,7 +79,6 @@
                                     <tr>
                                         <th>{% trans "Name" %}</th>
                                         <th>{% trans "Local District" %}</th>
-                                        <th>{% trans "Description" %}</th>
                                         <th>{% trans "Status" %}</th>
                                         <th>{% trans "Created" %}</th>
                                         <th>{% trans "Actions" %}</th>
@@ -95,9 +94,6 @@
                                                 <a href="{% url 'local:local-detail' council.local.pk %}">
                                                     {{ council.local.name }}
                                                 </a>
-                                            </td>
-                                            <td>
-                                                {{ council.description|truncatewords:10|default:"-" }}
                                             </td>
                                             <td>
                                                 {% if council.is_active %}

@@ -36,7 +36,6 @@ class Local(models.Model):
                 local=self,
                 defaults={
                     'name': f"Council of {self.name}",
-                    'description': f"Default council for {self.name}",
                     'is_active': True
                 }
             )
@@ -46,7 +45,6 @@ class Council(models.Model):
     """Model representing a council within a local district"""
     name = models.CharField(max_length=200)
     local = models.OneToOneField(Local, on_delete=models.CASCADE, related_name='council')
-    description = models.TextField(blank=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
