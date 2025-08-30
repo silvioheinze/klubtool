@@ -12,27 +12,10 @@
             <h1 class="h3 mb-0">
                 <i class="bi bi-calendar-event"></i> {{ session.title }}
             </h1>
-            <p class="text-muted">
-                {% trans "Session details and information" %}
-                {% if session.council %}
-                    • <a href="{% url 'local:council-detail' session.council.pk %}">{{ session.council.name }}</a>
-                    {% if session.council.local %}
-                        • <a href="{% url 'local:local-detail' session.council.local.pk %}">{{ session.council.local.name }}</a>
-                    {% endif %}
-                {% endif %}
-            </p>
         </div>
         <div>
             <div class="btn-group" role="group">
-                <a href="{% url 'local:session-edit' session.pk %}" class="btn btn-primary">
-                    <i class="bi bi-pencil"></i> {% trans "Edit" %}
-                </a>
-                <a href="{% url 'local:session-delete' session.pk %}" class="btn btn-danger">
-                    <i class="bi bi-trash"></i> {% trans "Delete" %}
-                </a>
-                <a href="{% url 'local:session-list' %}" class="btn btn-outline-secondary">
-                    <i class="bi bi-arrow-left"></i> {% trans "Back to Sessions" %}
-                </a>
+                
             </div>
         </div>
     </div>
@@ -71,23 +54,15 @@
                                     {% endif %}
                                 </dd>
                                 
-                                <dt class="col-sm-4">{% trans "Date" %}</dt>
-                                <dd class="col-sm-8">{{ session.scheduled_date|date:"l, F d, Y" }}</dd>
                             </dl>
                         </div>
                         <div class="col-md-6">
                             <dl class="row">
+                                <dt class="col-sm-4">{% trans "Date" %}</dt>
+                                <dd class="col-sm-8">{{ session.scheduled_date|date:"l, F d, Y" }}</dd>
+
                                 <dt class="col-sm-4">{% trans "Time" %}</dt>
-                                <dd class="col-sm-8">
-                                    {% if session.start_time %}
-                                        {{ session.start_time|time:"H:i" }}
-                                        {% if session.end_time %}
-                                            - {{ session.end_time|time:"H:i" }}
-                                        {% endif %}
-                                    {% else %}
-                                        <span class="text-muted">{% trans "Not specified" %}</span>
-                                    {% endif %}
-                                </dd>
+                                <dd class="col-sm-8">{{ session.scheduled_date|time:"H:i" }}</dd>
                                 
                                 <dt class="col-sm-4">{% trans "Location" %}</dt>
                                 <dd class="col-sm-8">
@@ -97,18 +72,6 @@
                                         <span class="text-muted">{% trans "Not specified" %}</span>
                                     {% endif %}
                                 </dd>
-                                
-                                <dt class="col-sm-4">{% trans "Active" %}</dt>
-                                <dd class="col-sm-8">
-                                    {% if session.is_active %}
-                                        <span class="text-success">{% trans "Yes" %}</span>
-                                    {% else %}
-                                        <span class="text-danger">{% trans "No" %}</span>
-                                    {% endif %}
-                                </dd>
-                                
-                                <dt class="col-sm-4">{% trans "ID" %}</dt>
-                                <dd class="col-sm-8">{{ session.id }}</dd>
                             </dl>
                         </div>
                     </div>
@@ -120,55 +83,6 @@
                     {% endif %}
                 </div>
             </div>
-
-            <!-- Council Information -->
-            {% if session.council %}
-                <div class="card mt-3">
-                    <div class="card-header">
-                        <h5 class="mb-0"><i class="bi bi-building"></i> {% trans "Council Information" %}</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <dl class="row">
-                                    <dt class="col-sm-4">{% trans "Council" %}</dt>
-                                    <dd class="col-sm-8">
-                                        <a href="{% url 'local:council-detail' session.council.pk %}">
-                                            {{ session.council.name }}
-                                        </a>
-                                    </dd>
-                                    
-                                    <dt class="col-sm-4">{% trans "Local" %}</dt>
-                                    <dd class="col-sm-8">
-                                        {% if session.council.local %}
-                                            <a href="{% url 'local:local-detail' session.council.local.pk %}">
-                                                {{ session.council.local.name }}
-                                            </a>
-                                        {% else %}
-                                            <span class="text-muted">{% trans "Not assigned" %}</span>
-                                        {% endif %}
-                                    </dd>
-                                </dl>
-                            </div>
-                            <div class="col-md-6">
-                                <dl class="row">
-                                    <dt class="col-sm-4">{% trans "Status" %}</dt>
-                                    <dd class="col-sm-8">
-                                        {% if session.council.is_active %}
-                                            <span class="text-success">{% trans "Active" %}</span>
-                                        {% else %}
-                                            <span class="text-danger">{% trans "Inactive" %}</span>
-                                        {% endif %}
-                                    </dd>
-                                    
-                                    <dt class="col-sm-4">{% trans "Created" %}</dt>
-                                    <dd class="col-sm-8">{{ session.council.created_at|date:"M d, Y" }}</dd>
-                                </dl>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            {% endif %}
 
             <!-- Session Motions -->
             <div class="card mt-3">
@@ -187,7 +101,6 @@
                                 <thead>
                                     <tr>
                                         <th>{% trans "Title" %}</th>
-                                        <th>{% trans "Group" %}</th>
                                         <th>{% trans "Status" %}</th>
                                         <th>{% trans "Actions" %}</th>
                                     </tr>
@@ -201,15 +114,6 @@
                                                 </a>
                                                 {% if not motion.is_active %}
                                                     <span class="badge bg-danger ms-1">{% trans "Inactive" %}</span>
-                                                {% endif %}
-                                            </td>
-                                            <td>
-                                                {% if motion.group %}
-                                                    <a href="{% url 'group:group-detail' motion.group.pk %}">
-                                                        {{ motion.group.name }}
-                                                    </a>
-                                                {% else %}
-                                                    <span class="text-muted">{% trans "No group" %}</span>
                                                 {% endif %}
                                             </td>
                                             <td>
@@ -263,25 +167,7 @@
             </div>
         </div>
 
-        <!-- Quick Info Sidebar -->
         <div class="col-lg-4">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">{% trans "Quick Info" %}</h5>
-                </div>
-                <div class="card-body">
-                    <ul class="list-unstyled">
-                        <li><strong>{% trans "Created" %}:</strong> {{ session.created_at|date:"M d, Y H:i" }}</li>
-                        <li><strong>{% trans "Updated" %}:</strong> {{ session.updated_at|date:"M d, Y H:i" }}</li>
-                        <li><strong>{% trans "Session Type" %}:</strong> {{ session.get_session_type_display }}</li>
-                        <li><strong>{% trans "Status" %}:</strong> {{ session.get_status_display }}</li>
-                        {% if session.location %}
-                            <li><strong>{% trans "Location" %}:</strong> {{ session.location }}</li>
-                        {% endif %}
-                    </ul>
-                </div>
-            </div>
-
             <!-- Actions -->
             <div class="card mt-3">
                 <div class="card-header">

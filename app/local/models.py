@@ -229,10 +229,6 @@ class Session(models.Model):
     SESSION_TYPE_CHOICES = [
         ('regular', 'Regular Session'),
         ('special', 'Special Session'),
-        ('emergency', 'Emergency Session'),
-        ('committee', 'Committee Meeting'),
-        ('public_hearing', 'Public Hearing'),
-        ('workshop', 'Workshop'),
     ]
     
     STATUS_CHOICES = [
@@ -249,8 +245,6 @@ class Session(models.Model):
     session_type = models.CharField(max_length=20, choices=SESSION_TYPE_CHOICES, default='regular', help_text="Type of session")
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='scheduled', help_text="Current status of the session")
     scheduled_date = models.DateTimeField(help_text="Scheduled date and time of the session")
-    start_time = models.TimeField(blank=True, null=True, help_text="Actual start time of the session")
-    end_time = models.TimeField(blank=True, null=True, help_text="Actual end time of the session")
     location = models.CharField(max_length=200, blank=True, help_text="Location where the session will be held")
     agenda = models.TextField(blank=True, help_text="Agenda items for the session")
     minutes = models.TextField(blank=True, help_text="Minutes from the session")
@@ -272,11 +266,7 @@ class Session(models.Model):
         from django.urls import reverse
         return reverse('local:session-detail', kwargs={'pk': self.pk})
 
-    def clean(self):
-        """Validate that end time is after start time"""
-        from django.core.exceptions import ValidationError
-        if self.start_time and self.end_time and self.start_time >= self.end_time:
-            raise ValidationError("End time must be after start time")
+
 
 
 # Register models for audit logging

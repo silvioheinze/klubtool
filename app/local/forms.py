@@ -237,8 +237,7 @@ class SessionForm(forms.ModelForm):
         model = Session
         fields = [
             'title', 'council', 'term', 'session_type', 'status', 
-            'start_time', 'end_time', 'location', 
-            'agenda', 'minutes', 'notes'
+            'location', 'agenda', 'minutes', 'notes'
         ]
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control'}),
@@ -246,8 +245,6 @@ class SessionForm(forms.ModelForm):
             'term': forms.Select(attrs={'class': 'form-select'}),
             'session_type': forms.Select(attrs={'class': 'form-select'}),
             'status': forms.Select(attrs={'class': 'form-select'}),
-            'start_time': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
-            'end_time': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
             'location': forms.TextInput(attrs={'class': 'form-control'}),
             'agenda': forms.Textarea(attrs={'rows': 4, 'class': 'form-control'}),
             'minutes': forms.Textarea(attrs={'rows': 6, 'class': 'form-control'}),
@@ -266,15 +263,7 @@ class SessionForm(forms.ModelForm):
             if self.instance.scheduled_date.time():
                 self.fields['session_time'].initial = self.instance.scheduled_date.time()
 
-    def clean(self):
-        cleaned_data = super().clean()
-        start_time = cleaned_data.get('start_time')
-        end_time = cleaned_data.get('end_time')
-        
-        if start_time and end_time and start_time >= end_time:
-            raise forms.ValidationError("End time must be after start time.")
-        
-        return cleaned_data
+
 
     def save(self, commit=True):
         """Combine date and time fields into scheduled_date"""

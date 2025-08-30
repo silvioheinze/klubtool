@@ -58,8 +58,6 @@
                         <option value="">{% trans "All Types" %}</option>
                         <option value="regular" {% if session_type_filter == 'regular' %}selected{% endif %}>{% trans "Regular" %}</option>
                         <option value="special" {% if session_type_filter == 'special' %}selected{% endif %}>{% trans "Special" %}</option>
-                        <option value="committee" {% if session_type_filter == 'committee' %}selected{% endif %}>{% trans "Committee" %}</option>
-                        <option value="public_hearing" {% if session_type_filter == 'public_hearing' %}selected{% endif %}>{% trans "Public Hearing" %}</option>
                     </select>
                 </div>
                 <div class="col-md-3 d-flex align-items-end">
@@ -121,9 +119,6 @@
                                     </td>
                                     <td>
                                         <strong>{{ session.scheduled_date|date:"M d, Y" }}</strong>
-                                        {% if session.start_time %}
-                                            <br><small class="text-muted">{{ session.start_time|time:"H:i" }}</small>
-                                        {% endif %}
                                     </td>
                                     <td>
                                         {% if session.status == 'scheduled' %}

@@ -173,7 +173,7 @@ class SessionAdmin(admin.ModelAdmin):
             'fields': ('title', 'council', 'term', 'session_type', 'status', 'is_active')
         }),
         ('Schedule', {
-            'fields': ('scheduled_date', 'start_time', 'end_time', 'location')
+            'fields': ('scheduled_date', 'location')
         }),
         ('Content', {
             'fields': ('agenda', 'minutes', 'notes')
