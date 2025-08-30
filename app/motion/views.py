@@ -49,7 +49,8 @@ class MotionListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
             if search_query:
                 queryset = queryset.filter(
                     Q(title__icontains=search_query) |
-                    Q(description__icontains=search_query) |
+                    Q(text__icontains=search_query) |
+                    Q(rationale__icontains=search_query) |
                     Q(group__name__icontains=search_query)
                 )
             
@@ -149,6 +150,12 @@ class MotionCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
         """Check if user has permission to create Motion objects"""
         return self.request.user.is_superuser or self.request.user.has_role_permission('motion.create')
 
+    def get_form_kwargs(self):
+        """Pass user to form for automatic group assignment"""
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
     def get_initial(self):
         """Set initial values based on URL parameters"""
         initial = super().get_initial()
@@ -156,7 +163,7 @@ class MotionCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
         if session_id:
             try:
                 session = Session.objects.get(pk=session_id)
-                initial['session'] = session
+                initial['session'] = session.pk
             except Session.DoesNotExist:
                 pass
         return initial
@@ -179,6 +186,12 @@ class MotionUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     def test_func(self):
         """Check if user has permission to edit Motion objects"""
         return self.request.user.is_superuser or self.request.user.has_role_permission('motion.edit')
+
+    def get_form_kwargs(self):
+        """Pass user to form for automatic group assignment"""
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
 
     def form_valid(self, form):
         """Display success message on form validation"""

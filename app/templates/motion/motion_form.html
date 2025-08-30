@@ -47,21 +47,41 @@
                         </div>
 
                         <div class="mb-3">
-                            <label for="{{ form.description.id_for_label }}" class="form-label">
-                                {% trans "Description" %} <span class="text-danger">*</span>
+                            <label for="{{ form.text.id_for_label }}" class="form-label">
+                                {% trans "Motion Text" %} <span class="text-danger">*</span>
                             </label>
-                            {{ form.description }}
-                            {% if form.description.errors %}
+                            {{ form.text }}
+                            {% if form.text.errors %}
                                 <div class="invalid-feedback d-block">
-                                    {% for error in form.description.errors %}
+                                    {% for error in form.text.errors %}
                                         {{ error }}
                                     {% endfor %}
                                 </div>
                             {% endif %}
+                            {% if form.text.help_text %}
+                                <div class="form-text">{{ form.text.help_text }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.rationale.id_for_label }}" class="form-label">
+                                {% trans "Rationale" %}
+                            </label>
+                            {{ form.rationale }}
+                            {% if form.rationale.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.rationale.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            {% if form.rationale.help_text %}
+                                <div class="form-text">{{ form.rationale.help_text }}</div>
+                            {% endif %}
                         </div>
 
                         <div class="row">
-                            <div class="col-md-4">
+                            <div class="col-md-6">
                                 <div class="mb-3">
                                     <label for="{{ form.motion_type.id_for_label }}" class="form-label">
                                         {% trans "Motion Type" %} <span class="text-danger">*</span>
@@ -76,58 +96,27 @@
                                     {% endif %}
                                 </div>
                             </div>
-
-                            <div class="col-md-4">
-                                <div class="mb-3">
-                                    <label for="{{ form.status.id_for_label }}" class="form-label">
-                                        {% trans "Status" %} <span class="text-danger">*</span>
-                                    </label>
-                                    {{ form.status }}
-                                    {% if form.status.errors %}
-                                        <div class="invalid-feedback d-block">
-                                            {% for error in form.status.errors %}
-                                                {{ error }}
-                                            {% endfor %}
-                                        </div>
-                                    {% endif %}
-                                </div>
-                            </div>
                         </div>
+
+                        <!-- Hidden fields for automatic assignment -->
+                        {{ form.status }}
+                        {{ form.group }}
 
                         <!-- Relationships -->
                         <h6 class="text-primary mb-3 mt-4">{% trans "Relationships" %}</h6>
                         
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="{{ form.session.id_for_label }}" class="form-label">
-                                        {% trans "Session" %} <span class="text-danger">*</span>
-                                    </label>
-                                    {{ form.session }}
-                                    {% if form.session.errors %}
-                                        <div class="invalid-feedback d-block">
-                                            {% for error in form.session.errors %}
-                                                {{ error }}
-                                            {% endfor %}
-                                        </div>
-                                    {% endif %}
+                        <div class="mb-3">
+                            <label for="{{ form.session.id_for_label }}" class="form-label">
+                                {% trans "Session" %} <span class="text-danger">*</span>
+                            </label>
+                            {{ form.session }}
+                            {% if form.session.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.session.errors %}
+                                        {{ error }}
+                                    {% endfor %}
                                 </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="{{ form.group.id_for_label }}" class="form-label">
-                                        {% trans "Group" %} <span class="text-danger">*</span>
-                                    </label>
-                                    {{ form.group }}
-                                    {% if form.group.errors %}
-                                        <div class="invalid-feedback d-block">
-                                            {% for error in form.group.errors %}
-                                                {{ error }}
-                                            {% endfor %}
-                                        </div>
-                                    {% endif %}
-                                </div>
-                            </div>
+                            {% endif %}
                         </div>
 
                         <div class="mb-3">
@@ -176,12 +165,10 @@
                 <div class="card-body">
                     <ul class="list-unstyled">
                         <li><strong>{% trans "Title" %}:</strong> {% trans "Enter a clear, descriptive title for the motion." %}</li>
-                        <li><strong>{% trans "Description" %}:</strong> {% trans "Provide a detailed description of what the motion proposes." %}</li>
+                        <li><strong>{% trans "Motion Text" %}:</strong> {% trans "Provide the detailed text and content of the motion." %}</li>
+                        <li><strong>{% trans "Rationale" %}:</strong> {% trans "Explain the reasoning and justification for this motion." %}</li>
                         <li><strong>{% trans "Motion Type" %}:</strong> {% trans "Select the appropriate type of motion." %}</li>
-
-                        <li><strong>{% trans "Status" %}:</strong> {% trans "Current status of the motion in the process." %}</li>
                         <li><strong>{% trans "Session" %}:</strong> {% trans "Select the council session where this motion will be presented." %}</li>
-                        <li><strong>{% trans "Group" %}:</strong> {% trans "Select the political group proposing this motion." %}</li>
                         <li><strong>{% trans "Supporting Parties" %}:</strong> {% trans "Select parties that support this motion (optional)." %}</li>
                     </ul>
                 </div>

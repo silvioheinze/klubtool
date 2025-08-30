@@ -1,0 +1,388 @@
+{% extends "_base.html" %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}
+    {{ motion.title }} - {% trans "Motion Details" %}
+{% endblock title %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="bi bi-file-text"></i> {{ motion.title }}
+            </h1>
+            <p class="text-muted">
+                {% trans "Motion details and information" %}
+                {% if motion.session %}
+                    • <a href="{% url 'local:session-detail' motion.session.pk %}">{{ motion.session.title }}</a>
+                    {% if motion.session.council %}
+                        • <a href="{% url 'local:council-detail' motion.session.council.pk %}">{{ motion.session.council.name }}</a>
+                    {% endif %}
+                {% endif %}
+            </p>
+        </div>
+        <div>
+            <div class="btn-group" role="group">
+                {% if motion.can_be_edited %}
+                    <a href="{% url 'motion:motion-edit' motion.pk %}" class="btn btn-primary">
+                        <i class="bi bi-pencil"></i> {% trans "Edit" %}
+                    </a>
+                {% endif %}
+                <a href="{% url 'motion:motion-delete' motion.pk %}" class="btn btn-danger">
+                    <i class="bi bi-trash"></i> {% trans "Delete" %}
+                </a>
+                <a href="{% url 'motion:motion-list' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> {% trans "Back to Motions" %}
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Motion Information -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">{% trans "Motion Information" %}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">{% trans "Title" %}</dt>
+                                <dd class="col-sm-8"><strong>{{ motion.title }}</strong></dd>
+                                
+                                <dt class="col-sm-4">{% trans "Type" %}</dt>
+                                <dd class="col-sm-8">
+                                    <span class="badge bg-secondary">{{ motion.get_motion_type_display }}</span>
+                                </dd>
+                                
+                                <dt class="col-sm-4">{% trans "Status" %}</dt>
+                                <dd class="col-sm-8">
+                                    {% if motion.status == 'draft' %}
+                                        <span class="badge bg-secondary">{% trans "Draft" %}</span>
+                                    {% elif motion.status == 'submitted' %}
+                                        <span class="badge bg-primary">{% trans "Submitted" %}</span>
+                                    {% elif motion.status == 'approved' %}
+                                        <span class="badge bg-success">{% trans "Approved" %}</span>
+                                    {% elif motion.status == 'rejected' %}
+                                        <span class="badge bg-danger">{% trans "Rejected" %}</span>
+                                    {% elif motion.status == 'withdrawn' %}
+                                        <span class="badge bg-warning">{% trans "Withdrawn" %}</span>
+                                    {% endif %}
+                                </dd>
+                                
+                                <dt class="col-sm-4">{% trans "Submitted" %}</dt>
+                                <dd class="col-sm-8">{{ motion.submitted_date|date:"l, F d, Y" }}</dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">{% trans "Group" %}</dt>
+                                <dd class="col-sm-8">
+                                    {% if motion.group %}
+                                        <a href="{% url 'group:group-detail' motion.group.pk %}">
+                                            {{ motion.group.name }}
+                                        </a>
+                                    {% else %}
+                                        <span class="text-muted">{% trans "Not assigned" %}</span>
+                                    {% endif %}
+                                </dd>
+                                
+                                <dt class="col-sm-4">{% trans "Session" %}</dt>
+                                <dd class="col-sm-8">
+                                    {% if motion.session %}
+                                        <a href="{% url 'local:session-detail' motion.session.pk %}">
+                                            {{ motion.session.title }}
+                                        </a>
+                                    {% else %}
+                                        <span class="text-muted">{% trans "Not assigned" %}</span>
+                                    {% endif %}
+                                </dd>
+                                
+                                <dt class="col-sm-4">{% trans "Committee" %}</dt>
+                                <dd class="col-sm-8">
+                                    {% if motion.committee %}
+                                        <a href="{% url 'local:committee-detail' motion.committee.pk %}">
+                                            {{ motion.committee.name }}
+                                        </a>
+                                    {% else %}
+                                        <span class="text-muted">{% trans "Not assigned" %}</span>
+                                    {% endif %}
+                                </dd>
+                                
+                                <dt class="col-sm-4">{% trans "Active" %}</dt>
+                                <dd class="col-sm-8">
+                                    {% if motion.is_active %}
+                                        <span class="text-success">{% trans "Yes" %}</span>
+                                    {% else %}
+                                        <span class="text-danger">{% trans "No" %}</span>
+                                    {% endif %}
+                                </dd>
+                            </dl>
+                        </div>
+                    </div>
+                    
+                    {% if motion.text %}
+                        <hr>
+                        <h6>{% trans "Motion Text" %}</h6>
+                        <p>{{ motion.text|linebreaks }}</p>
+                    {% endif %}
+                    
+                    {% if motion.rationale %}
+                        <hr>
+                        <h6>{% trans "Rationale" %}</h6>
+                        <p>{{ motion.rationale|linebreaks }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Supporting Parties -->
+            {% if motion.parties.exists %}
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-people"></i> {% trans "Supporting Parties" %}</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            {% for party in motion.parties.all %}
+                                <div class="col-md-6 col-lg-4 mb-2">
+                                    <span class="badge bg-primary me-2" style="background-color: {{ party.color }} !important;">
+                                        {{ party.name }}
+                                    </span>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- Voting Section -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-check-circle"></i> {% trans "Voting" %}</h5>
+                </div>
+                <div class="card-body">
+                    {% if user_vote %}
+                        <div class="alert alert-info">
+                            <strong>{% trans "Your Vote" %}:</strong> 
+                            <span class="badge bg-primary">{{ user_vote.get_vote_display }}</span>
+                            {% if user_vote.reason %}
+                                <br><small class="text-muted">{{ user_vote.reason }}</small>
+                            {% endif %}
+                        </div>
+                    {% else %}
+                        <form method="post" action="{% url 'motion:motion-vote' motion.pk %}">
+                            {% csrf_token %}
+                            {{ vote_form.as_p }}
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i> {% trans "Submit Vote" %}
+                            </button>
+                        </form>
+                    {% endif %}
+                    
+                    <!-- Vote Statistics -->
+                    <hr>
+                    <h6>{% trans "Vote Statistics" %}</h6>
+                    <div class="row text-center">
+                        <div class="col-3">
+                            <div class="border rounded p-2">
+                                <div class="h4 text-success">{{ vote_stats.yes }}</div>
+                                <small class="text-muted">{% trans "Yes" %}</small>
+                            </div>
+                        </div>
+                        <div class="col-3">
+                            <div class="border rounded p-2">
+                                <div class="h4 text-danger">{{ vote_stats.no }}</div>
+                                <small class="text-muted">{% trans "No" %}</small>
+                            </div>
+                        </div>
+                        <div class="col-3">
+                            <div class="border rounded p-2">
+                                <div class="h4 text-warning">{{ vote_stats.abstain }}</div>
+                                <small class="text-muted">{% trans "Abstain" %}</small>
+                            </div>
+                        </div>
+                        <div class="col-3">
+                            <div class="border rounded p-2">
+                                <div class="h4 text-secondary">{{ vote_stats.absent }}</div>
+                                <small class="text-muted">{% trans "Absent" %}</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-center mt-2">
+                        <small class="text-muted">{% trans "Total Votes" %}: {{ vote_stats.total }}</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Comments Section -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-chat"></i> {% trans "Comments" %}</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Add Comment Form -->
+                    <form method="post" action="{% url 'motion:motion-comment' motion.pk %}">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            {{ comment_form.content }}
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check">
+                                {{ comment_form.is_public }}
+                                <label class="form-check-label" for="{{ comment_form.is_public.id_for_label }}">
+                                    {% trans "Make this comment public" %}
+                                </label>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-chat-plus"></i> {% trans "Add Comment" %}
+                        </button>
+                    </form>
+                    
+                    <!-- Comments List -->
+                    {% if comments %}
+                        <hr>
+                        <h6>{% trans "Comments" %}</h6>
+                        {% for comment in comments %}
+                            <div class="border rounded p-3 mb-3">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <strong>{{ comment.author.username }}</strong>
+                                        <small class="text-muted">{{ comment.created_at|date:"M d, Y H:i" }}</small>
+                                        {% if not comment.is_public %}
+                                            <span class="badge bg-warning ms-1">{% trans "Private" %}</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <p class="mb-0 mt-2">{{ comment.content|linebreaks }}</p>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <hr>
+                        <p class="text-muted text-center">{% trans "No comments yet." %}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Attachments Section -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-paperclip"></i> {% trans "Attachments" %}</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Upload Form -->
+                    <form method="post" action="{% url 'motion:motion-attach' motion.pk %}" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <div class="row">
+                            <div class="col-md-4">
+                                {{ attachment_form.file }}
+                            </div>
+                            <div class="col-md-4">
+                                {{ attachment_form.file_type }}
+                            </div>
+                            <div class="col-md-4">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-upload"></i> {% trans "Upload" %}
+                                </button>
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            {{ attachment_form.description }}
+                        </div>
+                    </form>
+                    
+                    <!-- Attachments List -->
+                    {% if attachments %}
+                        <hr>
+                        <h6>{% trans "Attachments" %}</h6>
+                        <div class="list-group">
+                            {% for attachment in attachments %}
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <i class="bi bi-file-earmark"></i>
+                                        <a href="{{ attachment.file.url }}" target="_blank">
+                                            {{ attachment.filename }}
+                                        </a>
+                                        <small class="text-muted d-block">{{ attachment.get_file_type_display }}</small>
+                                        {% if attachment.description %}
+                                            <small class="text-muted d-block">{{ attachment.description }}</small>
+                                        {% endif %}
+                                    </div>
+                                    <small class="text-muted">
+                                        {{ attachment.uploaded_at|date:"M d, Y" }}
+                                    </small>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <hr>
+                        <p class="text-muted text-center">{% trans "No attachments yet." %}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Info Sidebar -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">{% trans "Quick Info" %}</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li><strong>{% trans "Submitted By" %}:</strong> 
+                            {% if motion.submitted_by %}
+                                {{ motion.submitted_by.username }}
+                            {% else %}
+                                <span class="text-muted">{% trans "Unknown" %}</span>
+                            {% endif %}
+                        </li>
+                        <li><strong>{% trans "Submitted Date" %}:</strong> {{ motion.submitted_date|date:"M d, Y H:i" }}</li>
+                        <li><strong>{% trans "Last Modified" %}:</strong> {{ motion.last_modified|date:"M d, Y H:i" }}</li>
+                        <li><strong>{% trans "Motion Type" %}:</strong> {{ motion.get_motion_type_display }}</li>
+                        <li><strong>{% trans "Status" %}:</strong> {{ motion.get_status_display }}</li>
+                        <li><strong>{% trans "Supporting Parties" %}:</strong> {{ motion.supporting_parties_count }}</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="mb-0">{% trans "Actions" %}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        {% if motion.can_be_edited %}
+                            <a href="{% url 'motion:motion-edit' motion.pk %}" class="btn btn-primary">
+                                <i class="bi bi-pencil"></i> {% trans "Edit Motion" %}
+                            </a>
+                        {% endif %}
+                        <a href="{% url 'motion:motion-delete' motion.pk %}" class="btn btn-danger">
+                            <i class="bi bi-trash"></i> {% trans "Delete Motion" %}
+                        </a>
+                        <a href="{% url 'motion:motion-list' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-list"></i> {% trans "View All Motions" %}
+                        </a>
+                        {% if motion.session %}
+                            <a href="{% url 'local:session-detail' motion.session.pk %}" class="btn btn-outline-info">
+                                <i class="bi bi-calendar-event"></i> {% trans "View Session" %}
+                            </a>
+                        {% endif %}
+                        {% if motion.group %}
+                            <a href="{% url 'group:group-detail' motion.group.pk %}" class="btn btn-outline-success">
+                                <i class="bi bi-people"></i> {% trans "View Group" %}
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

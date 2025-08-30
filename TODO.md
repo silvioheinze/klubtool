@@ -16,3 +16,4 @@
 [x] comittees for sub council
 [ ] dockerfile prod
 [ ] github action docker prod
+[ ] german translation

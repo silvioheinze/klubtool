@@ -27,8 +27,9 @@ class Motion(models.Model):
     
     # Basic Information
     title = models.CharField(max_length=200, help_text="Title of the motion")
-    description = models.TextField(help_text="Detailed description of the motion")
-    motion_type = models.CharField(max_length=20, choices=MOTION_TYPE_CHOICES, default='proposal')
+    text = models.TextField(blank=True, help_text="Detailed text of the motion")
+    rationale = models.TextField(blank=True, help_text="Rationale and justification for the motion")
+    motion_type = models.CharField(max_length=20, choices=MOTION_TYPE_CHOICES, default='general')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
     
     # Relationships

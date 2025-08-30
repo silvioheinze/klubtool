@@ -169,6 +169,98 @@
                     </div>
                 </div>
             {% endif %}
+
+            <!-- Session Motions -->
+            <div class="card mt-3">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-file-text"></i> {% trans "Session Motions" %}
+                    </h5>
+                    <a href="{% url 'motion:motion-create' %}?session={{ session.pk }}" class="btn btn-sm btn-primary">
+                        <i class="bi bi-plus-circle"></i> {% trans "Add Motion" %}
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if motions %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>{% trans "Title" %}</th>
+                                        <th>{% trans "Group" %}</th>
+                                        <th>{% trans "Status" %}</th>
+                                        <th>{% trans "Actions" %}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for motion in motions %}
+                                        <tr>
+                                            <td>
+                                                <a href="{% url 'motion:motion-detail' motion.pk %}">
+                                                    {{ motion.title }}
+                                                </a>
+                                                {% if not motion.is_active %}
+                                                    <span class="badge bg-danger ms-1">{% trans "Inactive" %}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if motion.group %}
+                                                    <a href="{% url 'group:group-detail' motion.group.pk %}">
+                                                        {{ motion.group.name }}
+                                                    </a>
+                                                {% else %}
+                                                    <span class="text-muted">{% trans "No group" %}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if motion.status == 'draft' %}
+                                                    <span class="badge bg-secondary">{% trans "Draft" %}</span>
+                                                {% elif motion.status == 'submitted' %}
+                                                    <span class="badge bg-primary">{% trans "Submitted" %}</span>
+                                                {% elif motion.status == 'approved' %}
+                                                    <span class="badge bg-success">{% trans "Approved" %}</span>
+                                                {% elif motion.status == 'rejected' %}
+                                                    <span class="badge bg-danger">{% trans "Rejected" %}</span>
+                                                {% elif motion.status == 'withdrawn' %}
+                                                    <span class="badge bg-warning">{% trans "Withdrawn" %}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <div class="btn-group btn-group-sm" role="group">
+                                                    <a href="{% url 'motion:motion-detail' motion.pk %}" class="btn btn-outline-primary" title="{% trans 'View' %}">
+                                                        <i class="bi bi-eye"></i>
+                                                    </a>
+                                                    {% if motion.can_be_edited %}
+                                                        <a href="{% url 'motion:motion-edit' motion.pk %}" class="btn btn-outline-secondary" title="{% trans 'Edit' %}">
+                                                            <i class="bi bi-pencil"></i>
+                                                        </a>
+                                                    {% endif %}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        {% if total_motions > 10 %}
+                            <div class="text-center mt-3">
+                                <a href="{% url 'motion:motion-list' %}?session={{ session.pk }}" class="btn btn-outline-primary">
+                                    {% trans "View All Motions" %} ({{ total_motions }})
+                                </a>
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="bi bi-file-text text-muted" style="font-size: 3rem;"></i>
+                            <p class="text-muted mt-2">{% trans "No motions have been submitted for this session yet." %}</p>
+                            <a href="{% url 'motion:motion-create' %}?session={{ session.pk }}" class="btn btn-primary">
+                                <i class="bi bi-plus-circle"></i> {% trans "Create First Motion" %}
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
         </div>
 
         <!-- Quick Info Sidebar -->

@@ -738,6 +738,14 @@ class SessionDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         """Check if user has permission to view Session objects"""
         return self.request.user.is_superuser or self.request.user.has_role_permission('session.view')
 
+    def get_context_data(self, **kwargs):
+        """Add motions data to context"""
+        context = super().get_context_data(**kwargs)
+        # Get motions for this session
+        context['motions'] = self.object.motions.filter(is_active=True).order_by('-submitted_date')[:10]
+        context['total_motions'] = self.object.motions.count()
+        return context
+
 
 class SessionCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     """View for creating a new Session object"""

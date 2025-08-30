@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth import get_user_model
 from .models import Motion, MotionVote, MotionComment, MotionAttachment
-from local.models import Session, Party
+from local.models import Session, Party, Committee
 from group.models import Group
 
 User = get_user_model()
@@ -13,37 +13,47 @@ class MotionForm(forms.ModelForm):
     class Meta:
         model = Motion
         fields = [
-            'title', 'description', 'motion_type', 'status',
+            'title', 'text', 'rationale', 'motion_type', 'status',
             'session', 'committee', 'group', 'parties'
         ]
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control'}),
-            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
+            'text': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
+            'rationale': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
             'motion_type': forms.Select(attrs={'class': 'form-select'}),
-            'status': forms.Select(attrs={'class': 'form-select'}),
+            'status': forms.HiddenInput(),
             'session': forms.Select(attrs={'class': 'form-select'}),
             'committee': forms.Select(attrs={'class': 'form-select'}),
-            'group': forms.Select(attrs={'class': 'form-select'}),
+            'group': forms.HiddenInput(),
             'parties': forms.SelectMultiple(attrs={'class': 'form-select'}),
         }
     
     def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
+        
         # Filter sessions to only show active ones
         self.fields['session'].queryset = Session.objects.filter(is_active=True)
-        # Filter groups to only show active ones
-        self.fields['group'].queryset = Group.objects.filter(is_active=True)
         # Filter parties to only show active ones
         self.fields['parties'].queryset = Party.objects.filter(is_active=True)
         # Filter committees to only show active ones
         self.fields['committee'].queryset = Committee.objects.filter(is_active=True)
+        
+        # Set status to draft automatically
+        self.fields['status'].initial = 'draft'
+        
+        # Set group to user's group automatically
+        if self.user and hasattr(self.user, 'group_memberships'):
+            user_group = self.user.group_memberships.filter(is_active=True).first()
+            if user_group:
+                self.fields['group'].initial = user_group.group.pk
         
         # Set initial session if provided in URL
         session_id = self.initial.get('session') or self.data.get('session')
         if session_id:
             try:
                 session = Session.objects.get(pk=session_id)
-                self.fields['session'].initial = session
+                self.fields['session'].initial = session.pk
             except Session.DoesNotExist:
                 pass
     
@@ -68,7 +78,7 @@ class MotionFilterForm(forms.Form):
         required=False,
         widget=forms.TextInput(attrs={
             'class': 'form-control',
-            'placeholder': 'Search by title, description, or group'
+            'placeholder': 'Search by title, text, rationale, or group'
         })
     )
     motion_type = forms.ChoiceField(
