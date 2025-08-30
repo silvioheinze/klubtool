@@ -1,7 +1,7 @@
 from django.urls import path, include
 
 from user.views import (
-    AccountDeleteView, DashboardView, SettingsView, SignupPageView, 
+    AccountDeleteView, SettingsView, SignupPageView, 
     UsersUpdateView, UsersListView, RoleListView, RoleCreateView, 
     RoleUpdateView, RoleDeleteView, user_management_view
 )
@@ -9,7 +9,6 @@ from user.views import (
 
 urlpatterns = [
     # User Management
-    path('dashboard/', DashboardView, name='user-dashboard'),
     path('delete/', AccountDeleteView.as_view(), name='user-delete'),
     path('settings/', SettingsView, name='user-settings'),
     path("signup/", SignupPageView.as_view(), name="user-signup"),

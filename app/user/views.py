@@ -10,6 +10,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.db.models import Q
 from django.core.paginator import Paginator
+from django.core.exceptions import PermissionDenied
 
 from .forms import CustomUserCreationForm, CustomUserEditForm, RoleForm, RoleFilterForm
 from .models import CustomUser, Role
@@ -37,25 +38,7 @@ class AccountDeleteView(LoginRequiredMixin, DeleteView):
         return super().delete(request, *args, **kwargs)
 
 
-def DashboardView(request):
-    """
-    Display a dashboard overview for the logged-in user.
-    If the user is not authenticated, display the login form.
-    """
-    if request.user.is_authenticated:
-        context = {
-            'user': request.user,
-        }
-        return render(request, "user/dashboard.html", context)
-    else:
-        # Process the login form for unauthenticated users
-        form = AuthenticationForm(request=request, data=request.POST or None)
-        if request.method == "POST":
-            if form.is_valid():
-                user = form.get_user()
-                login(request, user)
-                return redirect("home")  # Redirect to home page
-        return render(request, "user/login.html", {"form": form})
+
 
 
 class SignupPageView(CreateView):
@@ -112,8 +95,8 @@ class UsersListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
     paginate_by = 20
 
     def test_func(self):
-        # Allow access if user is superuser or has user.view permission
-        return self.request.user.is_superuser or self.request.user.has_role_permission('user.view')
+        # Allow access only if user is superuser
+        return self.request.user.is_superuser
 
     def get_queryset(self):
         queryset = CustomUser.objects.select_related('role').all().order_by('username')
@@ -159,7 +142,8 @@ class RoleListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
     paginate_by = 20
 
     def test_func(self):
-        return self.request.user.is_superuser or self.request.user.has_role_permission('role.view')
+        # Allow access only if user is superuser
+        return self.request.user.is_superuser
 
     def get_queryset(self):
         queryset = Role.objects.all().order_by('name')
@@ -195,7 +179,8 @@ class RoleCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     success_url = reverse_lazy('role-list')
 
     def test_func(self):
-        return self.request.user.is_superuser or self.request.user.has_role_permission('role.create')
+        # Allow access only if user is superuser
+        return self.request.user.is_superuser
 
     def form_valid(self, form):
         messages.success(self.request, f"Role '{form.instance.name}' created successfully.")
@@ -209,7 +194,8 @@ class RoleUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     success_url = reverse_lazy('role-list')
 
     def test_func(self):
-        return self.request.user.is_superuser or self.request.user.has_role_permission('role.edit')
+        # Allow access only if user is superuser
+        return self.request.user.is_superuser
 
     def form_valid(self, form):
         messages.success(self.request, f"Role '{form.instance.name}' updated successfully.")
@@ -222,7 +208,8 @@ class RoleDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
     success_url = reverse_lazy('role-list')
 
     def test_func(self):
-        return self.request.user.is_superuser or self.request.user.has_role_permission('role.delete')
+        # Allow access only if user is superuser
+        return self.request.user.is_superuser
 
     def delete(self, request, *args, **kwargs):
         role = self.get_object()
@@ -231,8 +218,10 @@ class RoleDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
 
 
 @login_required
-@is_superuser_or_has_permission('user.manage')
 def user_management_view(request):
+    # Allow access only if user is superuser
+    if not request.user.is_superuser:
+        raise PermissionDenied
     """Comprehensive user management dashboard"""
     context = {
         'total_users': CustomUser.objects.count(),

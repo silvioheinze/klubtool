@@ -16,4 +16,9 @@
 [x] comittees for sub council
 [ ] dockerfile prod
 [ ] github action docker prod
-[ ] german translation
+[x] german translation
+[x] user list and user management superuser only
+[x] remove documentation and help
+[ ] create group admin role
+[ ] motion detail
+[ ] motion management delete only own motions and as group admin

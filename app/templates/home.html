@@ -132,33 +132,13 @@
             {% endif %}
             
             <!-- System Management Cards -->
-            <div class="row mt-4">
-                <div class="col-md-4">
-                    <div class="card">
-                        <div class="card-body">
-                            <h5 class="card-title">User Management</h5>
-                            <p class="card-text">Manage users and their permissions.</p>
-                            <a href="{% url 'user-management' %}" class="btn btn-primary">User Dashboard</a>
-                        </div>
-                    </div>
-                </div>
-                
+            <div class="row mt-4">                
                 <div class="col-md-4">
                     <div class="card">
                         <div class="card-body">
                             <h5 class="card-title">Role Management</h5>
                             <p class="card-text">Manage user roles and permissions.</p>
                             <a href="{% url 'role-list' %}" class="btn btn-primary">Manage Roles</a>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="col-md-4">
-                    <div class="card">
-                        <div class="card-body">
-                            <h5 class="card-title">Local Management</h5>
-                            <p class="card-text">Manage administrative districts.</p>
-                            <a href="{% url 'local:local-list' %}" class="btn btn-primary">Manage Locals</a>
                         </div>
                     </div>
                 </div>
@@ -183,25 +163,7 @@
                     </div>
                 </div>
                 
-                <div class="col-md-4">
-                    <div class="card">
-                        <div class="card-body">
-                            <h5 class="card-title">Documentation</h5>
-                            <p class="card-text">Read the system documentation.</p>
-                            <a href="{% url 'documentation' %}" class="btn btn-primary">View Docs</a>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="col-md-4">
-                    <div class="card">
-                        <div class="card-body">
-                            <h5 class="card-title">Help</h5>
-                            <p class="card-text">Get help and support.</p>
-                            <a href="{% url 'help' %}" class="btn btn-primary">Get Help</a>
-                        </div>
-                    </div>
-                </div>
+
             </div>
         </div>
     </div>
