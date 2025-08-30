@@ -71,11 +71,6 @@ class MotionListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
             if session:
                 queryset = queryset.filter(session=session)
             
-            # Filter by group
-            group = filter_form.cleaned_data.get('group')
-            if group:
-                queryset = queryset.filter(group=group)
-            
             # Filter by party
             party = filter_form.cleaned_data.get('party')
             if party:
@@ -289,41 +284,3 @@ def motion_attachment_view(request, pk):
         'motion': motion,
         'form': form
     })
-
-
-@login_required
-@user_passes_test(is_superuser_or_has_permission('motion.view'))
-def motion_dashboard_view(request):
-    """Dashboard view for motion management"""
-    # Get motion statistics
-    total_motions = Motion.objects.count()
-    draft_motions = Motion.objects.filter(status='draft').count()
-    submitted_motions = Motion.objects.filter(status='submitted').count()
-    approved_motions = Motion.objects.filter(status='approved').count()
-    rejected_motions = Motion.objects.filter(status='rejected').count()
-    
-    # Get recent motions
-    recent_motions = Motion.objects.select_related('session', 'group', 'submitted_by').order_by('-submitted_date')[:5]
-    
-    # Get motions by type
-    motions_by_type = Motion.objects.values('motion_type').annotate(count=Count('id')).order_by('-count')
-    
-    # Get motions by status
-    motions_by_status = Motion.objects.values('status').annotate(count=Count('id')).order_by('-count')
-    
-    # Get urgent motions
-    urgent_motions = Motion.objects.filter(priority='urgent').select_related('session', 'group')[:5]
-    
-    context = {
-        'total_motions': total_motions,
-        'draft_motions': draft_motions,
-        'submitted_motions': submitted_motions,
-        'approved_motions': approved_motions,
-        'rejected_motions': rejected_motions,
-        'recent_motions': recent_motions,
-        'motions_by_type': motions_by_type,
-        'motions_by_status': motions_by_status,
-        'urgent_motions': urgent_motions,
-    }
-    
-    return render(request, 'motion/motion_dashboard.html', context)

@@ -15,9 +15,6 @@
                     <a href="{% url 'motion:motion-create' %}" class="btn btn-primary">
                         <i class="bi bi-plus-circle"></i> {% trans "Create Motion" %}
                     </a>
-                    <a href="{% url 'motion:motion-dashboard' %}" class="btn btn-outline-info">
-                        <i class="bi bi-graph-up"></i> {% trans "Dashboard" %}
-                    </a>
                 </div>
             </div>
         </div>
@@ -56,16 +53,13 @@
                     
                     <!-- Additional Filters -->
                     <form method="get" class="row g-3 mt-3">
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             {{ filter_form.session }}
                         </div>
-                        <div class="col-md-3">
-                            {{ filter_form.group }}
-                        </div>
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             {{ filter_form.party }}
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <div class="d-flex gap-2">
                                 <button type="submit" class="btn btn-primary">
                                     <i class="bi bi-search"></i> {% trans "Filter" %}
@@ -97,10 +91,7 @@
                                         <th>{% trans "Title" %}</th>
                                         <th>{% trans "Type" %}</th>
                                         <th>{% trans "Status" %}</th>
-
-                                        <th>{% trans "Group" %}</th>
                                         <th>{% trans "Session" %}</th>
-                                        <th>{% trans "Submitted" %}</th>
                                         <th>{% trans "Actions" %}</th>
                                     </tr>
                                 </thead>
@@ -138,12 +129,7 @@
                                                 {% endif %}
                                             </td>
 
-                                            <td>
-                                                <a href="{% url 'group:group-detail' motion.group.pk %}">
-                                                    {{ motion.group.name }}
-                                                </a>
-                                                <br><small class="text-muted">{{ motion.group.party.name }}</small>
-                                            </td>
+
                                             <td>
                                                 {% if motion.session %}
                                                     <a href="{% url 'local:session-detail' motion.session.pk %}">
@@ -154,12 +140,7 @@
                                                     <span class="text-muted">{% trans "No session" %}</span>
                                                 {% endif %}
                                             </td>
-                                            <td>
-                                                <small>{{ motion.submitted_date|naturaltime }}</small>
-                                                {% if motion.submitted_by %}
-                                                    <br><small class="text-muted">by {{ motion.submitted_by.username }}</small>
-                                                {% endif %}
-                                            </td>
+
                                             <td>
                                                 <div class="btn-group" role="group">
                                                     <a href="{% url 'motion:motion-detail' motion.pk %}" class="btn btn-sm btn-outline-info" title="{% trans 'View Details' %}">

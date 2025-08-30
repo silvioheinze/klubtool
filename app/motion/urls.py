@@ -15,7 +15,4 @@ urlpatterns = [
     path('<int:pk>/vote/', views.motion_vote_view, name='motion-vote'),
     path('<int:pk>/comment/', views.motion_comment_view, name='motion-comment'),
     path('<int:pk>/attach/', views.motion_attachment_view, name='motion-attach'),
-    
-    # Dashboard
-    path('dashboard/', views.motion_dashboard_view, name='motion-dashboard'),
 ]
