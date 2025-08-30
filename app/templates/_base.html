@@ -46,6 +46,14 @@
                         {% endfor %}
                     {% endif %}
                     
+                    {% if user.is_authenticated %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'motion:motion-list' %}">
+                                <i class="bi bi-file-text"></i> {% trans "Motions" %}
+                            </a>
+                        </li>
+                    {% endif %}
+
                     {% if user.is_authenticated and next_session %}
                         <li class="nav-item">
                             <a class="nav-link text-warning" href="{% url 'local:session-detail' next_session.pk %}">
@@ -55,13 +63,7 @@
                         </li>
                     {% endif %}
                     
-                    {% if user.is_authenticated %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'motion:motion-list' %}">
-                                <i class="bi bi-file-text"></i> {% trans "Motions" %}
-                            </a>
-                        </li>
-                    {% endif %}
+                    
                 </ul>
                 <!-- Right-side Navigation Items -->
                 <ul class="navbar-nav flex-column flex-md-row ms-auto mb-2 mb-md-0">
