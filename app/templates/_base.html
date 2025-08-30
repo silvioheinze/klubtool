@@ -46,6 +46,15 @@
                         {% endfor %}
                     {% endif %}
                     
+                    {% if user.is_authenticated and next_session %}
+                        <li class="nav-item">
+                            <a class="nav-link text-warning" href="{% url 'local:session-detail' next_session.pk %}">
+                                <i class="bi bi-calendar-event"></i> {% trans "Next Session" %}
+                                <span class="badge bg-warning ms-1">{{ next_session.scheduled_date|date:"M d" }}</span>
+                            </a>
+                        </li>
+                    {% endif %}
+                    
                     {% if user.is_authenticated %}
                         <li class="nav-item">
                             <a class="nav-link" href="{% url 'motion:motion-list' %}">

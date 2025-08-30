@@ -4,7 +4,8 @@ def group_memberships(request):
         'user_group_memberships': [],
         'user_locals': [],
         'user_councils': [],
-        'user_group_admin_groups': []
+        'user_group_admin_groups': [],
+        'next_session': None
     }
     
     if request.user.is_authenticated:
@@ -47,8 +48,36 @@ def group_memberships(request):
                     if hasattr(membership.group.party.local, 'council') and membership.group.party.local.council:
                         councils_from_memberships.add(membership.group.party.local.council)
             
+            # For superusers, show all councils
+            if request.user.is_superuser:
+                from local.models import Council
+                all_councils = Council.objects.filter(is_active=True)
+                councils_from_memberships.update(all_councils)
+                for council in all_councils:
+                    if council.local:
+                        locals_from_memberships.add(council.local)
+            
             context['user_locals'] = sorted(locals_from_memberships, key=lambda x: x.name)
             context['user_councils'] = sorted(councils_from_memberships, key=lambda x: x.name)
+            
+            # Get next session within 14 days for user's councils
+            from django.utils import timezone
+            from datetime import timedelta
+            
+            today = timezone.now().date()
+            fourteen_days_from_now = today + timedelta(days=14)
+            
+            # Get sessions for user's councils that are within 14 days
+            if councils_from_memberships:
+                from local.models import Session
+                next_session = Session.objects.filter(
+                    council__in=councils_from_memberships,
+                    scheduled_date__gte=today,
+                    scheduled_date__lte=fourteen_days_from_now,
+                    is_active=True
+                ).order_by('scheduled_date').first()
+                
+                context['next_session'] = next_session
             
         except ImportError:
             # If models are not available, keep empty lists

@@ -27,3 +27,5 @@
 [x] adapt topbar
 [x] fix user list and management
 [ ] admin role for locals
+[x] topbar: add link to next session
+[ ] implement ci colors
