@@ -84,6 +84,27 @@
                         <h6>{% trans "Description" %}</h6>
                         <p>{{ group.description|linebreaks }}</p>
                     {% endif %}
+                    
+                    <!-- Group Admins Section -->
+                    {% with group_admins=group.get_group_admins %}
+                        {% if group_admins %}
+                            <hr>
+                            <h6><i class="bi bi-shield-check"></i> {% trans "Group Admins" %}</h6>
+                            <div class="row">
+                                {% for admin in group_admins %}
+                                    <div class="col-md-6 mb-2">
+                                        <div class="d-flex align-items-center">
+                                            <span class="badge bg-warning me-2">
+                                                <i class="bi bi-shield-check"></i> {% trans "Admin" %}
+                                            </span>
+                                            <strong>{{ admin.user.get_full_name|default:admin.user.username }}</strong>
+                                            <small class="text-muted ms-2">({{ admin.user.email }})</small>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    {% endwith %}
                 </div>
             </div>
 
@@ -116,7 +137,30 @@
                                                 <br><small class="text-muted">{{ member.user.email }}</small>
                                             </td>
                                             <td>
-                                                <span class="badge bg-secondary">{{ member.get_role_display }}</span>
+                                                {% for role in member.roles.all %}
+                                                    {% if role.name == 'Group Admin' %}
+                                                        <span class="badge bg-warning me-1">
+                                                            <i class="bi bi-shield-check"></i> {% trans "Group Admin" %}
+                                                        </span>
+                                                    {% elif role.name == 'Leader' %}
+                                                        <span class="badge bg-primary me-1">
+                                                            <i class="bi bi-star"></i> {% trans "Leader" %}
+                                                        </span>
+                                                    {% elif role.name == 'Deputy Leader' %}
+                                                        <span class="badge bg-info me-1">
+                                                            <i class="bi bi-star-half"></i> {% trans "Deputy Leader" %}
+                                                        </span>
+                                                    
+                                                    {% elif role.name == 'Board Member' %}
+                                                        <span class="badge bg-dark me-1">
+                                                            <i class="bi bi-people"></i> {% trans "Board Member" %}
+                                                        </span>
+                                                    {% else %}
+                                                        <span class="badge bg-secondary me-1">{{ role.name }}</span>
+                                                    {% endif %}
+                                                {% empty %}
+                                                    <span class="badge bg-secondary">{% trans "Member" %}</span>
+                                                {% endfor %}
                                             </td>
                                             <td>{{ member.joined_date|date:"M d, Y" }}</td>
                                             <td>
@@ -134,6 +178,13 @@
                                                     <a href="{% url 'group:member-edit' member.pk %}" class="btn btn-sm btn-outline-primary">
                                                         <i class="bi bi-pencil"></i>
                                                     </a>
+                                                    {% if user.is_superuser %}
+                                                        <button type="button" class="btn btn-sm btn-outline-success" 
+                                                                onclick="openRoleManagement('{{ member.pk }}', '{{ member.user.get_full_name|default:member.user.username }}', '{{ member.get_roles_display }}')"
+                                                                title="{% trans 'Manage Roles' %}">
+                                                            <i class="bi bi-person-gear"></i>
+                                                        </button>
+                                                    {% endif %}
                                                     <a href="{% url 'group:member-delete' member.pk %}" class="btn btn-sm btn-outline-danger"
                                                        onclick="return confirm('{% trans 'Are you sure you want to remove this member?' %}')">
                                                         <i class="bi bi-trash"></i>
@@ -209,4 +260,112 @@
         </div>
     </div>
 </div>
+
+<!-- Role Management Modal -->
+<div class="modal fade" id="roleManagementModal" tabindex="-1" aria-labelledby="roleManagementModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="roleManagementModalLabel">{% trans "Manage Member Roles" %}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{% url 'group:member-update-roles' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <input type="hidden" name="member_id" id="memberId">
+                    <div class="mb-3">
+                        <label class="form-label">{% trans "Member" %}</label>
+                        <p class="form-control-plaintext" id="memberName"></p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">{% trans "Current Roles" %}</label>
+                        <div id="currentRoles" class="mb-2"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">{% trans "Available Roles" %}</label>
+                        <div class="row">
+                            {% for role in available_roles %}
+                                <div class="col-md-6 mb-2">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="roles" value="{{ role.id }}" id="role_{{ role.id }}">
+                                        <label class="form-check-label" for="role_{{ role.id }}">
+                                            {% if role.name == 'Group Admin' %}
+                                                <span class="badge bg-warning">
+                                                    <i class="bi bi-shield-check"></i> {% trans "Group Admin" %}
+                                                </span>
+                                            {% elif role.name == 'Leader' %}
+                                                <span class="badge bg-primary">
+                                                    <i class="bi bi-star"></i> {% trans "Leader" %}
+                                                </span>
+                                            {% elif role.name == 'Deputy Leader' %}
+                                                <span class="badge bg-info">
+                                                    <i class="bi bi-star-half"></i> {% trans "Deputy Leader" %}
+                                                </span>
+
+                                            {% elif role.name == 'Board Member' %}
+                                                <span class="badge bg-dark">
+                                                    <i class="bi bi-people"></i> {% trans "Board Member" %}
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">{{ role.name }}</span>
+                                            {% endif %}
+                                        </label>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
+                    <button type="submit" class="btn btn-primary">{% trans "Save Changes" %}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function openRoleManagement(memberId, memberName, currentRoles) {
+    document.getElementById('memberId').value = memberId;
+    document.getElementById('memberName').textContent = memberName;
+    
+    // Clear all checkboxes
+    document.querySelectorAll('input[name="roles"]').forEach(checkbox => {
+        checkbox.checked = false;
+    });
+    
+    // Check current roles
+    const currentRolesArray = currentRoles.split(',').map(role => role.trim());
+    document.querySelectorAll('input[name="roles"]').forEach(checkbox => {
+        const roleName = checkbox.nextElementSibling.textContent.trim();
+        if (currentRolesArray.includes(roleName)) {
+            checkbox.checked = true;
+        }
+    });
+    
+    // Update current roles display
+    const currentRolesDiv = document.getElementById('currentRoles');
+    if (currentRolesArray.length > 0 && currentRolesArray[0] !== '') {
+        currentRolesDiv.innerHTML = currentRolesArray.map(role => {
+            if (role.includes('Group Admin')) {
+                return '<span class="badge bg-warning me-1"><i class="bi bi-shield-check"></i> Group Admin</span>';
+            } else if (role.includes('Leader')) {
+                return '<span class="badge bg-primary me-1"><i class="bi bi-star"></i> Leader</span>';
+            } else if (role.includes('Deputy Leader')) {
+                return '<span class="badge bg-info me-1"><i class="bi bi-star-half"></i> Deputy Leader</span>';
+
+            } else if (role.includes('Board Member')) {
+                return '<span class="badge bg-dark me-1"><i class="bi bi-people"></i> Board Member</span>';
+            } else {
+                return '<span class="badge bg-secondary me-1">' + role + '</span>';
+            }
+        }).join('');
+    } else {
+        currentRolesDiv.innerHTML = '<span class="text-muted">No roles assigned</span>';
+    }
+    
+    new bootstrap.Modal(document.getElementById('roleManagementModal')).show();
+}
+</script>
 {% endblock content %}

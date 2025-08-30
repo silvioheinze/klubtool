@@ -19,7 +19,7 @@
 [x] german translation
 [x] user list and user management superuser only
 [x] remove documentation and help
-[ ] create group admin role
+[x] create group admin role
 [ ] motion detail
 [ ] motion management delete only own motions and as group admin
 [ ] in local detail show seat distribution from current term in council section

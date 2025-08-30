@@ -58,12 +58,22 @@ class GroupDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
     context_object_name = 'group'
 
     def test_func(self):
-        return self.request.user.is_superuser or self.request.user.has_role_permission('group.view')
+        # Allow superusers, users with group.view permission, or group admins
+        if self.request.user.is_superuser or self.request.user.has_role_permission('group.view'):
+            return True
+        # Check if user is a group admin of this specific group
+        group = self.get_object()
+        return group.can_user_manage_group(self.request.user)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['members'] = self.object.members.select_related('user').filter(is_active=True)
         context['active_members'] = context['members'].filter(is_active=True)
+        
+        # Add available roles for role management
+        from user.models import Role
+        context['available_roles'] = Role.objects.filter(is_active=True).order_by('name')
+        
         return context
 
 class GroupCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
@@ -86,7 +96,12 @@ class GroupUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     success_url = reverse_lazy('group:group-list')
 
     def test_func(self):
-        return self.request.user.is_superuser or self.request.user.has_role_permission('group.edit')
+        # Allow superusers, users with group.edit permission, or group admins
+        if self.request.user.is_superuser or self.request.user.has_role_permission('group.edit'):
+            return True
+        # Check if user is a group admin of this specific group
+        group = self.get_object()
+        return group.can_user_manage_group(self.request.user)
 
     def form_valid(self, form):
         messages.success(self.request, f"Group '{form.instance.name}' updated successfully.")
@@ -126,7 +141,7 @@ class GroupMemberListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
             if form.cleaned_data.get('group'):
                 queryset = queryset.filter(group=form.cleaned_data['group'])
             if form.cleaned_data.get('role'):
-                queryset = queryset.filter(role=form.cleaned_data['role'])
+                queryset = queryset.filter(roles=form.cleaned_data['role'])
             if form.cleaned_data.get('is_active') in ['True', 'False']:
                 queryset = queryset.filter(is_active=form.cleaned_data['is_active'] == 'True')
         
@@ -165,7 +180,12 @@ class GroupMemberUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView)
     success_url = reverse_lazy('group:member-list')
 
     def test_func(self):
-        return self.request.user.is_superuser or self.request.user.has_role_permission('group.edit')
+        # Allow superusers, users with group.edit permission, or group admins
+        if self.request.user.is_superuser or self.request.user.has_role_permission('group.edit'):
+            return True
+        # Check if user is a group admin of the member's group
+        member = self.get_object()
+        return member.group.can_user_manage_group(self.request.user)
 
     def form_valid(self, form):
         messages.success(self.request, f"Membership updated successfully.")
@@ -184,6 +204,54 @@ class GroupMemberDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView)
         messages.success(request, f"Member '{member.user.username}' removed from group '{member.group.name}' successfully.")
         return super().delete(request, *args, **kwargs)
 
+
+@login_required
+def set_group_admin(request, pk):
+    """Set a group member as group admin"""
+    member = get_object_or_404(GroupMember, pk=pk)
+    
+    # Check permissions
+    if not (request.user.is_superuser or member.group.can_user_manage_group(request.user)):
+        messages.error(request, "You don't have permission to perform this action.")
+        return redirect('group:group-detail', pk=member.group.pk)
+    
+    # Get or create admin role
+    from user.models import Role
+    admin_role, created = Role.objects.get_or_create(
+        name='Group Admin',
+        defaults={'description': 'Group administration role', 'is_active': True}
+    )
+    
+    # Add admin role if not already present
+    if not member.roles.filter(name='Group Admin').exists():
+        member.roles.add(admin_role)
+        messages.success(request, f"'{member.user.username}' is now a Group Admin of '{member.group.name}'.")
+    else:
+        messages.info(request, f"'{member.user.username}' is already a Group Admin of '{member.group.name}'.")
+    
+    return redirect('group:group-detail', pk=member.group.pk)
+
+
+@login_required
+def remove_group_admin(request, pk):
+    """Remove group admin role from a group member"""
+    member = get_object_or_404(GroupMember, pk=pk)
+    
+    # Check permissions
+    if not (request.user.is_superuser or member.group.can_user_manage_group(request.user)):
+        messages.error(request, "You don't have permission to perform this action.")
+        return redirect('group:group-detail', pk=member.group.pk)
+    
+    # Remove admin role
+    admin_role = member.roles.filter(name='Group Admin').first()
+    if admin_role:
+        member.roles.remove(admin_role)
+        messages.success(request, f"'{member.user.username}' is no longer a Group Admin of '{member.group.name}'.")
+    else:
+        messages.info(request, f"'{member.user.username}' is not a Group Admin of '{member.group.name}'.")
+    
+    return redirect('group:group-detail', pk=member.group.pk)
+
 # Additional Views
 @login_required
 @is_superuser_or_has_permission('group.view')
@@ -200,3 +268,44 @@ def group_management_view(request):
         'recent_members': GroupMember.objects.order_by('-created_at')[:5],
     }
     return render(request, 'group/management.html', context)
+
+
+@login_required
+def update_member_roles(request):
+    """Update member roles via AJAX/form submission"""
+    if request.method != 'POST':
+        messages.error(request, "Invalid request method.")
+        return redirect('group:group-list')
+    
+    member_id = request.POST.get('member_id')
+    selected_roles = request.POST.getlist('roles')
+    
+    try:
+        member = GroupMember.objects.get(pk=member_id)
+    except GroupMember.DoesNotExist:
+        messages.error(request, "Member not found.")
+        return redirect('group:group-list')
+    
+    # Check permissions
+    if not (request.user.is_superuser or member.group.can_user_manage_group(request.user)):
+        messages.error(request, "You don't have permission to perform this action.")
+        return redirect('group:group-detail', pk=member.group.pk)
+    
+    # Get selected roles
+    from user.models import Role
+    roles_to_assign = Role.objects.filter(id__in=selected_roles, is_active=True)
+    
+    # Update member roles
+    member.roles.clear()
+    member.roles.add(*roles_to_assign)
+    
+    # Ensure member has at least the basic Member role if no roles selected
+    if not roles_to_assign.exists():
+        member_role, created = Role.objects.get_or_create(
+            name='Member',
+            defaults={'description': 'Basic group membership role', 'is_active': True}
+        )
+        member.roles.add(member_role)
+    
+    messages.success(request, f"Roles updated for '{member.user.username}' successfully.")
+    return redirect('group:group-detail', pk=member.group.pk)

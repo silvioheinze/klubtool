@@ -63,9 +63,32 @@
                         </div>
                         <div class="col-md-6">
                             <dl class="row">
-                                <dt class="col-sm-4">{% trans "Role" %}</dt>
+                                <dt class="col-sm-4">{% trans "Roles" %}</dt>
                                 <dd class="col-sm-8">
-                                    <span class="badge bg-secondary">{{ member.get_role_display }}</span>
+                                    {% for role in member.roles.all %}
+                                        {% if role.name == 'Group Admin' %}
+                                            <span class="badge bg-warning me-1">
+                                                <i class="bi bi-shield-check"></i> {% trans "Group Admin" %}
+                                            </span>
+                                        {% elif role.name == 'Leader' %}
+                                            <span class="badge bg-primary me-1">
+                                                <i class="bi bi-star"></i> {% trans "Leader" %}
+                                            </span>
+                                        {% elif role.name == 'Deputy Leader' %}
+                                            <span class="badge bg-info me-1">
+                                                <i class="bi bi-star-half"></i> {% trans "Deputy Leader" %}
+                                            </span>
+
+                                        {% elif role.name == 'Board Member' %}
+                                            <span class="badge bg-dark me-1">
+                                                <i class="bi bi-people"></i> {% trans "Board Member" %}
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-secondary me-1">{{ role.name }}</span>
+                                        {% endif %}
+                                    {% empty %}
+                                        <span class="badge bg-secondary">{% trans "Member" %}</span>
+                                    {% endfor %}
                                 </dd>
                                 
                                 <dt class="col-sm-4">{% trans "Status" %}</dt>
@@ -132,10 +155,10 @@
                                 <span class="text-danger">{% trans "Inactive" %}</span>
                             {% endif %}
                         </li>
-                        <li><strong>{% trans "Role" %}:</strong> {{ member.get_role_display }}</li>
+                        <li><strong>{% trans "Roles" %}:</strong> {{ member.get_roles_display }}</li>
                         <li><strong>{% trans "Group" %}:</strong> {{ member.group.name }}</li>
                         <li><strong>{% trans "Party" %}:</strong> {{ member.group.party.name }}</li>
-                        <li><strong>{% trans "Joined" %}:</strong> {{ member.joined_date|naturaltime }}</li>
+                        <li><strong>{% trans "Joined" %}:</strong> {{ member.joined_date|date:"M d, Y" }}</li>
                     </ul>
                 </div>
             </div>

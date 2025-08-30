@@ -2,7 +2,7 @@ from django.urls import path
 from .views import (
     GroupListView, GroupDetailView, GroupCreateView, GroupUpdateView, GroupDeleteView,
     GroupMemberListView, GroupMemberDetailView, GroupMemberCreateView, GroupMemberUpdateView, GroupMemberDeleteView,
-    group_management_view
+    group_management_view, set_group_admin, remove_group_admin, update_member_roles
 )
 
 app_name = 'group'
@@ -24,4 +24,11 @@ urlpatterns = [
     path('members/<int:pk>/', GroupMemberDetailView.as_view(), name='member-detail'),
     path('members/<int:pk>/edit/', GroupMemberUpdateView.as_view(), name='member-edit'),
     path('members/<int:pk>/delete/', GroupMemberDeleteView.as_view(), name='member-delete'),
+    
+    # Group Admin URLs
+    path('members/<int:pk>/set-admin/', set_group_admin, name='member-set-admin'),
+    path('members/<int:pk>/remove-admin/', remove_group_admin, name='member-remove-admin'),
+    
+    # Role Management URLs
+    path('members/update-roles/', update_member_roles, name='member-update-roles'),
 ]

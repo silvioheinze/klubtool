@@ -89,6 +89,23 @@ class CustomUser(AbstractUser):
         user_permissions = self.get_all_permissions()
         return any(perm in user_permissions for perm in permissions)
 
+    def is_group_admin_of(self, group):
+        """Check if user is a group admin of a specific group"""
+        return group.has_group_admin(self)
+
+    def get_group_admin_groups(self):
+        """Get all groups where the user is a group admin"""
+        from group.models import Group
+        return Group.objects.filter(
+            members__user=self,
+            members__role='admin',
+            members__is_active=True
+        )
+
+    def is_group_admin_anywhere(self):
+        """Check if user is a group admin of any group"""
+        return self.get_group_admin_groups().exists()
+
 
 # Register models for audit logging
 auditlog.register(CustomUser)
