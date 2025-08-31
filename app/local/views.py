@@ -64,7 +64,16 @@ class LocalDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
     def get_context_data(self, **kwargs):
         """Add terms, parties, and sessions data to context"""
         context = super().get_context_data(**kwargs)
-        context['terms'] = Term.objects.filter(is_active=True).order_by('-start_date')
+        
+        # Get terms that are connected to this local through seat distributions
+        connected_term_ids = TermSeatDistribution.objects.filter(
+            party__local=self.object
+        ).values_list('term_id', flat=True).distinct()
+        context['terms'] = Term.objects.filter(
+            id__in=connected_term_ids, 
+            is_active=True
+        ).order_by('-start_date')
+        
         context['parties'] = self.object.parties.filter(is_active=True).order_by('name')
         
         # Get the current term and its seat distribution
