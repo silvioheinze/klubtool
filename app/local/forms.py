@@ -79,10 +79,19 @@ class TermForm(forms.ModelForm):
         fields = ['name', 'start_date', 'end_date', 'total_seats', 'description']
         widgets = {
             'description': forms.Textarea(attrs={'rows': 3}),
-            'start_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
-            'end_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'start_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}, format='%Y-%m-%d'),
+            'end_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}, format='%Y-%m-%d'),
             'total_seats': forms.NumberInput(attrs={'class': 'form-control', 'min': '0'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Ensure date fields are formatted correctly for HTML5 date inputs
+        if self.instance and self.instance.pk:
+            if self.instance.start_date:
+                self.fields['start_date'].widget.attrs['value'] = self.instance.start_date.strftime('%Y-%m-%d')
+            if self.instance.end_date:
+                self.fields['end_date'].widget.attrs['value'] = self.instance.end_date.strftime('%Y-%m-%d')
 
     def clean(self):
         cleaned_data = super().clean()
@@ -224,7 +233,7 @@ class SessionForm(forms.ModelForm):
     
     # Separate date and time fields for better user experience
     session_date = forms.DateField(
-        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}, format='%Y-%m-%d'),
         help_text="Date of the session"
     )
     session_time = forms.TimeField(
