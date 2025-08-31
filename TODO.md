@@ -31,3 +31,4 @@
 [ ] implement ci colors
 [ ] motion export as pdf
 [x] optimize group model and detail
+[ ] home template

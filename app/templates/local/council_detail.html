@@ -28,26 +28,14 @@
                 </div>
                 <div class="card-body">
                     <div class="row">
-                        <div class="col-md-6">
-                            <dl class="row">
-                                <dt class="col-sm-4">{% trans "Name" %}</dt>
-                                <dd class="col-sm-8">{{ council.name }}</dd>
-                                
-
-                                
-                            </dl>
-                        </div>
-                        <div class="col-md-6">
-                            <dl class="row">
-                                <dt class="col-sm-4">{% trans "Local District" %}</dt>
-                                <dd class="col-sm-8">
-                                    <a href="{% url 'local:local-detail' council.local.pk %}">
-                                        {{ council.local.name }}
-                                    </a>
-                                </dd>
-                                
-                            </dl>
-                        </div>
+                        <dl class="row">
+                            <dt class="col-sm-4">{% trans "Local District" %}</dt>
+                            <dd class="col-sm-8">
+                                <a href="{% url 'local:local-detail' council.local.pk %}">
+                                    {{ council.local.name }}
+                                </a>
+                            </dd>                            
+                        </dl>                        
                     </div>
                     
 
@@ -159,9 +147,6 @@
                         <a href="{% url 'local:session-create' %}?council={{ council.pk }}" class="btn btn-success btn-sm">
                             <i class="bi bi-plus-circle"></i> {% trans "Add Session" %}
                         </a>
-                        <a href="{% url 'local:session-list' %}?council={{ council.pk }}" class="btn btn-outline-info btn-sm">
-                            <i class="bi bi-list"></i> {% trans "View All Sessions" %}
-                        </a>
                     </div>
                 </div>
                 <div class="card-body">
@@ -267,9 +252,6 @@
                     <div>
                         <a href="{% url 'local:committee-create' %}?council={{ council.pk }}" class="btn btn-success btn-sm">
                             <i class="bi bi-plus-circle"></i> {% trans "Add Committee" %}
-                        </a>
-                        <a href="{% url 'local:committee-list' %}?council={{ council.pk }}" class="btn btn-outline-info btn-sm">
-                            <i class="bi bi-list"></i> {% trans "View All Committees" %}
                         </a>
                     </div>
                 </div>

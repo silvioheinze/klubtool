@@ -14,15 +14,7 @@
             <h1 class="h3 mb-0">
                 <i class="bi bi-file-text"></i> {{ motion.title }}
             </h1>
-            <p class="text-muted">
-                {% trans "Motion details and information" %}
-                {% if motion.session %}
-                    • <a href="{% url 'local:session-detail' motion.session.pk %}">{{ motion.session.title }}</a>
-                    {% if motion.session.council %}
-                        • <a href="{% url 'local:council-detail' motion.session.council.pk %}">{{ motion.session.council.name }}</a>
-                    {% endif %}
-                {% endif %}
-            </p>
+
         </div>
         <div>
             <div class="btn-group" role="group">
@@ -31,11 +23,8 @@
                         <i class="bi bi-pencil"></i> {% trans "Edit" %}
                     </a>
                 {% endif %}
-                <a href="{% url 'motion:motion-delete' motion.pk %}" class="btn btn-danger">
-                    <i class="bi bi-trash"></i> {% trans "Delete" %}
-                </a>
-                <a href="{% url 'motion:motion-list' %}" class="btn btn-outline-secondary">
-                    <i class="bi bi-arrow-left"></i> {% trans "Back to Motions" %}
+                <a href="{% url 'local:session-detail' motion.session.pk %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> {% trans "Back to Session" %}
                 </a>
             </div>
         </div>
@@ -329,30 +318,9 @@
 
         <!-- Quick Info Sidebar -->
         <div class="col-lg-4">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">{% trans "Quick Info" %}</h5>
-                </div>
-                <div class="card-body">
-                    <ul class="list-unstyled">
-                        <li><strong>{% trans "Submitted By" %}:</strong> 
-                            {% if motion.submitted_by %}
-                                {{ motion.submitted_by.username }}
-                            {% else %}
-                                <span class="text-muted">{% trans "Unknown" %}</span>
-                            {% endif %}
-                        </li>
-                        <li><strong>{% trans "Submitted Date" %}:</strong> {{ motion.submitted_date|date:"M d, Y H:i" }}</li>
-                        <li><strong>{% trans "Last Modified" %}:</strong> {{ motion.last_modified|date:"M d, Y H:i" }}</li>
-                        <li><strong>{% trans "Motion Type" %}:</strong> {{ motion.get_motion_type_display }}</li>
-                        <li><strong>{% trans "Status" %}:</strong> {{ motion.get_status_display }}</li>
-                        <li><strong>{% trans "Supporting Parties" %}:</strong> {{ motion.supporting_parties_count }}</li>
-                    </ul>
-                </div>
-            </div>
 
             <!-- Actions -->
-            <div class="card mt-3">
+            <div class="card">
                 <div class="card-header">
                     <h5 class="mb-0">{% trans "Actions" %}</h5>
                 </div>
@@ -372,11 +340,6 @@
                         {% if motion.session %}
                             <a href="{% url 'local:session-detail' motion.session.pk %}" class="btn btn-outline-info">
                                 <i class="bi bi-calendar-event"></i> {% trans "View Session" %}
-                            </a>
-                        {% endif %}
-                        {% if motion.group %}
-                            <a href="{% url 'group:group-detail' motion.group.pk %}" class="btn btn-outline-success">
-                                <i class="bi bi-people"></i> {% trans "View Group" %}
                             </a>
                         {% endif %}
                     </div>
