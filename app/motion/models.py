@@ -14,6 +14,7 @@ class Motion(models.Model):
     STATUS_CHOICES = [
         ('draft', _('Draft')),
         ('submitted', _('Submitted')),
+        ('refer_to_committee', _('Refer to Committee')),
         ('approved', _('Approved')),
         ('rejected', _('Rejected')),
         ('withdrawn', _('Withdrawn')),
@@ -78,6 +79,25 @@ class Motion(models.Model):
     def session_date(self):
         """Get the session date"""
         return self.session.scheduled_date if self.session else None
+    
+    def save(self, *args, **kwargs):
+        """Override save to track status changes"""
+        if self.pk:  # Only for existing instances
+            try:
+                old_instance = Motion.objects.get(pk=self.pk)
+                if old_instance.status != self.status:
+                    # Status has changed, create a status history entry
+                    MotionStatus.objects.create(
+                        motion=self,
+                        status=self.status,
+                        committee=getattr(self, '_status_committee', None),
+                        changed_by=getattr(self, '_status_changed_by', None),
+                        reason=getattr(self, '_status_change_reason', '')
+                    )
+            except Motion.DoesNotExist:
+                pass
+        
+        super().save(*args, **kwargs)
 
 
 class MotionVote(models.Model):
@@ -153,8 +173,57 @@ class MotionAttachment(models.Model):
         return f"{self.filename} - {self.motion.title}"
 
 
+class MotionStatus(models.Model):
+    """Model representing status changes for motions"""
+    
+    motion = models.ForeignKey(Motion, on_delete=models.CASCADE, related_name='status_history')
+    status = models.CharField(max_length=20, choices=Motion.STATUS_CHOICES)
+    committee = models.ForeignKey('local.Committee', on_delete=models.SET_NULL, null=True, blank=True, related_name='motion_status_changes', help_text="Committee when status is 'refer_to_committee'")
+    changed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='motion_status_changes')
+    changed_at = models.DateTimeField(auto_now_add=True)
+    reason = models.TextField(blank=True, help_text="Reason for the status change")
+    
+    class Meta:
+        ordering = ['-changed_at']
+        verbose_name = "Motion Status"
+        verbose_name_plural = "Motion Statuses"
+    
+    def __str__(self):
+        return f"{self.motion.title} - {self.get_status_display()} ({self.changed_at.strftime('%d.%m.%Y %H:%M')})"
+
+
+class MotionGroupDecision(models.Model):
+    """Model representing group decisions on motions"""
+    
+    DECISION_CHOICES = [
+        ('approve', _('Approve')),
+        ('reject', _('Reject')),
+        ('abstain', _('Abstain')),
+        ('withdraw', _('Withdraw')),
+        ('refer_to_committee', _('Refer to Committee')),
+    ]
+    
+    motion = models.ForeignKey(Motion, on_delete=models.CASCADE, related_name='group_decisions')
+    decision = models.CharField(max_length=20, choices=DECISION_CHOICES)
+    committee = models.ForeignKey('local.Committee', on_delete=models.SET_NULL, null=True, blank=True, related_name='motion_group_decisions', help_text="Committee when decision is 'refer_to_committee'")
+    description = models.TextField(blank=True, help_text="Description of the group decision")
+    decision_time = models.DateTimeField(help_text="When the decision was made")
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='motion_group_decisions_created')
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-decision_time']
+        verbose_name = "Motion Group Decision"
+        verbose_name_plural = "Motion Group Decisions"
+    
+    def __str__(self):
+        return f"{self.motion.title} - {self.get_decision_display()} ({self.decision_time.strftime('%d.%m.%Y %H:%M')})"
+
+
 # Register models for audit logging
 auditlog.register(Motion)
 auditlog.register(MotionVote)
 auditlog.register(MotionComment)
 auditlog.register(MotionAttachment)
+auditlog.register(MotionStatus)
+auditlog.register(MotionGroupDecision)

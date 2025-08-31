@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Motion, MotionVote, MotionComment, MotionAttachment
+from .models import Motion, MotionVote, MotionComment, MotionAttachment, MotionStatus
 
 
 @admin.register(Motion)
@@ -97,6 +97,26 @@ class MotionAttachmentAdmin(admin.ModelAdmin):
         }),
         ('Upload Information', {
             'fields': ('uploaded_by', 'uploaded_at'),
+            'classes': ('collapse',)
+        }),
+    )
+
+
+@admin.register(MotionStatus)
+class MotionStatusAdmin(admin.ModelAdmin):
+    """Admin configuration for MotionStatus model"""
+    list_display = ['motion', 'status', 'changed_by', 'changed_at']
+    list_filter = ['status', 'changed_at', 'motion__status']
+    search_fields = ['motion__title', 'changed_by__username', 'reason']
+    readonly_fields = ['changed_at']
+    date_hierarchy = 'changed_at'
+    
+    fieldsets = (
+        ('Status Change Information', {
+            'fields': ('motion', 'status', 'changed_by', 'reason')
+        }),
+        ('Timestamps', {
+            'fields': ('changed_at',),
             'classes': ('collapse',)
         }),
     )

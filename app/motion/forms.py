@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib.auth import get_user_model
-from .models import Motion, MotionVote, MotionComment, MotionAttachment
+from .models import Motion, MotionVote, MotionComment, MotionAttachment, MotionStatus, MotionGroupDecision
 from local.models import Session, Party, Committee
 from group.models import Group
 
@@ -221,6 +221,156 @@ class MotionAttachmentForm(forms.ModelForm):
         if instance.file:
             import os
             instance.filename = os.path.basename(instance.file.name)
+        
+        if commit:
+            instance.save()
+        return instance
+
+
+class MotionStatusForm(forms.ModelForm):
+    """Form for adding status changes to motions"""
+    
+    committee = forms.ModelChoiceField(
+        queryset=Committee.objects.filter(is_active=True),
+        required=False,
+        empty_label="Select a committee...",
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        help_text="Select the committee to refer this motion to"
+    )
+    
+    class Meta:
+        model = MotionStatus
+        fields = ['status', 'committee', 'reason']
+        widgets = {
+            'status': forms.Select(attrs={'class': 'form-select'}),
+            'committee': forms.Select(attrs={'class': 'form-select'}),
+            'reason': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Reason for the status change (optional)...'
+            }),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        self.motion = kwargs.pop('motion', None)
+        self.changed_by = kwargs.pop('changed_by', None)
+        super().__init__(*args, **kwargs)
+        
+        # Filter out the current status from choices
+        if self.motion:
+            current_status = self.motion.status
+            choices = list(self.fields['status'].choices)
+            # Remove the current status from choices
+            choices = [choice for choice in choices if choice[0] != current_status]
+            self.fields['status'].choices = choices
+            
+            # Filter committees to only show those from the same council as the motion's session
+            if self.motion.session and self.motion.session.council:
+                self.fields['committee'].queryset = Committee.objects.filter(
+                    council=self.motion.session.council,
+                    is_active=True
+                )
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        status = cleaned_data.get('status')
+        committee = cleaned_data.get('committee')
+        
+        # If status is 'refer_to_committee', committee is required
+        if status == 'refer_to_committee' and not committee:
+            raise forms.ValidationError({
+                'committee': 'A committee must be selected when referring a motion to committee.'
+            })
+        
+        return cleaned_data
+    
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        if self.motion:
+            instance.motion = self.motion
+        if self.changed_by:
+            instance.changed_by = self.changed_by
+        
+        if commit:
+            instance.save()
+        return instance
+
+
+class MotionGroupDecisionForm(forms.ModelForm):
+    """Form for creating group decisions on motions"""
+    
+    committee = forms.ModelChoiceField(
+        queryset=Committee.objects.filter(is_active=True),
+        required=False,
+        empty_label="Select a committee...",
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        help_text="Select the committee to refer this motion to"
+    )
+    
+    decision_date = forms.DateField(
+        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}, format='%Y-%m-%d'),
+        help_text="Date of the decision"
+    )
+    
+    decision_time = forms.TimeField(
+        widget=forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}, format='%H:%M'),
+        help_text="Time of the decision"
+    )
+    
+    class Meta:
+        model = MotionGroupDecision
+        fields = ['decision', 'committee', 'description']
+        widgets = {
+            'decision': forms.Select(attrs={'class': 'form-select'}),
+            'committee': forms.Select(attrs={'class': 'form-select'}),
+            'description': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 4,
+                'placeholder': 'Description of the group decision...'
+            }),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        self.motion = kwargs.pop('motion', None)
+        self.created_by = kwargs.pop('created_by', None)
+        super().__init__(*args, **kwargs)
+        
+        # Filter committees to only show those from the same council as the motion's session
+        if self.motion and self.motion.session and self.motion.session.council:
+            self.fields['committee'].queryset = Committee.objects.filter(
+                council=self.motion.session.council,
+                is_active=True
+            )
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        decision = cleaned_data.get('decision')
+        committee = cleaned_data.get('committee')
+        
+        # If decision is 'refer_to_committee', committee is required
+        if decision == 'refer_to_committee' and not committee:
+            raise forms.ValidationError({
+                'committee': 'A committee must be selected when referring a motion to committee.'
+            })
+        
+        return cleaned_data
+    
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        if self.motion:
+            instance.motion = self.motion
+        if self.created_by:
+            instance.created_by = self.created_by
+        
+        # Combine date and time into decision_time
+        decision_date = self.cleaned_data.get('decision_date')
+        decision_time = self.cleaned_data.get('decision_time')
+        if decision_date and decision_time:
+            from django.utils import timezone
+            import datetime
+            instance.decision_time = timezone.make_aware(
+                datetime.datetime.combine(decision_date, decision_time)
+            )
         
         if commit:
             instance.save()

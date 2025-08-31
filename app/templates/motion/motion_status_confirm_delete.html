@@ -1,0 +1,86 @@
+{% extends "_base.html" %}
+{% load i18n %}
+
+{% block title %}
+    {% trans "Delete Status Entry" %} - {{ motion.title }}
+{% endblock title %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="bi bi-trash"></i> {% trans "Delete Status Entry" %}
+            </h1>
+            <p class="text-muted">{{ motion.title }}</p>
+        </div>
+        <div>
+            <a href="{% url 'motion:motion-detail' motion.pk %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> {% trans "Back to Motion" %}
+            </a>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">{% trans "Confirm Deletion" %}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <strong>{% trans "Warning" %}:</strong> {% trans "This action cannot be undone." %}
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h6>{% trans "Status Entry Details" %}:</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <strong>{% trans "Status" %}:</strong> {{ status_entry.get_status_display }}
+                            </div>
+                            <div class="col-md-6">
+                                <strong>{% trans "Changed At" %}:</strong> {{ status_entry.changed_at|date:"d.m.Y H:i" }}
+                            </div>
+                        </div>
+                        {% if status_entry.changed_by %}
+                            <div class="row mt-2">
+                                <div class="col-md-6">
+                                    <strong>{% trans "Changed By" %}:</strong> {{ status_entry.changed_by.get_full_name|default:status_entry.changed_by.username }}
+                                </div>
+                            </div>
+                        {% endif %}
+                        {% if status_entry.committee %}
+                            <div class="row mt-2">
+                                <div class="col-md-6">
+                                    <strong>{% trans "Committee" %}:</strong> {{ status_entry.committee.name }}
+                                </div>
+                            </div>
+                        {% endif %}
+                        {% if status_entry.reason %}
+                            <div class="row mt-2">
+                                <div class="col-12">
+                                    <strong>{% trans "Reason" %}:</strong> {{ status_entry.reason }}
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash"></i> {% trans "Delete Status Entry" %}
+                            </button>
+                            <a href="{% url 'motion:motion-detail' motion.pk %}" class="btn btn-outline-secondary">
+                                {% trans "Cancel" %}
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

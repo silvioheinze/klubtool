@@ -106,16 +106,10 @@
                         <h6>{% trans "Rationale" %}</h6>
                         <p>{{ motion.rationale|linebreaks }}</p>
                     {% endif %}
-                </div>
-            </div>
-
-            <!-- Supporting Parties -->
-            {% if motion.parties.exists %}
-                <div class="card mt-3">
-                    <div class="card-header">
-                        <h5 class="mb-0"><i class="bi bi-people"></i> {% trans "Supporting Parties" %}</h5>
-                    </div>
-                    <div class="card-body">
+                    
+                    {% if motion.parties.exists %}
+                        <hr>
+                        <h6><i class="bi bi-people"></i> {% trans "Supporting Parties" %}</h6>
                         <div class="row">
                             {% for party in motion.parties.all %}
                                 <div class="col-md-6 col-lg-4 mb-2">
@@ -125,10 +119,87 @@
                                 </div>
                             {% endfor %}
                         </div>
-                    </div>
+                    {% endif %}
                 </div>
-            {% endif %}
-
+            </div>
+            <!-- Group Decisions -->
+            <div class="card mt-3">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">{% trans "Group Decisions" %}</h5>
+                    {% if can_add_group_decision %}
+                        <a href="{% url 'motion:motion-group-decision' motion.pk %}" class="btn btn-sm btn-primary">
+                            <i class="bi bi-plus-circle"></i> {% trans "Add Group Decision" %}
+                        </a>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    {% if motion.group_decisions.all %}
+                        <div class="timeline">
+                            {% for decision in motion.group_decisions.all %}
+                                <div class="timeline-item mb-3">
+                                    <div class="d-flex align-items-start">
+                                        <div class="flex-shrink-0">
+                                            <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; font-size: 12px; 
+                                                {% if decision.decision == 'approve' %}background-color: #28a745; color: white;
+                                                {% elif decision.decision == 'reject' %}background-color: #dc3545; color: white;
+                                                {% elif decision.decision == 'abstain' %}background-color: #ffc107; color: black;
+                                                {% elif decision.decision == 'withdraw' %}background-color: #6c757d; color: white;
+                                                {% elif decision.decision == 'refer_to_committee' %}background-color: #17a2b8; color: white;
+                                                {% endif %}">
+                                                {% if decision.decision == 'approve' %}
+                                                    <i class="bi bi-check"></i>
+                                                {% elif decision.decision == 'reject' %}
+                                                    <i class="bi bi-x"></i>
+                                                {% elif decision.decision == 'abstain' %}
+                                                    <i class="bi bi-dash"></i>
+                                                {% elif decision.decision == 'withdraw' %}
+                                                    <i class="bi bi-arrow-left"></i>
+                                                {% elif decision.decision == 'refer_to_committee' %}
+                                                    <i class="bi bi-people"></i>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        <div class="flex-grow-1 ms-3">
+                                            <div class="d-flex justify-content-between align-items-start">
+                                                <div>
+                                                    <strong>{{ decision.get_decision_display }}</strong>
+                                                    {% if decision.created_by %}
+                                                        <br><small class="text-muted">by {{ decision.created_by.get_full_name|default:decision.created_by.username }}</small>
+                                                    {% endif %}
+                                                </div>
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <small class="text-muted">{{ decision.decision_time|date:"d.m.Y H:i" }}</small>
+                                                    {% if can_delete_group_decision %}
+                                                        <a href="{% url 'motion:motion-group-decision-delete' motion.pk decision.pk %}" 
+                                                           class="btn btn-sm btn-outline-danger" 
+                                                           title="{% trans 'Delete group decision' %}">
+                                                            <i class="bi bi-x"></i>
+                                                        </a>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            {% if decision.description %}
+                                                <div class="mt-1">
+                                                    <small class="text-muted">{{ decision.description }}</small>
+                                                </div>
+                                            {% endif %}
+                                            {% if decision.decision == 'refer_to_committee' and decision.committee %}
+                                                <div class="mt-1">
+                                                    <small class="text-muted">
+                                                        <i class="bi bi-people"></i> {% trans "Referred to" %}: {{ decision.committee.name }}
+                                                    </small>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center mb-0">{% trans "No group decisions recorded." %}</p>
+                    {% endif %}
+                </div>
+            </div>
             <!-- Comments Section -->
             <div class="card mt-3">
                 <div class="card-header">
@@ -280,6 +351,85 @@
                     </div>
                 </div>
             </div>
+            
+            <!-- Status History -->
+            <div class="card mt-3">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">{% trans "Status History" %}</h5>
+                    <a href="{% url 'motion:motion-status-change' motion.pk %}" class="btn btn-sm btn-primary">
+                        <i class="bi bi-plus-circle"></i> {% trans "Add Status" %}
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if status_history %}
+                        <div class="timeline">
+                            {% for status_entry in status_history %}
+                                <div class="timeline-item mb-3">
+                                    <div class="d-flex align-items-start">
+                                        <div class="flex-shrink-0">
+                                            <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; font-size: 12px; 
+                                                {% if status_entry.status == 'draft' %}background-color: #6c757d; color: white;
+                                                {% elif status_entry.status == 'submitted' %}background-color: #007bff; color: white;
+                                                {% elif status_entry.status == 'approved' %}background-color: #28a745; color: white;
+                                                {% elif status_entry.status == 'rejected' %}background-color: #dc3545; color: white;
+                                                {% elif status_entry.status == 'withdrawn' %}background-color: #ffc107; color: black;
+                                                {% endif %}">
+                                                {% if status_entry.status == 'draft' %}
+                                                    <i class="bi bi-pencil"></i>
+                                                {% elif status_entry.status == 'submitted' %}
+                                                    <i class="bi bi-send"></i>
+                                                {% elif status_entry.status == 'approved' %}
+                                                    <i class="bi bi-check"></i>
+                                                {% elif status_entry.status == 'rejected' %}
+                                                    <i class="bi bi-x"></i>
+                                                {% elif status_entry.status == 'withdrawn' %}
+                                                    <i class="bi bi-arrow-left"></i>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        <div class="flex-grow-1 ms-3">
+                                            <div class="d-flex justify-content-between align-items-start">
+                                                <div>
+                                                    <strong>{{ status_entry.get_status_display }}</strong>
+                                                    {% if status_entry.changed_by %}
+                                                        <br><small class="text-muted">by {{ status_entry.changed_by.get_full_name|default:status_entry.changed_by.username }}</small>
+                                                    {% endif %}
+                                                </div>
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <small class="text-muted">{{ status_entry.changed_at|date:"d.m.Y H:i" }}</small>
+                                                    {% if user.is_superuser %}
+                                                        <a href="{% url 'motion:motion-status-delete' motion.pk status_entry.pk %}" 
+                                                           class="btn btn-sm btn-outline-danger" 
+                                                           title="{% trans 'Delete status entry' %}">
+                                                            <i class="bi bi-x"></i>
+                                                        </a>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            {% if status_entry.reason %}
+                                                <div class="mt-1">
+                                                    <small class="text-muted">{{ status_entry.reason }}</small>
+                                                </div>
+                                            {% endif %}
+                                            {% if status_entry.status == 'refer_to_committee' and status_entry.committee %}
+                                                <div class="mt-1">
+                                                    <small class="text-muted">
+                                                        <i class="bi bi-people"></i> {% trans "Referred to" %}: {{ status_entry.committee.name }}
+                                                    </small>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center mb-0">{% trans "No status changes recorded." %}</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            
         </div>
     </div>
 </div>

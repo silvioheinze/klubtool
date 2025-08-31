@@ -20,7 +20,7 @@
 [x] user list and user management superuser only
 [x] remove documentation and help
 [x] create group admin role
-[ ] motion detail
+[x] motion detail
 [ ] motion management delete only own motions and as group admin
 [x] in local detail show seat distribution from current term in council section
 [ ] local management superuser only
@@ -37,3 +37,8 @@
 [x] export session infos with motion list as PDF
 [ ] optimise motion export pdf
 [ ] optimise session export pdf
+[x] MotionStatus model
+[x] group decision on motion
+[x] remove double confirm for status delete on motion detail
+[ ] motion detail add edit button as long the status is draft
+[ ] motion detail rename export section to Files, add upload button and remove attachments section

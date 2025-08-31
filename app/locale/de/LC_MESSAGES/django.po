@@ -3174,6 +3174,10 @@ msgstr "Resolution"
 msgid "General motion"
 msgstr "Antrag"
 
+#: motion/models.py:18
+msgid "Refer to Committee"
+msgstr "An Ausschuss verweisen"
+
 #: templates/local/session_detail.html:175
 msgid "Exports"
 msgstr "Exporte"
@@ -3185,6 +3189,128 @@ msgstr "Sitzung als PDF exportieren"
 #: templates/motion/motion_detail.html:320
 msgid "Export Motion as PDF"
 msgstr "Antrag als PDF exportieren"
+
+#: templates/motion/motion_detail.html:335
+msgid "Status History"
+msgstr "Statusverlauf"
+
+#: templates/motion/motion_detail.html:365
+msgid "No status changes recorded."
+msgstr "Keine Statusänderungen aufgezeichnet."
+
+#: templates/motion/motion_detail.html:340
+msgid "Add Status"
+msgstr "Status hinzufügen"
+
+#: templates/motion/motion_status_change.html:6
+msgid "Change Status"
+msgstr "Status ändern"
+
+#: templates/motion/motion_status_change.html:12
+msgid "Change Motion Status"
+msgstr "Antragsstatus ändern"
+
+#: templates/motion/motion_status_change.html:17
+msgid "Back to Motion"
+msgstr "Zurück zum Antrag"
+
+
+
+#: templates/motion/motion_status_change.html:35
+msgid "Last changed"
+msgstr "Zuletzt geändert"
+
+#: templates/motion/motion_status_change.html:38
+msgid "by"
+msgstr "von"
+
+#: templates/motion/motion_status_change.html:40
+msgid "Never"
+msgstr "Nie"
+
+#: templates/motion/motion_status_change.html:52
+msgid "New Status"
+msgstr "Neuer Status"
+
+#: templates/motion/motion_status_change.html:65
+msgid "Reason for Change"
+msgstr "Grund für die Änderung"
+
+#: templates/motion/motion_status_change.html:66
+msgid "optional"
+msgstr "optional"
+
+#: templates/motion/motion_status_change.html:75
+msgid "Please provide a reason for this status change to help track the motion's progress."
+msgstr "Bitte geben Sie einen Grund für diese Statusänderung an, um den Fortschritt des Antrags zu verfolgen."
+
+#: templates/motion/motion_status_change.html:95
+msgid "View All History"
+msgstr "Alle Historie anzeigen"
+
+
+
+#: templates/motion/motion_status_change.html:78
+msgid "Select the committee to refer this motion to."
+msgstr "Wählen Sie den Ausschuss aus, an den dieser Antrag verwiesen werden soll."
+
+#: templates/motion/motion_detail.html:375
+msgid "Referred to"
+msgstr "Verwiesen an"
+
+#: motion/models.py:220
+msgid "Approve"
+msgstr "Zustimmen"
+
+#: motion/models.py:221
+msgid "Reject"
+msgstr "Ablehnen"
+
+
+
+#: motion/models.py:223
+msgid "Withdraw"
+msgstr "Zurückziehen"
+
+
+
+#: templates/motion/motion_detail.html:380
+msgid "Group Decisions"
+msgstr "Klubentscheidungen"
+
+#: templates/motion/motion_detail.html:420
+msgid "No group decisions recorded."
+msgstr "Keine Klubentscheidungen aufgezeichnet."
+
+#: templates/motion/motion_group_decision_confirm_delete.html:6
+msgid "Delete Group Decision"
+msgstr "Klubentscheidung löschen"
+
+
+
+#: templates/motion/motion_detail.html:395
+msgid "Delete group decision"
+msgstr "Klubentscheidung löschen"
+
+#: templates/motion/motion_detail.html:398
+msgid "Are you sure you want to delete this group decision?"
+msgstr "Sind Sie sicher, dass Sie diese Klubentscheidung löschen möchten?"
+
+
+
+#: templates/motion/motion_detail.html:385
+msgid "Delete status entry"
+msgstr "Status-Eintrag löschen"
+
+#: templates/motion/motion_detail.html:387
+msgid "Are you sure you want to delete this status entry?"
+msgstr "Sind Sie sicher, dass Sie diesen Status-Eintrag löschen möchten?"
+
+#: templates/motion/motion_status_confirm_delete.html:6
+msgid "Delete Status Entry"
+msgstr "Status-Eintrag löschen"
+
+
 
 #: templates/_base.html:60
 msgid "Next Session"

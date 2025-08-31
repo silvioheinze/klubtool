@@ -1,0 +1,157 @@
+{% extends "_base.html" %}
+{% load i18n %}
+
+{% block title %}
+    {% trans "Add Group Decision" %} - {{ motion.title }}
+{% endblock title %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="bi bi-people-fill"></i> {% trans "Add Group Decision" %}
+            </h1>
+            <p class="text-muted">{{ motion.title }}</p>
+        </div>
+        <div>
+            <a href="{% url 'motion:motion-detail' motion.pk %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> {% trans "Back to Motion" %}
+            </a>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">{% trans "Group Decision Details" %}</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.decision.id_for_label }}" class="form-label">
+                                        <strong>{% trans "Decision" %}</strong>
+                                    </label>
+                                    {{ form.decision }}
+                                    {% if form.decision.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.decision.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.decision_date.id_for_label }}" class="form-label">
+                                        <strong>{% trans "Decision Date" %}</strong>
+                                    </label>
+                                    {{ form.decision_date }}
+                                    {% if form.decision_date.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.decision_date.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.decision_time.id_for_label }}" class="form-label">
+                                        <strong>{% trans "Decision Time" %}</strong>
+                                    </label>
+                                    {{ form.decision_time }}
+                                    {% if form.decision_time.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.decision_time.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3" id="committee-field" style="display: none;">
+                                    <label for="{{ form.committee.id_for_label }}" class="form-label">
+                                        <strong>{% trans "Committee" %}</strong>
+                                    </label>
+                                    {{ form.committee }}
+                                    {% if form.committee.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.committee.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    <div class="form-text">
+                                        {% trans "Select the committee to refer this motion to." %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.description.id_for_label }}" class="form-label">
+                                <strong>{% trans "Description" %}</strong>
+                                <small class="text-muted">({% trans "optional" %})</small>
+                            </label>
+                            {{ form.description }}
+                            {% if form.description.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.description.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">
+                                {% trans "Provide additional details about the group decision." %}
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i> {% trans "Add Group Decision" %}
+                            </button>
+                            <a href="{% url 'motion:motion-detail' motion.pk %}" class="btn btn-outline-secondary">
+                                {% trans "Cancel" %}
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const decisionSelect = document.getElementById('{{ form.decision.id_for_label }}');
+    const committeeField = document.getElementById('committee-field');
+    
+    function toggleCommitteeField() {
+        if (decisionSelect.value === 'refer_to_committee') {
+            committeeField.style.display = 'block';
+        } else {
+            committeeField.style.display = 'none';
+        }
+    }
+    
+    // Initial state
+    toggleCommitteeField();
+    
+    // Listen for changes
+    decisionSelect.addEventListener('change', toggleCommitteeField);
+});
+</script>
+{% endblock content %}

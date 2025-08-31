@@ -9,8 +9,8 @@ from django.db.models import Q, Count
 from django.core.paginator import Paginator
 from django.utils import timezone
 
-from .models import Motion, MotionVote, MotionComment, MotionAttachment
-from .forms import MotionForm, MotionFilterForm, MotionVoteForm, MotionCommentForm, MotionAttachmentForm
+from .models import Motion, MotionVote, MotionComment, MotionAttachment, MotionStatus, MotionGroupDecision
+from .forms import MotionForm, MotionFilterForm, MotionVoteForm, MotionCommentForm, MotionAttachmentForm, MotionStatusForm, MotionGroupDecisionForm
 from user.models import CustomUser
 from local.models import Session, Party
 from group.models import Group
@@ -21,6 +21,36 @@ def is_superuser_or_has_permission(permission):
     def check_permission(user):
         return user.is_superuser or user.has_role_permission(permission)
     return check_permission
+
+
+def is_leader_or_deputy_leader(user, motion):
+    """Check if user is a leader or deputy leader of the motion's group"""
+    if user.is_superuser:
+        return True
+    
+    if not motion.group:
+        return False
+    
+    # Check if user is a member of the motion's group with leader or deputy leader role
+    from group.models import GroupMember
+    from user.models import Role
+    
+    try:
+        # Get leader and deputy leader roles
+        leader_role = Role.objects.get(name='Leader')
+        deputy_leader_role = Role.objects.get(name='Deputy Leader')
+        
+        # Check if user has these roles in the motion's group
+        membership = GroupMember.objects.filter(
+            user=user,
+            group=motion.group,
+            is_active=True,
+            roles__in=[leader_role, deputy_leader_role]
+        ).first()
+        
+        return membership is not None
+    except Role.DoesNotExist:
+        return False
 
 
 class MotionListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
@@ -109,6 +139,16 @@ class MotionDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         # Add attachment form
         context['attachment_form'] = MotionAttachmentForm(motion=motion, uploaded_by=self.request.user)
         
+        # Add status change form
+        context['status_form'] = MotionStatusForm(motion=motion, changed_by=self.request.user)
+        
+        # Add group decision form
+        context['group_decision_form'] = MotionGroupDecisionForm(motion=motion, created_by=self.request.user)
+        
+        # Add permission checks for group decisions
+        context['can_add_group_decision'] = self.request.user.is_superuser or is_leader_or_deputy_leader(self.request.user, motion)
+        context['can_delete_group_decision'] = self.request.user.is_superuser or is_leader_or_deputy_leader(self.request.user, motion)
+        
         # Get user's existing vote
         context['user_vote'] = motion.votes.filter(voter=self.request.user).first()
         
@@ -130,6 +170,9 @@ class MotionDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         
         # Get attachments
         context['attachments'] = motion.attachments.all()
+        
+        # Get status history
+        context['status_history'] = motion.status_history.all()
         
         return context
 
@@ -283,6 +326,111 @@ def motion_attachment_view(request, pk):
     return render(request, 'motion/motion_attachment.html', {
         'motion': motion,
         'form': form
+    })
+
+
+@login_required
+@user_passes_test(is_superuser_or_has_permission('motion.edit'))
+def motion_status_change_view(request, pk):
+    """View for changing motion status"""
+    motion = get_object_or_404(Motion, pk=pk)
+    
+    if request.method == 'POST':
+        form = MotionStatusForm(request.POST, motion=motion, changed_by=request.user)
+        if form.is_valid():
+            # Get the new status
+            new_status = form.cleaned_data['status']
+            reason = form.cleaned_data['reason']
+            committee = form.cleaned_data.get('committee')
+            
+            # Set attributes for the save method to use
+            motion._status_changed_by = request.user
+            motion._status_change_reason = reason
+            motion._status_committee = committee
+            
+            # Update the motion status
+            motion.status = new_status
+            
+            # If status is 'refer_to_committee', also update the motion's committee
+            if new_status == 'refer_to_committee' and committee:
+                motion.committee = committee
+            
+            # Save the motion (this will trigger the save method which creates the status history entry)
+            motion.save()
+            
+            messages.success(request, f"Motion status changed to '{motion.get_status_display()}' successfully.")
+            return redirect('motion:motion-detail', pk=pk)
+    else:
+        form = MotionStatusForm(motion=motion, changed_by=request.user)
+    
+    return render(request, 'motion/motion_status_change.html', {
+        'motion': motion,
+        'form': form
+    })
+
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def motion_status_delete_view(request, motion_pk, status_pk):
+    """View for deleting a motion status entry (superuser only)"""
+    motion = get_object_or_404(Motion, pk=motion_pk)
+    status_entry = get_object_or_404(MotionStatus, pk=status_pk, motion=motion)
+    
+    if request.method == 'POST':
+        status_entry.delete()
+        messages.success(request, f"Status entry '{status_entry.get_status_display()}' deleted successfully.")
+        return redirect('motion:motion-detail', pk=motion_pk)
+    
+    return render(request, 'motion/motion_status_confirm_delete.html', {
+        'motion': motion,
+        'status_entry': status_entry
+    })
+
+
+@login_required
+def motion_group_decision_view(request, pk):
+    """View for creating group decisions on motions"""
+    motion = get_object_or_404(Motion, pk=pk)
+    
+    # Check if user has permission (superuser, leader, or deputy leader)
+    if not (request.user.is_superuser or is_leader_or_deputy_leader(request.user, motion)):
+        messages.error(request, "You don't have permission to add group decisions.")
+        return redirect('motion:motion-detail', pk=pk)
+    
+    if request.method == 'POST':
+        form = MotionGroupDecisionForm(request.POST, motion=motion, created_by=request.user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f"Group decision '{form.instance.get_decision_display()}' added successfully.")
+            return redirect('motion:motion-detail', pk=pk)
+    else:
+        form = MotionGroupDecisionForm(motion=motion, created_by=request.user)
+    
+    return render(request, 'motion/motion_group_decision.html', {
+        'motion': motion,
+        'form': form
+    })
+
+
+@login_required
+def motion_group_decision_delete_view(request, motion_pk, decision_pk):
+    """View for deleting a motion group decision entry (superuser, leader, or deputy leader only)"""
+    motion = get_object_or_404(Motion, pk=motion_pk)
+    decision_entry = get_object_or_404(MotionGroupDecision, pk=decision_pk, motion=motion)
+    
+    # Check if user has permission (superuser, leader, or deputy leader)
+    if not (request.user.is_superuser or is_leader_or_deputy_leader(request.user, motion)):
+        messages.error(request, "You don't have permission to delete group decisions.")
+        return redirect('motion:motion-detail', pk=motion_pk)
+    
+    if request.method == 'POST':
+        decision_entry.delete()
+        messages.success(request, f"Group decision '{decision_entry.get_decision_display()}' deleted successfully.")
+        return redirect('motion:motion-detail', pk=motion_pk)
+    
+    return render(request, 'motion/motion_group_decision_confirm_delete.html', {
+        'motion': motion,
+        'decision_entry': decision_entry
     })
 
 
