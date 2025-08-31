@@ -284,3 +284,73 @@ def motion_attachment_view(request, pk):
         'motion': motion,
         'form': form
     })
+
+
+class MotionExportPDFView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
+    """View for exporting motion information as PDF"""
+    model = Motion
+    context_object_name = 'motion'
+    template_name = 'motion/motion_export_pdf.html'
+
+    def test_func(self):
+        """Check if user has permission to export Motion objects"""
+        return self.request.user.is_superuser or self.request.user.has_role_permission('motion.view')
+
+    def get_context_data(self, **kwargs):
+        """Add additional context data"""
+        context = super().get_context_data(**kwargs)
+        # Get votes for this motion
+        context['votes'] = self.object.votes.all().select_related('voter').order_by('voter__first_name')
+        context['vote_stats'] = {
+            'yes': self.object.votes.filter(vote='yes').count(),
+            'no': self.object.votes.filter(vote='no').count(),
+            'abstain': self.object.votes.filter(vote='abstain').count(),
+            'absent': self.object.votes.filter(vote='absent').count(),
+            'total': self.object.votes.count(),
+        }
+        # Get comments for this motion
+        context['comments'] = self.object.comments.filter(is_public=True).select_related('author').order_by('created_at')
+        # Get attachments for this motion
+        context['attachments'] = self.object.attachments.all().order_by('uploaded_at')
+        return context
+
+    def render_to_response(self, context, **response_kwargs):
+        """Render PDF response"""
+        from django.template.loader import render_to_string
+        from django.http import HttpResponse
+        from weasyprint import HTML, CSS
+        from django.conf import settings
+        import os
+        
+        # Render the template to HTML
+        html_string = render_to_string(self.template_name, context)
+        
+        # Create PDF using WeasyPrint
+        html = HTML(string=html_string)
+        css = CSS(string='''
+            body { font-family: Arial, sans-serif; margin: 20px; }
+            .header { text-align: center; margin-bottom: 30px; }
+            .motion-info { margin-bottom: 30px; }
+            .motion-text { margin-bottom: 20px; padding: 15px; border: 1px solid #ddd; background-color: #f9f9f9; }
+            .votes-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            .votes-table th, .votes-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            .votes-table th { background-color: #f2f2f2; }
+            .vote-badge { padding: 4px 8px; border-radius: 4px; font-size: 12px; }
+            .vote-yes { background-color: #28a745; color: white; }
+            .vote-no { background-color: #dc3545; color: white; }
+            .vote-abstain { background-color: #ffc107; color: black; }
+            .vote-absent { background-color: #6c757d; color: white; }
+            .comments-section { margin-top: 20px; }
+            .comment { margin-bottom: 15px; padding: 10px; border: 1px solid #ddd; background-color: #f9f9f9; }
+            .attachments-section { margin-top: 20px; }
+            .attachment { margin-bottom: 10px; padding: 8px; border: 1px solid #ddd; }
+        ''')
+        
+        # Generate PDF
+        pdf = html.write_pdf(stylesheets=[css])
+        
+        # Create response
+        response = HttpResponse(pdf, content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="motion_{self.object.pk}_{self.object.title.replace(" ", "_")}.pdf"'
+        
+        return response

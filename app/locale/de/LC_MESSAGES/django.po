@@ -3182,6 +3182,10 @@ msgstr "Exporte"
 msgid "Export Session as PDF"
 msgstr "Sitzung als PDF exportieren"
 
+#: templates/motion/motion_detail.html:320
+msgid "Export Motion as PDF"
+msgstr "Antrag als PDF exportieren"
+
 #: templates/_base.html:60
 msgid "Next Session"
 msgstr "Nächste Sitzung"

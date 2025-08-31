@@ -49,23 +49,8 @@
                                     <span class="badge bg-secondary">{{ motion.get_motion_type_display }}</span>
                                 </dd>
                                 
-                                <dt class="col-sm-4">{% trans "Status" %}</dt>
-                                <dd class="col-sm-8">
-                                    {% if motion.status == 'draft' %}
-                                        <span class="badge bg-secondary">{% trans "Draft" %}</span>
-                                    {% elif motion.status == 'submitted' %}
-                                        <span class="badge bg-primary">{% trans "Submitted" %}</span>
-                                    {% elif motion.status == 'approved' %}
-                                        <span class="badge bg-success">{% trans "Approved" %}</span>
-                                    {% elif motion.status == 'rejected' %}
-                                        <span class="badge bg-danger">{% trans "Rejected" %}</span>
-                                    {% elif motion.status == 'withdrawn' %}
-                                        <span class="badge bg-warning">{% trans "Withdrawn" %}</span>
-                                    {% endif %}
-                                </dd>
                                 
-                                <dt class="col-sm-4">{% trans "Submitted" %}</dt>
-                                <dd class="col-sm-8">{{ motion.submitted_date|date:"l, F d, Y" }}</dd>
+
                             </dl>
                         </div>
                         <div class="col-md-6">
@@ -92,23 +77,18 @@
                                     {% endif %}
                                 </dd>
                                 
-                                <dt class="col-sm-4">{% trans "Committee" %}</dt>
+                                <dt class="col-sm-4">{% trans "Status" %}</dt>
                                 <dd class="col-sm-8">
-                                    {% if motion.committee %}
-                                        <a href="{% url 'local:committee-detail' motion.committee.pk %}">
-                                            {{ motion.committee.name }}
-                                        </a>
-                                    {% else %}
-                                        <span class="text-muted">{% trans "Not assigned" %}</span>
-                                    {% endif %}
-                                </dd>
-                                
-                                <dt class="col-sm-4">{% trans "Active" %}</dt>
-                                <dd class="col-sm-8">
-                                    {% if motion.is_active %}
-                                        <span class="text-success">{% trans "Yes" %}</span>
-                                    {% else %}
-                                        <span class="text-danger">{% trans "No" %}</span>
+                                    {% if motion.status == 'draft' %}
+                                        <span class="badge bg-secondary">{% trans "Draft" %}</span>
+                                    {% elif motion.status == 'submitted' %}
+                                        <span class="badge bg-primary">{% trans "Submitted" %}</span>
+                                    {% elif motion.status == 'approved' %}
+                                        <span class="badge bg-success">{% trans "Approved" %}</span>
+                                    {% elif motion.status == 'rejected' %}
+                                        <span class="badge bg-danger">{% trans "Rejected" %}</span>
+                                    {% elif motion.status == 'withdrawn' %}
+                                        <span class="badge bg-warning">{% trans "Withdrawn" %}</span>
                                     {% endif %}
                                 </dd>
                             </dl>
@@ -148,65 +128,6 @@
                     </div>
                 </div>
             {% endif %}
-
-            <!-- Voting Section -->
-            <div class="card mt-3">
-                <div class="card-header">
-                    <h5 class="mb-0"><i class="bi bi-check-circle"></i> {% trans "Voting" %}</h5>
-                </div>
-                <div class="card-body">
-                    {% if user_vote %}
-                        <div class="alert alert-info">
-                            <strong>{% trans "Your Vote" %}:</strong> 
-                            <span class="badge bg-primary">{{ user_vote.get_vote_display }}</span>
-                            {% if user_vote.reason %}
-                                <br><small class="text-muted">{{ user_vote.reason }}</small>
-                            {% endif %}
-                        </div>
-                    {% else %}
-                        <form method="post" action="{% url 'motion:motion-vote' motion.pk %}">
-                            {% csrf_token %}
-                            {{ vote_form.as_p }}
-                            <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-check-circle"></i> {% trans "Submit Vote" %}
-                            </button>
-                        </form>
-                    {% endif %}
-                    
-                    <!-- Vote Statistics -->
-                    <hr>
-                    <h6>{% trans "Vote Statistics" %}</h6>
-                    <div class="row text-center">
-                        <div class="col-3">
-                            <div class="border rounded p-2">
-                                <div class="h4 text-success">{{ vote_stats.yes }}</div>
-                                <small class="text-muted">{% trans "Yes" %}</small>
-                            </div>
-                        </div>
-                        <div class="col-3">
-                            <div class="border rounded p-2">
-                                <div class="h4 text-danger">{{ vote_stats.no }}</div>
-                                <small class="text-muted">{% trans "No" %}</small>
-                            </div>
-                        </div>
-                        <div class="col-3">
-                            <div class="border rounded p-2">
-                                <div class="h4 text-warning">{{ vote_stats.abstain }}</div>
-                                <small class="text-muted">{% trans "Abstain" %}</small>
-                            </div>
-                        </div>
-                        <div class="col-3">
-                            <div class="border rounded p-2">
-                                <div class="h4 text-secondary">{{ vote_stats.absent }}</div>
-                                <small class="text-muted">{% trans "Absent" %}</small>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="text-center mt-2">
-                        <small class="text-muted">{% trans "Total Votes" %}: {{ vote_stats.total }}</small>
-                    </div>
-                </div>
-            </div>
 
             <!-- Comments Section -->
             <div class="card mt-3">
@@ -342,6 +263,20 @@
                                 <i class="bi bi-calendar-event"></i> {% trans "View Session" %}
                             </a>
                         {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Exports -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="mb-0">{% trans "Exports" %}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'motion:motion-export-pdf' motion.pk %}" class="btn btn-outline-primary">
+                            <i class="bi bi-file-pdf"></i> {% trans "Export Motion as PDF" %}
+                        </a>
                     </div>
                 </div>
             </div>

@@ -15,4 +15,5 @@ urlpatterns = [
     path('<int:pk>/vote/', views.motion_vote_view, name='motion-vote'),
     path('<int:pk>/comment/', views.motion_comment_view, name='motion-comment'),
     path('<int:pk>/attach/', views.motion_attachment_view, name='motion-attach'),
+    path('<int:pk>/export-pdf/', views.MotionExportPDFView.as_view(), name='motion-export-pdf'),
 ]

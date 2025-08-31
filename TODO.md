@@ -29,9 +29,11 @@
 [ ] admin role for locals
 [x] topbar: add link to next session
 [ ] implement ci colors
-[ ] motion export as pdf
+[x] motion export as pdf
 [x] optimize group model and detail
 [ ] home template
 [ ] missing german translations
 [ ] add attachments to sessions
 [x] export session infos with motion list as PDF
+[ ] optimise motion export pdf
+[ ] optimise session export pdf
