@@ -3174,6 +3174,14 @@ msgstr "Resolution"
 msgid "General motion"
 msgstr "Antrag"
 
+#: templates/local/session_detail.html:175
+msgid "Exports"
+msgstr "Exporte"
+
+#: templates/local/session_detail.html:179
+msgid "Export Session as PDF"
+msgstr "Sitzung als PDF exportieren"
+
 #: templates/_base.html:60
 msgid "Next Session"
 msgstr "Nächste Sitzung"

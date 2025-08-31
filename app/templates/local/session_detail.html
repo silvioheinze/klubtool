@@ -193,6 +193,20 @@
                     </div>
                 </div>
             </div>
+            
+            <!-- Exports -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="mb-0">{% trans "Exports" %}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'local:session-export-pdf' session.pk %}" class="btn btn-outline-primary">
+                            <i class="bi bi-file-pdf"></i> {% trans "Export Session as PDF" %}
+                        </a>
+                    </div>
+                </div>
+            </div>
         </div>
         {% endif %}
     </div>

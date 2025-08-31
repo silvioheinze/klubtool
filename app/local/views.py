@@ -859,6 +859,62 @@ class SessionDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
         return super().delete(request, *args, **kwargs)
 
 
+class SessionExportPDFView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
+    """View for exporting session information and motions as PDF"""
+    model = Session
+    context_object_name = 'session'
+    template_name = 'local/session_export_pdf.html'
+
+    def test_func(self):
+        """Check if user has permission to export Session objects"""
+        return self.request.user.is_superuser or self.request.user.has_role_permission('session.view')
+
+    def get_context_data(self, **kwargs):
+        """Add motions data to context"""
+        context = super().get_context_data(**kwargs)
+        # Get all motions for this session
+        context['motions'] = self.object.motions.filter(is_active=True).order_by('-submitted_date')
+        context['total_motions'] = self.object.motions.count()
+        return context
+
+    def render_to_response(self, context, **response_kwargs):
+        """Render PDF response"""
+        from django.template.loader import render_to_string
+        from django.http import HttpResponse
+        from weasyprint import HTML, CSS
+        from django.conf import settings
+        import os
+        
+        # Render the template to HTML
+        html_string = render_to_string(self.template_name, context)
+        
+        # Create PDF using WeasyPrint
+        html = HTML(string=html_string)
+        css = CSS(string='''
+            body { font-family: Arial, sans-serif; margin: 20px; }
+            .header { text-align: center; margin-bottom: 30px; }
+            .session-info { margin-bottom: 30px; }
+            .motions-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            .motions-table th, .motions-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            .motions-table th { background-color: #f2f2f2; }
+            .status-badge { padding: 4px 8px; border-radius: 4px; font-size: 12px; }
+            .status-draft { background-color: #6c757d; color: white; }
+            .status-submitted { background-color: #007bff; color: white; }
+            .status-approved { background-color: #28a745; color: white; }
+            .status-rejected { background-color: #dc3545; color: white; }
+            .status-withdrawn { background-color: #ffc107; color: black; }
+        ''')
+        
+        # Generate PDF
+        pdf = html.write_pdf(stylesheets=[css])
+        
+        # Create response
+        response = HttpResponse(pdf, content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="session_{self.object.pk}_{self.object.title.replace(" ", "_")}.pdf"'
+        
+        return response
+
+
 # Committee Views
 class CommitteeListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
     """View for listing all Committee objects"""

@@ -13,6 +13,13 @@ RUN apt-get update && \
         libjpeg-dev \
         tzdata \
         gettext \
+        # WeasyPrint dependencies
+        libpango-1.0-0 \
+        libpangoft2-1.0-0 \
+        libcairo2 \
+        libpangocairo-1.0-0 \
+        libgdk-pixbuf-xlib-2.0-0 \
+        shared-mime-info \
     && rm -rf /var/lib/apt/lists/*
 
 # Set timezone

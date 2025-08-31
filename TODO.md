@@ -34,3 +34,4 @@
 [ ] home template
 [ ] missing german translations
 [ ] add attachments to sessions
+[x] export session infos with motion list as PDF
