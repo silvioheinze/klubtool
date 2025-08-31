@@ -3296,6 +3296,26 @@ msgstr "Klubentscheidung löschen"
 msgid "Are you sure you want to delete this group decision?"
 msgstr "Sind Sie sicher, dass Sie diese Klubentscheidung löschen möchten?"
 
+#: templates/motion/motion_detail.html:330
+msgid "Files"
+msgstr "Dateien"
+
+#: templates/motion/motion_detail.html:333
+msgid "Upload File"
+msgstr "Datei hochladen"
+
+#: templates/motion/motion_detail.html:345
+msgid "Uploaded by"
+msgstr "Hochgeladen von"
+
+#: templates/motion/motion_detail.html:355
+msgid "Download"
+msgstr "Herunterladen"
+
+#: templates/motion/motion_detail.html:365
+msgid "No attachments uploaded."
+msgstr "Keine Anhänge hochgeladen."
+
 
 
 #: templates/motion/motion_detail.html:385
