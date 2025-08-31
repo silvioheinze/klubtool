@@ -21,24 +21,25 @@
 [x] remove documentation and help
 [x] create group admin role
 [x] motion detail
-[ ] motion management delete only own motions and as group admin
 [x] in local detail show seat distribution from current term in council section
-[ ] local management superuser only
 [x] adapt topbar
 [x] fix user list and management
-[ ] admin role for locals
 [x] topbar: add link to next session
-[ ] implement ci colors
 [x] motion export as pdf
 [x] optimize group model and detail
-[ ] home template
-[ ] missing german translations
-[ ] add attachments to sessions
 [x] export session infos with motion list as PDF
-[ ] optimise motion export pdf
-[ ] optimise session export pdf
 [x] MotionStatus model
 [x] group decision on motion
 [x] remove double confirm for status delete on motion detail
 [x] motion detail add edit button as long the status is draft
 [x] motion detail rename export section to Files, add upload button and remove attachments section
+[ ] motion management delete only own motions and as group admin
+[ ] optimise motion export pdf
+[ ] optimise session export pdf
+[ ] home template
+[ ] missing german translations
+[x] add attachments to sessions
+[ ] implement ci colors
+[ ] admin role for locals
+[ ] local management superuser only
+[ ] update motion vote and add in motionstatus form

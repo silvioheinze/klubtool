@@ -269,6 +269,35 @@ class Session(models.Model):
         return reverse('local:session-detail', kwargs={'pk': self.pk})
 
 
+class SessionAttachment(models.Model):
+    """Model representing file attachments for sessions"""
+    
+    ATTACHMENT_TYPE_CHOICES = [
+        ('agenda', 'Agenda'),
+        ('budget', 'Budget'),
+        ('invitation', 'Invitation'),
+        ('other', 'Other'),
+    ]
+    
+    session = models.ForeignKey(Session, on_delete=models.CASCADE, related_name='attachments')
+    file = models.FileField(upload_to='session_attachments/%Y/%m/%d/')
+    filename = models.CharField(max_length=255)
+    file_type = models.CharField(max_length=20, choices=ATTACHMENT_TYPE_CHOICES, default='document')
+    description = models.TextField(blank=True)
+    uploaded_by = models.ForeignKey('user.CustomUser', on_delete=models.CASCADE, related_name='session_attachments')
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-uploaded_at']
+        verbose_name = "Session Attachment"
+        verbose_name_plural = "Session Attachments"
+    
+    def __str__(self):
+        return f"{self.filename} - {self.session.title}"
+    
+    def get_absolute_url(self):
+        from django.urls import reverse
+        return reverse('local:session-attachment-detail', kwargs={'pk': self.pk})
 
 
 # Register models for audit logging
@@ -280,3 +309,4 @@ auditlog.register(Term)
 auditlog.register(Party)
 auditlog.register(TermSeatDistribution)
 auditlog.register(Session)
+auditlog.register(SessionAttachment)

@@ -3296,6 +3296,20 @@ msgstr "Klubentscheidung löschen"
 msgid "Are you sure you want to delete this group decision?"
 msgstr "Sind Sie sicher, dass Sie diese Klubentscheidung löschen möchten?"
 
+
+
+#: templates/local/session_detail.html:155
+msgid "Session Attachments"
+msgstr "Sitzungsanhänge"
+
+#: templates/local/session_detail.html:195
+msgid "No attachments uploaded for this session yet."
+msgstr "Noch keine Anhänge für diese Sitzung hochgeladen."
+
+#: templates/local/session_detail.html:198
+msgid "Upload First File"
+msgstr "Erste Datei hochladen"
+
 #: templates/motion/motion_detail.html:330
 msgid "Files"
 msgstr "Dateien"

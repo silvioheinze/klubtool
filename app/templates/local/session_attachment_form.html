@@ -1,0 +1,103 @@
+{% extends "_base.html" %}
+{% load i18n %}
+
+{% block title %}
+    {% trans "Upload Attachment" %} - {{ session.title }}
+{% endblock title %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="bi bi-paperclip"></i> {% trans "Upload Attachment" %}
+            </h1>
+            <p class="text-muted">{{ session.title }}</p>
+        </div>
+        <div>
+            <a href="{% url 'local:session-detail' session.pk %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> {% trans "Back to Session" %}
+            </a>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">{% trans "Upload File" %}</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.file.id_for_label }}" class="form-label">
+                                        <strong>{% trans "File" %}</strong>
+                                    </label>
+                                    {{ form.file }}
+                                    {% if form.file.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.file.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    <div class="form-text">
+                                        {% trans "Maximum file size: 10MB. Allowed types: PDF, DOC, DOCX, TXT, JPG, PNG, GIF, XLS, XLSX, PPT, PPTX" %}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.file_type.id_for_label }}" class="form-label">
+                                        <strong>{% trans "File Type" %}</strong>
+                                    </label>
+                                    {{ form.file_type }}
+                                    {% if form.file_type.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.file_type.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.description.id_for_label }}" class="form-label">
+                                <strong>{% trans "Description" %}</strong>
+                                <small class="text-muted">({% trans "optional" %})</small>
+                            </label>
+                            {{ form.description }}
+                            {% if form.description.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.description.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">
+                                {% trans "Provide a brief description of the file content." %}
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-upload"></i> {% trans "Upload File" %}
+                            </button>
+                            <a href="{% url 'local:session-detail' session.pk %}" class="btn btn-outline-secondary">
+                                {% trans "Cancel" %}
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

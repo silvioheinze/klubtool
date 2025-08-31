@@ -6,8 +6,8 @@ from django.db.models import Q
 from django.shortcuts import render, redirect
 from django.utils import timezone
 
-from .models import Local, Term, Council, TermSeatDistribution, Party, Session, Committee, CommitteeMember
-from .forms import LocalForm, LocalFilterForm, CouncilForm, CouncilFilterForm, TermForm, TermFilterForm, CouncilNameForm, TermSeatDistributionForm, TermSeatDistributionFilterForm, PartyForm, PartyFilterForm, SessionForm, SessionFilterForm, CommitteeForm, CommitteeFilterForm, CommitteeMemberForm, CommitteeMemberFilterForm
+from .models import Local, Term, Council, TermSeatDistribution, Party, Session, Committee, CommitteeMember, SessionAttachment
+from .forms import LocalForm, LocalFilterForm, CouncilForm, CouncilFilterForm, TermForm, TermFilterForm, CouncilNameForm, TermSeatDistributionForm, PartyForm, PartyFilterForm, SessionForm, SessionFilterForm, CommitteeForm, CommitteeFilterForm, CommitteeMemberForm, CommitteeMemberFilterForm, SessionAttachmentForm
 
 
 class LocalListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
@@ -1168,3 +1168,41 @@ class CommitteeMemberDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteV
         member_obj = self.get_object()
         messages.success(request, f"Member '{member_obj.user.username}' removed from committee '{member_obj.committee.name}' successfully.")
         return super().delete(request, *args, **kwargs)
+
+
+class SessionAttachmentView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
+    """View for uploading attachments to sessions"""
+    model = SessionAttachment
+    form_class = SessionAttachmentForm
+    template_name = 'local/session_attachment_form.html'
+    
+    def test_func(self):
+        """Check if user has permission to upload session attachments"""
+        return self.request.user.is_superuser or self.request.user.has_role_permission('session.edit')
+    
+    def get_session(self):
+        """Get the session from URL parameter"""
+        from django.shortcuts import get_object_or_404
+        return get_object_or_404(Session, pk=self.kwargs['session_pk'])
+    
+    def get_form_kwargs(self):
+        """Pass session and user to form"""
+        kwargs = super().get_form_kwargs()
+        kwargs['session'] = self.get_session()
+        kwargs['uploaded_by'] = self.request.user
+        return kwargs
+    
+    def get_success_url(self):
+        """Redirect to session detail page"""
+        return reverse_lazy('local:session-detail', kwargs={'pk': self.get_session().pk})
+    
+    def get_context_data(self, **kwargs):
+        """Add session to context"""
+        context = super().get_context_data(**kwargs)
+        context['session'] = self.get_session()
+        return context
+    
+    def form_valid(self, form):
+        """Display success message on form validation"""
+        messages.success(self.request, f"Attachment '{form.instance.filename}' uploaded successfully.")
+        return super().form_valid(form)

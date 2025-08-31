@@ -1,5 +1,5 @@
 from django import forms
-from .models import Local, Council, Committee, CommitteeMember, Session, Term, Party, TermSeatDistribution
+from .models import Local, Council, Committee, CommitteeMember, Session, Term, Party, TermSeatDistribution, SessionAttachment
 
 
 class LocalForm(forms.ModelForm):
@@ -112,11 +112,6 @@ class TermFilterForm(forms.Form):
         required=False,
         initial=''
     )
-    is_current = forms.ChoiceField(
-        choices=[('', 'All'), ('True', 'Current'), ('False', 'Not Current')],
-        required=False,
-        initial=''
-    )
 
 
 class PartyForm(forms.ModelForm):
@@ -129,37 +124,41 @@ class PartyForm(forms.ModelForm):
             'name': forms.TextInput(attrs={'class': 'form-control'}),
             'short_name': forms.TextInput(attrs={'class': 'form-control'}),
             'local': forms.Select(attrs={'class': 'form-select'}),
-            'description': forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'color': forms.TextInput(attrs={'class': 'form-control', 'type': 'color'}),
             'logo': forms.FileInput(attrs={'class': 'form-control'}),
         }
-
+    
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Filter to only show active locals
+        # Filter locals to only show active ones
         self.fields['local'].queryset = Local.objects.filter(is_active=True)
+        
+        # Set initial local if provided in URL
+        local_id = self.initial.get('local') or self.data.get('local')
+        if local_id:
+            try:
+                local = Local.objects.get(pk=local_id)
+                self.fields['local'].initial = local
+                # Hide the local field when it's pre-set
+                self.fields['local'].widget = forms.HiddenInput()
+            except Local.DoesNotExist:
+                pass
 
 
 class PartyFilterForm(forms.Form):
     """Form for filtering Party objects"""
-    search = forms.CharField(
-        required=False,
-        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Search parties...'})
-    )
+    name = forms.CharField(required=False, widget=forms.TextInput(attrs={'placeholder': 'Search by name'}))
     local = forms.ModelChoiceField(
         queryset=Local.objects.filter(is_active=True),
         required=False,
         empty_label="All Locals",
         widget=forms.Select(attrs={'class': 'form-select'})
     )
-    status = forms.ChoiceField(
-        choices=[
-            ('', 'All'),
-            ('active', 'Active'),
-            ('inactive', 'Inactive'),
-        ],
+    is_active = forms.ChoiceField(
+        choices=[('', 'All'), ('True', 'Active'), ('False', 'Inactive')],
         required=False,
-        widget=forms.Select(attrs={'class': 'form-select'})
+        initial=''
     )
 
 
@@ -174,160 +173,88 @@ class TermSeatDistributionForm(forms.ModelForm):
             'party': forms.Select(attrs={'class': 'form-select'}),
             'seats': forms.NumberInput(attrs={'class': 'form-control', 'min': '0'}),
         }
-
+    
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Filter to only show active terms and parties
+        # Filter terms to only show active ones
         self.fields['term'].queryset = Term.objects.filter(is_active=True)
+        # Filter parties to only show active ones
         self.fields['party'].queryset = Party.objects.filter(is_active=True)
-
-    def clean(self):
-        cleaned_data = super().clean()
-        term = cleaned_data.get('term')
-        seats = cleaned_data.get('seats')
         
-        if term and seats is not None:
-            # Check if seats exceed total available seats
-            allocated_seats = term.allocated_seats
-            if self.instance.pk:
-                # For updates, subtract current instance's seats
-                allocated_seats -= self.instance.seats
-            
-            if seats + allocated_seats > term.total_seats:
-                raise forms.ValidationError(
-                    f"Total allocated seats ({seats + allocated_seats}) cannot exceed "
-                    f"total seats in term ({term.total_seats})"
-                )
-        
-        return cleaned_data
-
-
-class TermSeatDistributionFilterForm(forms.Form):
-    """Form for filtering TermSeatDistribution objects"""
-    term = forms.ModelChoiceField(
-        queryset=Term.objects.filter(is_active=True),
-        required=False,
-        empty_label="All Terms",
-        widget=forms.Select(attrs={'class': 'form-select'})
-    )
-    party = forms.ModelChoiceField(
-        queryset=Party.objects.filter(is_active=True),
-        required=False,
-        empty_label="All Parties",
-        widget=forms.Select(attrs={'class': 'form-select'})
-    )
-    min_seats = forms.IntegerField(
-        required=False,
-        min_value=0,
-        widget=forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Min seats'})
-    )
-    max_seats = forms.IntegerField(
-        required=False,
-        min_value=0,
-        widget=forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Max seats'})
-    )
+        # Set initial term if provided in URL
+        term_id = self.initial.get('term') or self.data.get('term')
+        if term_id:
+            try:
+                term = Term.objects.get(pk=term_id)
+                self.fields['term'].initial = term
+                # Hide the term field when it's pre-set
+                self.fields['term'].widget = forms.HiddenInput()
+            except Term.DoesNotExist:
+                pass
 
 
 class SessionForm(forms.ModelForm):
     """Form for creating and editing Session objects"""
     
-    # Separate date and time fields for better user experience
-    session_date = forms.DateField(
-        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}, format='%Y-%m-%d'),
-        help_text="Date of the session"
-    )
-    session_time = forms.TimeField(
-        widget=forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
-        required=False,
-        help_text="Time of the session (optional)"
-    )
-    
     class Meta:
         model = Session
-        fields = [
-            'title', 'council', 'term', 'session_type', 'status', 
-            'location', 'agenda', 'minutes', 'notes'
-        ]
+        fields = ['title', 'council', 'term', 'session_type', 'status', 'scheduled_date', 'location', 'agenda', 'minutes', 'notes']
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control'}),
             'council': forms.Select(attrs={'class': 'form-select'}),
             'term': forms.Select(attrs={'class': 'form-select'}),
             'session_type': forms.Select(attrs={'class': 'form-select'}),
             'status': forms.Select(attrs={'class': 'form-select'}),
+            'scheduled_date': forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}, format='%Y-%m-%dT%H:%M'),
             'location': forms.TextInput(attrs={'class': 'form-control'}),
-            'agenda': forms.Textarea(attrs={'rows': 4, 'class': 'form-control'}),
-            'minutes': forms.Textarea(attrs={'rows': 6, 'class': 'form-control'}),
-            'notes': forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
+            'agenda': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
+            'minutes': forms.Textarea(attrs={'class': 'form-control', 'rows': 6}),
+            'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
-
+    
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Filter councils and terms to only show active ones
+        # Filter councils to only show active ones
         self.fields['council'].queryset = Council.objects.filter(is_active=True)
+        # Filter terms to only show active ones
         self.fields['term'].queryset = Term.objects.filter(is_active=True)
         
-        # Set initial values for separate date/time fields if editing
-        if self.instance and self.instance.pk and self.instance.scheduled_date:
-            self.fields['session_date'].initial = self.instance.scheduled_date.date()
-            if self.instance.scheduled_date.time():
-                self.fields['session_time'].initial = self.instance.scheduled_date.time()
-
-
-
-    def save(self, commit=True):
-        """Combine date and time fields into scheduled_date"""
-        instance = super().save(commit=False)
-        
-        session_date = self.cleaned_data.get('session_date')
-        session_time = self.cleaned_data.get('session_time')
-        
-        if session_date:
-            from django.utils import timezone
-            import datetime
-            
-            if session_time:
-                # Combine date and time
-                combined_datetime = datetime.datetime.combine(session_date, session_time)
-                instance.scheduled_date = timezone.make_aware(combined_datetime)
-            else:
-                # Use date with default time (00:00)
-                combined_datetime = datetime.datetime.combine(session_date, datetime.time())
-                instance.scheduled_date = timezone.make_aware(combined_datetime)
-        
-        if commit:
-            instance.save()
-        return instance
+        # Set initial council if provided in URL
+        council_id = self.initial.get('council') or self.data.get('council')
+        if council_id:
+            try:
+                council = Council.objects.get(pk=council_id)
+                self.fields['council'].initial = council
+                # Hide the council field when it's pre-set
+                self.fields['council'].widget = forms.HiddenInput()
+            except Council.DoesNotExist:
+                pass
 
 
 class SessionFilterForm(forms.Form):
-    """Form for filtering Session objects"""
-    title = forms.CharField(required=False, widget=forms.TextInput(attrs={'placeholder': 'Search by title'}))
+    """Form for filtering sessions in the session list view"""
+    search = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Search by title, location, or notes'
+        })
+    )
+    session_type = forms.ChoiceField(
+        choices=[('', 'All Types')] + Session.SESSION_TYPE_CHOICES,
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    status = forms.ChoiceField(
+        choices=[('', 'All Statuses')] + Session.STATUS_CHOICES,
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
     council = forms.ModelChoiceField(
         queryset=Council.objects.filter(is_active=True),
         required=False,
         empty_label="All Councils",
         widget=forms.Select(attrs={'class': 'form-select'})
-    )
-    term = forms.ModelChoiceField(
-        queryset=Term.objects.filter(is_active=True),
-        required=False,
-        empty_label="All Terms",
-        widget=forms.Select(attrs={'class': 'form-select'})
-    )
-    session_type = forms.ChoiceField(
-        choices=[('', 'All Types')] + Session.SESSION_TYPE_CHOICES,
-        required=False,
-        initial=''
-    )
-    status = forms.ChoiceField(
-        choices=[('', 'All Statuses')] + Session.STATUS_CHOICES,
-        required=False,
-        initial=''
-    )
-    is_active = forms.ChoiceField(
-        choices=[('', 'All'), ('True', 'Active'), ('False', 'Inactive')],
-        required=False,
-        initial=''
     )
 
 
@@ -435,3 +362,53 @@ class CommitteeMemberFilterForm(forms.Form):
         empty_label="All Committees",
         widget=forms.Select(attrs={'class': 'form-select'})
     )
+
+
+class SessionAttachmentForm(forms.ModelForm):
+    """Form for uploading attachments to sessions"""
+    
+    class Meta:
+        model = SessionAttachment
+        fields = ['file', 'file_type', 'description']
+        widgets = {
+            'file': forms.FileInput(attrs={'class': 'form-control'}),
+            'file_type': forms.Select(attrs={'class': 'form-select'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        self.session = kwargs.pop('session', None)
+        self.uploaded_by = kwargs.pop('uploaded_by', None)
+        super().__init__(*args, **kwargs)
+    
+    def clean_file(self):
+        file = self.cleaned_data.get('file')
+        if file:
+            # Check file size (max 10MB)
+            if file.size > 10 * 1024 * 1024:
+                raise forms.ValidationError("File size must be under 10MB.")
+            
+            # Check file extension
+            allowed_extensions = ['.pdf', '.doc', '.docx', '.txt', '.jpg', '.jpeg', '.png', '.gif', '.xls', '.xlsx', '.ppt', '.pptx']
+            import os
+            ext = os.path.splitext(file.name)[1].lower()
+            if ext not in allowed_extensions:
+                raise forms.ValidationError(f"File type not allowed. Allowed types: {', '.join(allowed_extensions)}")
+        
+        return file
+    
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        if self.session:
+            instance.session = self.session
+        if self.uploaded_by:
+            instance.uploaded_by = self.uploaded_by
+        
+        # Set filename
+        if instance.file:
+            import os
+            instance.filename = os.path.basename(instance.file.name)
+        
+        if commit:
+            instance.save()
+        return instance
