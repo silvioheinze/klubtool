@@ -40,5 +40,5 @@
 [x] MotionStatus model
 [x] group decision on motion
 [x] remove double confirm for status delete on motion detail
-[ ] motion detail add edit button as long the status is draft
+[x] motion detail add edit button as long the status is draft
 [x] motion detail rename export section to Files, add upload button and remove attachments section

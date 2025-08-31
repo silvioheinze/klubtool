@@ -73,7 +73,7 @@ class Motion(models.Model):
     @property
     def can_be_edited(self):
         """Check if motion can still be edited"""
-        return self.status in ['draft', 'submitted', 'under_review']
+        return self.status == 'draft'
     
     @property
     def session_date(self):

@@ -164,7 +164,7 @@
                                                 <div>
                                                     <strong>{{ decision.get_decision_display }}</strong>
                                                     {% if decision.created_by %}
-                                                        <br><small class="text-muted">by {{ decision.created_by.get_full_name|default:decision.created_by.username }}</small>
+                                                        <br><small class="text-muted">{% trans "by" %} {{ decision.created_by.get_full_name|default:decision.created_by.username }}</small>
                                                     {% endif %}
                                                 </div>
                                                 <div class="d-flex align-items-center gap-2">
@@ -378,7 +378,7 @@
                                                 <div>
                                                     <strong>{{ status_entry.get_status_display }}</strong>
                                                     {% if status_entry.changed_by %}
-                                                        <br><small class="text-muted">by {{ status_entry.changed_by.get_full_name|default:status_entry.changed_by.username }}</small>
+                                                        <br><small class="text-muted">{% trans "by" %} {{ status_entry.changed_by.get_full_name|default:status_entry.changed_by.username }}</small>
                                                     {% endif %}
                                                 </div>
                                                 <div class="d-flex align-items-center gap-2">

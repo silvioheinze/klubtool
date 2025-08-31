@@ -1863,7 +1863,7 @@ msgstr ""
 
 #: templates/local/session_confirm_delete.html:19
 msgid "Back to Session"
-msgstr ""
+msgstr "Zurück zur Sitzung"
 
 #: templates/local/session_confirm_delete.html:30
 msgid "Warning: This action cannot be undone!"
@@ -2491,7 +2491,7 @@ msgstr "Antrag löschen"
 
 #: templates/motion/motion_detail.html:374
 msgid "View Session"
-msgstr ""
+msgstr "Sitzung anzeigen"
 
 #: templates/motion/motion_form.html:9 templates/motion/motion_form.html:24
 #: templates/motion/motion_form.html:151 templates/motion/motion_list.html:16
