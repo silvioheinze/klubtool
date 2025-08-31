@@ -45,21 +45,40 @@ class MotionAdmin(admin.ModelAdmin):
 @admin.register(MotionVote)
 class MotionVoteAdmin(admin.ModelAdmin):
     """Admin configuration for MotionVote model"""
-    list_display = ['motion', 'voter', 'vote', 'voted_at']
-    list_filter = ['vote', 'voted_at', 'motion__status']
-    search_fields = ['motion__title', 'voter__username', 'reason']
-    readonly_fields = ['voted_at']
+    list_display = ['motion', 'party', 'status', 'get_vote_summary', 'total_votes_cast', 'participation_rate', 'voted_at']
+    list_filter = ['voted_at', 'motion__status', 'party__local', 'status__status']
+    search_fields = ['motion__title', 'party__name', 'notes']
+    readonly_fields = ['voted_at', 'total_votes_cast', 'participation_rate']
     date_hierarchy = 'voted_at'
     
     fieldsets = (
         ('Vote Information', {
-            'fields': ('motion', 'voter', 'vote', 'reason')
+            'fields': ('motion', 'party', 'status', 'approve_votes', 'reject_votes', 'abstain_votes')
+        }),
+        ('Vote Summary', {
+            'fields': ('total_votes_cast', 'participation_rate', 'notes'),
+            'classes': ('collapse',)
         }),
         ('Timestamps', {
             'fields': ('voted_at',),
             'classes': ('collapse',)
         }),
     )
+    
+    def get_vote_summary(self, obj):
+        """Display vote summary"""
+        return obj.get_vote_summary()
+    get_vote_summary.short_description = 'Vote Summary'
+    
+    def total_votes_cast(self, obj):
+        """Display total votes cast"""
+        return obj.total_votes_cast
+    total_votes_cast.short_description = 'Total Votes Cast'
+    
+    def participation_rate(self, obj):
+        """Display participation rate"""
+        return f"{obj.participation_rate:.1f}%"
+    participation_rate.short_description = 'Participation Rate'
 
 
 @admin.register(MotionComment)

@@ -48,9 +48,6 @@
                                 <dd class="col-sm-8">
                                     <span class="badge bg-secondary">{{ motion.get_motion_type_display }}</span>
                                 </dd>
-                                
-                                
-
                             </dl>
                         </div>
                         <div class="col-md-6">
@@ -97,13 +94,13 @@
                     
                     {% if motion.text %}
                         <hr>
-                        <h6>{% trans "Motion Text" %}</h6>
+                        <h6 class="fw-bold">{% trans "Motion Text" %}</h6>
                         <p>{{ motion.text|linebreaks }}</p>
                     {% endif %}
                     
                     {% if motion.rationale %}
                         <hr>
-                        <h6>{% trans "Rationale" %}</h6>
+                        <h6 class="fw-bold">{% trans "Rationale" %}</h6>
                         <p>{{ motion.rationale|linebreaks }}</p>
                     {% endif %}
                     
@@ -200,6 +197,164 @@
                     {% endif %}
                 </div>
             </div>
+
+                       <!-- Voting Results -->
+                       <div class="card mt-3">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                <i class="bi bi-check2-square"></i> {% trans "Voting Results" %}
+                            </h5>
+                            {% if vote_sessions %}
+                                <a href="{% url 'motion:motion-vote' motion.pk %}" class="btn btn-sm btn-primary">
+                                    <i class="bi bi-pencil"></i> {% trans "Edit Votes" %}
+                                </a>
+                            {% endif %}
+                        </div>
+                        <div class="card-body">
+                                                        {% if vote_sessions %}
+                                <!-- Overall Vote Statistics -->
+                                <div class="row text-center mb-3">
+                                    <div class="col-4">
+                                        <div class="bg-success text-white rounded p-2">
+                                            <strong>{{ vote_stats.approve }}</strong>
+                                            <br><small>{% trans "Approve" %}</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="bg-danger text-white rounded p-2">
+                                            <strong>{{ vote_stats.reject }}</strong>
+                                            <br><small>{% trans "Reject" %}</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="bg-warning text-dark rounded p-2">
+                                            <strong>{{ vote_stats.abstain }}</strong>
+                                            <br><small>{% trans "Abstain" %}</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <small class="text-muted d-block text-center mb-3">
+                                    {% trans "Total votes cast" %}: {{ vote_stats.total_cast }} | 
+                                    {% trans "Parties voted" %}: {{ vote_stats.parties_voted }} |
+                                    {% trans "Voting sessions" %}: {{ vote_stats.sessions_count }}
+                                </small>
+                                
+                                <!-- Voting Sessions -->
+                                {% for session_key, session in vote_sessions.items %}
+                                    <div class="card mb-3">
+                                        <div class="card-header">
+                                            <h6 class="mb-0">
+                                                {% if session.type == 'status' %}
+                                                    <i class="bi bi-arrow-repeat"></i> 
+                                                    {% trans "Voting Session" %} - 
+                                                    <span class="badge {% if session.status.status == 'approved' %}bg-success{% elif session.status.status == 'rejected' %}bg-danger{% else %}bg-warning{% endif %}">
+                                                        {{ session.status.get_status_display }}
+                                                    </span>
+                                                    {% if session.status.changed_by %}
+                                                        {% trans "by" %} {{ session.status.changed_by.get_full_name|default:session.status.changed_by.username }}
+                                                    {% endif %}
+                                                    <small class="text-muted">({{ session.status.changed_at|date:"d.m.Y H:i" }})</small>
+                                                {% else %}
+                                                    <i class="bi bi-check2-square"></i> 
+                                                    {% trans "Standalone Voting Session" %}
+                                                {% endif %}
+                                            </h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <!-- Session Statistics -->
+                                            <div class="row text-center mb-3">
+                                                <div class="col-4">
+                                                    <div class="bg-success text-white rounded p-2">
+                                                        <strong>{{ session.total_approve }}</strong>
+                                                        <br><small>{% trans "Approve" %}</small>
+                                                    </div>
+                                                </div>
+                                                <div class="col-4">
+                                                    <div class="bg-danger text-white rounded p-2">
+                                                        <strong>{{ session.total_reject }}</strong>
+                                                        <br><small>{% trans "Reject" %}</small>
+                                                    </div>
+                                                </div>
+                                                <div class="col-4">
+                                                    <div class="bg-warning text-dark rounded p-2">
+                                                        <strong>{{ session.total_abstain }}</strong>
+                                                        <br><small>{% trans "Abstain" %}</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <small class="text-muted d-block text-center mb-3">
+                                                {% trans "Session total" %}: {{ session.total_cast }} | 
+                                                {% trans "Parties" %}: {{ session.parties_count }}
+                                            </small>
+                                            
+                                            <!-- Session Votes Table -->
+                                            <div class="table-responsive">
+                                                <table class="table table-bordered table-hover table-sm">
+                                                    <thead class="table-dark">
+                                                        <tr>
+                                                            <th style="width: 30%; text-align: center;">{% trans "Party" %}</th>
+                                                            <th style="width: 15%; text-align: center;">{% trans "Approve" %}</th>
+                                                            <th style="width: 15%; text-align: center;">{% trans "Reject" %}</th>
+                                                            <th style="width: 15%; text-align: center;">{% trans "Abstain" %}</th>
+                                                            <th style="width: 10%; text-align: center;">{% trans "Total" %}</th>
+                                                            <th style="width: 15%; text-align: center;">{% trans "Result" %}</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {% for vote in session.votes %}
+                                                            <tr>
+                                                                <td class="align-middle">
+                                                                    <div class="fw-bold text-primary">{{ vote.party.name }}</div>
+                                                                    <small class="text-muted">{{ vote.voted_at|date:"d.m.Y H:i" }}</small>
+                                                                </td>
+                                                                <td class="text-center align-middle">
+                                                                    <span class="badge bg-success">{{ vote.approve_votes }}</span>
+                                                                </td>
+                                                                <td class="text-center align-middle">
+                                                                    <span class="badge bg-danger">{{ vote.reject_votes }}</span>
+                                                                </td>
+                                                                <td class="text-center align-middle">
+                                                                    <span class="badge bg-warning text-dark">{{ vote.abstain_votes }}</span>
+                                                                </td>
+                                                                <td class="text-center align-middle">
+                                                                    <strong>{{ vote.total_votes_cast }}</strong>
+                                                                </td>
+                                                                <td class="text-center align-middle">
+                                                                    <span class="badge {% if vote.approve_votes > vote.reject_votes %}bg-success{% elif vote.reject_votes > vote.approve_votes %}bg-danger{% else %}bg-warning{% endif %}">
+                                                                        {{ vote.get_vote_summary }}
+                                                                    </span>
+                                                                </td>
+                                                            </tr>
+                                                            {% if vote.notes %}
+                                                                <tr>
+                                                                    <td colspan="6" class="bg-light">
+                                                                        <small class="text-muted">
+                                                                            <i class="bi bi-chat-text"></i> {{ vote.notes }}
+                                                                        </small>
+                                                                    </td>
+                                                                </tr>
+                                                            {% endif %}
+                                                        {% endfor %}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="text-center py-4">
+                                    <i class="bi bi-check2-square text-muted" style="font-size: 3rem;"></i>
+                                    <p class="text-muted mt-2">{% trans "No votes recorded yet." %}</p>
+                                    <a href="{% url 'motion:motion-vote' motion.pk %}" class="btn btn-primary">
+                                        <i class="bi bi-plus-circle"></i> {% trans "Record First Votes" %}
+                                    </a>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+         
             <!-- Comments Section -->
             <div class="card mt-3">
                 <div class="card-header">
@@ -303,7 +458,7 @@
                         <h6>{% trans "Attachments" %}</h6>
                         <div class="row">
                             {% for attachment in attachments %}
-                                <div class="col-md-6 col-lg-4 mb-3">
+                                <div class="col-md-6 col-lg-12 mb-3">
                                     <div class="card h-100">
                                         <div class="card-body">
                                             <div class="d-flex align-items-center mb-2">
@@ -337,7 +492,7 @@
                     {% endif %}
                 </div>
             </div>
-            
+                       
             <!-- Status History -->
             <div class="card mt-3">
                 <div class="card-header d-flex justify-content-between align-items-center">

@@ -42,4 +42,4 @@
 [ ] implement ci colors
 [ ] admin role for locals
 [ ] local management superuser only
-[ ] update motion vote and add in motionstatus form
+[x] update motion vote and add in motionstatus form

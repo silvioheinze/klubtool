@@ -3202,9 +3202,7 @@ msgstr "Keine Statusänderungen aufgezeichnet."
 msgid "Add Status"
 msgstr "Status hinzufügen"
 
-#: templates/motion/motion_status_change.html:6
-msgid "Change Status"
-msgstr "Status ändern"
+
 
 #: templates/motion/motion_status_change.html:12
 msgid "Change Motion Status"
@@ -3309,6 +3307,76 @@ msgstr "Noch keine Anhänge für diese Sitzung hochgeladen."
 #: templates/local/session_detail.html:198
 msgid "Upload First File"
 msgstr "Erste Datei hochladen"
+
+
+
+#: templates/motion/motion_detail.html:290
+msgid "Voting Results"
+msgstr "Abstimmungsergebnisse"
+
+
+
+#: templates/motion/motion_detail.html:320
+msgid "Total votes cast"
+msgstr "Gesamte abgegebene Stimmen"
+
+#: templates/motion/motion_detail.html:321
+msgid "Parties voted"
+msgstr "Abstimmende Parteien"
+
+#: templates/motion/motion_detail.html:325
+msgid "Party Results"
+msgstr "Parteiergebnisse"
+
+#: templates/motion/motion_detail.html:345
+msgid "No votes recorded yet."
+msgstr "Noch keine Stimmen aufgezeichnet."
+
+#: templates/motion/motion_detail.html:348
+msgid "Record First Votes"
+msgstr "Erste Stimmen aufzeichnen"
+
+#: templates/motion/motion_vote.html:140
+msgid "Record All Votes"
+msgstr "Alle Stimmen aufzeichnen"
+
+#: templates/motion/motion_status_change.html:95
+msgid "Change Status"
+msgstr "Status ändern"
+
+#: templates/motion/motion_detail.html:210
+msgid "Edit Votes"
+msgstr "Stimmen bearbeiten"
+
+#: templates/motion/motion_detail.html:225
+msgid "Votes recorded during status change to"
+msgstr "Stimmen aufgezeichnet bei Statusänderung zu"
+
+#: templates/motion/motion_detail.html:235
+msgid "Result"
+msgstr "Ergebnis"
+
+#: templates/motion/motion_detail.html:245
+msgid "Standalone"
+msgstr "Eigenständig"
+
+#: templates/motion/motion_detail.html:255
+msgid "Voting sessions"
+msgstr "Abstimmungssitzungen"
+
+#: templates/motion/motion_detail.html:265
+msgid "Voting Session"
+msgstr "Abstimmungssitzung"
+
+#: templates/motion/motion_detail.html:275
+msgid "Standalone Voting Session"
+msgstr "Eigenständige Abstimmungssitzung"
+
+#: templates/motion/motion_detail.html:295
+msgid "Session total"
+msgstr "Sitzungssumme"
+
+
 
 #: templates/motion/motion_detail.html:330
 msgid "Files"

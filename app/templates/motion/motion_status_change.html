@@ -110,6 +110,108 @@
                             </div>
                         </div>
                         
+                        <!-- Vote Formset Section -->
+                        <div class="mb-4" id="vote-section" style="display: none;">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="mb-0">
+                                        <i class="bi bi-check2-square"></i> {% trans "Record Party Votes" %}
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    {{ vote_formset.management_form }}
+                                    
+                                    {% if vote_formset.non_form_errors %}
+                                        <div class="alert alert-danger">
+                                            {% for error in vote_formset.non_form_errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered table-hover table-sm">
+                                            <thead class="table-dark">
+                                                <tr>
+                                                    <th style="width: 25%; text-align: center;">{% trans "Party" %}</th>
+                                                    <th style="width: 15%; text-align: center;">{% trans "Approve" %}</th>
+                                                    <th style="width: 15%; text-align: center;">{% trans "Reject" %}</th>
+                                                    <th style="width: 15%; text-align: center;">{% trans "Abstain" %}</th>
+                                                    <th style="width: 10%; text-align: center;">{% trans "Total" %}</th>
+                                                    <th style="width: 20%; text-align: center;">{% trans "Notes" %}</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for form in vote_formset %}
+                                                    <tr>
+                                                        <td class="align-middle">
+                                                            {{ form.party }}
+                                                            <div class="fw-bold text-primary">
+                                                                {% if form.party.value %}
+                                                                    {% for party in form.party.field.queryset %}
+                                                                        {% if party.pk == form.party.value %}
+                                                                            {{ party.name }}
+                                                                        {% endif %}
+                                                                    {% endfor %}
+                                                                {% else %}
+                                                                    {% trans "Party" %}
+                                                                {% endif %}
+                                                            </div>
+                                                        </td>
+                                                        <td class="text-center">
+                                                            {{ form.approve_votes }}
+                                                            {% if form.approve_votes.errors %}
+                                                                <div class="text-danger">
+                                                                    {% for error in form.approve_votes.errors %}
+                                                                        <small>{{ error }}</small>
+                                                                    {% endfor %}
+                                                                </div>
+                                                            {% endif %}
+                                                        </td>
+                                                        <td class="text-center">
+                                                            {{ form.reject_votes }}
+                                                            {% if form.reject_votes.errors %}
+                                                                <div class="text-danger">
+                                                                    {% for error in form.reject_votes.errors %}
+                                                                        <small>{{ error }}</small>
+                                                                    {% endfor %}
+                                                                </div>
+                                                            {% endif %}
+                                                        </td>
+                                                        <td class="text-center">
+                                                            {{ form.abstain_votes }}
+                                                            {% if form.abstain_votes.errors %}
+                                                                <div class="text-danger">
+                                                                    {% for error in form.abstain_votes.errors %}
+                                                                        <small>{{ error }}</small>
+                                                                    {% endfor %}
+                                                                </div>
+                                                            {% endif %}
+                                                        </td>
+                                                        <td class="text-center">
+                                                            <div class="form-control-plaintext text-center fw-bold" id="total-{{ forloop.counter0 }}">
+                                                                0
+                                                            </div>
+                                                        </td>
+                                                        <td>
+                                                            {{ form.notes }}
+                                                            {% if form.notes.errors %}
+                                                                <div class="text-danger">
+                                                                    {% for error in form.notes.errors %}
+                                                                        <small>{{ error }}</small>
+                                                                    {% endfor %}
+                                                                </div>
+                                                            {% endif %}
+                                                        </td>
+                                                    </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
                         <div class="d-flex gap-2">
                             <button type="submit" class="btn btn-primary">
                                 <i class="bi bi-check-circle"></i> {% trans "Change Status" %}
@@ -196,20 +298,59 @@
 document.addEventListener('DOMContentLoaded', function() {
     const statusSelect = document.getElementById('{{ form.status.id_for_label }}');
     const committeeField = document.getElementById('committee-field');
+    const voteSection = document.getElementById('vote-section');
     
-    function toggleCommitteeField() {
-        if (statusSelect.value === 'refer_to_committee') {
+    function toggleFields() {
+        const selectedStatus = statusSelect.value;
+        
+        // Toggle committee field
+        if (selectedStatus === 'refer_to_committee') {
             committeeField.style.display = 'block';
         } else {
             committeeField.style.display = 'none';
         }
+        
+        // Toggle vote section
+        if (selectedStatus === 'approved' || selectedStatus === 'rejected' || selectedStatus === 'refer_to_committee') {
+            voteSection.style.display = 'block';
+        } else {
+            voteSection.style.display = 'none';
+        }
     }
     
     // Initial state
-    toggleCommitteeField();
+    toggleFields();
     
     // Listen for changes
-    statusSelect.addEventListener('change', toggleCommitteeField);
+    statusSelect.addEventListener('change', toggleFields);
+    
+    // Calculate totals for vote formset
+    const approveInputs = document.querySelectorAll('input[name*="approve_votes"]');
+    const rejectInputs = document.querySelectorAll('input[name*="reject_votes"]');
+    const abstainInputs = document.querySelectorAll('input[name*="abstain_votes"]');
+    
+    function updateTotal(index) {
+        const approve = parseInt(approveInputs[index].value) || 0;
+        const reject = parseInt(rejectInputs[index].value) || 0;
+        const abstain = parseInt(abstainInputs[index].value) || 0;
+        const total = approve + reject + abstain;
+        document.getElementById('total-' + index).textContent = total;
+    }
+    
+    approveInputs.forEach(function(input, index) {
+        input.addEventListener('input', function() { updateTotal(index); });
+        updateTotal(index);
+    });
+    
+    rejectInputs.forEach(function(input, index) {
+        input.addEventListener('input', function() { updateTotal(index); });
+        updateTotal(index);
+    });
+    
+    abstainInputs.forEach(function(input, index) {
+        input.addEventListener('input', function() { updateTotal(index); });
+        updateTotal(index);
+    });
 });
 </script>
 {% endblock content %}

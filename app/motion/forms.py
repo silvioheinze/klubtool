@@ -1,5 +1,6 @@
 from django import forms
 from django.contrib.auth import get_user_model
+from django.forms import BaseFormSet, formset_factory
 from .models import Motion, MotionVote, MotionComment, MotionAttachment, MotionStatus, MotionGroupDecision
 from local.models import Session, Party, Committee
 from group.models import Group
@@ -98,38 +99,56 @@ class MotionFilterForm(forms.Form):
         empty_label="All Sessions",
         widget=forms.Select(attrs={'class': 'form-select'})
     )
-    party = forms.ModelChoiceField(
-        queryset=Party.objects.filter(is_active=True),
-        required=False,
-        empty_label="All Parties",
-        widget=forms.Select(attrs={'class': 'form-select'})
-    )
 
 
 class MotionVoteForm(forms.ModelForm):
-    """Form for voting on motions"""
+    """Form for recording party votes on motions"""
     
     class Meta:
         model = MotionVote
-        fields = ['vote', 'reason']
+        fields = ['party', 'approve_votes', 'reject_votes', 'abstain_votes', 'notes']
         widgets = {
-            'vote': forms.Select(attrs={'class': 'form-select'}),
-            'reason': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Optional reason for your vote'}),
+            'party': forms.Select(attrs={'class': 'form-select'}),
+            'approve_votes': forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'min': '0', 'style': 'width: 80px;'}),
+            'reject_votes': forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'min': '0', 'style': 'width: 80px;'}),
+            'abstain_votes': forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'min': '0', 'style': 'width: 80px;'}),
+            'notes': forms.TextInput(attrs={'class': 'form-control form-control-sm', 'placeholder': 'Notes...'}),
         }
     
     def __init__(self, *args, **kwargs):
         self.motion = kwargs.pop('motion', None)
-        self.voter = kwargs.pop('voter', None)
         super().__init__(*args, **kwargs)
+        
+        # Filter parties to only show those in the motion's session council
+        if self.motion and self.motion.session and self.motion.session.council:
+            self.fields['party'].queryset = Party.objects.filter(
+                local=self.motion.session.council.local,
+                is_active=True
+            )
+        
+        # Set initial party if provided in URL
+        party_id = self.initial.get('party') or self.data.get('party')
+        if party_id:
+            try:
+                party = Party.objects.get(pk=party_id)
+                self.fields['party'].initial = party.pk
+            except Party.DoesNotExist:
+                pass
     
     def clean(self):
         cleaned_data = super().clean()
+        approve_votes = cleaned_data.get('approve_votes', 0)
+        reject_votes = cleaned_data.get('reject_votes', 0)
+        abstain_votes = cleaned_data.get('abstain_votes', 0)
         
-        # Check if user has already voted on this motion
-        if self.motion and self.voter:
-            existing_vote = MotionVote.objects.filter(motion=self.motion, voter=self.voter).first()
+        # Check if user has already recorded votes for this party on this motion
+        if self.motion and cleaned_data.get('party'):
+            existing_vote = MotionVote.objects.filter(
+                motion=self.motion, 
+                party=cleaned_data['party']
+            ).first()
             if existing_vote and not self.instance.pk:
-                raise forms.ValidationError("You have already voted on this motion.")
+                raise forms.ValidationError("Votes for this party on this motion have already been recorded.")
         
         return cleaned_data
     
@@ -137,12 +156,67 @@ class MotionVoteForm(forms.ModelForm):
         instance = super().save(commit=False)
         if self.motion:
             instance.motion = self.motion
-        if self.voter:
-            instance.voter = self.voter
         
         if commit:
             instance.save()
         return instance
+
+
+class MotionVoteFormSet(BaseFormSet):
+    """Formset for recording votes for all parties at once"""
+    
+    def __init__(self, *args, **kwargs):
+        self.motion = kwargs.pop('motion', None)
+        super().__init__(*args, **kwargs)
+        
+        # Set initial data for each party if motion is provided
+        if self.motion and self.motion.session and self.motion.session.council:
+            parties = Party.objects.filter(
+                local=self.motion.session.council.local,
+                is_active=True
+            )
+            
+            # Initialize forms with party data
+            for i, party in enumerate(parties):
+                if i < len(self.forms):
+                    self.forms[i].fields['party'].initial = party.pk
+                    self.forms[i].fields['party'].widget = forms.HiddenInput()
+                    
+                    # Set existing vote data if available
+                    existing_vote = MotionVote.objects.filter(
+                        motion=self.motion,
+                        party=party
+                    ).first()
+                    if existing_vote:
+                        self.forms[i].fields['approve_votes'].initial = existing_vote.approve_votes
+                        self.forms[i].fields['reject_votes'].initial = existing_vote.reject_votes
+                        self.forms[i].fields['abstain_votes'].initial = existing_vote.abstain_votes
+                        self.forms[i].fields['notes'].initial = existing_vote.notes
+    
+    def clean(self):
+        """Validate the formset"""
+        super().clean()
+        
+        # Check for duplicate parties
+        parties = []
+        for form in self.forms:
+            if form.cleaned_data and not form.cleaned_data.get('DELETE', False):
+                party = form.cleaned_data.get('party')
+                if party:
+                    if party in parties:
+                        raise forms.ValidationError(f"Duplicate party: {party.name}")
+                    parties.append(party)
+        
+        return self.cleaned_data
+
+
+# Create the formset factory
+MotionVoteFormSetFactory = formset_factory(
+    MotionVoteForm,
+    formset=MotionVoteFormSet,
+    extra=0,  # No extra forms, only for existing parties
+    can_delete=False
+)
 
 
 class MotionCommentForm(forms.ModelForm):
@@ -228,7 +302,7 @@ class MotionAttachmentForm(forms.ModelForm):
 
 
 class MotionStatusForm(forms.ModelForm):
-    """Form for adding status changes to motions"""
+    """Form for changing motion status with integrated voting"""
     
     committee = forms.ModelChoiceField(
         queryset=Committee.objects.filter(is_active=True),
@@ -247,7 +321,7 @@ class MotionStatusForm(forms.ModelForm):
             'reason': forms.Textarea(attrs={
                 'class': 'form-control',
                 'rows': 3,
-                'placeholder': 'Reason for the status change (optional)...'
+                'placeholder': 'Reason for the status change...'
             }),
         }
     
@@ -256,20 +330,12 @@ class MotionStatusForm(forms.ModelForm):
         self.changed_by = kwargs.pop('changed_by', None)
         super().__init__(*args, **kwargs)
         
-        # Filter out the current status from choices
-        if self.motion:
-            current_status = self.motion.status
-            choices = list(self.fields['status'].choices)
-            # Remove the current status from choices
-            choices = [choice for choice in choices if choice[0] != current_status]
-            self.fields['status'].choices = choices
-            
-            # Filter committees to only show those from the same council as the motion's session
-            if self.motion.session and self.motion.session.council:
-                self.fields['committee'].queryset = Committee.objects.filter(
-                    council=self.motion.session.council,
-                    is_active=True
-                )
+        # Filter committees to only show those from the same council as the motion's session
+        if self.motion and self.motion.session and self.motion.session.council:
+            self.fields['committee'].queryset = Committee.objects.filter(
+                council=self.motion.session.council,
+                is_active=True
+            )
     
     def clean(self):
         cleaned_data = super().clean()

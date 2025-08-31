@@ -101,29 +101,59 @@ class Motion(models.Model):
 
 
 class MotionVote(models.Model):
-    """Model representing votes on motions"""
+    """Model representing votes on motions by parties"""
     
     VOTE_CHOICES = [
-        ('yes', _('Yes')),
-        ('no', _('No')),
+        ('approve', _('Approve')),
+        ('reject', _('Reject')),
         ('abstain', _('Abstain')),
-        ('absent', _('Absent')),
     ]
     
     motion = models.ForeignKey(Motion, on_delete=models.CASCADE, related_name='votes')
-    voter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='motion_votes')
-    vote = models.CharField(max_length=10, choices=VOTE_CHOICES)
-    reason = models.TextField(blank=True, help_text="Reason for the vote")
+    party = models.ForeignKey(Party, on_delete=models.CASCADE, related_name='motion_votes', help_text="Party casting the vote")
+    status = models.ForeignKey('MotionStatus', on_delete=models.CASCADE, related_name='votes', null=True, blank=True, help_text="Status change this vote is connected to")
+    approve_votes = models.PositiveIntegerField(default=0, help_text="Number of approve votes from this party")
+    reject_votes = models.PositiveIntegerField(default=0, help_text="Number of reject votes from this party")
+    abstain_votes = models.PositiveIntegerField(default=0, help_text="Number of abstain votes from this party")
+    notes = models.TextField(blank=True, help_text="Additional notes about the voting")
     voted_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:
-        unique_together = ['motion', 'voter']
         ordering = ['-voted_at']
         verbose_name = "Motion Vote"
         verbose_name_plural = "Motion Votes"
     
     def __str__(self):
-        return f"{self.voter.username} - {self.get_vote_display()} on {self.motion.title}"
+        return f"{self.party.name} - {self.get_vote_summary()} on {self.motion.title}"
+    
+    def get_vote_summary(self):
+        """Get a summary of the voting results"""
+        total_votes = self.approve_votes + self.reject_votes + self.abstain_votes
+        if total_votes == 0:
+            return "No votes cast"
+        
+        if self.approve_votes > self.reject_votes:
+            return f"Approve ({self.approve_votes}/{total_votes})"
+        elif self.reject_votes > self.approve_votes:
+            return f"Reject ({self.reject_votes}/{total_votes})"
+        else:
+            return f"Tie ({self.approve_votes}-{self.reject_votes}-{self.abstain_votes})"
+    
+    @property
+    def total_votes_cast(self):
+        """Total number of votes cast"""
+        return self.approve_votes + self.reject_votes + self.abstain_votes
+    
+    @property
+    def participation_rate(self):
+        """Percentage of party members who voted - simplified without total_members"""
+        return 100  # Since we removed total_members, assume 100% participation
+    
+    def clean(self):
+        """Validate the vote data"""
+        from django.core.exceptions import ValidationError
+        # No validation needed since we removed total_members constraint
+        pass
 
 
 class MotionComment(models.Model):

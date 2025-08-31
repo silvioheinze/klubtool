@@ -10,7 +10,7 @@ from django.core.paginator import Paginator
 from django.utils import timezone
 
 from .models import Motion, MotionVote, MotionComment, MotionAttachment, MotionStatus, MotionGroupDecision
-from .forms import MotionForm, MotionFilterForm, MotionVoteForm, MotionCommentForm, MotionAttachmentForm, MotionStatusForm, MotionGroupDecisionForm
+from .forms import MotionForm, MotionFilterForm, MotionVoteForm, MotionVoteFormSetFactory, MotionCommentForm, MotionAttachmentForm, MotionStatusForm, MotionGroupDecisionForm
 from user.models import CustomUser
 from local.models import Session, Party
 from group.models import Group
@@ -130,8 +130,15 @@ class MotionDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context = super().get_context_data(**kwargs)
         motion = self.object
         
-        # Add vote form
-        context['vote_form'] = MotionVoteForm(motion=motion, voter=self.request.user)
+        # Add vote formset
+        parties = Party.objects.filter(
+            local=motion.session.council.local,
+            is_active=True
+        )
+        context['vote_formset'] = MotionVoteFormSetFactory(
+            motion=motion,
+            initial=[{'party': party.pk} for party in parties]
+        )
         
         # Add comment form
         context['comment_form'] = MotionCommentForm(motion=motion, author=self.request.user)
@@ -149,17 +156,66 @@ class MotionDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['can_add_group_decision'] = self.request.user.is_superuser or is_leader_or_deputy_leader(self.request.user, motion)
         context['can_delete_group_decision'] = self.request.user.is_superuser or is_leader_or_deputy_leader(self.request.user, motion)
         
-        # Get user's existing vote
-        context['user_vote'] = motion.votes.filter(voter=self.request.user).first()
+        # Get party votes grouped by status/session
+        votes = motion.votes.all().select_related('party', 'status')
         
-        # Get vote statistics
-        votes = motion.votes.all()
+        # Group votes by status (or standalone)
+        vote_sessions = {}
+        for vote in votes:
+            if vote.status:
+                session_key = f"status_{vote.status.id}"
+                if session_key not in vote_sessions:
+                    vote_sessions[session_key] = {
+                        'type': 'status',
+                        'status': vote.status,
+                        'votes': [],
+                        'total_approve': 0,
+                        'total_reject': 0,
+                        'total_abstain': 0,
+                        'total_cast': 0,
+                        'parties_count': 0
+                    }
+                vote_sessions[session_key]['votes'].append(vote)
+                vote_sessions[session_key]['total_approve'] += vote.approve_votes
+                vote_sessions[session_key]['total_reject'] += vote.reject_votes
+                vote_sessions[session_key]['total_abstain'] += vote.abstain_votes
+                vote_sessions[session_key]['total_cast'] += vote.total_votes_cast
+                vote_sessions[session_key]['parties_count'] += 1
+            else:
+                # Standalone votes
+                if 'standalone' not in vote_sessions:
+                    vote_sessions['standalone'] = {
+                        'type': 'standalone',
+                        'status': None,
+                        'votes': [],
+                        'total_approve': 0,
+                        'total_reject': 0,
+                        'total_abstain': 0,
+                        'total_cast': 0,
+                        'parties_count': 0
+                    }
+                vote_sessions['standalone']['votes'].append(vote)
+                vote_sessions['standalone']['total_approve'] += vote.approve_votes
+                vote_sessions['standalone']['total_reject'] += vote.reject_votes
+                vote_sessions['standalone']['total_abstain'] += vote.abstain_votes
+                vote_sessions['standalone']['total_cast'] += vote.total_votes_cast
+                vote_sessions['standalone']['parties_count'] += 1
+        
+        context['vote_sessions'] = vote_sessions
+        
+        # Overall vote statistics
+        total_approve = sum(vote.approve_votes for vote in votes)
+        total_reject = sum(vote.reject_votes for vote in votes)
+        total_abstain = sum(vote.abstain_votes for vote in votes)
+        total_votes_cast = total_approve + total_reject + total_abstain
+        
         context['vote_stats'] = {
-            'yes': votes.filter(vote='yes').count(),
-            'no': votes.filter(vote='no').count(),
-            'abstain': votes.filter(vote='abstain').count(),
-            'absent': votes.filter(vote='absent').count(),
-            'total': votes.count(),
+            'approve': total_approve,
+            'reject': total_reject,
+            'abstain': total_abstain,
+            'total_cast': total_votes_cast,
+            'parties_voted': len(set(vote.party for vote in votes)),
+            'sessions_count': len(vote_sessions)
         }
         
         # Get comments (public only for non-authors)
@@ -258,32 +314,52 @@ class MotionDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
 @login_required
 @user_passes_test(is_superuser_or_has_permission('motion.vote'))
 def motion_vote_view(request, pk):
-    """View for voting on a motion"""
+    """View for recording party votes on a motion"""
     motion = get_object_or_404(Motion, pk=pk)
     
+    # Get parties for this motion's session council
+    parties = Party.objects.filter(
+        local=motion.session.council.local,
+        is_active=True
+    )
+    
     if request.method == 'POST':
-        form = MotionVoteForm(request.POST, motion=motion, voter=request.user)
-        if form.is_valid():
-            # Check if user already voted
-            existing_vote = MotionVote.objects.filter(motion=motion, voter=request.user).first()
-            if existing_vote:
-                # Update existing vote
-                existing_vote.vote = form.cleaned_data['vote']
-                existing_vote.reason = form.cleaned_data['reason']
-                existing_vote.save()
-                messages.success(request, "Your vote has been updated.")
-            else:
-                # Create new vote
-                form.save()
-                messages.success(request, "Your vote has been recorded.")
+        formset = MotionVoteFormSetFactory(
+            request.POST,
+            motion=motion,
+            initial=[{'party': party.pk} for party in parties]
+        )
+        if formset.is_valid():
+            # Process each form in the formset
+            for form in formset:
+                if form.cleaned_data and not form.cleaned_data.get('DELETE', False):
+                    party = form.cleaned_data['party']
+                    approve_votes = form.cleaned_data.get('approve_votes', 0)
+                    reject_votes = form.cleaned_data.get('reject_votes', 0)
+                    abstain_votes = form.cleaned_data.get('abstain_votes', 0)
+                    notes = form.cleaned_data.get('notes', '')
+                    
+                    # Create new vote (always create new vote for standalone vote recording)
+                    MotionVote.objects.create(
+                        motion=motion,
+                        party=party,
+                        approve_votes=approve_votes,
+                        reject_votes=reject_votes,
+                        abstain_votes=abstain_votes,
+                        notes=notes
+                    )
             
+            messages.success(request, "All party votes have been recorded successfully.")
             return redirect('motion:motion-detail', pk=pk)
     else:
-        form = MotionVoteForm(motion=motion, voter=request.user)
+        formset = MotionVoteFormSetFactory(
+            motion=motion,
+            initial=[{'party': party.pk} for party in parties]
+        )
     
     return render(request, 'motion/motion_vote.html', {
         'motion': motion,
-        'form': form
+        'formset': formset
     })
 
 
@@ -332,12 +408,24 @@ def motion_attachment_view(request, pk):
 @login_required
 @user_passes_test(is_superuser_or_has_permission('motion.edit'))
 def motion_status_change_view(request, pk):
-    """View for changing motion status"""
+    """View for changing motion status with integrated voting"""
     motion = get_object_or_404(Motion, pk=pk)
+    
+    # Get parties for this motion's session council
+    parties = Party.objects.filter(
+        local=motion.session.council.local,
+        is_active=True
+    )
     
     if request.method == 'POST':
         form = MotionStatusForm(request.POST, motion=motion, changed_by=request.user)
-        if form.is_valid():
+        vote_formset = MotionVoteFormSetFactory(
+            request.POST,
+            motion=motion,
+            initial=[{'party': party.pk} for party in parties]
+        )
+        
+        if form.is_valid() and vote_formset.is_valid():
             # Get the new status
             new_status = form.cleaned_data['status']
             reason = form.cleaned_data['reason']
@@ -358,14 +446,43 @@ def motion_status_change_view(request, pk):
             # Save the motion (this will trigger the save method which creates the status history entry)
             motion.save()
             
-            messages.success(request, f"Motion status changed to '{motion.get_status_display()}' successfully.")
+            # Process vote formset if status requires voting
+            if new_status in ['approved', 'rejected', 'refer_to_committee']:
+                # Get the status entry that was just created
+                status_entry = motion.status_history.first()
+                
+                for vote_form in vote_formset:
+                    if vote_form.cleaned_data and not vote_form.cleaned_data.get('DELETE', False):
+                        party = vote_form.cleaned_data['party']
+                        approve_votes = vote_form.cleaned_data.get('approve_votes', 0)
+                        reject_votes = vote_form.cleaned_data.get('reject_votes', 0)
+                        abstain_votes = vote_form.cleaned_data.get('abstain_votes', 0)
+                        notes = vote_form.cleaned_data.get('notes', '')
+                        
+                        # Create new vote for this status change
+                        MotionVote.objects.create(
+                            motion=motion,
+                            party=party,
+                            status=status_entry,
+                            approve_votes=approve_votes,
+                            reject_votes=reject_votes,
+                            abstain_votes=abstain_votes,
+                            notes=notes
+                        )
+            
+            messages.success(request, f"Motion status changed to '{motion.get_status_display()}' and votes recorded successfully.")
             return redirect('motion:motion-detail', pk=pk)
     else:
         form = MotionStatusForm(motion=motion, changed_by=request.user)
+        vote_formset = MotionVoteFormSetFactory(
+            motion=motion,
+            initial=[{'party': party.pk} for party in parties]
+        )
     
     return render(request, 'motion/motion_status_change.html', {
         'motion': motion,
-        'form': form
+        'form': form,
+        'vote_formset': vote_formset
     })
 
 
