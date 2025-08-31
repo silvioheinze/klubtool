@@ -167,6 +167,7 @@
             </div>
         </div>
 
+        {% if user_group_admin_groups or user.is_superuser %}
         <div class="col-lg-4">
             <!-- Actions -->
             <div class="card">
@@ -193,6 +194,7 @@
                 </div>
             </div>
         </div>
+        {% endif %}
     </div>
 </div>
 {% endblock content %}
