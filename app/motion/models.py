@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth import get_user_model
+from django.utils.translation import gettext_lazy as _
 from auditlog.registry import auditlog
 from local.models import Session, Party
 from group.models import Group
@@ -11,16 +12,16 @@ class Motion(models.Model):
     """Model representing a motion in a council session"""
     
     STATUS_CHOICES = [
-        ('draft', 'Draft'),
-        ('submitted', 'Submitted'),
-        ('approved', 'Approved'),
-        ('rejected', 'Rejected'),
-        ('withdrawn', 'Withdrawn'),
+        ('draft', _('Draft')),
+        ('submitted', _('Submitted')),
+        ('approved', _('Approved')),
+        ('rejected', _('Rejected')),
+        ('withdrawn', _('Withdrawn')),
     ]
     
     MOTION_TYPE_CHOICES = [
-        ('resolution', 'Resolution'),
-        ('general', 'General motion'),
+        ('resolution', _('Resolution')),
+        ('general', _('General motion')),
     ]
     
 
@@ -83,10 +84,10 @@ class MotionVote(models.Model):
     """Model representing votes on motions"""
     
     VOTE_CHOICES = [
-        ('yes', 'Yes'),
-        ('no', 'No'),
-        ('abstain', 'Abstain'),
-        ('absent', 'Absent'),
+        ('yes', _('Yes')),
+        ('no', _('No')),
+        ('abstain', _('Abstain')),
+        ('absent', _('Absent')),
     ]
     
     motion = models.ForeignKey(Motion, on_delete=models.CASCADE, related_name='votes')

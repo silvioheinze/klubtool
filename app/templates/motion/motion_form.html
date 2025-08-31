@@ -29,9 +29,6 @@
                     <form method="post" enctype="multipart/form-data">
                         {% csrf_token %}
                         
-                        <!-- Basic Information -->
-                        <h6 class="text-primary mb-3">{% trans "Basic Information" %}</h6>
-                        
                         <div class="mb-3">
                             <label for="{{ form.title.id_for_label }}" class="form-label">
                                 {% trans "Title" %} <span class="text-danger">*</span>
@@ -101,9 +98,6 @@
                         <!-- Hidden fields for automatic assignment -->
                         {{ form.status }}
                         {{ form.group }}
-
-                        <!-- Relationships -->
-                        <h6 class="text-primary mb-3 mt-4">{% trans "Relationships" %}</h6>
                         
                         <div class="mb-3">
                             <label for="{{ form.session.id_for_label }}" class="form-label">

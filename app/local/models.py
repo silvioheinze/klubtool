@@ -260,7 +260,9 @@ class Session(models.Model):
         verbose_name_plural = "Sessions"
 
     def __str__(self):
-        return f"{self.title} - {self.council.name}"
+        from django.utils import timezone
+        from django.utils.formats import date_format
+        return f"{self.title} - {date_format(self.scheduled_date, 'SHORT_DATE_FORMAT')}"
 
     def get_absolute_url(self):
         from django.urls import reverse

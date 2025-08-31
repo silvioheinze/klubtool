@@ -1,6 +1,6 @@
 # Antragstool
 
-A modern Django-based application management system built with Docker, PostgreSQL, and Nginx.
+A modern Django-based motion management system built with Docker, PostgreSQL, and Nginx.
 
 ## 🚀 Features
 
@@ -366,4 +366,4 @@ docker-compose exec app python manage.py migrate
 
 ---
 
-**Antragstool** - Modern application management made simple.
+**Antragstool** - Modern motion management made simple.

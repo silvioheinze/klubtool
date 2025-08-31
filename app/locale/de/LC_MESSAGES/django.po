@@ -423,7 +423,7 @@ msgstr "Aktionen"
 #: templates/group/member_detail.html:116 templates/home.html:58
 #: templates/motion/motion_detail.html:379
 msgid "View Group"
-msgstr ""
+msgstr "Klub anzeigen"
 
 #: templates/group/group_confirm_delete.html:105
 #: templates/group/group_detail.html:170 templates/group/group_form.html:7
@@ -435,7 +435,7 @@ msgstr "Klub bearbeiten"
 #: templates/group/group_detail.html:183
 #: templates/local/party_confirm_delete.html:96
 msgid "View Party"
-msgstr ""
+msgstr "Partei anzeigen"
 
 #: templates/group/group_detail.html:16 templates/group/group_list.html:104
 #: templates/group/member_detail.html:16 templates/group/member_list.html:103
@@ -486,7 +486,7 @@ msgstr "Benutzer"
 #: templates/home.html:33 templates/local/committee_detail.html:162
 #: templates/user/list.html:34
 msgid "Role"
-msgstr ""
+msgstr "Rolle"
 
 #: templates/group/group_detail.html:106
 #: templates/group/member_confirm_delete.html:70
@@ -494,7 +494,7 @@ msgstr ""
 #: templates/group/member_list.html:64 templates/home.html:35
 #: templates/local/committee_detail.html:163
 msgid "Joined"
-msgstr ""
+msgstr "Beigetreten"
 
 #: templates/group/group_detail.html:138 templates/group/member_detail.html:109
 #: templates/group/member_list.html:106
@@ -516,7 +516,7 @@ msgstr ""
 
 #: templates/group/group_detail.html:180 templates/group/management.html:15
 msgid "View All Groups"
-msgstr ""
+msgstr "Alle Klubs anzeigen"
 
 #: templates/group/group_detail.html:191 templates/group/member_detail.html:124
 #: templates/local/committee_confirm_delete.html:117
@@ -537,11 +537,11 @@ msgstr "Gruppe erstellen"
 
 #: templates/group/group_form.html:43
 msgid "Create New Group"
-msgstr ""
+msgstr "Neuen Klub erstellen"
 
 #: templates/group/group_form.html:180
 msgid "Update Group"
-msgstr ""
+msgstr "Klub aktualisieren"
 
 #: templates/group/group_form.html:194 templates/group/member_form.html:174
 #: templates/local/committee_form.html:168
@@ -550,7 +550,7 @@ msgstr ""
 #: templates/local/term_seat_distribution_form.html:170
 #: templates/motion/motion_form.html:163
 msgid "Help"
-msgstr ""
+msgstr "Hilfe"
 
 #: templates/group/group_form.html:197
 msgid "Political Group Information"
@@ -1062,7 +1062,7 @@ msgstr ""
 
 #: templates/local/committee_detail.html:210
 msgid "members"
-msgstr ""
+msgstr "Mitglieder"
 
 #: templates/local/committee_detail.html:221
 msgid "Add committee members to start organizing the committee work."
@@ -1079,14 +1079,14 @@ msgstr ""
 #: templates/local/committee_detail.html:240
 #: templates/local/session_detail.html:180
 msgid "Add Motion"
-msgstr ""
+msgstr "Antrag hinzufügen"
 
 #: templates/local/committee_detail.html:243
 #: templates/local/committee_detail.html:317
 #: templates/local/session_detail.html:249
 #: templates/motion/motion_detail.html:370
 msgid "View All Motions"
-msgstr ""
+msgstr "Alle Anträge anzeigen"
 
 #: templates/local/committee_detail.html:253
 #: templates/local/council_detail.html:145
@@ -1105,45 +1105,45 @@ msgstr "Titel"
 #: templates/motion/motion_detail.html:78 templates/motion/motion_list.html:103
 #: templates/motion/motion_list.html:125
 msgid "Submitted"
-msgstr ""
+msgstr "Eingereicht"
 
 #: templates/local/committee_detail.html:276
 #: templates/local/session_detail.html:217
 #: templates/motion/motion_detail.html:66 templates/motion/motion_list.html:123
 msgid "Draft"
-msgstr ""
+msgstr "Entwurf"
 
 #: templates/local/committee_detail.html:280
 #: templates/local/session_detail.html:221
 #: templates/motion/motion_detail.html:70 templates/motion/motion_list.html:129
 msgid "Approved"
-msgstr ""
+msgstr "Angenommen"
 
 #: templates/local/committee_detail.html:282
 #: templates/local/session_detail.html:223
 #: templates/motion/motion_detail.html:72 templates/motion/motion_list.html:131
 msgid "Rejected"
-msgstr ""
+msgstr "Abgelehnt"
 
 #: templates/local/committee_detail.html:284
 #: templates/local/session_detail.html:225
 #: templates/motion/motion_detail.html:74 templates/motion/motion_list.html:135
 msgid "Withdrawn"
-msgstr ""
+msgstr "Zurückgezogen"
 
 #: templates/local/committee_detail.html:300
 #: templates/motion/motion_detail.html:363 templates/motion/motion_form.html:7
 #: templates/motion/motion_form.html:22 templates/motion/motion_list.html:169
 msgid "Edit Motion"
-msgstr ""
+msgstr "Antrag bearbeiten"
 
 #: templates/local/committee_detail.html:314
 msgid "motions"
-msgstr ""
+msgstr "Anträge"
 
 #: templates/local/committee_detail.html:324
 msgid "No Motions found"
-msgstr ""
+msgstr "Keine Anträge gefunden"
 
 #: templates/local/committee_detail.html:325
 msgid "Create motions to be handled by this committee."
@@ -1153,7 +1153,7 @@ msgstr ""
 #: templates/local/session_detail.html:258
 #: templates/motion/motion_list.html:228
 msgid "Create First Motion"
-msgstr ""
+msgstr "Erstelle den ersten Antrag"
 
 #: templates/local/committee_form.html:9 templates/local/committee_form.html:23
 #: templates/local/committee_form.html:156
@@ -1319,7 +1319,7 @@ msgstr ""
 #: templates/local/council_name_form.html:73
 #: templates/local/session_detail.html:128
 msgid "Council Information"
-msgstr ""
+msgstr "Informationen"
 
 #: templates/local/council_detail.html:61 templates/local/local_detail.html:220
 #: templates/local/party_detail.html:75 templates/local/session_detail.html:275
@@ -1342,7 +1342,7 @@ msgstr ""
 
 #: templates/local/council_detail.html:129
 msgid "Council Sessions"
-msgstr ""
+msgstr "Sitzungen"
 
 #: templates/local/council_detail.html:132 templates/local/local_detail.html:60
 #: templates/local/session_list.html:19
@@ -1429,7 +1429,7 @@ msgstr ""
 
 #: templates/local/council_detail.html:238
 msgid "Council Committees"
-msgstr ""
+msgstr "Kommissionen und Ausschüsse"
 
 #: templates/local/council_detail.html:309
 msgid "committees"
@@ -1915,7 +1915,7 @@ msgstr ""
 
 #: templates/local/session_detail.html:45 templates/local/session_form.html:49
 msgid "Session Information"
-msgstr ""
+msgstr "Sitzungsinformation"
 
 #: templates/local/session_detail.html:92
 #: templates/local/session_detail.html:279
@@ -1942,7 +1942,7 @@ msgstr ""
 
 #: templates/local/session_detail.html:177
 msgid "Session Motions"
-msgstr ""
+msgstr "Sitzungsanträge"
 
 #: templates/local/session_detail.html:212
 msgid "No group"
@@ -1970,7 +1970,7 @@ msgstr ""
 
 #: templates/local/session_form.html:318
 msgid "Update Session"
-msgstr ""
+msgstr "Sitzung aktualisieren"
 
 #: templates/local/session_form.html:320
 msgid "Create Session"
@@ -2365,7 +2365,7 @@ msgstr ""
 
 #: templates/motion/motion_detail.html:6
 msgid "Motion Details"
-msgstr ""
+msgstr "Antragsdetails"
 
 #: templates/motion/motion_detail.html:18
 msgid "Motion details and information"
@@ -2377,28 +2377,28 @@ msgstr ""
 
 #: templates/motion/motion_detail.html:49
 msgid "Motion Information"
-msgstr ""
+msgstr "Antragsinformation"
 
 #: templates/motion/motion_detail.html:95 templates/motion/motion_form.html:110
 #: templates/motion/motion_form.html:171 templates/motion/motion_list.html:102
 msgid "Session"
-msgstr ""
+msgstr "Sitzung"
 
 #: templates/motion/motion_detail.html:131 templates/motion/motion_form.html:51
 #: templates/motion/motion_form.html:168
 msgid "Motion Text"
-msgstr ""
+msgstr "Antragstext"
 
 #: templates/motion/motion_detail.html:137 templates/motion/motion_form.html:68
 #: templates/motion/motion_form.html:169
 msgid "Rationale"
-msgstr ""
+msgstr "Begründung"
 
 #: templates/motion/motion_detail.html:147
 #: templates/motion/motion_detail.html:349
 #: templates/motion/motion_form.html:124 templates/motion/motion_form.html:172
 msgid "Supporting Parties"
-msgstr ""
+msgstr "Einbringende Partei(en)"
 
 #: templates/motion/motion_detail.html:166
 msgid "Voting"
@@ -2418,11 +2418,11 @@ msgstr ""
 
 #: templates/motion/motion_detail.html:206
 msgid "Abstain"
-msgstr ""
+msgstr "Enthaltung"
 
 #: templates/motion/motion_detail.html:212
 msgid "Absent"
-msgstr ""
+msgstr "Abwesend"
 
 #: templates/motion/motion_detail.html:217
 msgid "Total Votes"
@@ -2431,7 +2431,7 @@ msgstr ""
 #: templates/motion/motion_detail.html:225
 #: templates/motion/motion_detail.html:250
 msgid "Comments"
-msgstr ""
+msgstr "Kommentare"
 
 #: templates/motion/motion_detail.html:238
 msgid "Make this comment public"
@@ -2452,11 +2452,11 @@ msgstr ""
 #: templates/motion/motion_detail.html:275
 #: templates/motion/motion_detail.html:302
 msgid "Attachments"
-msgstr ""
+msgstr "Anhänge"
 
 #: templates/motion/motion_detail.html:290
 msgid "Upload"
-msgstr ""
+msgstr "Hochladen"
 
 #: templates/motion/motion_detail.html:324
 msgid "No attachments yet."
@@ -2482,12 +2482,12 @@ msgstr ""
 #: templates/motion/motion_detail.html:347 templates/motion/motion_form.html:87
 #: templates/motion/motion_form.html:170
 msgid "Motion Type"
-msgstr ""
+msgstr "Antragstyp"
 
 #: templates/motion/motion_detail.html:367
 #: templates/motion/motion_list.html:173
 msgid "Delete Motion"
-msgstr ""
+msgstr "Antrag löschen"
 
 #: templates/motion/motion_detail.html:374
 msgid "View Session"
@@ -2496,7 +2496,7 @@ msgstr ""
 #: templates/motion/motion_form.html:9 templates/motion/motion_form.html:24
 #: templates/motion/motion_form.html:151 templates/motion/motion_list.html:16
 msgid "Create Motion"
-msgstr ""
+msgstr "Antrag erstellen"
 
 #: templates/motion/motion_form.html:33
 msgid "Basic Information"
@@ -2512,7 +2512,7 @@ msgstr ""
 
 #: templates/motion/motion_form.html:149
 msgid "Update Motion"
-msgstr ""
+msgstr "Antrag aktualisieren"
 
 #: templates/motion/motion_form.html:167
 msgid "Enter a clear, descriptive title for the motion."
@@ -2540,7 +2540,7 @@ msgstr ""
 
 #: templates/motion/motion_list.html:6 templates/motion/motion_list.html:13
 msgid "Motion Management"
-msgstr ""
+msgstr "Antragsverwaltung"
 
 #: templates/motion/motion_list.html:31
 msgid "Filter Motions"
@@ -3165,3 +3165,16 @@ msgstr ""
 #: templates/user/signup.html:104
 msgid "Already have an account?"
 msgstr ""
+
+#: motion/models.py:21
+msgid "Resolution"
+msgstr "Resolution"
+
+#: motion/models.py:22
+msgid "General motion"
+msgstr "Antrag"
+
+#: templates/_base.html:60
+msgid "Next Session"
+msgstr "Nächste Sitzung"
+

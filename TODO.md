@@ -32,3 +32,5 @@
 [ ] motion export as pdf
 [x] optimize group model and detail
 [ ] home template
+[ ] missing german translations
+[ ] add attachments to sessions
