@@ -72,26 +72,26 @@ API_URL=http://localhost:8000/api/
 
 ```bash
 # Build and start all services
-docker-compose up --build -d
+docker compose up --build -d
 
 # Check service status
-docker-compose ps
+docker compose ps
 ```
 
 ### 4. Run Database Migrations
 
 ```bash
 # Apply database migrations
-docker-compose exec app python manage.py migrate
+docker compose exec app python manage.py migrate
 
 # Collect static files
-docker-compose exec app python manage.py collectstatic --noinput
+docker compose exec app python manage.py collectstatic --noinput
 ```
 
 ### 5. Create a Superuser (Optional)
 
 ```bash
-docker-compose exec app python manage.py createsuperuser
+docker compose exec app python manage.py createsuperuser
 ```
 
 ### 6. Access the Application
@@ -130,7 +130,7 @@ antragstool/
 ├── nginx/                       # Nginx configuration
 │   ├── Dockerfile              # Nginx Dockerfile
 │   └── nginx.conf              # Nginx configuration
-├── docker-compose.yml          # Docker Compose configuration
+├── docker compose.yml          # Docker Compose configuration
 ├── Dockerfile                  # Django application Dockerfile
 ├── requirements.txt            # Python dependencies
 ├── env.example                 # Environment variables example
@@ -167,14 +167,14 @@ The application uses PostgreSQL with the following features:
 
 ```bash
 # Create a new migration
-docker-compose exec app python manage.py makemigrations
+docker compose exec app python manage.py makemigrations
 
 # Apply migrations
-docker-compose exec app python manage.py migrate
+docker compose exec app python manage.py migrate
 
 # Reset database (WARNING: This will delete all data)
-docker-compose down -v
-docker-compose up -d
+docker compose down -v
+docker compose up -d
 ```
 
 ## 👥 User Management
@@ -252,33 +252,33 @@ POSTGRES_PASSWORD=your-secure-password
 
 ```bash
 # Start development environment
-docker-compose up -d
+docker compose up -d
 
 # View logs
-docker-compose logs -f app
+docker compose logs -f app
 
 # Run Django shell
-docker-compose exec app python manage.py shell
+docker compose exec app python manage.py shell
 
 # Run tests
-docker-compose exec app python manage.py test
+docker compose exec app python manage.py test
 ```
 
 ### Adding New Apps
 
-1. Create the app: `docker-compose exec app python manage.py startapp myapp`
+1. Create the app: `docker compose exec app python manage.py startapp myapp`
 2. Add to `INSTALLED_APPS` in `settings.py`
 3. Create models, views, and URLs
-4. Run migrations: `docker-compose exec app python manage.py makemigrations myapp`
+4. Run migrations: `docker compose exec app python manage.py makemigrations myapp`
 
 ### Static Files
 
 ```bash
 # Collect static files
-docker-compose exec app python manage.py collectstatic --noinput
+docker compose exec app python manage.py collectstatic --noinput
 
 # Find static files
-docker-compose exec app python manage.py findstatic css/bootstrap.min.css
+docker compose exec app python manage.py findstatic css/bootstrap.min.css
 ```
 
 ## 📝 API Documentation
@@ -298,16 +298,16 @@ The application includes a basic API structure. API endpoints are configured in 
 1. **Static Files Not Loading**
    ```bash
    # Rebuild containers and collect static files
-   docker-compose down
-   docker-compose up --build -d
-   docker-compose exec app python manage.py collectstatic --noinput
+   docker compose down
+   docker compose up --build -d
+   docker compose exec app python manage.py collectstatic --noinput
    ```
 
 2. **Database Connection Issues**
    ```bash
    # Check database health
-   docker-compose ps
-   docker-compose logs db
+   docker compose ps
+   docker compose logs db
    ```
 
 3. **Permission Issues**
@@ -320,12 +320,12 @@ The application includes a basic API structure. API endpoints are configured in 
 
 ```bash
 # View all logs
-docker-compose logs
+docker compose logs
 
 # View specific service logs
-docker-compose logs app
-docker-compose logs nginx
-docker-compose logs db
+docker compose logs app
+docker compose logs nginx
+docker compose logs db
 ```
 
 ## 🤝 Contributing
@@ -357,11 +357,11 @@ To update the application:
 git pull origin main
 
 # Rebuild and restart
-docker-compose down
-docker-compose up --build -d
+docker compose down
+docker compose up --build -d
 
 # Run migrations
-docker-compose exec app python manage.py migrate
+docker compose exec app python manage.py migrate
 ```
 
 ---

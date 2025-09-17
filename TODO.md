@@ -43,3 +43,4 @@
 [ ] admin role for locals
 [ ] local management superuser only
 [x] update motion vote and add in motionstatus form
+[ ] remove abstantions

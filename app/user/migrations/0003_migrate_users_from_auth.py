@@ -9,6 +9,21 @@ def migrate_users_from_auth(apps, schema_editor):
     
     cursor = connection.cursor()
     
+    # Check if auth_user table exists
+    cursor.execute("""
+        SELECT EXISTS (
+            SELECT FROM information_schema.tables 
+            WHERE table_schema = 'public' 
+            AND table_name = 'auth_user'
+        );
+    """)
+    
+    auth_user_exists = cursor.fetchone()[0]
+    
+    if not auth_user_exists:
+        print("auth_user table does not exist, skipping migration")
+        return
+    
     # Get users from auth_user table
     cursor.execute("""
         SELECT id, password, last_login, is_superuser, username, first_name, 

@@ -65,14 +65,9 @@ class LocalDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         """Add terms, parties, and sessions data to context"""
         context = super().get_context_data(**kwargs)
         
-        # Get terms that are connected to this local through seat distributions
-        connected_term_ids = TermSeatDistribution.objects.filter(
-            party__local=self.object
-        ).values_list('term_id', flat=True).distinct()
-        context['terms'] = Term.objects.filter(
-            id__in=connected_term_ids, 
-            is_active=True
-        ).order_by('-start_date')
+        # Get all active terms (not just those connected through seat distributions)
+        # This allows users to see and configure terms even before creating parties
+        context['terms'] = Term.objects.filter(is_active=True).order_by('-start_date')
         
         context['parties'] = self.object.parties.filter(is_active=True).order_by('name')
         
@@ -679,7 +674,7 @@ class PartyCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
         if local_id:
             try:
                 local = Local.objects.get(pk=local_id)
-                initial['local'] = local
+                initial['local'] = local.pk
             except Local.DoesNotExist:
                 pass
         return initial

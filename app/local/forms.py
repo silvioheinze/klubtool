@@ -139,7 +139,7 @@ class PartyForm(forms.ModelForm):
         if local_id:
             try:
                 local = Local.objects.get(pk=local_id)
-                self.fields['local'].initial = local
+                self.fields['local'].initial = local.pk
                 # Hide the local field when it's pre-set
                 self.fields['local'].widget = forms.HiddenInput()
             except Local.DoesNotExist:
