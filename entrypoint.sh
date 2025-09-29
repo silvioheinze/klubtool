@@ -1,14 +1,17 @@
-#!/bin/bash
-set -e
+#!/bin/sh
 
-# Fix permissions for mounted volumes (as root)
-if [ -d "/usr/src/app/staticfiles" ]; then
-    chown -R appuser:appuser /usr/src/app/staticfiles
+if [ "$DATABASE" = "postgres" ]
+then
+    echo "Waiting for postgres..."
+
+    while ! nc -z $SQL_HOST $SQL_PORT; do
+      sleep 0.1
+    done
+
+    echo "PostgreSQL started"
 fi
 
-if [ -d "/usr/src/app/media" ]; then
-    chown -R appuser:appuser /usr/src/app/media
-fi
+python manage.py flush --no-input
+python manage.py migrate
 
-# Switch to appuser and run Django commands
-exec su appuser -c "python manage.py collectstatic --noinput --clear && python manage.py migrate && exec \"$@\""
+exec "$@"
