@@ -106,7 +106,6 @@ class MotionVote(models.Model):
     VOTE_CHOICES = [
         ('approve', _('Approve')),
         ('reject', _('Reject')),
-        ('abstain', _('Abstain')),
     ]
     
     motion = models.ForeignKey(Motion, on_delete=models.CASCADE, related_name='votes')
@@ -114,7 +113,6 @@ class MotionVote(models.Model):
     status = models.ForeignKey('MotionStatus', on_delete=models.CASCADE, related_name='votes', null=True, blank=True, help_text="Status change this vote is connected to")
     approve_votes = models.PositiveIntegerField(default=0, help_text="Number of approve votes from this party")
     reject_votes = models.PositiveIntegerField(default=0, help_text="Number of reject votes from this party")
-    abstain_votes = models.PositiveIntegerField(default=0, help_text="Number of abstain votes from this party")
     notes = models.TextField(blank=True, help_text="Additional notes about the voting")
     voted_at = models.DateTimeField(auto_now_add=True)
     
@@ -128,7 +126,7 @@ class MotionVote(models.Model):
     
     def get_vote_summary(self):
         """Get a summary of the voting results"""
-        total_votes = self.approve_votes + self.reject_votes + self.abstain_votes
+        total_votes = self.approve_votes + self.reject_votes
         if total_votes == 0:
             return "No votes cast"
         
@@ -137,12 +135,12 @@ class MotionVote(models.Model):
         elif self.reject_votes > self.approve_votes:
             return f"Reject ({self.reject_votes}/{total_votes})"
         else:
-            return f"Tie ({self.approve_votes}-{self.reject_votes}-{self.abstain_votes})"
+            return f"Tie ({self.approve_votes}-{self.reject_votes})"
     
     @property
     def total_votes_cast(self):
         """Total number of votes cast"""
-        return self.approve_votes + self.reject_votes + self.abstain_votes
+        return self.approve_votes + self.reject_votes
     
     @property
     def participation_rate(self):

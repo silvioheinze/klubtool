@@ -171,14 +171,12 @@ class MotionDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
                         'votes': [],
                         'total_approve': 0,
                         'total_reject': 0,
-                        'total_abstain': 0,
                         'total_cast': 0,
                         'parties_count': 0
                     }
                 vote_sessions[session_key]['votes'].append(vote)
                 vote_sessions[session_key]['total_approve'] += vote.approve_votes
                 vote_sessions[session_key]['total_reject'] += vote.reject_votes
-                vote_sessions[session_key]['total_abstain'] += vote.abstain_votes
                 vote_sessions[session_key]['total_cast'] += vote.total_votes_cast
                 vote_sessions[session_key]['parties_count'] += 1
             else:
@@ -190,14 +188,12 @@ class MotionDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
                         'votes': [],
                         'total_approve': 0,
                         'total_reject': 0,
-                        'total_abstain': 0,
                         'total_cast': 0,
                         'parties_count': 0
                     }
                 vote_sessions['standalone']['votes'].append(vote)
                 vote_sessions['standalone']['total_approve'] += vote.approve_votes
                 vote_sessions['standalone']['total_reject'] += vote.reject_votes
-                vote_sessions['standalone']['total_abstain'] += vote.abstain_votes
                 vote_sessions['standalone']['total_cast'] += vote.total_votes_cast
                 vote_sessions['standalone']['parties_count'] += 1
         
@@ -206,13 +202,11 @@ class MotionDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         # Overall vote statistics
         total_approve = sum(vote.approve_votes for vote in votes)
         total_reject = sum(vote.reject_votes for vote in votes)
-        total_abstain = sum(vote.abstain_votes for vote in votes)
-        total_votes_cast = total_approve + total_reject + total_abstain
+        total_votes_cast = total_approve + total_reject
         
         context['vote_stats'] = {
             'approve': total_approve,
             'reject': total_reject,
-            'abstain': total_abstain,
             'total_cast': total_votes_cast,
             'parties_voted': len(set(vote.party for vote in votes)),
             'sessions_count': len(vote_sessions)
@@ -336,7 +330,6 @@ def motion_vote_view(request, pk):
                     party = form.cleaned_data['party']
                     approve_votes = form.cleaned_data.get('approve_votes', 0)
                     reject_votes = form.cleaned_data.get('reject_votes', 0)
-                    abstain_votes = form.cleaned_data.get('abstain_votes', 0)
                     notes = form.cleaned_data.get('notes', '')
                     
                     # Create new vote (always create new vote for standalone vote recording)
@@ -345,7 +338,6 @@ def motion_vote_view(request, pk):
                         party=party,
                         approve_votes=approve_votes,
                         reject_votes=reject_votes,
-                        abstain_votes=abstain_votes,
                         notes=notes
                     )
             
@@ -456,7 +448,6 @@ def motion_status_change_view(request, pk):
                         party = vote_form.cleaned_data['party']
                         approve_votes = vote_form.cleaned_data.get('approve_votes', 0)
                         reject_votes = vote_form.cleaned_data.get('reject_votes', 0)
-                        abstain_votes = vote_form.cleaned_data.get('abstain_votes', 0)
                         notes = vote_form.cleaned_data.get('notes', '')
                         
                         # Create new vote for this status change
@@ -466,7 +457,6 @@ def motion_status_change_view(request, pk):
                             status=status_entry,
                             approve_votes=approve_votes,
                             reject_votes=reject_votes,
-                            abstain_votes=abstain_votes,
                             notes=notes
                         )
             

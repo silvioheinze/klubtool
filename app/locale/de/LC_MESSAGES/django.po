@@ -2417,8 +2417,6 @@ msgid "Vote Statistics"
 msgstr ""
 
 #: templates/motion/motion_detail.html:206
-msgid "Abstain"
-msgstr "Enthaltung"
 
 #: templates/motion/motion_detail.html:212
 msgid "Absent"

@@ -53,7 +53,7 @@ class MotionVoteAdmin(admin.ModelAdmin):
     
     fieldsets = (
         ('Vote Information', {
-            'fields': ('motion', 'party', 'status', 'approve_votes', 'reject_votes', 'abstain_votes')
+            'fields': ('motion', 'party', 'status', 'approve_votes', 'reject_votes')
         }),
         ('Vote Summary', {
             'fields': ('total_votes_cast', 'participation_rate', 'notes'),

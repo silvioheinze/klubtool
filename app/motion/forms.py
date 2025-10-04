@@ -106,12 +106,11 @@ class MotionVoteForm(forms.ModelForm):
     
     class Meta:
         model = MotionVote
-        fields = ['party', 'approve_votes', 'reject_votes', 'abstain_votes', 'notes']
+        fields = ['party', 'approve_votes', 'reject_votes', 'notes']
         widgets = {
             'party': forms.Select(attrs={'class': 'form-select'}),
             'approve_votes': forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'min': '0', 'style': 'width: 80px;'}),
             'reject_votes': forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'min': '0', 'style': 'width: 80px;'}),
-            'abstain_votes': forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'min': '0', 'style': 'width: 80px;'}),
             'notes': forms.TextInput(attrs={'class': 'form-control form-control-sm', 'placeholder': 'Notes...'}),
         }
     
@@ -139,7 +138,6 @@ class MotionVoteForm(forms.ModelForm):
         cleaned_data = super().clean()
         approve_votes = cleaned_data.get('approve_votes', 0)
         reject_votes = cleaned_data.get('reject_votes', 0)
-        abstain_votes = cleaned_data.get('abstain_votes', 0)
         
         # Check if user has already recorded votes for this party on this motion
         if self.motion and cleaned_data.get('party'):

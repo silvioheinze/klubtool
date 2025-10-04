@@ -46,11 +46,10 @@
                                 <thead class="table-dark">
                                     <tr>
                                         <th style="width: 25%; text-align: center;">{% trans "Party" %}</th>
-                                        <th style="width: 15%; text-align: center;">{% trans "Approve" %}</th>
-                                        <th style="width: 15%; text-align: center;">{% trans "Reject" %}</th>
-                                        <th style="width: 15%; text-align: center;">{% trans "Abstain" %}</th>
-                                        <th style="width: 10%; text-align: center;">{% trans "Total" %}</th>
-                                        <th style="width: 20%; text-align: center;">{% trans "Notes" %}</th>
+                                        <th style="width: 20%; text-align: center;">{% trans "Approve" %}</th>
+                                        <th style="width: 20%; text-align: center;">{% trans "Reject" %}</th>
+                                        <th style="width: 15%; text-align: center;">{% trans "Total" %}</th>
+                                        <th style="width: 25%; text-align: center;">{% trans "Notes" %}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -85,16 +84,6 @@
                                                 {% if form.reject_votes.errors %}
                                                     <div class="text-danger">
                                                         {% for error in form.reject_votes.errors %}
-                                                            <small>{{ error }}</small>
-                                                        {% endfor %}
-                                                    </div>
-                                                {% endif %}
-                                            </td>
-                                            <td class="text-center">
-                                                {{ form.abstain_votes }}
-                                                {% if form.abstain_votes.errors %}
-                                                    <div class="text-danger">
-                                                        {% for error in form.abstain_votes.errors %}
                                                             <small>{{ error }}</small>
                                                         {% endfor %}
                                                     </div>
@@ -136,13 +125,11 @@
                         document.addEventListener('DOMContentLoaded', function() {
                             const approveInputs = document.querySelectorAll('input[name*="approve_votes"]');
                             const rejectInputs = document.querySelectorAll('input[name*="reject_votes"]');
-                            const abstainInputs = document.querySelectorAll('input[name*="abstain_votes"]');
                             
                             function updateTotal(index) {
                                 const approve = parseInt(approveInputs[index].value) || 0;
                                 const reject = parseInt(rejectInputs[index].value) || 0;
-                                const abstain = parseInt(abstainInputs[index].value) || 0;
-                                const total = approve + reject + abstain;
+                                const total = approve + reject;
                                 document.getElementById('total-' + index).textContent = total;
                             }
                             
@@ -152,11 +139,6 @@
                             });
                             
                             rejectInputs.forEach(function(input, index) {
-                                input.addEventListener('input', function() { updateTotal(index); });
-                                updateTotal(index);
-                            });
-                            
-                            abstainInputs.forEach(function(input, index) {
                                 input.addEventListener('input', function() { updateTotal(index); });
                                 updateTotal(index);
                             });
