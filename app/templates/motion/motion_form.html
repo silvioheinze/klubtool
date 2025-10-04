@@ -103,17 +103,20 @@
                             <label for="{{ form.session.id_for_label }}" class="form-label">
                                 {% trans "Session" %} <span class="text-danger">*</span>
                             </label>
-                            {% if form.session.value %}
-                                <!-- Show session info when field has a value -->
+                            {% if form.session.widget.attrs.readonly %}
+                                <!-- Show session info when field is read-only -->
                                 {% for session in form.session.field.queryset %}
                                     {% if session.pk == form.session.value %}
                                         <div class="form-control-plaintext bg-light p-2 border rounded">
                                             <strong>{{ session.title }}</strong>
                                             <br><small class="text-muted">{{ session.council.name }} - {{ session.scheduled_date|date:"SHORT_DATE_FORMAT" }}</small>
                                         </div>
-                                        {{ form.session }}
                                     {% endif %}
                                 {% endfor %}
+                                <!-- Render the read-only field -->
+                                {{ form.session }}
+                                <!-- Add hidden input to ensure session value is submitted -->
+                                <input type="hidden" name="session" value="{{ form.session.value }}">
                             {% else %}
                                 <!-- Show normal select field when no value -->
                                 {{ form.session }}
@@ -185,3 +188,4 @@
     </div>
 </div>
 {% endblock content %}
+

@@ -108,11 +108,13 @@ class MotionFormTests(TestCase):
         form = MotionForm(user=self.user)
         self.assertEqual(form.fields['status'].initial, 'draft')
     
-    def test_motion_form_group_initialization(self):
-        """Test that MotionForm sets group from user"""
+    def test_motion_form_group_field_hidden(self):
+        """Test that MotionForm hides group field"""
         form = MotionForm(user=self.user)
-        # Group should be set to user's group if available
-        # This depends on the user's group membership
+        # Group field should be hidden
+        self.assertEqual(form.fields['group'].widget.__class__.__name__, 'HiddenInput')
+        self.assertIsNotNone(form.fields['group'].queryset)
+        # Should have a default value set
         self.assertIsNotNone(form.fields['group'].initial)
 
 
@@ -884,3 +886,29 @@ class MotionCreateViewTests(TestCase):
         self.assertContains(response, 'form-select')
         # Check that session info is not shown
         self.assertNotContains(response, 'form-control-plaintext')
+    
+    def test_motion_create_form_with_session_parameter_submits_correctly(self):
+        """Test that motion create form submits correctly when session parameter is provided"""
+        self.client.login(username='admin', password='adminpass123')
+        
+        # Create motion data
+        motion_data = {
+            'title': 'Test Motion',
+            'text': 'Test motion text',
+            'rationale': 'Test rationale',
+            'motion_type': 'general',
+            'status': 'draft',
+            'group': self.group.pk,
+            'parties': []
+        }
+        
+        # Submit motion creation form with session parameter
+        response = self.client.post(f"{reverse('motion:motion-create')}?session={self.session.pk}", motion_data)
+        
+        # Should redirect to session detail page (success)
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse('local:session-detail', kwargs={'pk': self.session.pk}))
+        
+        # Check that motion was created with the correct session
+        motion = Motion.objects.get(title='Test Motion')
+        self.assertEqual(motion.session, self.session)

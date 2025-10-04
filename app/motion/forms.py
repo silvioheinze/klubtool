@@ -43,11 +43,15 @@ class MotionForm(forms.ModelForm):
         # Set status to draft automatically
         self.fields['status'].initial = 'draft'
         
-        # Set group to user's group automatically
-        if self.user and hasattr(self.user, 'group_memberships'):
-            user_group = self.user.group_memberships.filter(is_active=True).first()
-            if user_group:
-                self.fields['group'].initial = user_group.group.pk
+        # Make group field invisible and set default value
+        self.fields['group'].widget = forms.HiddenInput()
+        self.fields['group'].queryset = Group.objects.filter(is_active=True)
+        
+        # Set default group if none is provided
+        if not self.fields['group'].initial:
+            first_group = Group.objects.filter(is_active=True).first()
+            if first_group:
+                self.fields['group'].initial = first_group.pk
         
         # Set initial session if provided in URL
         session_id = self.initial.get('session') or self.data.get('session')
@@ -55,8 +59,13 @@ class MotionForm(forms.ModelForm):
             try:
                 session = Session.objects.get(pk=session_id)
                 self.fields['session'].initial = session.pk
-                # Hide the session field when it's pre-set
-                self.fields['session'].widget = forms.HiddenInput()
+                # Make the session field read-only when it's pre-set
+                self.fields['session'].widget.attrs['readonly'] = True
+                self.fields['session'].widget.attrs['class'] = 'form-control-plaintext bg-light'
+                # Store the session for later use
+                self._preset_session = session
+                # Override the field validation to always be valid when preset
+                self.fields['session'].required = False
             except Session.DoesNotExist:
                 pass
     
@@ -64,6 +73,20 @@ class MotionForm(forms.ModelForm):
         cleaned_data = super().clean()
         session = cleaned_data.get('session')
         group = cleaned_data.get('group')
+        
+        # If session is not in cleaned_data but we have a preset session, use it
+        if not session and hasattr(self, '_preset_session'):
+            session = self._preset_session
+            cleaned_data['session'] = session
+        
+        # If session is still not found, check if it's in the data
+        if not session and 'session' in self.data:
+            session_id = self.data['session']
+            try:
+                session = Session.objects.get(pk=session_id)
+                cleaned_data['session'] = session
+            except (Session.DoesNotExist, ValueError):
+                pass
         
         # Ensure group belongs to a party that is in the session's council
         if session and group:

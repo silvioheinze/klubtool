@@ -84,7 +84,11 @@
                                 </a>
                             </td>
                             <td>
-                                <span class="badge bg-secondary">{{ member.get_role_display }}</span>
+                                {% for role in member.roles.all %}
+                                    <span class="badge bg-secondary me-1">{{ role.name }}</span>
+                                {% empty %}
+                                    <span class="text-muted">{% trans "No roles" %}</span>
+                                {% endfor %}
                             </td>
                             <td>{{ member.joined_date|date:"M d, Y" }}</td>
                             <td>
