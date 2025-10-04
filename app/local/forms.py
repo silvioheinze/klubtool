@@ -185,7 +185,7 @@ class TermSeatDistributionForm(forms.ModelForm):
         if term_id:
             try:
                 term = Term.objects.get(pk=term_id)
-                self.fields['term'].initial = term
+                self.fields['term'].initial = term.pk
                 # Hide the term field when it's pre-set
                 self.fields['term'].widget = forms.HiddenInput()
             except Term.DoesNotExist:

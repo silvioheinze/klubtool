@@ -547,7 +547,7 @@ class TermSeatDistributionCreateView(LoginRequiredMixin, UserPassesTestMixin, Cr
         if term_id:
             try:
                 term = Term.objects.get(pk=term_id)
-                initial['term'] = term
+                initial['term'] = term.pk
             except Term.DoesNotExist:
                 pass
         return initial
