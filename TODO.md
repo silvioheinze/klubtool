@@ -42,5 +42,9 @@
 [ ] optimise session export pdf
 [ ] home template
 [ ] missing german translations
-[ ] implement ci colors
+[x] implement ci colors
 [ ] admin role for locals
+[ ] Bezirksvertretungs Stati neu definieren (Eingeladen, Protokoll)
+[ ] change Minutes in session model to File
+[ ] add Invitation in session model as File
+[ ] add the roles

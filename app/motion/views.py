@@ -260,6 +260,12 @@ class MotionCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
                 pass
         return initial
 
+    def get_success_url(self):
+        """Redirect to session detail page after successful motion creation"""
+        if hasattr(self.object, 'session') and self.object.session:
+            return reverse('local:session-detail', kwargs={'pk': self.object.session.pk})
+        return super().get_success_url()
+
     def form_valid(self, form):
         """Set submitted_by and display success message"""
         form.instance.submitted_by = self.request.user

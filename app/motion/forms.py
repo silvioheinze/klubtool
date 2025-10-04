@@ -55,6 +55,8 @@ class MotionForm(forms.ModelForm):
             try:
                 session = Session.objects.get(pk=session_id)
                 self.fields['session'].initial = session.pk
+                # Hide the session field when it's pre-set
+                self.fields['session'].widget = forms.HiddenInput()
             except Session.DoesNotExist:
                 pass
     

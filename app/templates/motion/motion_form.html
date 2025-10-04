@@ -103,7 +103,21 @@
                             <label for="{{ form.session.id_for_label }}" class="form-label">
                                 {% trans "Session" %} <span class="text-danger">*</span>
                             </label>
-                            {{ form.session }}
+                            {% if form.session.value %}
+                                <!-- Show session info when field has a value -->
+                                {% for session in form.session.field.queryset %}
+                                    {% if session.pk == form.session.value %}
+                                        <div class="form-control-plaintext bg-light p-2 border rounded">
+                                            <strong>{{ session.title }}</strong>
+                                            <br><small class="text-muted">{{ session.council.name }} - {{ session.scheduled_date|date:"SHORT_DATE_FORMAT" }}</small>
+                                        </div>
+                                        {{ form.session }}
+                                    {% endif %}
+                                {% endfor %}
+                            {% else %}
+                                <!-- Show normal select field when no value -->
+                                {{ form.session }}
+                            {% endif %}
                             {% if form.session.errors %}
                                 <div class="invalid-feedback d-block">
                                     {% for error in form.session.errors %}

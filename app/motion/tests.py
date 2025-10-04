@@ -1,8 +1,9 @@
-from django.test import TestCase
+from django.test import TestCase, Client
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.forms import formset_factory
 from django.utils import timezone
+from django.urls import reverse
 from datetime import datetime, timedelta
 
 from .forms import (
@@ -734,3 +735,152 @@ class MotionGroupDecisionFormTests(TestCase):
             expected_committees,
             transform=lambda x: x
         )
+
+
+class MotionCreateViewTests(TestCase):
+    """Test cases for MotionCreateView"""
+    
+    def setUp(self):
+        """Set up test data"""
+        self.client = Client()
+        self.superuser = User.objects.create_superuser(
+            username='admin',
+            email='admin@example.com',
+            password='adminpass123'
+        )
+        
+        # Create test data
+        self.local = Local.objects.create(
+            name='Test Local',
+            code='TL',
+            description='Test local description',
+            is_active=True
+        )
+        
+        self.council, created = Council.objects.get_or_create(
+            local=self.local,
+            defaults={'name': 'Test Council', 'is_active': True}
+        )
+        
+        self.party = Party.objects.create(
+            name='Test Party',
+            local=self.local,
+            color='#FF0000',
+            is_active=True
+        )
+        
+        self.session = Session.objects.create(
+            title='Test Session',
+            council=self.council,
+            scheduled_date=timezone.now() + timedelta(days=7),
+            is_active=True
+        )
+        
+        self.group = Group.objects.create(
+            name='Test Group',
+            party=self.party,
+            is_active=True
+        )
+    
+    def test_motion_create_redirects_to_session_detail(self):
+        """Test that motion creation redirects to session detail page"""
+        self.client.login(username='admin', password='adminpass123')
+        
+        # Create motion data
+        motion_data = {
+            'title': 'Test Motion',
+            'text': 'Test motion text',
+            'rationale': 'Test rationale',
+            'motion_type': 'general',
+            'status': 'draft',
+            'session': self.session.pk,
+            'group': self.group.pk,
+            'parties': []
+        }
+        
+        # Submit motion creation form
+        response = self.client.post(reverse('motion:motion-create'), motion_data)
+        
+        # Should redirect to session detail page
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse('local:session-detail', kwargs={'pk': self.session.pk}))
+        
+        # Check that motion was created
+        self.assertTrue(Motion.objects.filter(title='Test Motion', session=self.session).exists())
+    
+    def test_motion_create_redirects_to_motion_list_when_no_session(self):
+        """Test that motion creation redirects to motion list when no session is provided"""
+        self.client.login(username='admin', password='adminpass123')
+        
+        # Create motion data with session (required field)
+        motion_data = {
+            'title': 'Test Motion',
+            'text': 'Test motion text',
+            'rationale': 'Test rationale',
+            'motion_type': 'general',
+            'status': 'draft',
+            'session': self.session.pk,
+            'group': self.group.pk,
+            'parties': []
+        }
+        
+        # Submit motion creation form
+        response = self.client.post(reverse('motion:motion-create'), motion_data)
+        
+        # Should redirect to session detail page (since session is provided)
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse('local:session-detail', kwargs={'pk': self.session.pk}))
+    
+    def test_motion_create_with_session_parameter(self):
+        """Test that motion creation works with session parameter in URL"""
+        self.client.login(username='admin', password='adminpass123')
+        
+        # Create motion data
+        motion_data = {
+            'title': 'Test Motion',
+            'text': 'Test motion text',
+            'rationale': 'Test rationale',
+            'motion_type': 'general',
+            'status': 'draft',
+            'session': self.session.pk,
+            'group': self.group.pk,
+            'parties': []
+        }
+        
+        # Submit motion creation form with session parameter
+        response = self.client.post(f"{reverse('motion:motion-create')}?session={self.session.pk}", motion_data)
+        
+        # Should redirect to session detail page
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse('local:session-detail', kwargs={'pk': self.session.pk}))
+        
+        # Check that motion was created with the correct session
+        motion = Motion.objects.get(title='Test Motion')
+        self.assertEqual(motion.session, self.session)
+    
+    def test_motion_create_form_with_session_parameter_shows_session_info(self):
+        """Test that motion create form shows session information when session parameter is provided"""
+        self.client.login(username='admin', password='adminpass123')
+        
+        # Get the form page with session parameter
+        response = self.client.get(f"{reverse('motion:motion-create')}?session={self.session.pk}")
+        
+        self.assertEqual(response.status_code, 200)
+        # Check that the form contains session information
+        self.assertContains(response, self.session.title)
+        self.assertContains(response, self.session.council.name)
+        # Check that the session field is hidden (value should be present)
+        self.assertContains(response, f'value="{self.session.pk}"')
+    
+    def test_motion_create_form_without_session_parameter_shows_select(self):
+        """Test that motion create form shows session select when no session parameter is provided"""
+        self.client.login(username='admin', password='adminpass123')
+        
+        # Get the form page without session parameter
+        response = self.client.get(reverse('motion:motion-create'))
+        
+        self.assertEqual(response.status_code, 200)
+        # Check that the form contains session select field
+        self.assertContains(response, 'form-select')
+        # Check that session info is not shown
+        self.assertNotContains(response, 'form-control-plaintext')
