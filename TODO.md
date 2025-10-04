@@ -33,7 +33,7 @@
 [x] remove double confirm for status delete on motion detail
 [x] motion detail add edit button as long the status is draft
 [x] motion detail rename export section to Files, add upload button and remove attachments section
-[ ] motion management delete only own motions and as group admin
+[x] motion management delete only own motions and as group admin
 [ ] optimise motion export pdf
 [ ] optimise session export pdf
 [ ] home template

@@ -2,6 +2,7 @@
 {% load i18n %}
 {% load static %}
 {% load humanize %}
+{% load motion_extras %}
 
 {% block title %}{% trans "Motion Management" %}{% endblock title %}
 
@@ -151,9 +152,11 @@
                                                             <i class="bi bi-pencil"></i>
                                                         </a>
                                                     {% endif %}
-                                                    <a href="{% url 'motion:motion-delete' motion.pk %}" class="btn btn-sm btn-outline-danger" title="{% trans 'Delete Motion' %}">
-                                                        <i class="bi bi-trash"></i>
-                                                    </a>
+                                                    {% if motion|can_delete_motion:user %}
+                                                        <a href="{% url 'motion:motion-delete' motion.pk %}" class="btn btn-sm btn-outline-danger" title="{% trans 'Delete Motion' %}">
+                                                            <i class="bi bi-trash"></i>
+                                                        </a>
+                                                    {% endif %}
                                                 </div>
                                             </td>
                                         </tr>

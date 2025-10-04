@@ -112,6 +112,10 @@ class MotionListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
         """Add filter form to context"""
         context = super().get_context_data(**kwargs)
         context['filter_form'] = MotionFilterForm(self.request.GET)
+        
+        # Add user to context for permission checks in template
+        context['user'] = self.request.user
+        
         return context
 
 
@@ -296,7 +300,21 @@ class MotionDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
 
     def test_func(self):
         """Check if user has permission to delete Motion objects"""
-        return self.request.user.is_superuser or self.request.user.has_role_permission('motion.delete')
+        motion = self.get_object()
+        
+        # Superusers can delete any motion
+        if self.request.user.is_superuser:
+            return True
+        
+        # Users can delete their own motions
+        if motion.submitted_by == self.request.user:
+            return True
+        
+        # Group admins can delete motions from their groups
+        if motion.group and is_leader_or_deputy_leader(self.request.user, motion):
+            return True
+        
+        return False
 
     def delete(self, request, *args, **kwargs):
         """Display success message on deletion"""

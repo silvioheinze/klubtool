@@ -75,6 +75,40 @@ class Motion(models.Model):
         """Check if motion can still be edited"""
         return self.status == 'draft'
     
+    def can_be_deleted_by(self, user):
+        """Check if a user can delete this motion"""
+        # Superusers can delete any motion
+        if user.is_superuser:
+            return True
+        
+        # Users can delete their own motions
+        if self.submitted_by == user:
+            return True
+        
+        # Group admins can delete motions from their groups
+        if self.group:
+            from group.models import GroupMember
+            from user.models import Role
+            
+            try:
+                # Get leader and deputy leader roles
+                leader_role = Role.objects.get(name='Leader')
+                deputy_leader_role = Role.objects.get(name='Deputy Leader')
+                
+                # Check if user has these roles in the motion's group
+                membership = GroupMember.objects.filter(
+                    user=user,
+                    group=self.group,
+                    is_active=True,
+                    roles__in=[leader_role, deputy_leader_role]
+                ).first()
+                
+                return membership is not None
+            except Role.DoesNotExist:
+                return False
+        
+        return False
+    
     @property
     def session_date(self):
         """Get the session date"""
