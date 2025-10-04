@@ -34,13 +34,13 @@
 [x] motion detail add edit button as long the status is draft
 [x] motion detail rename export section to Files, add upload button and remove attachments section
 [x] motion management delete only own motions and as group admin
+[x] add attachments to sessions
+[x] local management superuser only
+[x] update motion vote and add in motionstatus form
+[x] remove abstantions
 [ ] optimise motion export pdf
 [ ] optimise session export pdf
 [ ] home template
 [ ] missing german translations
-[x] add attachments to sessions
 [ ] implement ci colors
 [ ] admin role for locals
-[x] local management superuser only
-[x] update motion vote and add in motionstatus form
-[x] remove abstantions

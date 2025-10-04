@@ -265,6 +265,7 @@ The application uses a custom user model (`CustomUser`) that extends Django's `A
 DEBUG=False
 DJANGO_SECRET_KEY=your-production-secret-key
 ALLOWED_HOSTS=your-domain.com,www.your-domain.com
+CSRF_TRUSTED_ORIGINS=https://your-domain.com,https://www.your-domain.com
 
 # Database (if using external database)
 POSTGRES_HOST=your-database-host
@@ -387,6 +388,29 @@ docker compose up --build -d
 
 # Run migrations
 docker compose exec app python manage.py migrate
+```
+
+## 🔧 Troubleshooting
+
+### CSRF Verification Failed Error
+
+If you encounter a "CSRF verification failed" error with the message "Origin checking failed", you need to add your domain to the `CSRF_TRUSTED_ORIGINS` environment variable.
+
+**Error example:**
+```
+CSRF-Verifizierung fehlgeschlagen. Anfrage abgebrochen.
+Origin checking failed - https://your-domain.com does not match any trusted origins.
+```
+
+**Solution:**
+Add your domain to the `.env` file:
+```env
+CSRF_TRUSTED_ORIGINS=https://your-domain.com,https://www.your-domain.com
+```
+
+Then restart the application:
+```bash
+docker compose restart app
 ```
 
 ---
