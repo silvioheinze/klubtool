@@ -111,7 +111,19 @@
                                             <span class="text-danger">*</span>
                                         {% endif %}
                                     </label>
-                                    {{ form.local }}
+                                    {% if parent_local %}
+                                        <!-- Show as non-editable field when parent_local is provided -->
+                                        <div class="form-control-plaintext p-2 border rounded">
+                                            <strong>{{ parent_local.name }}</strong> ({{ parent_local.code }})
+                                            {% if parent_local.description %}
+                                                <br><small class="text-muted">{{ parent_local.description }}</small>
+                                            {% endif %}
+                                        </div>
+                                        <input type="hidden" name="local" value="{{ parent_local.pk }}" id="id_local">
+                                    {% else %}
+                                        <!-- Show as normal select field when no parent_local -->
+                                        {{ form.local }}
+                                    {% endif %}
                                     {% if form.local.errors %}
                                         <div class="invalid-feedback d-block">
                                             {% for error in form.local.errors %}

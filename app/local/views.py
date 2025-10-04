@@ -1,7 +1,7 @@
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib import messages
-from django.urls import reverse_lazy
+from django.urls import reverse_lazy, reverse
 from django.db.models import Q
 from django.shortcuts import render, redirect
 from django.utils import timezone
@@ -105,6 +105,21 @@ class LocalCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     def test_func(self):
         """Check if user has permission to create Local objects"""
         return self.request.user.is_superuser
+
+    def get_context_data(self, **kwargs):
+        """Add context information for URL parameters"""
+        context = super().get_context_data(**kwargs)
+        
+        # Check for local parameter in URL
+        local_id = self.request.GET.get('local')
+        if local_id:
+            try:
+                local = Local.objects.get(pk=local_id)
+                context['parent_local'] = local
+            except Local.DoesNotExist:
+                pass
+        
+        return context
 
     def form_valid(self, form):
         """Display success message on form validation"""
@@ -678,6 +693,32 @@ class PartyCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
             except Local.DoesNotExist:
                 pass
         return initial
+
+    def get_context_data(self, **kwargs):
+        """Add context information for URL parameters"""
+        context = super().get_context_data(**kwargs)
+        
+        # Check for local parameter in URL
+        local_id = self.request.GET.get('local')
+        if local_id:
+            try:
+                local = Local.objects.get(pk=local_id)
+                context['parent_local'] = local
+            except Local.DoesNotExist:
+                pass
+        
+        return context
+
+    def get_success_url(self):
+        """Redirect to local detail page if local parameter is provided"""
+        local_id = self.request.GET.get('local')
+        if local_id:
+            try:
+                local = Local.objects.get(pk=local_id)
+                return reverse('local:local-detail', kwargs={'pk': local.pk})
+            except Local.DoesNotExist:
+                pass
+        return super().get_success_url()
 
     def form_valid(self, form):
         """Display success message on form validation"""

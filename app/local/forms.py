@@ -140,8 +140,7 @@ class PartyForm(forms.ModelForm):
             try:
                 local = Local.objects.get(pk=local_id)
                 self.fields['local'].initial = local.pk
-                # Hide the local field when it's pre-set
-                self.fields['local'].widget = forms.HiddenInput()
+                # Don't hide the field - let template handle display
             except Local.DoesNotExist:
                 pass
 

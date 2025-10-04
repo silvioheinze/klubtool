@@ -455,6 +455,201 @@ class PartyFormTests(TestCase):
         )
 
 
+class LocalCreateViewTests(TestCase):
+    """Test cases for LocalCreateView"""
+    
+    def setUp(self):
+        """Set up test data"""
+        self.client = Client()
+        self.superuser = User.objects.create_superuser(
+            username='admin',
+            email='admin@example.com',
+            password='adminpass123'
+        )
+        self.parent_local = Local.objects.create(
+            name='Parent Local',
+            code='PL',
+            description='Parent local description'
+        )
+    
+    def test_local_create_view_requires_superuser(self):
+        """Test that LocalCreateView requires superuser"""
+        response = self.client.get(reverse('local:local-create'))
+        self.assertEqual(response.status_code, 302)  # Redirect to login
+    
+    def test_local_create_view_superuser_access(self):
+        """Test that superuser can access LocalCreateView"""
+        self.client.login(username='admin', password='adminpass123')
+        response = self.client.get(reverse('local:local-create'))
+        self.assertEqual(response.status_code, 200)
+    
+    def test_local_create_view_with_parent_local_parameter(self):
+        """Test that LocalCreateView shows parent local information when parameter is provided"""
+        self.client.login(username='admin', password='adminpass123')
+        response = self.client.get(f"{reverse('local:local-create')}?local={self.parent_local.pk}")
+        
+        self.assertEqual(response.status_code, 200)
+        # Check that the parent local information is displayed
+        self.assertContains(response, self.parent_local.name)
+        self.assertContains(response, self.parent_local.code)
+        self.assertContains(response, "Creating Local for:")
+    
+    def test_local_create_view_without_parent_local_parameter(self):
+        """Test that LocalCreateView works normally without parent local parameter"""
+        self.client.login(username='admin', password='adminpass123')
+        response = self.client.get(reverse('local:local-create'))
+        
+        self.assertEqual(response.status_code, 200)
+        # Check that parent local information is not displayed
+        self.assertNotContains(response, "Creating Local for:")
+    
+    def test_local_create_view_invalid_parent_local_parameter(self):
+        """Test that LocalCreateView handles invalid parent local parameter gracefully"""
+        self.client.login(username='admin', password='adminpass123')
+        response = self.client.get(f"{reverse('local:local-create')}?local=999")
+        
+        self.assertEqual(response.status_code, 200)
+        # Check that parent local information is not displayed for invalid ID
+        self.assertNotContains(response, "Creating Local for:")
+    
+    def test_local_create_view_successful_creation(self):
+        """Test that LocalCreateView successfully creates a local"""
+        self.client.login(username='admin', password='adminpass123')
+        
+        response = self.client.post(reverse('local:local-create'), {
+            'name': 'Test Local',
+            'code': 'TL',
+            'description': 'Test local description'
+        })
+        
+        # Should redirect to local list
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse('local:local-list'))
+        
+        # Check that the local was created
+        self.assertTrue(Local.objects.filter(name='Test Local').exists())
+
+
+class PartyCreateViewTests(TestCase):
+    """Test cases for PartyCreateView"""
+    
+    def setUp(self):
+        """Set up test data"""
+        self.client = Client()
+        self.superuser = User.objects.create_superuser(
+            username='admin',
+            email='admin@example.com',
+            password='adminpass123'
+        )
+        self.local = Local.objects.create(
+            name='Test Local',
+            code='TL',
+            description='Test local description'
+        )
+    
+    def test_party_create_view_requires_superuser(self):
+        """Test that PartyCreateView requires superuser"""
+        response = self.client.get(reverse('local:party-create'))
+        self.assertEqual(response.status_code, 302)  # Redirect to login
+    
+    def test_party_create_view_superuser_access(self):
+        """Test that superuser can access PartyCreateView"""
+        self.client.login(username='admin', password='adminpass123')
+        response = self.client.get(reverse('local:party-create'))
+        self.assertEqual(response.status_code, 200)
+    
+    def test_party_create_view_initial_local_from_url(self):
+        """Test that PartyCreateView sets initial local from URL parameter"""
+        self.client.login(username='admin', password='adminpass123')
+        response = self.client.get(f"{reverse('local:party-create')}?local={self.local.pk}")
+        
+        self.assertEqual(response.status_code, 200)
+        # Check that the form has the local field pre-set and visible
+        self.assertContains(response, f'value="{self.local.pk}"')
+        # Check that the local field is displayed as non-editable
+        self.assertContains(response, self.local.name)
+        self.assertContains(response, self.local.code)
+    
+    def test_party_create_view_shows_parent_local_information(self):
+        """Test that PartyCreateView shows parent local information when parameter is provided"""
+        self.client.login(username='admin', password='adminpass123')
+        response = self.client.get(f"{reverse('local:party-create')}?local={self.local.pk}")
+        
+        self.assertEqual(response.status_code, 200)
+        # Check that the parent local information is displayed in the local field
+        self.assertContains(response, self.local.name)
+        self.assertContains(response, self.local.code)
+        # Check that the local field is displayed as non-editable (not as a select)
+        self.assertNotContains(response, 'form-select')  # Should not be a select dropdown
+    
+    def test_party_create_view_without_parent_local_parameter(self):
+        """Test that PartyCreateView works normally without parent local parameter"""
+        self.client.login(username='admin', password='adminpass123')
+        response = self.client.get(reverse('local:party-create'))
+        
+        self.assertEqual(response.status_code, 200)
+        # Check that the local field is displayed as a normal select dropdown
+        self.assertContains(response, 'form-select')  # Should be a select dropdown
+    
+    def test_party_create_view_invalid_parent_local_parameter(self):
+        """Test that PartyCreateView handles invalid parent local parameter gracefully"""
+        self.client.login(username='admin', password='adminpass123')
+        response = self.client.get(f"{reverse('local:party-create')}?local=999")
+        
+        self.assertEqual(response.status_code, 200)
+        # Check that the local field is displayed as a normal select dropdown for invalid ID
+        self.assertContains(response, 'form-select')  # Should be a select dropdown
+    
+    def test_party_create_view_success_redirect_with_local(self):
+        """Test that PartyCreateView redirects to local detail when local parameter is provided"""
+        self.client.login(username='admin', password='adminpass123')
+        
+        # Create a party with local parameter
+        response = self.client.post(f"{reverse('local:party-create')}?local={self.local.pk}", {
+            'name': 'Test Party',
+            'local': self.local.pk,
+            'color': '#FF0000',
+            'is_active': True
+        })
+        
+        # Should redirect to local detail page
+        self.assertEqual(response.status_code, 302)
+        expected_url = reverse('local:local-detail', kwargs={'pk': self.local.pk})
+        self.assertRedirects(response, expected_url)
+    
+    def test_party_create_view_success_redirect_without_local(self):
+        """Test that PartyCreateView redirects to party list when no local parameter"""
+        self.client.login(username='admin', password='adminpass123')
+        
+        # Create a party without local parameter
+        response = self.client.post(reverse('local:party-create'), {
+            'name': 'Test Party',
+            'local': self.local.pk,
+            'color': '#FF0000',
+            'is_active': True
+        })
+        
+        # Should redirect to party list
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse('local:party-list'))
+    
+    def test_party_create_view_invalid_local_parameter(self):
+        """Test that PartyCreateView handles invalid local parameter gracefully"""
+        self.client.login(username='admin', password='adminpass123')
+        
+        # Try to create party with invalid local parameter
+        response = self.client.post(f"{reverse('local:party-create')}?local=999", {
+            'name': 'Test Party',
+            'local': self.local.pk,
+            'color': '#FF0000',
+            'is_active': True
+        })
+        
+        # Should redirect to party list (fallback)
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse('local:party-list'))
+
+
 class TermSeatDistributionFormTests(TestCase):
     """Test cases for TermSeatDistributionForm"""
     
