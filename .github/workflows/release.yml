@@ -117,6 +117,6 @@ jobs:
           
           ### Changes
           
-          See the [changelog](https://github.com/${{ github.repository }}/compare/${{ github.event.before }}...${{ github.sha }}) for detailed changes.
+          See the [changelog](https://github.com/${{ github.repository }}/compare/${{ github.event.before || 'HEAD~1' }}...${{ github.sha }}) for detailed changes.
         draft: false
         prerelease: false
