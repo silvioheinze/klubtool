@@ -59,21 +59,32 @@ def SettingsView(request):
     If the user is not authenticated, display the login form.
     """
     if request.user.is_authenticated:
+        # Ensure the user's language preference is active
+        from django.utils import translation
+        user_language = getattr(request.user, 'language', 'de')
+        translation.activate(user_language)
+        request.session['django_language'] = user_language
+        
         # Handle language change
-        language_form = LanguageSelectionForm(request.POST or None, initial={'language': request.user.language})
+        language_form = LanguageSelectionForm(request.POST or None, initial={'language': user_language})
         
         if request.method == "POST" and 'language' in request.POST:
             if language_form.is_valid():
                 new_language = language_form.cleaned_data['language']
+                
+                # Update user's language preference
                 request.user.language = new_language
                 request.user.save()
                 
-                # Set the language in the session
-                from django.utils import translation
-                translation.activate(new_language)
+                # Set the language in the session and activate it immediately
                 request.session['django_language'] = new_language
+                translation.activate(new_language)
                 
-                messages.success(request, f"Language changed to {dict(language_form.fields['language'].choices)[new_language]}")
+                # Get the display name for the success message
+                language_choices = dict(language_form.fields['language'].choices)
+                language_display = language_choices.get(new_language, new_language)
+                
+                messages.success(request, f"Language changed to {language_display}")
                 return redirect('user-settings')
         
         context = {
