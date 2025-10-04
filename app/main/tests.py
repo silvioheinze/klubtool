@@ -249,3 +249,60 @@ class CustomColorsTests(TestCase):
         self.assertIn('rgba(', css_content, "CSS should contain RGBA values for transparency effects")
         # Check for RGB variable definitions
         self.assertIn('-rgb:', css_content, "CSS should contain RGB variable definitions")
+    
+    def test_custom_colors_css_contains_link_colors(self):
+        """Test that custom-colors.css contains link color overrides"""
+        css_path = os.path.join('static', 'css', 'custom-colors.css')
+        with open(css_path, 'r') as f:
+            css_content = f.read()
+        
+        # Check for link color overrides
+        self.assertIn('a {', css_content, "CSS should contain link styling")
+        self.assertIn('color: #5e833c', css_content, "CSS should contain primary color for links")
+        self.assertIn('a:hover', css_content, "CSS should contain link hover effects")
+        self.assertIn('a:visited', css_content, "CSS should contain visited link styling")
+        self.assertIn('a:active', css_content, "CSS should contain active link styling")
+    
+    def test_custom_colors_css_contains_link_utility_classes(self):
+        """Test that custom-colors.css contains link utility class overrides"""
+        css_path = os.path.join('static', 'css', 'custom-colors.css')
+        with open(css_path, 'r') as f:
+            css_content = f.read()
+        
+        # Check for link utility class overrides
+        self.assertIn('.link-primary {', css_content, "CSS should contain .link-primary styling")
+        self.assertIn('.link-secondary {', css_content, "CSS should contain .link-secondary styling")
+        self.assertIn('.text-decoration-none {', css_content, "CSS should contain .text-decoration-none styling")
+    
+    def test_custom_colors_css_contains_navbar_link_overrides(self):
+        """Test that custom-colors.css contains navbar link color overrides"""
+        css_path = os.path.join('static', 'css', 'custom-colors.css')
+        with open(css_path, 'r') as f:
+            css_content = f.read()
+        
+        # Check for navbar link overrides
+        self.assertIn('.navbar a {', css_content, "CSS should contain navbar link styling")
+        self.assertIn('color: white', css_content, "CSS should contain white color for navbar links")
+        self.assertIn('.navbar .dropdown-item {', css_content, "CSS should contain dropdown item styling")
+    
+    def test_custom_colors_css_contains_button_text_colors(self):
+        """Test that custom-colors.css contains button text color overrides"""
+        css_path = os.path.join('static', 'css', 'custom-colors.css')
+        with open(css_path, 'r') as f:
+            css_content = f.read()
+        
+        # Check for button text color overrides
+        self.assertIn('color: white !important', css_content, "CSS should contain white text color for buttons")
+        self.assertIn('.btn-primary {', css_content, "CSS should contain .btn-primary styling")
+        self.assertIn('.btn-success {', css_content, "CSS should contain .btn-success styling")
+    
+    def test_custom_colors_css_contains_footer_link_colors(self):
+        """Test that custom-colors.css contains footer link color overrides"""
+        css_path = os.path.join('static', 'css', 'custom-colors.css')
+        with open(css_path, 'r') as f:
+            css_content = f.read()
+        
+        # Check for footer link overrides
+        self.assertIn('.footer a {', css_content, "CSS should contain footer link styling")
+        self.assertIn('footer a {', css_content, "CSS should contain footer element styling")
+        self.assertIn('color: #5e833c', css_content, "CSS should contain primary color for footer links")

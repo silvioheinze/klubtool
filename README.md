@@ -248,6 +248,62 @@ The application uses a custom user model (`CustomUser`) that extends Django's `A
 - **Responsive Design**: Mobile-first approach
 - **Internationalization**: Multi-language support ready
 
+## 🎨 Color Palette
+
+The application uses a custom color palette that overrides Bootstrap's default colors throughout the interface.
+
+### Primary Colors
+
+| Color | Hex Code | Usage | Bootstrap Class |
+|-------|----------|-------|-----------------|
+| **Dark Green** | `#5e833c` | Primary actions, main branding, focus states | `.btn-primary`, `.text-primary`, `.bg-primary` |
+| **Light Green** | `#7da130` | Success states, positive actions, navbar background | `.btn-success`, `.text-success`, `.bg-success` |
+| **Yellow** | `#f7f157` | Warnings, attention-grabbing elements | `.btn-warning`, `.text-warning`, `.bg-warning` |
+| **Pink/Magenta** | `#ce2c77` | Errors, destructive actions, danger states | `.btn-danger`, `.text-danger`, `.bg-danger` |
+
+### Color Implementation
+
+The custom color palette is implemented through:
+
+- **CSS Custom Properties**: Defined in `:root` selector for consistent theming
+- **Bootstrap Overrides**: All Bootstrap color classes are overridden with custom values
+- **Component Styling**: Buttons, alerts, badges, forms, and navigation use the custom palette
+- **Accessibility**: Proper contrast ratios maintained for readability
+
+### CSS Files
+
+- **`custom-colors.css`**: Main color override file
+- **`base.css`**: Additional styling and color demo classes
+- **Loading Order**: Bootstrap → Custom Colors → Base CSS
+
+### Testing
+
+The color palette is thoroughly tested with 23 comprehensive test cases covering:
+
+- ✅ File existence and structure
+- ✅ Color value validation
+- ✅ Bootstrap component overrides
+- ✅ Template integration
+- ✅ CSS variable definitions
+- ✅ RGBA transparency effects
+- ✅ Important declarations for proper override
+
+### Usage Examples
+
+```html
+<!-- Primary button with custom dark green -->
+<button class="btn btn-primary">Primary Action</button>
+
+<!-- Success alert with custom light green -->
+<div class="alert alert-success">Success message</div>
+
+<!-- Warning badge with custom yellow -->
+<span class="badge bg-warning">Warning</span>
+
+<!-- Danger text with custom pink -->
+<p class="text-danger">Error message</p>
+```
+
 ## 🚀 Deployment
 
 ### Production Deployment

@@ -24,25 +24,11 @@
         <div class="col-md-12">
             <div class="card">
                 <div class="card-header">
-                    <h5 class="mb-0">{% trans "Council Information" %}</h5>
+                    <h5 class="mb-0">{% trans "Local District" %} <a href="{% url 'local:local-detail' council.local.pk %}">{{ council.local.name }}</a></h5>
                 </div>
                 <div class="card-body">
-                    <div class="row">
-                        <dl class="row">
-                            <dt class="col-sm-4">{% trans "Local District" %}</dt>
-                            <dd class="col-sm-8">
-                                <a href="{% url 'local:local-detail' council.local.pk %}">
-                                    {{ council.local.name }}
-                                </a>
-                            </dd>                            
-                        </dl>                        
-                    </div>
-                    
-
-                    
                     <!-- Current Term Seat Distribution -->
                     {% if current_term %}
-                        <hr>
                         <h6 class="mb-3">
                             <i class="bi bi-bar-chart"></i> 
                             {% trans "Current Term Seat Distribution" %} 

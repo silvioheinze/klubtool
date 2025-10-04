@@ -34,21 +34,25 @@
 .btn-primary {
   background-color: var(--bs-primary);
   border-color: var(--bs-primary);
+  color: white !important;
 }
 
 .btn-primary:hover {
   background-color: #4a6b2f;
   border-color: #4a6b2f;
+  color: white !important;
 }
 
 .btn-success {
   background-color: var(--bs-success);
   border-color: var(--bs-success);
+  color: white !important;
 }
 
 .btn-success:hover {
   background-color: #6b8a1f;
   border-color: #6b8a1f;
+  color: white !important;
 }
 
 .btn-warning {
