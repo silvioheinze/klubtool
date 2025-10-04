@@ -126,44 +126,22 @@
                             {% endif %}
                         </div>
 
-                        <!-- Session Date and Time -->
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="{{ form.session_date.id_for_label }}" class="form-label">
-                                        {{ form.session_date.label }} <span class="text-danger">*</span>
-                                    </label>
-                                    {{ form.session_date }}
-                                    {% if form.session_date.errors %}
-                                        <div class="invalid-feedback d-block">
-                                            {% for error in form.session_date.errors %}
-                                                {{ error }}
-                                            {% endfor %}
-                                        </div>
-                                    {% endif %}
-                                    {% if form.session_date.help_text %}
-                                        <div class="form-text">{{ form.session_date.help_text }}</div>
-                                    {% endif %}
+                        <!-- Scheduled Date and Time -->
+                        <div class="mb-3">
+                            <label for="{{ form.scheduled_date.id_for_label }}" class="form-label">
+                                {{ form.scheduled_date.label }} <span class="text-danger">*</span>
+                            </label>
+                            {{ form.scheduled_date }}
+                            {% if form.scheduled_date.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.scheduled_date.errors %}
+                                        {{ error }}
+                                    {% endfor %}
                                 </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="{{ form.session_time.id_for_label }}" class="form-label">
-                                        {{ form.session_time.label }}
-                                    </label>
-                                    {{ form.session_time }}
-                                    {% if form.session_time.errors %}
-                                        <div class="invalid-feedback d-block">
-                                            {% for error in form.session_time.errors %}
-                                                {{ error }}
-                                            {% endfor %}
-                                        </div>
-                                    {% endif %}
-                                    {% if form.session_time.help_text %}
-                                        <div class="form-text">{{ form.session_time.help_text }}</div>
-                                    {% endif %}
-                                </div>
-                            </div>
+                            {% endif %}
+                            {% if form.scheduled_date.help_text %}
+                                <div class="form-text">{{ form.scheduled_date.help_text }}</div>
+                            {% endif %}
                         </div>
 
 
