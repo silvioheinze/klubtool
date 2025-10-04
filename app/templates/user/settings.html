@@ -8,15 +8,70 @@
 {% block content %}
 <h2 class="mb-4 mt-5">{% trans "Settings" %}</h2>
 
-<h3>{% trans "Change Password" %}</h3>
-<p class="text-muted mb-3">{% trans "Update your account password to keep your account secure. Choose a strong password that you haven't used elsewhere." %}</p>
-<a class="btn btn-outline-primary" href="{% url 'account_change_password' %}">{% trans "Change Password" %}</a>
+<!-- Language Selection -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h3 class="mb-0">
+            <i class="bi bi-translate me-2"></i>
+            {% trans "Language Settings" %}
+        </h3>
+    </div>
+    <div class="card-body">
+        <p class="text-muted mb-3">{% trans "Choose your preferred language for the interface." %}</p>
+        
+        <form method="post" class="d-inline">
+            {% csrf_token %}
+            <div class="row align-items-end">
+                <div class="col-md-6">
+                    {{ language_form.language.label_tag }}
+                    {{ language_form.language }}
+                    {% if language_form.language.help_text %}
+                        <small class="form-text text-muted">{{ language_form.language.help_text }}</small>
+                    {% endif %}
+                </div>
+                <div class="col-md-6">
+                    <button type="submit" name="language" class="btn btn-primary">
+                        <i class="bi bi-check-lg me-2"></i>
+                        {% trans "Change Language" %}
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
 
-<h3 class="mt-5">{% trans "Delete Account" %}</h3>
+<!-- Change Password -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h3 class="mb-0">
+            <i class="bi bi-key me-2"></i>
+            {% trans "Change Password" %}
+        </h3>
+    </div>
+    <div class="card-body">
+        <p class="text-muted mb-3">{% trans "Update your account password to keep your account secure. Choose a strong password that you haven't used elsewhere." %}</p>
+        <a class="btn btn-outline-primary" href="{% url 'account_change_password' %}">
+            <i class="bi bi-key me-2"></i>
+            {% trans "Change Password" %}
+        </a>
+    </div>
+</div>
 
-    <p>{% trans "You can safely delete your account." %}</p>
-    <a class="btn btn-outline-danger" href="{% url 'user-delete' %}">
-        <i class="bi bi-person-x me-2"></i>{% trans "Delete Account" %}
-    </a>
+<!-- Delete Account -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h3 class="mb-0">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            {% trans "Delete Account" %}
+        </h3>
+    </div>
+    <div class="card-body">
+        <p class="text-muted mb-3">{% trans "You can safely delete your account. This action cannot be undone." %}</p>
+        <a class="btn btn-outline-danger" href="{% url 'user-delete' %}">
+            <i class="bi bi-person-x me-2"></i>
+            {% trans "Delete Account" %}
+        </a>
+    </div>
+</div>
 
 {% endblock content %}

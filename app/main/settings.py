@@ -60,6 +60,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'user.middleware.UserLanguageMiddleware',  # Custom language middleware
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'allauth.account.middleware.AccountMiddleware',
@@ -183,12 +184,15 @@ ACCOUNT_RATE_LIMITS = {
     'login_failed': '5/5m',
 }
 
+# Allauth URL settings
+LOGIN_URL = '/user/settings/'
+LOGIN_REDIRECT_URL = '/'
+LOGOUT_REDIRECT_URL = '/'
+ACCOUNT_LOGOUT_REDIRECT_URL = '/'
+ACCOUNT_LOGIN_REDIRECT_URL = '/'
+
 # Email settings (for allauth)
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'  # For development
 # EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'  # For production
-
-# Login/Logout URLs
-LOGIN_REDIRECT_URL = '/'
-LOGOUT_REDIRECT_URL = '/'
 
 API_URL = ''

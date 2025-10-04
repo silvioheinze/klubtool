@@ -1,5 +1,6 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.utils.translation import gettext_lazy as _
 from auditlog.registry import auditlog
 from auditlog.models import AuditlogHistoryField
 
@@ -38,6 +39,17 @@ class CustomUser(AbstractUser):
         null=True, 
         blank=True,
         related_name='users'
+    )
+    
+    # Language preference
+    language = models.CharField(
+        max_length=10,
+        choices=[
+            ('en', _('English')),
+            ('de', _('German')),
+        ],
+        default='de',
+        help_text=_('Preferred language for the interface')
     )
     
     # Add related_name to avoid field clashes

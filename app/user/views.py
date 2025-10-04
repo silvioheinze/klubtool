@@ -12,7 +12,7 @@ from django.db.models import Q
 from django.core.paginator import Paginator
 from django.core.exceptions import PermissionDenied
 
-from .forms import CustomUserCreationForm, CustomUserEditForm, RoleForm, RoleFilterForm, CustomAuthenticationForm
+from .forms import CustomUserCreationForm, CustomUserEditForm, RoleForm, RoleFilterForm, CustomAuthenticationForm, LanguageSelectionForm
 from .models import Role
 
 CustomUser = get_user_model()
@@ -59,10 +59,26 @@ def SettingsView(request):
     If the user is not authenticated, display the login form.
     """
     if request.user.is_authenticated:
-        # Here, you can add additional context for the dashboard as needed
+        # Handle language change
+        language_form = LanguageSelectionForm(request.POST or None, initial={'language': request.user.language})
+        
+        if request.method == "POST" and 'language' in request.POST:
+            if language_form.is_valid():
+                new_language = language_form.cleaned_data['language']
+                request.user.language = new_language
+                request.user.save()
+                
+                # Set the language in the session
+                from django.utils import translation
+                translation.activate(new_language)
+                request.session[translation.LANGUAGE_SESSION_KEY] = new_language
+                
+                messages.success(request, f"Language changed to {dict(language_form.fields['language'].choices)[new_language]}")
+                return redirect('user-settings')
+        
         context = {
             'user': request.user,
-            # add other variables for your dashboard here
+            'language_form': language_form,
         }
         return render(request, "user/settings.html", context)
     else:

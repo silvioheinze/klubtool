@@ -1,6 +1,7 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm, UserChangeForm, AuthenticationForm
 from django.contrib.auth import get_user_model
+from django.utils.translation import gettext_lazy as _
 from .models import Role
 
 CustomUser = get_user_model()
@@ -91,4 +92,17 @@ class RoleFilterForm(forms.Form):
         choices=[('', 'All'), ('True', 'Active'), ('False', 'Inactive')],
         required=False,
         initial=''
+    )
+
+
+class LanguageSelectionForm(forms.Form):
+    """Form for selecting user language preference"""
+    language = forms.ChoiceField(
+        choices=[
+            ('en', _('English')),
+            ('de', _('German')),
+        ],
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        label=_('Language'),
+        help_text=_('Select your preferred language for the interface')
     )

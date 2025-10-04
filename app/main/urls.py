@@ -18,12 +18,28 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from django.shortcuts import redirect
+
+def redirect_to_user_login(request):
+    """Redirect /accounts/login/ to /user/settings/"""
+    return redirect('/user/settings/')
+
+def redirect_to_user_signup(request):
+    """Redirect /accounts/signup/ to /user/signup/"""
+    return redirect('/user/signup/')
+
+def redirect_to_user_logout(request):
+    """Redirect /accounts/logout/ to /user/settings/"""
+    return redirect('/user/settings/')
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('i18n/', include('django.conf.urls.i18n')),
     path('', include('pages.urls')),
     path('user/', include('user.urls')),
+    path('accounts/login/', redirect_to_user_login, name='account_login_redirect'),
+    path('accounts/signup/', redirect_to_user_signup, name='account_signup_redirect'),
+    path('accounts/logout/', redirect_to_user_logout, name='account_logout_redirect'),
     path('local/', include('local.urls')),
     path('group/', include('group.urls')),
     path('motion/', include('motion.urls')), # Added
