@@ -71,7 +71,7 @@ def SettingsView(request):
                 # Set the language in the session
                 from django.utils import translation
                 translation.activate(new_language)
-                request.session[translation.LANGUAGE_SESSION_KEY] = new_language
+                request.session['django_language'] = new_language
                 
                 messages.success(request, f"Language changed to {dict(language_form.fields['language'].choices)[new_language]}")
                 return redirect('user-settings')
