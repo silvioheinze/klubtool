@@ -41,6 +41,6 @@
 [x] add attachments to sessions
 [ ] implement ci colors
 [ ] admin role for locals
-[ ] local management superuser only
+[x] local management superuser only
 [x] update motion vote and add in motionstatus form
-[ ] remove abstantions
+[x] remove abstantions

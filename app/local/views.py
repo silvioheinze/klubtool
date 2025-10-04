@@ -19,7 +19,7 @@ class LocalListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
 
     def test_func(self):
         """Check if user has permission to view Local objects"""
-        return self.request.user.is_superuser or self.request.user.has_role_permission('local.view')
+        return self.request.user.is_superuser
 
     def get_queryset(self):
         """Filter queryset based on search parameters"""
@@ -59,7 +59,7 @@ class LocalDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
 
     def test_func(self):
         """Check if user has permission to view Local objects"""
-        return self.request.user.is_superuser or self.request.user.has_role_permission('local.view')
+        return self.request.user.is_superuser
 
     def get_context_data(self, **kwargs):
         """Add terms, parties, and sessions data to context"""
@@ -104,7 +104,7 @@ class LocalCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
 
     def test_func(self):
         """Check if user has permission to create Local objects"""
-        return self.request.user.is_superuser or self.request.user.has_role_permission('local.create')
+        return self.request.user.is_superuser
 
     def form_valid(self, form):
         """Display success message on form validation"""
@@ -121,7 +121,7 @@ class LocalUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
 
     def test_func(self):
         """Check if user has permission to edit Local objects"""
-        return self.request.user.is_superuser or self.request.user.has_role_permission('local.edit')
+        return self.request.user.is_superuser
 
     def form_valid(self, form):
         """Display success message on form validation"""
@@ -137,7 +137,7 @@ class LocalDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
 
     def test_func(self):
         """Check if user has permission to delete Local objects"""
-        return self.request.user.is_superuser or self.request.user.has_role_permission('local.delete')
+        return self.request.user.is_superuser
 
     def delete(self, request, *args, **kwargs):
         """Display success message on deletion"""
@@ -154,7 +154,7 @@ class CouncilNameUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView)
 
     def test_func(self):
         """Check if user has permission to edit Council objects"""
-        return self.request.user.is_superuser or self.request.user.has_role_permission('council.edit')
+        return self.request.user.is_superuser
 
     def form_valid(self, form):
         """Display success message and save the form"""
@@ -177,7 +177,7 @@ class CouncilListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
 
     def test_func(self):
         """Check if user has permission to view Council objects"""
-        return self.request.user.is_superuser or self.request.user.has_role_permission('council.view')
+        return self.request.user.is_superuser
 
     def get_queryset(self):
         """Filter queryset based on search parameters"""
@@ -224,7 +224,7 @@ class CouncilDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
 
     def test_func(self):
         """Check if user has permission to view Council objects"""
-        return self.request.user.is_superuser or self.request.user.has_role_permission('council.view')
+        return self.request.user.is_superuser
 
     def get_context_data(self, **kwargs):
         """Add sessions and committees data to context"""
@@ -270,7 +270,7 @@ class CouncilCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
 
     def test_func(self):
         """Check if user has permission to create Council objects"""
-        return self.request.user.is_superuser or self.request.user.has_role_permission('council.create')
+        return self.request.user.is_superuser
 
     def get_initial(self):
         """Set initial local if provided in URL"""
@@ -299,7 +299,7 @@ class CouncilUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
 
     def test_func(self):
         """Check if user has permission to edit Council objects"""
-        return self.request.user.is_superuser or self.request.user.has_role_permission('council.edit')
+        return self.request.user.is_superuser
 
     def form_valid(self, form):
         """Display success message on form validation"""
@@ -315,7 +315,7 @@ class CouncilDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
 
     def test_func(self):
         """Check if user has permission to delete Council objects"""
-        return self.request.user.is_superuser or self.request.user.has_role_permission('council.delete')
+        return self.request.user.is_superuser
 
     def delete(self, request, *args, **kwargs):
         """Display success message on deletion"""
@@ -334,7 +334,7 @@ class TermListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
 
     def test_func(self):
         """Check if user has permission to view Term objects"""
-        return self.request.user.is_superuser or self.request.user.has_role_permission('term.view')
+        return self.request.user.is_superuser
 
     def get_queryset(self):
         """Filter queryset based on search parameters"""
@@ -400,7 +400,7 @@ class TermDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
 
     def test_func(self):
         """Check if user has permission to view Term objects"""
-        return self.request.user.is_superuser or self.request.user.has_role_permission('term.view')
+        return self.request.user.is_superuser
 
 
 class TermCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
@@ -412,7 +412,7 @@ class TermCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
 
     def test_func(self):
         """Check if user has permission to create Term objects"""
-        return self.request.user.is_superuser or self.request.user.has_role_permission('term.create')
+        return self.request.user.is_superuser
 
     def form_valid(self, form):
         """Display success message on form validation"""
@@ -429,7 +429,7 @@ class TermUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
 
     def test_func(self):
         """Check if user has permission to edit Term objects"""
-        return self.request.user.is_superuser or self.request.user.has_role_permission('term.edit')
+        return self.request.user.is_superuser
 
     def form_valid(self, form):
         """Display success message on form validation"""
@@ -445,7 +445,7 @@ class TermDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
 
     def test_func(self):
         """Check if user has permission to delete Term objects"""
-        return self.request.user.is_superuser or self.request.user.has_role_permission('term.delete')
+        return self.request.user.is_superuser
 
     def delete(self, request, *args, **kwargs):
         """Display success message on deletion"""
@@ -464,7 +464,7 @@ class TermSeatDistributionListView(LoginRequiredMixin, UserPassesTestMixin, List
 
     def test_func(self):
         """Check if user has permission to view TermSeatDistribution objects"""
-        return self.request.user.is_superuser or self.request.user.has_role_permission('termseatdistribution.view')
+        return self.request.user.is_superuser
 
     def get_queryset(self):
         """Filter queryset based on search parameters"""
@@ -511,7 +511,7 @@ class TermSeatDistributionDetailView(LoginRequiredMixin, UserPassesTestMixin, De
 
     def test_func(self):
         """Check if user has permission to view TermSeatDistribution objects"""
-        return self.request.user.is_superuser or self.request.user.has_role_permission('termseatdistribution.view')
+        return self.request.user.is_superuser
 
 
 class TermSeatDistributionCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
@@ -523,7 +523,7 @@ class TermSeatDistributionCreateView(LoginRequiredMixin, UserPassesTestMixin, Cr
 
     def test_func(self):
         """Check if user has permission to create TermSeatDistribution objects"""
-        return self.request.user.is_superuser or self.request.user.has_role_permission('termseatdistribution.create')
+        return self.request.user.is_superuser
 
     def get_initial(self):
         """Set initial term if provided in URL"""
@@ -552,7 +552,7 @@ class TermSeatDistributionUpdateView(LoginRequiredMixin, UserPassesTestMixin, Up
 
     def test_func(self):
         """Check if user has permission to edit TermSeatDistribution objects"""
-        return self.request.user.is_superuser or self.request.user.has_role_permission('termseatdistribution.edit')
+        return self.request.user.is_superuser
 
     def form_valid(self, form):
         """Display success message on form validation"""
@@ -568,7 +568,7 @@ class TermSeatDistributionDeleteView(LoginRequiredMixin, UserPassesTestMixin, De
 
     def test_func(self):
         """Check if user has permission to delete TermSeatDistribution objects"""
-        return self.request.user.is_superuser or self.request.user.has_role_permission('termseatdistribution.delete')
+        return self.request.user.is_superuser
 
     def delete(self, request, *args, **kwargs):
         """Display success message on deletion"""
@@ -585,7 +585,7 @@ class TermSeatDistributionView(LoginRequiredMixin, UserPassesTestMixin, DetailVi
 
     def test_func(self):
         """Check if user has permission to view Term objects"""
-        return self.request.user.is_superuser or self.request.user.has_role_permission('term.view')
+        return self.request.user.is_superuser
 
     def get_context_data(self, **kwargs):
         """Add seat distributions to context"""
@@ -605,7 +605,7 @@ class PartyListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
 
     def test_func(self):
         """Check if user has permission to view Party objects"""
-        return self.request.user.is_superuser or self.request.user.has_role_permission('party.view')
+        return self.request.user.is_superuser
 
     def get_queryset(self):
         """Filter queryset based on search parameters"""
@@ -653,7 +653,7 @@ class PartyDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
 
     def test_func(self):
         """Check if user has permission to view Party objects"""
-        return self.request.user.is_superuser or self.request.user.has_role_permission('party.view')
+        return self.request.user.is_superuser
 
 
 class PartyCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
@@ -665,7 +665,7 @@ class PartyCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
 
     def test_func(self):
         """Check if user has permission to create Party objects"""
-        return self.request.user.is_superuser or self.request.user.has_role_permission('party.create')
+        return self.request.user.is_superuser
 
     def get_initial(self):
         """Set initial local if provided in URL"""
@@ -694,7 +694,7 @@ class PartyUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
 
     def test_func(self):
         """Check if user has permission to edit Party objects"""
-        return self.request.user.is_superuser or self.request.user.has_role_permission('party.edit')
+        return self.request.user.is_superuser
 
     def form_valid(self, form):
         """Display success message on form validation"""
@@ -710,7 +710,7 @@ class PartyDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
 
     def test_func(self):
         """Check if user has permission to delete Party objects"""
-        return self.request.user.is_superuser or self.request.user.has_role_permission('party.delete')
+        return self.request.user.is_superuser
 
     def delete(self, request, *args, **kwargs):
         """Display success message on deletion"""
@@ -729,7 +729,7 @@ class SessionListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
 
     def test_func(self):
         """Check if user has permission to view Session objects"""
-        return self.request.user.is_superuser or self.request.user.has_role_permission('session.view')
+        return self.request.user.is_superuser
 
     def get_queryset(self):
         """Filter sessions based on search and filter parameters"""
@@ -780,7 +780,7 @@ class SessionDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
 
     def test_func(self):
         """Check if user has permission to view Session objects"""
-        return self.request.user.is_superuser or self.request.user.has_role_permission('session.view')
+        return self.request.user.is_superuser
 
     def get_context_data(self, **kwargs):
         """Add motions data to context"""
@@ -800,7 +800,7 @@ class SessionCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
 
     def test_func(self):
         """Check if user has permission to create Session objects"""
-        return self.request.user.is_superuser or self.request.user.has_role_permission('session.create')
+        return self.request.user.is_superuser
 
     def get_initial(self):
         """Set initial council if provided in URL"""
@@ -829,7 +829,7 @@ class SessionUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
 
     def test_func(self):
         """Check if user has permission to edit Session objects"""
-        return self.request.user.is_superuser or self.request.user.has_role_permission('session.edit')
+        return self.request.user.is_superuser
 
     def form_valid(self, form):
         """Display success message on form validation"""
@@ -845,7 +845,7 @@ class SessionDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
 
     def test_func(self):
         """Check if user has permission to delete Session objects"""
-        return self.request.user.is_superuser or self.request.user.has_role_permission('session.delete')
+        return self.request.user.is_superuser
 
     def delete(self, request, *args, **kwargs):
         """Display success message on deletion"""
@@ -920,7 +920,7 @@ class CommitteeListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
 
     def test_func(self):
         """Check if user has permission to view Committee objects"""
-        return self.request.user.is_superuser or self.request.user.has_role_permission('committee.view')
+        return self.request.user.is_superuser
 
     def get_queryset(self):
         """Filter queryset based on search parameters"""
@@ -966,7 +966,7 @@ class CommitteeDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
 
     def test_func(self):
         """Check if user has permission to view Committee objects"""
-        return self.request.user.is_superuser or self.request.user.has_role_permission('committee.view')
+        return self.request.user.is_superuser
 
     def get_context_data(self, **kwargs):
         """Add committee members and motions data to context"""
@@ -989,7 +989,7 @@ class CommitteeCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
 
     def test_func(self):
         """Check if user has permission to create Committee objects"""
-        return self.request.user.is_superuser or self.request.user.has_role_permission('committee.create')
+        return self.request.user.is_superuser
 
     def get_initial(self):
         """Set initial council if provided in URL"""
@@ -1018,7 +1018,7 @@ class CommitteeUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
 
     def test_func(self):
         """Check if user has permission to edit Committee objects"""
-        return self.request.user.is_superuser or self.request.user.has_role_permission('committee.edit')
+        return self.request.user.is_superuser
 
     def form_valid(self, form):
         """Display success message on form validation"""
@@ -1034,7 +1034,7 @@ class CommitteeDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
 
     def test_func(self):
         """Check if user has permission to delete Committee objects"""
-        return self.request.user.is_superuser or self.request.user.has_role_permission('committee.delete')
+        return self.request.user.is_superuser
 
     def delete(self, request, *args, **kwargs):
         """Display success message on deletion"""
@@ -1053,7 +1053,7 @@ class CommitteeMemberListView(LoginRequiredMixin, UserPassesTestMixin, ListView)
 
     def test_func(self):
         """Check if user has permission to view CommitteeMember objects"""
-        return self.request.user.is_superuser or self.request.user.has_role_permission('committee_member.view')
+        return self.request.user.is_superuser
 
     def get_queryset(self):
         """Filter queryset based on search parameters"""
@@ -1099,7 +1099,7 @@ class CommitteeMemberDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailV
 
     def test_func(self):
         """Check if user has permission to view CommitteeMember objects"""
-        return self.request.user.is_superuser or self.request.user.has_role_permission('committee_member.view')
+        return self.request.user.is_superuser
 
 
 class CommitteeMemberCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
@@ -1111,7 +1111,7 @@ class CommitteeMemberCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateV
 
     def test_func(self):
         """Check if user has permission to create CommitteeMember objects"""
-        return self.request.user.is_superuser or self.request.user.has_role_permission('committee_member.create')
+        return self.request.user.is_superuser
 
     def get_initial(self):
         """Set initial committee if provided in URL"""
@@ -1140,7 +1140,7 @@ class CommitteeMemberUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateV
 
     def test_func(self):
         """Check if user has permission to edit CommitteeMember objects"""
-        return self.request.user.is_superuser or self.request.user.has_role_permission('committee_member.edit')
+        return self.request.user.is_superuser
 
     def form_valid(self, form):
         """Display success message on form validation"""
@@ -1156,7 +1156,7 @@ class CommitteeMemberDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteV
 
     def test_func(self):
         """Check if user has permission to delete CommitteeMember objects"""
-        return self.request.user.is_superuser or self.request.user.has_role_permission('committee_member.delete')
+        return self.request.user.is_superuser
 
     def delete(self, request, *args, **kwargs):
         """Display success message on deletion"""
@@ -1173,7 +1173,7 @@ class SessionAttachmentView(LoginRequiredMixin, UserPassesTestMixin, CreateView)
     
     def test_func(self):
         """Check if user has permission to upload session attachments"""
-        return self.request.user.is_superuser or self.request.user.has_role_permission('session.edit')
+        return self.request.user.is_superuser
     
     def get_session(self):
         """Get the session from URL parameter"""
