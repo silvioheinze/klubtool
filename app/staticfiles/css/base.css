@@ -63,3 +63,32 @@ html {
     text-decoration: underline;
     color: #aaaaaa; /* Lighter grey for hover to maintain contrast */
 }
+
+/* Color Palette Demo Classes */
+.color-demo {
+    padding: 20px;
+    margin: 10px 0;
+    border-radius: 8px;
+    text-align: center;
+    font-weight: bold;
+}
+
+.color-demo-primary {
+    background-color: #5e833c;
+    color: white;
+}
+
+.color-demo-success {
+    background-color: #7da130;
+    color: white;
+}
+
+.color-demo-warning {
+    background-color: #f7f157;
+    color: black;
+}
+
+.color-demo-danger {
+    background-color: #ce2c77;
+    color: white;
+}

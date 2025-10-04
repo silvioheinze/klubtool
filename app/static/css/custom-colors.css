@@ -1,0 +1,417 @@
+/* Custom Color Palette for Bootstrap Override */
+
+:root {
+  /* Primary Colors */
+  --bs-primary: #5e833c;
+  --bs-primary-rgb: 94, 131, 60;
+  
+  /* Success Colors */
+  --bs-success: #7da130;
+  --bs-success-rgb: 125, 161, 48;
+  
+  /* Warning Colors */
+  --bs-warning: #f7f157;
+  --bs-warning-rgb: 247, 247, 87;
+  
+  /* Danger Colors */
+  --bs-danger: #ce2c77;
+  --bs-danger-rgb: 206, 44, 119;
+  
+  /* Info Colors (using a variation of primary) */
+  --bs-info: #5e833c;
+  --bs-info-rgb: 94, 131, 60;
+  
+  /* Secondary Colors (using a darker shade of primary) */
+  --bs-secondary: #4a6b2f;
+  --bs-secondary-rgb: 74, 107, 47;
+  
+  /* Light and Dark variations */
+  --bs-light: #f8f9fa;
+  --bs-dark: #212529;
+}
+
+/* Override Bootstrap button colors */
+.btn-primary {
+  background-color: var(--bs-primary);
+  border-color: var(--bs-primary);
+}
+
+.btn-primary:hover {
+  background-color: #4a6b2f;
+  border-color: #4a6b2f;
+}
+
+.btn-success {
+  background-color: var(--bs-success);
+  border-color: var(--bs-success);
+}
+
+.btn-success:hover {
+  background-color: #6b8a1f;
+  border-color: #6b8a1f;
+}
+
+.btn-warning {
+  background-color: var(--bs-warning);
+  border-color: var(--bs-warning);
+  color: #000;
+}
+
+.btn-warning:hover {
+  background-color: #f4f03e;
+  border-color: #f4f03e;
+  color: #000;
+}
+
+.btn-danger {
+  background-color: var(--bs-danger);
+  border-color: var(--bs-danger);
+}
+
+.btn-danger:hover {
+  background-color: #b8255f;
+  border-color: #b8255f;
+}
+
+.btn-info {
+  background-color: var(--bs-info);
+  border-color: var(--bs-info);
+}
+
+.btn-info:hover {
+  background-color: #4a6b2f;
+  border-color: #4a6b2f;
+}
+
+/* Override Bootstrap alert colors */
+.alert-primary {
+  background-color: rgba(var(--bs-primary-rgb), 0.1);
+  border-color: var(--bs-primary);
+  color: var(--bs-primary);
+}
+
+.alert-success {
+  background-color: rgba(var(--bs-success-rgb), 0.1);
+  border-color: var(--bs-success);
+  color: var(--bs-success);
+}
+
+.alert-warning {
+  background-color: rgba(var(--bs-warning-rgb), 0.1);
+  border-color: var(--bs-warning);
+  color: #000;
+}
+
+.alert-danger {
+  background-color: rgba(var(--bs-danger-rgb), 0.1);
+  border-color: var(--bs-danger);
+  color: var(--bs-danger);
+}
+
+.alert-info {
+  background-color: rgba(var(--bs-info-rgb), 0.1);
+  border-color: var(--bs-info);
+  color: var(--bs-info);
+}
+
+/* Override Bootstrap badge colors */
+.badge.bg-primary {
+  background-color: var(--bs-primary) !important;
+}
+
+.badge.bg-success {
+  background-color: var(--bs-success) !important;
+}
+
+.badge.bg-warning {
+  background-color: var(--bs-warning) !important;
+  color: #000;
+}
+
+.badge.bg-danger {
+  background-color: var(--bs-danger) !important;
+}
+
+.badge.bg-info {
+  background-color: var(--bs-info) !important;
+}
+
+/* Override Bootstrap text colors */
+.text-primary {
+  color: var(--bs-primary) !important;
+}
+
+.text-success {
+  color: var(--bs-success) !important;
+}
+
+.text-warning {
+  color: var(--bs-warning) !important;
+}
+
+.text-danger {
+  color: var(--bs-danger) !important;
+}
+
+.text-info {
+  color: var(--bs-info) !important;
+}
+
+/* Override Bootstrap background colors */
+.bg-primary {
+  background-color: var(--bs-primary) !important;
+}
+
+.bg-success {
+  background-color: var(--bs-success) !important;
+}
+
+.bg-warning {
+  background-color: var(--bs-warning) !important;
+}
+
+.bg-danger {
+  background-color: var(--bs-danger) !important;
+}
+
+.bg-info {
+  background-color: var(--bs-info) !important;
+}
+
+/* Override Bootstrap border colors */
+.border-primary {
+  border-color: var(--bs-primary) !important;
+}
+
+.border-success {
+  border-color: var(--bs-success) !important;
+}
+
+.border-warning {
+  border-color: var(--bs-warning) !important;
+}
+
+.border-danger {
+  border-color: var(--bs-danger) !important;
+}
+
+.border-info {
+  border-color: var(--bs-info) !important;
+}
+
+/* Override Bootstrap link colors */
+a.text-primary:hover,
+a.text-primary:focus {
+  color: #4a6b2f !important;
+}
+
+a.text-success:hover,
+a.text-success:focus {
+  color: #6b8a1f !important;
+}
+
+a.text-warning:hover,
+a.text-warning:focus {
+  color: #f4f03e !important;
+}
+
+a.text-danger:hover,
+a.text-danger:focus {
+  color: #b8255f !important;
+}
+
+a.text-info:hover,
+a.text-info:focus {
+  color: #4a6b2f !important;
+}
+
+/* Override Bootstrap form control focus colors */
+.form-control:focus {
+  border-color: var(--bs-primary);
+  box-shadow: 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.25);
+}
+
+.form-select:focus {
+  border-color: var(--bs-primary);
+  box-shadow: 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.25);
+}
+
+/* Override Bootstrap progress bar colors */
+.progress-bar {
+  background-color: var(--bs-primary);
+}
+
+.progress-bar.bg-success {
+  background-color: var(--bs-success) !important;
+}
+
+.progress-bar.bg-warning {
+  background-color: var(--bs-warning) !important;
+}
+
+.progress-bar.bg-danger {
+  background-color: var(--bs-danger) !important;
+}
+
+.progress-bar.bg-info {
+  background-color: var(--bs-info) !important;
+}
+
+/* Override Bootstrap table colors */
+.table-primary {
+  background-color: rgba(var(--bs-primary-rgb), 0.1);
+}
+
+.table-success {
+  background-color: rgba(var(--bs-success-rgb), 0.1);
+}
+
+.table-warning {
+  background-color: rgba(var(--bs-warning-rgb), 0.1);
+}
+
+.table-danger {
+  background-color: rgba(var(--bs-danger-rgb), 0.1);
+}
+
+.table-info {
+  background-color: rgba(var(--bs-info-rgb), 0.1);
+}
+
+/* Override Bootstrap list group colors */
+.list-group-item-primary {
+  background-color: rgba(var(--bs-primary-rgb), 0.1);
+  color: var(--bs-primary);
+}
+
+.list-group-item-success {
+  background-color: rgba(var(--bs-success-rgb), 0.1);
+  color: var(--bs-success);
+}
+
+.list-group-item-warning {
+  background-color: rgba(var(--bs-warning-rgb), 0.1);
+  color: #000;
+}
+
+.list-group-item-danger {
+  background-color: rgba(var(--bs-danger-rgb), 0.1);
+  color: var(--bs-danger);
+}
+
+.list-group-item-info {
+  background-color: rgba(var(--bs-info-rgb), 0.1);
+  color: var(--bs-info);
+}
+
+/* Custom utility classes for the new color palette */
+.text-custom-primary {
+  color: var(--bs-primary) !important;
+}
+
+.text-custom-success {
+  color: var(--bs-success) !important;
+}
+
+.text-custom-warning {
+  color: var(--bs-warning) !important;
+}
+
+.text-custom-danger {
+  color: var(--bs-danger) !important;
+}
+
+.bg-custom-primary {
+  background-color: var(--bs-primary) !important;
+}
+
+.bg-custom-success {
+  background-color: var(--bs-success) !important;
+}
+
+.bg-custom-warning {
+  background-color: var(--bs-warning) !important;
+}
+
+.bg-custom-danger {
+  background-color: var(--bs-danger) !important;
+}
+
+/* Custom Navbar/Topbar Styling */
+.navbar {
+  background-color: #7da130 !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.navbar-brand {
+  color: white !important;
+  font-weight: bold;
+}
+
+.navbar-brand:hover {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.navbar-nav .nav-link {
+  color: white !important;
+}
+
+.navbar-nav .nav-link:hover,
+.navbar-nav .nav-link:focus {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.navbar-nav .nav-link.active {
+  color: white !important;
+  font-weight: bold;
+}
+
+.navbar-toggler {
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.navbar-toggler-icon {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28255, 255, 255, 1%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+}
+
+.navbar-toggler:focus {
+  box-shadow: 0 0 0 0.2rem rgba(255, 255, 255, 0.25);
+}
+
+/* Dropdown menu styling */
+.navbar .dropdown-menu {
+  background-color: white;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.navbar .dropdown-item {
+  color: #333;
+}
+
+.navbar .dropdown-item:hover,
+.navbar .dropdown-item:focus {
+  background-color: #f8f9fa;
+  color: #333;
+}
+
+.navbar .dropdown-divider {
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+/* Override any existing navbar light/dark classes */
+.navbar-light {
+  background-color: #7da130 !important;
+}
+
+.navbar-dark {
+  background-color: #7da130 !important;
+}
+
+.bg-light {
+  background-color: #7da130 !important;
+}
+
+.bg-dark {
+  background-color: #7da130 !important;
+}
