@@ -12,7 +12,7 @@ from django.db.models import Q
 from django.core.paginator import Paginator
 from django.core.exceptions import PermissionDenied
 
-from .forms import CustomUserCreationForm, CustomUserEditForm, RoleForm, RoleFilterForm
+from .forms import CustomUserCreationForm, CustomUserEditForm, RoleForm, RoleFilterForm, CustomAuthenticationForm
 from .models import Role
 
 CustomUser = get_user_model()
@@ -67,7 +67,7 @@ def SettingsView(request):
         return render(request, "user/settings.html", context)
     else:
         # Process the login form for unauthenticated users
-        form = AuthenticationForm(request=request, data=request.POST or None)
+        form = CustomAuthenticationForm(request=request, data=request.POST or None)
         if request.method == "POST":
             if form.is_valid():
                 user = form.get_user()

@@ -412,7 +412,3 @@ Then restart the application:
 ```bash
 docker compose restart app
 ```
-
----
-
-**Antragstool** - Modern motion management made simple.

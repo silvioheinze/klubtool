@@ -1,9 +1,39 @@
 from django import forms
-from django.contrib.auth.forms import UserCreationForm, UserChangeForm
+from django.contrib.auth.forms import UserCreationForm, UserChangeForm, AuthenticationForm
 from django.contrib.auth import get_user_model
 from .models import Role
 
 CustomUser = get_user_model()
+
+
+class CustomAuthenticationForm(AuthenticationForm):
+    """Custom authentication form that uses email instead of username"""
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Change the login field to use email
+        self.fields['username'].label = 'Email'
+        self.fields['username'].widget.attrs.update({
+            'type': 'email',
+            'placeholder': 'Enter your email address'
+        })
+    
+    def clean_username(self):
+        """Override to handle email-based authentication"""
+        username = self.cleaned_data.get('username')
+        if username:
+            # Try to find user by email
+            try:
+                user = CustomUser.objects.get(email=username)
+                return user.username
+            except CustomUser.DoesNotExist:
+                # If not found by email, try by username (for backward compatibility)
+                try:
+                    user = CustomUser.objects.get(username=username)
+                    return username
+                except CustomUser.DoesNotExist:
+                    pass
+        return username
 
 
 class CustomUserCreationForm(UserCreationForm):
