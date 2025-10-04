@@ -5,11 +5,43 @@
 {% block title %}{% trans "Delete Your Account" %}{% endblock title %}
 
 {% block content %}
-<h2 class="mb-4 mt-5">{% trans "Delete Your Account" %}</h2>
-<p>{% trans "Are you sure you want to delete your account? This action cannot be undone." %}</p>
-<form method="post">
-    {% csrf_token %}
-    <button type="submit" class="btn btn-danger">{% trans "Confirm Delete" %}</button>
-    <a href="{% url 'settings' %}" class="btn btn-secondary">{% trans "Cancel" %}</a>
-</form>
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="bi bi-exclamation-triangle text-danger"></i>
+                        {% trans "Delete Your Account" %}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-danger">
+                        <h6 class="alert-heading">
+                            <i class="bi bi-warning"></i>
+                            {% trans "Warning: This Action Cannot Be Undone" %}
+                        </h6>
+                        <p class="mb-0">
+                            {% trans "Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently removed." %}
+                        </p>
+                    </div>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{% url 'user-settings' %}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i>
+                                {% trans "Cancel" %}
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash"></i>
+                                {% trans "Confirm Delete" %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock content %}

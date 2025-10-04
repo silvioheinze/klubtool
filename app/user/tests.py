@@ -4,6 +4,8 @@ from django.urls import reverse, resolve
 from django.core.exceptions import ValidationError
 from django.utils import translation
 from django.contrib import messages
+from django.template.loader import render_to_string
+from django.template import Context, Template
 
 from .forms import CustomUserCreationForm, CustomUserEditForm, RoleForm, RoleFilterForm, LanguageSelectionForm
 from .models import Role
@@ -676,3 +678,110 @@ class UserLanguageMiddlewareTests(TestCase):
         # Check that the user's language in the database is 'de' (the default)
         user_no_lang.refresh_from_db()
         self.assertEqual(user_no_lang.language, 'de')
+
+
+class EmailConfirmationTemplateTests(TestCase):
+    """Test cases for email confirmation template"""
+    
+    def test_email_confirm_template_extends_base(self):
+        """Test that email confirmation template extends _base.html"""
+        template_content = render_to_string('user/email_confirm.html', {
+            'confirmation': None
+        })
+        
+        # Check that the template uses Bootstrap classes
+        self.assertIn('container', template_content)
+        self.assertIn('card', template_content)
+        self.assertIn('alert', template_content)
+    
+    def test_email_confirm_template_with_confirmation(self):
+        """Test that email confirmation template renders correctly with confirmation"""
+        # Create a mock confirmation object with a key
+        class MockConfirmation:
+            def __init__(self):
+                self.key = 'test-key-123'
+                self.email_address = MockEmailAddress()
+        
+        class MockEmailAddress:
+            def __init__(self):
+                self.email = 'test@example.com'
+                self.user = MockUser()
+        
+        class MockUser:
+            def __init__(self):
+                self.username = 'testuser'
+                self.email = 'test@example.com'
+            
+            def __str__(self):
+                return 'testuser'
+        
+        template_content = render_to_string('user/email_confirm.html', {
+            'confirmation': MockConfirmation()
+        })
+        
+        # Check that the template contains expected elements
+        self.assertIn('Confirm E-mail Address', template_content)
+        self.assertIn('test@example.com', template_content)
+        self.assertIn('testuser', template_content)
+        self.assertIn('btn btn-primary', template_content)
+        self.assertIn('bi bi-check-circle', template_content)
+    
+    def test_email_confirm_template_without_confirmation(self):
+        """Test that email confirmation template renders correctly without confirmation"""
+        template_content = render_to_string('user/email_confirm.html', {
+            'confirmation': None
+        })
+        
+        # Check that the template contains expected elements for invalid link
+        self.assertIn('Invalid Confirmation Link', template_content)
+        self.assertIn('btn btn-warning', template_content)
+        self.assertIn('bi bi-exclamation-triangle', template_content)
+        self.assertIn('Request New Confirmation Email', template_content)
+
+
+class UserConfirmDeleteTemplateTests(TestCase):
+    """Test cases for user confirm delete template"""
+    
+    def test_confirm_delete_template_extends_base(self):
+        """Test that confirm delete template extends _base.html"""
+        template_content = render_to_string('user/confirm_delete.html', {})
+        
+        # Check that the template uses Bootstrap classes
+        self.assertIn('container', template_content)
+        self.assertIn('card', template_content)
+        self.assertIn('alert', template_content)
+    
+    def test_confirm_delete_template_content(self):
+        """Test that confirm delete template contains expected content"""
+        template_content = render_to_string('user/confirm_delete.html', {})
+        
+        # Check that the template contains expected elements
+        self.assertIn('Delete Your Account', template_content)
+        self.assertIn('btn btn-danger', template_content)
+        self.assertIn('btn btn-secondary', template_content)
+        self.assertIn('bi bi-exclamation-triangle', template_content)
+        self.assertIn('bi bi-trash', template_content)
+
+
+class UserDataConfirmDeleteTemplateTests(TestCase):
+    """Test cases for user data confirm delete template"""
+    
+    def test_data_confirm_delete_template_extends_base(self):
+        """Test that data confirm delete template extends _base.html"""
+        template_content = render_to_string('user/data_confirm_delete.html', {})
+        
+        # Check that the template uses Bootstrap classes
+        self.assertIn('container', template_content)
+        self.assertIn('card', template_content)
+        self.assertIn('alert', template_content)
+    
+    def test_data_confirm_delete_template_content(self):
+        """Test that data confirm delete template contains expected content"""
+        template_content = render_to_string('user/data_confirm_delete.html', {})
+        
+        # Check that the template contains expected elements
+        self.assertIn('Delete Your Data', template_content)
+        self.assertIn('btn btn-danger', template_content)
+        self.assertIn('btn btn-secondary', template_content)
+        self.assertIn('bi bi-database-x', template_content)
+        self.assertIn('bi bi-trash', template_content)

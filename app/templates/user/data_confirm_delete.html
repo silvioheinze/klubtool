@@ -2,14 +2,46 @@
 {% load i18n %}
 {% load static %}
 
-{% block title %}{% trans "Delete Your Account" %}{% endblock title %}
+{% block title %}{% trans "Delete Your Data" %}{% endblock title %}
 
 {% block content %}
-<h2 class="mb-4 mt-5">{% trans "Delete Your Data" %}</h2>
-<p>{% trans "Are you sure you want to delete all your Data? This action cannot be undone." %}</p>
-<form method="post">
-    {% csrf_token %}
-    <button type="submit" class="btn btn-danger">{% trans "Confirm Delete" %}</button>
-    <a href="{% url 'settings' %}" class="btn btn-secondary">{% trans "Cancel" %}</a>
-</form>
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="bi bi-database-x text-danger"></i>
+                        {% trans "Delete Your Data" %}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <h6 class="alert-heading">
+                            <i class="bi bi-info-circle"></i>
+                            {% trans "Data Deletion Warning" %}
+                        </h6>
+                        <p class="mb-0">
+                            {% trans "Are you sure you want to delete all your data? This action cannot be undone and all your personal information will be permanently removed from the system." %}
+                        </p>
+                    </div>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{% url 'user-settings' %}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i>
+                                {% trans "Cancel" %}
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash"></i>
+                                {% trans "Confirm Delete" %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock content %}
