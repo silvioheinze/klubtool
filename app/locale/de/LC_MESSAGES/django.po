@@ -195,7 +195,7 @@ msgstr ""
 #: templates/user/login.html:37 templates/user/password_reset.html:42
 #: templates/user/signup.html:31
 msgid "Email Address"
-msgstr ""
+msgstr "E-Mail-Adresse"
 
 #: templates/account/login.html:38 templates/account/signup.html:38
 #: templates/user/login.html:44 templates/user/password_reset.html:49
@@ -3476,3 +3476,19 @@ msgstr ""
 
 #~ msgid "Are you sure you want to delete this status entry?"
 #~ msgstr "Sind Sie sicher, dass Sie diesen Status-Eintrag löschen möchten?"
+
+msgid "Account Settings"
+msgstr "Kontoeinstellungen"
+
+msgid "Update your account information and preferences."
+msgstr "Aktualisieren Sie Ihre Kontoinformationen und Einstellungen."
+
+
+msgid "Your email address for account notifications and password resets"
+msgstr "Ihre E-Mail-Adresse für Kontobenachrichtigungen und Passwort-Zurücksetzungen"
+
+msgid "Update Settings"
+msgstr "Einstellungen aktualisieren"
+
+msgid "This email address is already in use."
+msgstr "Diese E-Mail-Adresse wird bereits verwendet."

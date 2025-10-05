@@ -12,7 +12,7 @@ from django.db.models import Q
 from django.core.paginator import Paginator
 from django.core.exceptions import PermissionDenied
 
-from .forms import CustomUserCreationForm, CustomUserEditForm, RoleForm, RoleFilterForm, CustomAuthenticationForm, LanguageSelectionForm
+from .forms import CustomUserCreationForm, CustomUserEditForm, RoleForm, RoleFilterForm, CustomAuthenticationForm, LanguageSelectionForm, UserSettingsForm
 from .models import Role
 
 CustomUser = get_user_model()
@@ -65,31 +65,29 @@ def SettingsView(request):
         translation.activate(user_language)
         request.session['django_language'] = user_language
         
-        # Handle language change
-        language_form = LanguageSelectionForm(request.POST or None, initial={'language': user_language})
+        # Handle settings form submission
+        settings_form = UserSettingsForm(request.POST or None, instance=request.user)
         
-        if request.method == "POST" and 'language' in request.POST:
-            if language_form.is_valid():
-                new_language = language_form.cleaned_data['language']
-                
-                # Update user's language preference
-                request.user.language = new_language
-                request.user.save()
+        if request.method == "POST":
+            if settings_form.is_valid():
+                # Update user's settings
+                settings_form.save()
                 
                 # Set the language in the session and activate it immediately
+                new_language = settings_form.cleaned_data['language']
                 request.session['django_language'] = new_language
                 translation.activate(new_language)
                 
                 # Get the display name for the success message
-                language_choices = dict(language_form.fields['language'].choices)
+                language_choices = dict(settings_form.fields['language'].choices)
                 language_display = language_choices.get(new_language, new_language)
                 
-                messages.success(request, f"Language changed to {language_display}")
+                messages.success(request, f"Settings updated successfully. Language changed to {language_display}")
                 return redirect('user-settings')
         
         context = {
             'user': request.user,
-            'language_form': language_form,
+            'settings_form': settings_form,
         }
         return render(request, "user/settings.html", context)
     else:

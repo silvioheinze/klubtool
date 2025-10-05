@@ -8,31 +8,59 @@
 {% block content %}
 <h2 class="mb-4 mt-5">{% trans "Settings" %}</h2>
 
-<!-- Language Selection -->
+<!-- User Settings -->
 <div class="card mb-4">
     <div class="card-header">
         <h3 class="mb-0">
-            <i class="bi bi-translate me-2"></i>
-            {% trans "Language Settings" %}
+            <i class="bi bi-gear me-2"></i>
+            {% trans "Account Settings" %}
         </h3>
     </div>
     <div class="card-body">
-        <p class="text-muted mb-3">{% trans "Choose your preferred language for the interface." %}</p>
+        <p class="text-muted mb-3">{% trans "Update your account information and preferences." %}</p>
         
-        <form method="post" class="d-inline">
+        <form method="post">
             {% csrf_token %}
-            <div class="row align-items-end">
-                <div class="col-md-6">
-                    {{ language_form.language.label_tag }}
-                    {{ language_form.language }}
-                    {% if language_form.language.help_text %}
-                        <small class="form-text text-muted">{{ language_form.language.help_text }}</small>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="{{ settings_form.email.id_for_label }}" class="form-label">
+                        {{ settings_form.email.label }}
+                        <span class="text-danger">*</span>
+                    </label>
+                    {{ settings_form.email }}
+                    {% if settings_form.email.help_text %}
+                        <small class="form-text text-muted">{{ settings_form.email.help_text }}</small>
+                    {% endif %}
+                    {% if settings_form.email.errors %}
+                        <div class="invalid-feedback d-block">
+                            {% for error in settings_form.email.errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
                     {% endif %}
                 </div>
-                <div class="col-md-6">
-                    <button type="submit" name="language" class="btn btn-primary">
+                <div class="col-md-6 mb-3">
+                    <label for="{{ settings_form.language.id_for_label }}" class="form-label">
+                        {{ settings_form.language.label }}
+                    </label>
+                    {{ settings_form.language }}
+                    {% if settings_form.language.help_text %}
+                        <small class="form-text text-muted">{{ settings_form.language.help_text }}</small>
+                    {% endif %}
+                    {% if settings_form.language.errors %}
+                        <div class="invalid-feedback d-block">
+                            {% for error in settings_form.language.errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">
                         <i class="bi bi-check-lg me-2"></i>
-                        {% trans "Change Language" %}
+                        {% trans "Update Settings" %}
                     </button>
                 </div>
             </div>

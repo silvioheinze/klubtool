@@ -106,3 +106,43 @@ class LanguageSelectionForm(forms.Form):
         label=_('Language'),
         help_text=_('Select your preferred language for the interface')
     )
+
+
+class UserSettingsForm(forms.ModelForm):
+    """Form for updating user settings including language and email"""
+    language = forms.ChoiceField(
+        choices=[
+            ('en', _('English')),
+            ('de', _('German')),
+        ],
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        label=_('Language'),
+        help_text=_('Select your preferred language for the interface')
+    )
+    
+    class Meta:
+        model = CustomUser
+        fields = ['email', 'language']
+        widgets = {
+            'email': forms.EmailInput(attrs={'class': 'form-control'}),
+        }
+        labels = {
+            'email': _('Email Address'),
+        }
+        help_texts = {
+            'email': _('Your email address for account notifications and password resets'),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Set initial language from user's current language
+        if self.instance and self.instance.pk:
+            self.fields['language'].initial = getattr(self.instance, 'language', 'de')
+    
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+        if email:
+            # Check if email is already used by another user
+            if CustomUser.objects.filter(email=email).exclude(pk=self.instance.pk).exists():
+                raise forms.ValidationError(_('This email address is already in use.'))
+        return email
