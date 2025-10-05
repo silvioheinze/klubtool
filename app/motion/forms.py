@@ -124,6 +124,13 @@ class MotionFilterForm(forms.Form):
         empty_label="All Sessions",
         widget=forms.Select(attrs={'class': 'form-select'})
     )
+    
+    party = forms.ModelChoiceField(
+        queryset=Party.objects.filter(is_active=True),
+        required=False,
+        empty_label="All Parties",
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
 
 
 class MotionVoteForm(forms.ModelForm):
