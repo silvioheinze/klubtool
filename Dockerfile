@@ -19,6 +19,12 @@ RUN apt-get update && \
         libcairo2 \
         libpangocairo-1.0-0 \
         libgdk-pixbuf-xlib-2.0-0 \
+        libgobject-2.0-0 \
+        libglib-2.0-0 \
+        libgdk-pixbuf-2.0-0 \
+        libgtk-3-0 \
+        libgstreamer1.0-0 \
+        libgstreamer-plugins-base1.0-0 \
         shared-mime-info \
     && rm -rf /var/lib/apt/lists/*
 
