@@ -5,6 +5,7 @@ def group_memberships(request):
         'user_locals': [],
         'user_councils': [],
         'user_group_admin_groups': [],
+        'user_leader_groups': [],
         'next_session': None
     }
     
@@ -37,6 +38,19 @@ def group_memberships(request):
             ).order_by('group__name')
             
             context['user_group_admin_groups'] = group_admin_groups
+            
+            # Get user's leader groups (Leader or Deputy Leader roles)
+            leader_groups = GroupMember.objects.filter(
+                user=request.user,
+                roles__name__in=['Leader', 'Deputy Leader'],
+                is_active=True
+            ).select_related(
+                'group',
+                'group__party',
+                'group__party__local'
+            ).order_by('group__name')
+            
+            context['user_leader_groups'] = leader_groups
             
             # Get unique locals and councils from memberships
             locals_from_memberships = set()
