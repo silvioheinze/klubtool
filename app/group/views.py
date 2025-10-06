@@ -567,38 +567,162 @@ class AgendaItemCreateAjaxView(LoginRequiredMixin, UserPassesTestMixin, View):
         """Create a new agenda item via AJAX"""
         from .models import GroupMeeting
         from django.http import JsonResponse
+        import traceback
+        import logging
+        
+        logger = logging.getLogger(__name__)
         
         try:
-            meeting = GroupMeeting.objects.get(pk=meeting_id)
-            form = AgendaItemForm(request.POST, meeting=meeting)
+            # Debug: Log the request data
+            logger.debug(f"AJAX request data: {request.POST}")
+            logger.debug(f"Meeting ID: {meeting_id}")
+            logger.debug(f"User: {request.user}")
             
-            if form.is_valid():
-                agenda_item = form.save(commit=False)
-                agenda_item.meeting = meeting
-                agenda_item.created_by = request.user
-                agenda_item.save()
-                
-                return JsonResponse({
-                    'success': True,
-                    'message': 'Agenda item created successfully.',
-                    'agenda_item': {
-                        'id': agenda_item.pk,
-                        'title': agenda_item.title,
-                        'description': agenda_item.description,
-                        'order': agenda_item.order,
-                        'parent_item': agenda_item.parent_item.pk if agenda_item.parent_item else None,
-                        'level': agenda_item.level,
-                    }
-                })
-            else:
+            meeting = GroupMeeting.objects.get(pk=meeting_id)
+            logger.debug(f"Meeting found: {meeting}")
+            
+            form = AgendaItemForm(request.POST, meeting=meeting)
+            logger.debug(f"Form data: {request.POST}")
+            logger.debug(f"Form is valid: {form.is_valid()}")
+            
+            if not form.is_valid():
+                logger.debug(f"Form errors: {form.errors}")
                 return JsonResponse({
                     'success': False,
-                    'errors': form.errors
+                    'error': 'Form validation failed',
+                    'errors': form.errors,
+                    'debug': {
+                        'form_data': dict(request.POST),
+                        'form_errors': form.errors
+                    }
                 })
+            
+            agenda_item = form.save(commit=False)
+            agenda_item.meeting = meeting
+            agenda_item.created_by = request.user
+            agenda_item.save()
+            
+            logger.debug(f"Agenda item created: {agenda_item}")
+            
+            return JsonResponse({
+                'success': True,
+                'message': 'Agenda item created successfully.',
+                'agenda_item': {
+                    'id': agenda_item.pk,
+                    'title': agenda_item.title,
+                    'description': agenda_item.description,
+                    'order': agenda_item.order,
+                    'parent_item': agenda_item.parent_item.pk if agenda_item.parent_item else None,
+                    'level': agenda_item.level,
+                }
+            })
+            
         except GroupMeeting.DoesNotExist:
+            logger.error(f"Meeting with ID {meeting_id} not found")
             return JsonResponse({
                 'success': False,
-                'error': 'Meeting not found'
+                'error': f'Meeting with ID {meeting_id} not found',
+                'debug': {
+                    'meeting_id': meeting_id,
+                    'available_meetings': list(GroupMeeting.objects.values_list('pk', 'title'))
+                }
+            })
+        except Exception as e:
+            logger.error(f"Unexpected error in AgendaItemCreateAjaxView: {str(e)}")
+            logger.error(f"Traceback: {traceback.format_exc()}")
+            return JsonResponse({
+                'success': False,
+                'error': f'Unexpected error: {str(e)}',
+                'debug': {
+                    'error_type': type(e).__name__,
+                    'error_message': str(e),
+                    'traceback': traceback.format_exc(),
+                    'request_data': dict(request.POST),
+                    'meeting_id': meeting_id
+                }
+            })
+
+
+class AgendaItemUpdateAjaxView(LoginRequiredMixin, UserPassesTestMixin, View):
+    """AJAX view for updating agenda items"""
+    
+    def test_func(self):
+        """Check if user has permission to update agenda items"""
+        return self.request.user.is_superuser
+
+    def post(self, request, agenda_item_id):
+        """Update an agenda item via AJAX"""
+        from .models import AgendaItem
+        from django.http import JsonResponse
+        import traceback
+        import logging
+        
+        logger = logging.getLogger(__name__)
+        
+        try:
+            # Debug: Log the request data
+            logger.debug(f"AJAX update request data: {request.POST}")
+            logger.debug(f"Agenda Item ID: {agenda_item_id}")
+            logger.debug(f"User: {request.user}")
+            
+            agenda_item = AgendaItem.objects.get(pk=agenda_item_id)
+            logger.debug(f"Agenda item found: {agenda_item}")
+            
+            form = AgendaItemForm(request.POST, instance=agenda_item, meeting=agenda_item.meeting)
+            logger.debug(f"Form data: {request.POST}")
+            logger.debug(f"Form is valid: {form.is_valid()}")
+            
+            if not form.is_valid():
+                logger.debug(f"Form errors: {form.errors}")
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Form validation failed',
+                    'errors': form.errors,
+                    'debug': {
+                        'form_data': dict(request.POST),
+                        'form_errors': form.errors
+                    }
+                })
+            
+            form.save()
+            logger.debug(f"Agenda item updated: {agenda_item}")
+            
+            return JsonResponse({
+                'success': True,
+                'message': 'Agenda item updated successfully.',
+                'agenda_item': {
+                    'id': agenda_item.pk,
+                    'title': agenda_item.title,
+                    'description': agenda_item.description,
+                    'order': agenda_item.order,
+                    'parent_item': agenda_item.parent_item.pk if agenda_item.parent_item else None,
+                    'level': agenda_item.level,
+                }
+            })
+            
+        except AgendaItem.DoesNotExist:
+            logger.error(f"Agenda item with ID {agenda_item_id} not found")
+            return JsonResponse({
+                'success': False,
+                'error': f'Agenda item with ID {agenda_item_id} not found',
+                'debug': {
+                    'agenda_item_id': agenda_item_id,
+                    'available_items': list(AgendaItem.objects.values_list('pk', 'title'))
+                }
+            })
+        except Exception as e:
+            logger.error(f"Unexpected error in AgendaItemUpdateAjaxView: {str(e)}")
+            logger.error(f"Traceback: {traceback.format_exc()}")
+            return JsonResponse({
+                'success': False,
+                'error': f'Unexpected error: {str(e)}',
+                'debug': {
+                    'error_type': type(e).__name__,
+                    'error_message': str(e),
+                    'traceback': traceback.format_exc(),
+                    'request_data': dict(request.POST),
+                    'agenda_item_id': agenda_item_id
+                }
             })
 
 

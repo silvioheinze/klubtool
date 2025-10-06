@@ -4,7 +4,7 @@ from .views import (
     GroupMemberListView, GroupMemberDetailView, GroupMemberCreateView, GroupMemberUpdateView, GroupMemberDeleteView,
     GroupMeetingListView, GroupMeetingDetailView, GroupMeetingCreateView, GroupMeetingUpdateView, GroupMeetingDeleteView,
     AgendaItemCreateView, AgendaItemDetailView, AgendaItemUpdateView, AgendaItemDeleteView,
-    AgendaItemCreateAjaxView, AgendaItemUpdateOrderAjaxView,
+    AgendaItemCreateAjaxView, AgendaItemUpdateAjaxView, AgendaItemUpdateOrderAjaxView,
     set_group_admin, remove_group_admin, update_member_roles
 )
 
@@ -40,6 +40,7 @@ urlpatterns = [
     
     # AJAX Agenda URLs
     path('meetings/<int:meeting_id>/agenda/create-ajax/', AgendaItemCreateAjaxView.as_view(), name='agenda-item-create-ajax'),
+    path('agenda/<int:agenda_item_id>/update-ajax/', AgendaItemUpdateAjaxView.as_view(), name='agenda-item-update-ajax'),
     path('meetings/<int:meeting_id>/agenda/update-order/', AgendaItemUpdateOrderAjaxView.as_view(), name='agenda-item-update-order'),
     
     # Group Admin URLs

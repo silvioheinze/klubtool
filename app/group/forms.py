@@ -126,3 +126,16 @@ class AgendaItemForm(forms.ModelForm):
                 self.fields['order'].initial = max_order + 1
         else:
             self.fields['parent_item'].queryset = AgendaItem.objects.none()
+    
+    def clean(self):
+        """Add custom validation and debugging"""
+        cleaned_data = super().clean()
+        
+        # Debug logging
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.debug(f"AgendaItemForm clean - meeting: {self.meeting}")
+        logger.debug(f"AgendaItemForm clean - cleaned_data: {cleaned_data}")
+        logger.debug(f"AgendaItemForm clean - form data: {self.data}")
+        
+        return cleaned_data

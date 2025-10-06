@@ -137,6 +137,12 @@ msgstr "Anträge"
 msgid "Next Session"
 msgstr "Nächste Sitzung"
 
+msgid "Order"
+msgstr "Reihenfolge"
+
+msgid "Order of the agenda item (1, 2, 3, etc.)"
+msgstr "Reihenfolge des Tagesordnungspunkts (1, 2, 3, etc.)"
+
 #: templates/_base.html:81 templates/user/settings.html:6
 #: templates/user/settings.html:9
 msgid "Settings"

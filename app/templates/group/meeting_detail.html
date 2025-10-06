@@ -200,6 +200,11 @@
                             {% endfor %}
                         </select>
                     </div>
+                    <div class="mb-3">
+                        <label for="agenda_order" class="form-label">{% trans "Order" %} <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control" id="agenda_order" name="order" min="1" required>
+                        <div class="form-text">{% trans "Order of the agenda item (1, 2, 3, etc.)" %}</div>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
@@ -236,6 +241,11 @@
                             <option value="">{% trans "No parent (top level)" %}</option>
                         </select>
                     </div>
+                    <div class="mb-3">
+                        <label for="edit_agenda_order" class="form-label">{% trans "Order" %} <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control" id="edit_agenda_order" name="order" min="1" required>
+                        <div class="form-text">{% trans "Order of the agenda item (1, 2, 3, etc.)" %}</div>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
@@ -249,6 +259,35 @@
 <script>
 // AJAX functionality for agenda management
 document.addEventListener('DOMContentLoaded', function() {
+    // Auto-set order when modal opens
+    document.getElementById('addAgendaItemModal').addEventListener('show.bs.modal', function() {
+        // Get the next available order number
+        const existingItems = document.querySelectorAll('.agenda-item');
+        const nextOrder = existingItems.length + 1;
+        document.getElementById('agenda_order').value = nextOrder;
+    });
+    
+    // Populate parent items dropdown when edit modal opens
+    document.getElementById('editAgendaItemModal').addEventListener('show.bs.modal', function() {
+        const parentSelect = document.getElementById('edit_agenda_parent');
+        const currentItemId = document.getElementById('edit_agenda_id').value;
+        
+        // Clear existing options except the first one
+        parentSelect.innerHTML = '<option value="">{% trans "No parent (top level)" %}</option>';
+        
+        // Add all agenda items except the current one being edited
+        const agendaItems = document.querySelectorAll('.agenda-item');
+        agendaItems.forEach(item => {
+            if (item.dataset.itemId !== currentItemId) {
+                const title = item.querySelector('h6').textContent;
+                const option = document.createElement('option');
+                option.value = item.dataset.itemId;
+                option.textContent = title;
+                parentSelect.appendChild(option);
+            }
+        });
+    });
+    
     // Add agenda item form submission
     document.getElementById('addAgendaItemForm').addEventListener('submit', function(e) {
         e.preventDefault();
@@ -265,15 +304,68 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .then(response => response.json())
         .then(data => {
+            console.log('AJAX Response:', data);
             if (data.success) {
                 location.reload(); // Reload to show new item
             } else {
-                alert('Error: ' + (data.error || 'Unknown error'));
+                // Show detailed error information
+                let errorMessage = 'Error: ' + (data.error || 'Unknown error');
+                if (data.debug) {
+                    errorMessage += '\n\nDebug Information:\n';
+                    errorMessage += JSON.stringify(data.debug, null, 2);
+                }
+                if (data.errors) {
+                    errorMessage += '\n\nForm Errors:\n';
+                    errorMessage += JSON.stringify(data.errors, null, 2);
+                }
+                console.error('AJAX Error:', data);
+                alert(errorMessage);
             }
         })
         .catch(error => {
-            console.error('Error:', error);
-            alert('An error occurred while adding the agenda item.');
+            console.error('Network Error:', error);
+            alert('Network error occurred while adding the agenda item. Check console for details.');
+        });
+    });
+    
+    // Edit agenda item form submission
+    document.getElementById('editAgendaItemForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        const agendaItemId = document.getElementById('edit_agenda_id').value;
+        formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+        
+        fetch(`{% url "group:agenda-item-update-ajax" 0 %}`.replace('0', agendaItemId), {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('AJAX Update Response:', data);
+            if (data.success) {
+                location.reload(); // Reload to show updated item
+            } else {
+                // Show detailed error information
+                let errorMessage = 'Error: ' + (data.error || 'Unknown error');
+                if (data.debug) {
+                    errorMessage += '\n\nDebug Information:\n';
+                    errorMessage += JSON.stringify(data.debug, null, 2);
+                }
+                if (data.errors) {
+                    errorMessage += '\n\nForm Errors:\n';
+                    errorMessage += JSON.stringify(data.errors, null, 2);
+                }
+                console.error('AJAX Update Error:', data);
+                alert(errorMessage);
+            }
+        })
+        .catch(error => {
+            console.error('Network Error:', error);
+            alert('Network error occurred while updating the agenda item. Check console for details.');
         });
     });
     
@@ -361,9 +453,29 @@ function updateAgendaOrder() {
 }
 
 function editAgendaItem(itemId) {
-    // This would open the edit modal with the item data
-    // For now, redirect to edit page
-    window.location.href = '{% url "group:agenda-item-edit" 0 %}'.replace('0', itemId);
+    // Find the agenda item data from the DOM
+    const agendaItem = document.querySelector(`[data-item-id="${itemId}"]`);
+    if (!agendaItem) {
+        alert('Agenda item not found');
+        return;
+    }
+    
+    // Extract data from the agenda item
+    const title = agendaItem.querySelector('h6').textContent;
+    const description = agendaItem.querySelector('p.text-muted')?.textContent || '';
+    const order = agendaItem.dataset.order;
+    const parent = agendaItem.dataset.parent;
+    
+    // Populate the edit form
+    document.getElementById('edit_agenda_id').value = itemId;
+    document.getElementById('edit_agenda_title').value = title;
+    document.getElementById('edit_agenda_description').value = description;
+    document.getElementById('edit_agenda_order').value = order;
+    document.getElementById('edit_agenda_parent').value = parent || '';
+    
+    // Show the edit modal
+    const editModal = new bootstrap.Modal(document.getElementById('editAgendaItemModal'));
+    editModal.show();
 }
 
 function deleteAgendaItem(itemId) {
