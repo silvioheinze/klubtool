@@ -1153,7 +1153,6 @@ class CommitteeMemberCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateV
     model = CommitteeMember
     form_class = CommitteeMemberForm
     template_name = 'local/committee_member_form.html'
-    success_url = reverse_lazy('local:committee-member-list')
 
     def test_func(self):
         """Check if user has permission to create CommitteeMember objects"""
@@ -1170,6 +1169,12 @@ class CommitteeMemberCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateV
             except Committee.DoesNotExist:
                 pass
         return initial
+
+    def get_success_url(self):
+        """Redirect to the linked committee after successful creation"""
+        if hasattr(self.object, 'committee') and self.object.committee:
+            return reverse('local:committee-detail', kwargs={'pk': self.object.committee.pk})
+        return reverse('local:committee-member-list')
 
     def form_valid(self, form):
         """Display success message on form validation"""

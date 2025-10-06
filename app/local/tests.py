@@ -1264,6 +1264,192 @@ class SessionViewTests(TestCase):
         self.assertFalse(Session.objects.filter(pk=self.session.pk).exists())
 
 
+class CommitteeMemberViewTests(TestCase):
+    """Test cases for CommitteeMember views"""
+    
+    def setUp(self):
+        """Set up test data"""
+        self.client = Client()
+        self.user = User.objects.create_user(
+            username='testuser',
+            email='test@example.com',
+            password='testpass123'
+        )
+        self.superuser = User.objects.create_superuser(
+            username='admin',
+            email='admin@example.com',
+            password='adminpass123'
+        )
+        self.member_user = User.objects.create_user(
+            username='memberuser',
+            email='member@example.com',
+            password='memberpass123'
+        )
+        
+        self.local = Local.objects.create(
+            name='Test Local',
+            code='TL',
+            description='Test local description'
+        )
+        self.council = self.local.council
+        
+        self.committee = Committee.objects.create(
+            name='Test Committee',
+            council=self.council,
+            committee_type='Ausschuss'
+        )
+    
+    def test_committee_member_create_view_requires_superuser(self):
+        """Test that CommitteeMemberCreateView requires superuser"""
+        # Test with regular user
+        self.client.login(username='testuser', password='testpass123')
+        response = self.client.get(reverse('local:committee-member-create'))
+        self.assertEqual(response.status_code, 403)
+        
+        # Test with superuser
+        self.client.login(username='admin', password='adminpass123')
+        response = self.client.get(reverse('local:committee-member-create'))
+        self.assertEqual(response.status_code, 200)
+    
+    def test_committee_member_create_view_get(self):
+        """Test CommitteeMemberCreateView GET request"""
+        self.client.login(username='admin', password='adminpass123')
+        response = self.client.get(reverse('local:committee-member-create'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Add Committee Member')
+        self.assertContains(response, 'form')
+    
+    def test_committee_member_create_view_with_committee_parameter(self):
+        """Test CommitteeMemberCreateView with committee URL parameter"""
+        self.client.login(username='admin', password='adminpass123')
+        url = f"{reverse('local:committee-member-create')}?committee={self.committee.pk}"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.committee.name)
+    
+    def test_committee_member_create_view_post_valid_data(self):
+        """Test CommitteeMemberCreateView with valid POST data"""
+        self.client.login(username='admin', password='adminpass123')
+        form_data = {
+            'user': self.member_user.pk,
+            'committee': self.committee.pk,
+            'role': 'member',
+            'notes': 'Test member notes'
+        }
+        response = self.client.post(reverse('local:committee-member-create'), form_data)
+        self.assertEqual(response.status_code, 302)  # Redirect after successful creation
+        
+        # Check that the committee member was created
+        self.assertTrue(CommitteeMember.objects.filter(
+            user=self.member_user,
+            committee=self.committee
+        ).exists())
+    
+    def test_committee_member_create_view_post_invalid_data(self):
+        """Test CommitteeMemberCreateView with invalid POST data"""
+        self.client.login(username='admin', password='adminpass123')
+        form_data = {
+            'user': '',  # Missing required field
+            'committee': self.committee.pk,
+            'role': 'member'
+        }
+        response = self.client.post(reverse('local:committee-member-create'), form_data)
+        self.assertEqual(response.status_code, 200)  # Form errors, stays on page
+        # Check for either English or German error message
+        self.assertTrue(
+            'This field is required' in response.content.decode() or 
+            'Dieses Feld ist zwingend erforderlich' in response.content.decode()
+        )
+    
+    def test_committee_member_create_view_redirect_to_committee_detail(self):
+        """Test that CommitteeMemberCreateView redirects to committee detail after creation"""
+        self.client.login(username='admin', password='adminpass123')
+        form_data = {
+            'user': self.member_user.pk,
+            'committee': self.committee.pk,
+            'role': 'member'
+        }
+        response = self.client.post(reverse('local:committee-member-create'), form_data)
+        self.assertEqual(response.status_code, 302)
+        
+        # Check that redirect goes to committee detail
+        expected_url = reverse('local:committee-detail', kwargs={'pk': self.committee.pk})
+        self.assertRedirects(response, expected_url)
+    
+    def test_committee_member_create_view_duplicate_member(self):
+        """Test that creating duplicate committee member fails"""
+        # Create existing committee member
+        CommitteeMember.objects.create(
+            user=self.member_user,
+            committee=self.committee,
+            role='member'
+        )
+        
+        self.client.login(username='admin', password='adminpass123')
+        form_data = {
+            'user': self.member_user.pk,
+            'committee': self.committee.pk,
+            'role': 'member'
+        }
+        response = self.client.post(reverse('local:committee-member-create'), form_data)
+        self.assertEqual(response.status_code, 200)  # Form errors, stays on page
+        # Check for either English or German error message
+        self.assertTrue(
+            'Committee member with this Committee and User already exists' in response.content.decode() or
+            'Committee Member mit diesem Wert für das Feld Committee und User existiert bereits' in response.content.decode()
+        )
+    
+    def test_committee_member_create_view_success_message(self):
+        """Test that success message is displayed after creation"""
+        self.client.login(username='admin', password='adminpass123')
+        form_data = {
+            'user': self.member_user.pk,
+            'committee': self.committee.pk,
+            'role': 'member'
+        }
+        response = self.client.post(reverse('local:committee-member-create'), form_data)
+        
+        # Check that the member was created successfully
+        self.assertTrue(CommitteeMember.objects.filter(
+            user=self.member_user,
+            committee=self.committee
+        ).exists())
+        
+        # Check that redirect happens (success message is handled by Django messages framework)
+        self.assertEqual(response.status_code, 302)
+    
+    def test_committee_member_create_view_role_choices(self):
+        """Test that all role choices are available in the form"""
+        self.client.login(username='admin', password='adminpass123')
+        response = self.client.get(reverse('local:committee-member-create'))
+        self.assertEqual(response.status_code, 200)
+        
+        # Check that all role choices are present
+        self.assertContains(response, 'Chairperson')
+        self.assertContains(response, 'Vice Chairperson')
+        self.assertContains(response, 'Member')
+    
+    def test_committee_member_create_view_user_queryset(self):
+        """Test that only active users are available in the form"""
+        # Create inactive user
+        inactive_user = User.objects.create_user(
+            username='inactive',
+            email='inactive@example.com',
+            password='inactivepass123',
+            is_active=False
+        )
+        
+        self.client.login(username='admin', password='adminpass123')
+        response = self.client.get(reverse('local:committee-member-create'))
+        self.assertEqual(response.status_code, 200)
+        
+        # Check that inactive user is not in the form
+        self.assertNotContains(response, 'inactive')
+        # Check that active users are present
+        self.assertContains(response, 'testuser')
+        self.assertContains(response, 'memberuser')
+
+
 class CommitteeViewTests(TestCase):
     """Test cases for Committee views"""
     

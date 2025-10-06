@@ -1,0 +1,189 @@
+{% extends "_base.html" %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}
+    {% if committeemember %}
+        {% trans "Edit Committee Member" %} - {{ committeemember.user.username }}
+    {% else %}
+        {% trans "Add Committee Member" %}
+    {% endif %}
+{% endblock title %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1>
+                    <i class="bi bi-person-plus"></i>
+                    {% if committeemember %}
+                        {% trans "Edit Committee Member" %}: {{ committeemember.user.username }}
+                    {% else %}
+                        {% trans "Add Committee Member" %}
+                    {% endif %}
+                </h1>
+                <div>
+                    <a href="{% url 'local:committee-member-list' %}" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left"></i> {% trans "Back to List" %}
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        {% if committeemember %}
+                            {% trans "Edit Member Information" %}
+                        {% else %}
+                            {% trans "Member Information" %}
+                        {% endif %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                {% for error in form.non_field_errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+
+                        <!-- Committee Field -->
+                        {% if form.committee.field.widget.input_type != 'hidden' %}
+                            <div class="mb-3">
+                                <label for="{{ form.committee.id_for_label }}" class="form-label">
+                                    {% trans "Committee" %} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.committee }}
+                                {% if form.committee.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.committee.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                {% if form.committee.help_text %}
+                                    <div class="form-text">{{ form.committee.help_text }}</div>
+                                {% endif %}
+                            </div>
+                        {% else %}
+                            <!-- Hidden committee field -->
+                            {{ form.committee }}
+                            {% if form.committee.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.committee.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        {% endif %}
+
+                        <!-- User Field -->
+                        <div class="mb-3">
+                            <label for="{{ form.user.id_for_label }}" class="form-label">
+                                {% trans "User" %} <span class="text-danger">*</span>
+                            </label>
+                            {{ form.user }}
+                            {% if form.user.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.user.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            {% if form.user.help_text %}
+                                <div class="form-text">{{ form.user.help_text }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.role.id_for_label }}" class="form-label">
+                                        {% trans "Role" %} <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.role }}
+                                    {% if form.role.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.role.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    {% if form.role.help_text %}
+                                        <div class="form-text">{{ form.role.help_text }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Notes -->
+                        <div class="mb-3">
+                            <label for="{{ form.notes.id_for_label }}" class="form-label">
+                                {% trans "Notes" %}
+                            </label>
+                            {{ form.notes }}
+                            {% if form.notes.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.notes.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            {% if form.notes.help_text %}
+                                <div class="form-text">{{ form.notes.help_text }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{% url 'local:committee-member-list' %}" class="btn btn-secondary me-md-2">
+                                {% trans "Cancel" %}
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                {% if committeemember %}
+                                    <i class="bi bi-check-circle"></i> {% trans "Update Member" %}
+                                {% else %}
+                                    <i class="bi bi-plus-circle"></i> {% trans "Add Member" %}
+                                {% endif %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">{% trans "Help" %}</h5>
+                </div>
+                <div class="card-body">
+                    <h6>{% trans "Member Roles" %}</h6>
+                    <ul class="list-unstyled">
+                        <li><strong>{% trans "Chairperson" %}:</strong> {% trans "Leader of the committee with full authority" %}</li>
+                        <li><strong>{% trans "Vice Chairperson" %}:</strong> {% trans "Deputy leader who can act in the chairperson's absence" %}</li>
+                        <li><strong>{% trans "Member" %}:</strong> {% trans "Regular committee member with voting rights" %}</li>
+                    </ul>
+                    
+                    <hr>
+                    
+                    <h6>{% trans "Tips" %}</h6>
+                    <ul class="list-unstyled">
+                        <li><i class="bi bi-info-circle"></i> {% trans "Only active users can be added to committees" %}</li>
+                        <li><i class="bi bi-info-circle"></i> {% trans "Each user can only be a member of a committee once" %}</li>
+                        <li><i class="bi bi-info-circle"></i> {% trans "Use notes to record special responsibilities or conditions" %}</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
