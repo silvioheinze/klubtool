@@ -48,5 +48,5 @@
 [ ] change Minutes in session model to File
 [ ] add Invitation in session model as File
 [x] add the roles
-[ ] change email in user settings
+[x] change email in user settings
 [ ] add overview page for sessions
