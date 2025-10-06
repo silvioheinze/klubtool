@@ -8,6 +8,10 @@ from user.views import (
 )
 
 
+def redirect_password_change(request):
+    """Redirect /user/edit/password/ to the correct Allauth password change URL"""
+    return redirect('account_change_password')
+
 urlpatterns = [
     # User Management
     path('delete/', AccountDeleteView.as_view(), name='user-delete'),
@@ -15,6 +19,7 @@ urlpatterns = [
     path("signup/", SignupPageView.as_view(), name="user-signup"),
     path('list/', UsersListView.as_view(), name='user-list'),
     path('edit/<int:user_id>/', UsersUpdateView.as_view(), name='user-edit'),
+    path('edit/password/', redirect_password_change, name='user-password-change-redirect'),
     
     # Role Management
     path('roles/', RoleListView.as_view(), name='role-list'),
