@@ -3,7 +3,7 @@ from django.urls import path, include
 from user.views import (
     AccountDeleteView, SettingsView, SignupPageView, 
     UsersUpdateView, UsersListView, RoleListView, RoleCreateView, 
-    RoleUpdateView, RoleDeleteView, user_management_view
+    RoleUpdateView, RoleDeleteView, user_management_view, AdminUserCreateView
 )
 
 
@@ -23,6 +23,7 @@ urlpatterns = [
     
     # User Management Dashboard
     path('management/', user_management_view, name='user-management'),
+    path('admin-create/', AdminUserCreateView.as_view(), name='admin-user-create'),
     
     # Allauth URLs
     path("", include("allauth.account.urls")),

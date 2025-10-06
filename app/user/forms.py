@@ -146,3 +146,64 @@ class UserSettingsForm(forms.ModelForm):
             if CustomUser.objects.filter(email=email).exclude(pk=self.instance.pk).exists():
                 raise forms.ValidationError(_('This email address is already in use.'))
         return email
+
+
+class AdminUserCreationForm(forms.ModelForm):
+    """Administrative form for creating users directly (bypassing normal registration)"""
+    
+    class Meta:
+        model = CustomUser
+        fields = ['username', 'email', 'first_name', 'last_name', 'is_active', 'is_staff', 'language']
+        widgets = {
+            'username': forms.TextInput(attrs={'class': 'form-control'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'first_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'is_staff': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'language': forms.Select(attrs={'class': 'form-select'}),
+        }
+        labels = {
+            'username': _('Username'),
+            'email': _('Email Address'),
+            'first_name': _('First Name'),
+            'last_name': _('Last Name'),
+            'is_active': _('Active User'),
+            'is_staff': _('Staff User'),
+            'language': _('Language'),
+        }
+        help_texts = {
+            'username': _('Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only.'),
+            'email': _('Required. Used for account notifications and password resets.'),
+            'is_active': _('Designates whether this user should be treated as active. Unselect this instead of deleting accounts.'),
+            'is_staff': _('Designates whether the user can log into the admin site.'),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Set default values for administrative creation
+        self.fields['is_active'].initial = True
+        self.fields['is_staff'].initial = False
+        self.fields['language'].initial = 'de'
+    
+    def clean_username(self):
+        username = self.cleaned_data.get('username')
+        if username:
+            if CustomUser.objects.filter(username=username).exists():
+                raise forms.ValidationError(_('A user with that username already exists.'))
+        return username
+    
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+        if email:
+            if CustomUser.objects.filter(email=email).exists():
+                raise forms.ValidationError(_('A user with that email already exists.'))
+        return email
+    
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        # Set a temporary password that the user will need to change
+        user.set_password('temp_password_change_me')
+        if commit:
+            user.save()
+        return user

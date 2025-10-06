@@ -12,7 +12,7 @@ from django.db.models import Q
 from django.core.paginator import Paginator
 from django.core.exceptions import PermissionDenied
 
-from .forms import CustomUserCreationForm, CustomUserEditForm, RoleForm, RoleFilterForm, CustomAuthenticationForm, LanguageSelectionForm, UserSettingsForm
+from .forms import CustomUserCreationForm, CustomUserEditForm, RoleForm, RoleFilterForm, CustomAuthenticationForm, LanguageSelectionForm, UserSettingsForm, AdminUserCreationForm
 from .models import Role
 
 CustomUser = get_user_model()
@@ -265,3 +265,25 @@ def user_management_view(request):
         'recent_roles': Role.objects.order_by('-created_at')[:5],
     }
     return render(request, 'user/management.html', context)
+
+
+class AdminUserCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
+    """View for creating users administratively (bypassing normal registration)"""
+    model = CustomUser
+    form_class = AdminUserCreationForm
+    template_name = 'user/admin_user_form.html'
+    success_url = reverse_lazy('user-management')
+
+    def test_func(self):
+        """Check if user has permission to create users administratively"""
+        return self.request.user.is_superuser
+
+    def form_valid(self, form):
+        """Display success message and handle user creation"""
+        user = form.save()
+        messages.success(
+            self.request, 
+            f"User '{user.username}' created successfully. "
+            f"The user will need to set their password on first login."
+        )
+        return super().form_valid(form)
