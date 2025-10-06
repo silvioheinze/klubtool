@@ -1,4 +1,5 @@
 from django.urls import path, include
+from django.shortcuts import redirect
 
 from user.views import (
     AccountDeleteView, SettingsView, SignupPageView, 
