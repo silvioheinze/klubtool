@@ -326,19 +326,38 @@ class CommitteeMemberForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         # Filter committees to only show active ones
         self.fields['committee'].queryset = Committee.objects.filter(is_active=True)
-        # Filter users to only show active ones
-        from django.contrib.auth import get_user_model
-        User = get_user_model()
-        self.fields['user'].queryset = User.objects.filter(is_active=True)
         
-        # Set initial committee if provided in URL
+        # Filter users to only show active ones from groups linked to the committee's local
+        from django.contrib.auth import get_user_model
+        from group.models import GroupMember, Group
+        User = get_user_model()
+        
+        # Get the committee from initial data or form data
         committee_id = self.initial.get('committee') or self.data.get('committee')
         if committee_id:
             try:
                 committee = Committee.objects.get(pk=committee_id)
+                # Get the local through council
+                local = committee.council.local
+                # Get all groups for parties in this local
+                groups = Group.objects.filter(party__local=local, is_active=True)
+                # Get all users who are members of these groups
+                user_ids = GroupMember.objects.filter(
+                    group__in=groups, 
+                    is_active=True
+                ).values_list('user_id', flat=True)
+                # Filter users to only those in the groups
+                self.fields['user'].queryset = User.objects.filter(
+                    id__in=user_ids, 
+                    is_active=True
+                ).order_by('first_name', 'last_name')
                 self.fields['committee'].initial = committee
             except Committee.DoesNotExist:
-                pass
+                # Fallback to all active users if committee not found
+                self.fields['user'].queryset = User.objects.filter(is_active=True)
+        else:
+            # If no committee specified, show all active users
+            self.fields['user'].queryset = User.objects.filter(is_active=True)
 
 
 class CommitteeMemberFilterForm(forms.Form):

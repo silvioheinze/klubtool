@@ -1293,21 +1293,63 @@ class CommitteeMemberViewTests(TestCase):
         )
         self.council = self.local.council
         
+        # Create a party for this local
+        self.party = Party.objects.create(
+            name='Test Party',
+            local=self.local,
+            is_active=True
+        )
+        
+        # Create a group for this party
+        from group.models import Group, GroupMember
+        self.group = Group.objects.create(
+            name='Test Group',
+            party=self.party,
+            is_active=True
+        )
+        
+        # Add users to the group so they appear in the filtered queryset
+        GroupMember.objects.create(
+            user=self.member_user,
+            group=self.group,
+            is_active=True
+        )
+        GroupMember.objects.create(
+            user=self.user,
+            group=self.group,
+            is_active=True
+        )
+        
         self.committee = Committee.objects.create(
             name='Test Committee',
             council=self.council,
             committee_type='Ausschuss'
         )
     
-    def test_committee_member_create_view_requires_superuser(self):
-        """Test that CommitteeMemberCreateView requires superuser"""
-        # Test with regular user
+    def test_committee_member_create_view_requires_superuser_or_leader(self):
+        """Test that CommitteeMemberCreateView requires superuser or group leader/deputy leader"""
+        # Test with regular user (no group roles)
         self.client.login(username='testuser', password='testpass123')
         response = self.client.get(reverse('local:committee-member-create'))
         self.assertEqual(response.status_code, 403)
         
         # Test with superuser
         self.client.login(username='admin', password='adminpass123')
+        response = self.client.get(reverse('local:committee-member-create'))
+        self.assertEqual(response.status_code, 200)
+        
+        # Test with group leader
+        from group.models import GroupMember
+        from user.models import Role
+        
+        # Create Leader role if it doesn't exist
+        leader_role, created = Role.objects.get_or_create(name='Leader')
+        
+        # Add leader role to testuser
+        group_member = GroupMember.objects.get(user=self.user, group=self.group)
+        group_member.roles.add(leader_role)
+        
+        self.client.login(username='testuser', password='testpass123')
         response = self.client.get(reverse('local:committee-member-create'))
         self.assertEqual(response.status_code, 200)
     

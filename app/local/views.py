@@ -1156,7 +1156,17 @@ class CommitteeMemberCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateV
 
     def test_func(self):
         """Check if user has permission to create CommitteeMember objects"""
-        return self.request.user.is_superuser
+        # Allow superusers
+        if self.request.user.is_superuser:
+            return True
+        
+        # Allow Group Leaders and Deputy Leaders
+        from group.models import GroupMember
+        return GroupMember.objects.filter(
+            user=self.request.user,
+            is_active=True,
+            roles__name__in=['Leader', 'Deputy Leader']
+        ).exists()
 
     def get_initial(self):
         """Set initial committee if provided in URL"""

@@ -141,27 +141,7 @@
                     </div>
                 </div>
             </div>
-            
-            <div class="card mt-3">
-                <div class="card-header">
-                    <h5 class="mb-0">{% trans "Quick Info" %}</h5>
-                </div>
-                <div class="card-body">
-                    <ul class="list-unstyled">
-                        <li><strong>{% trans "Status" %}:</strong> 
-                            {% if member.is_active %}
-                                <span class="text-success">{% trans "Active" %}</span>
-                            {% else %}
-                                <span class="text-danger">{% trans "Inactive" %}</span>
-                            {% endif %}
-                        </li>
-                        <li><strong>{% trans "Roles" %}:</strong> {{ member.get_roles_display }}</li>
-                        <li><strong>{% trans "Group" %}:</strong> {{ member.group.name }}</li>
-                        <li><strong>{% trans "Party" %}:</strong> {{ member.group.party.name }}</li>
-                        <li><strong>{% trans "Joined" %}:</strong> {{ member.joined_date|date:"M d, Y" }}</li>
-                    </ul>
-                </div>
-            </div>
+        
         </div>
     </div>
 </div>
