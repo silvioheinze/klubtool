@@ -1,6 +1,6 @@
-# Antragstool
+# Klubtool
 
-A modern Django-based motion management system built with Docker, PostgreSQL, and Nginx.
+A modern Django-based political group management system built with Docker, PostgreSQL, and Nginx.
 
 ## 🚀 Features
 

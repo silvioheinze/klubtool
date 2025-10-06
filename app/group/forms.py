@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib.auth import get_user_model
-from .models import Group, GroupMember
+from .models import Group, GroupMember, GroupMeeting
 from local.models import Party
 from user.models import Role
 
@@ -66,3 +66,30 @@ class GroupMemberFilterForm(forms.Form):
         self.fields['group'].queryset = Group.objects.filter(is_active=True)
         # Filter to only show active roles
         self.fields['role'].queryset = Role.objects.filter(is_active=True)
+
+
+class GroupMeetingForm(forms.ModelForm):
+    """Form for creating and editing group meetings"""
+    class Meta:
+        model = GroupMeeting
+        fields = ['title', 'scheduled_date', 'location', 'description', 'group']
+        widgets = {
+            'title': forms.TextInput(attrs={'class': 'form-control'}),
+            'scheduled_date': forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local'}),
+            'location': forms.TextInput(attrs={'class': 'form-control'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Set the group field as hidden if provided in initial data
+        group_id = self.initial.get('group') or self.data.get('group')
+        if group_id:
+            self.fields['group'].widget = forms.HiddenInput()
+            self.fields['group'].initial = group_id
+        else:
+            self.fields['group'].widget = forms.Select(attrs={'class': 'form-select'})
+        
+        # Filter groups to only show active ones
+        self.fields['group'].queryset = Group.objects.filter(is_active=True)
+    

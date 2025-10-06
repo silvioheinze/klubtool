@@ -2,12 +2,13 @@ from django.test import TestCase
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.utils import timezone
+from django import forms
 from datetime import datetime, timedelta
 
 from .forms import (
-    GroupForm, GroupFilterForm, GroupMemberForm, GroupMemberFilterForm
+    GroupForm, GroupFilterForm, GroupMemberForm, GroupMemberFilterForm, GroupMeetingForm
 )
-from .models import Group, GroupMember
+from .models import Group, GroupMember, GroupMeeting
 from local.models import Local, Party
 from user.models import Role
 
@@ -492,3 +493,326 @@ class GroupMemberModelTests(TestCase):
         self.assertEqual(group_member.group, self.group)
         self.assertIn(group_member, self.user.group_memberships.all())
         self.assertIn(group_member, self.group.members.all())
+
+
+class GroupMeetingFormTests(TestCase):
+    """Test cases for GroupMeetingForm"""
+    
+    def setUp(self):
+        """Set up test data"""
+        self.user = User.objects.create_user(
+            username='testuser',
+            email='test@example.com',
+            password='testpass123'
+        )
+        
+        self.local = Local.objects.create(
+            name='Test Local',
+            code='TL',
+            description='Test local description'
+        )
+        
+        self.party = Party.objects.create(
+            name='Test Party',
+            local=self.local
+        )
+        
+        self.group = Group.objects.create(
+            name='Test Group',
+            party=self.party
+        )
+    
+    def test_group_meeting_form_valid_data(self):
+        """Test GroupMeetingForm with valid data"""
+        form_data = {
+            'title': 'Test Meeting',
+            'scheduled_date': '2025-12-31 14:00:00',
+            'location': 'Test Location',
+            'description': 'Test meeting description',
+            'group': self.group.pk
+        }
+        
+        form = GroupMeetingForm(data=form_data)
+        self.assertTrue(form.is_valid())
+    
+    def test_group_meeting_form_required_fields(self):
+        """Test GroupMeetingForm with missing required fields"""
+        form_data = {
+            'title': '',  # Required field missing
+            'scheduled_date': '2025-12-31 14:00:00',
+            'group': self.group.pk
+        }
+        
+        form = GroupMeetingForm(data=form_data)
+        self.assertFalse(form.is_valid())
+        self.assertIn('title', form.errors)
+    
+    def test_group_meeting_form_with_group_parameter(self):
+        """Test GroupMeetingForm with group parameter in initial data"""
+        form_data = {
+            'title': 'Test Meeting',
+            'scheduled_date': '2025-12-31 14:00:00',
+            'location': 'Test Location',
+            'description': 'Test meeting description',
+            'group': self.group.pk  # Include group in form data
+        }
+        
+        initial_data = {'group': self.group.pk}
+        form = GroupMeetingForm(data=form_data, initial=initial_data)
+        
+        # Check that group field is hidden
+        self.assertIsInstance(form.fields['group'].widget, forms.HiddenInput)
+        self.assertEqual(form.fields['group'].initial, self.group.pk)
+        self.assertTrue(form.is_valid())
+    
+    def test_group_meeting_form_without_group_parameter(self):
+        """Test GroupMeetingForm without group parameter"""
+        form_data = {
+            'title': 'Test Meeting',
+            'scheduled_date': '2025-12-31 14:00:00',
+            'location': 'Test Location',
+            'description': 'Test meeting description',
+            'group': self.group.pk
+        }
+        
+        form = GroupMeetingForm(data=form_data)
+        
+        # When group is in data, it should be hidden
+        self.assertIsInstance(form.fields['group'].widget, forms.HiddenInput)
+        self.assertTrue(form.is_valid())
+    
+    def test_group_meeting_form_empty_data(self):
+        """Test GroupMeetingForm with empty data to check widget type"""
+        form = GroupMeetingForm()
+        
+        # When no data is provided, group field should be a select widget
+        self.assertIsInstance(form.fields['group'].widget, forms.Select)
+    
+    def test_group_meeting_form_group_filtering(self):
+        """Test that GroupMeetingForm filters groups correctly"""
+        form = GroupMeetingForm()
+        expected_groups = Group.objects.filter(is_active=True)
+        self.assertQuerySetEqual(
+            form.fields['group'].queryset,
+            expected_groups,
+            transform=lambda x: x
+        )
+    
+    def test_group_meeting_form_inactive_group_exclusion(self):
+        """Test that GroupMeetingForm excludes inactive groups"""
+        # Create inactive group
+        inactive_group = Group.objects.create(
+            name='Inactive Group',
+            party=self.party,
+            is_active=False
+        )
+        
+        form = GroupMeetingForm()
+        self.assertNotIn(inactive_group, form.fields['group'].queryset)
+    
+    def test_group_meeting_form_optional_fields(self):
+        """Test GroupMeetingForm with optional fields empty"""
+        form_data = {
+            'title': 'Test Meeting',
+            'scheduled_date': '2025-12-31 14:00:00',
+            'group': self.group.pk
+            # location and description are optional
+        }
+        
+        form = GroupMeetingForm(data=form_data)
+        self.assertTrue(form.is_valid())
+
+
+class GroupMeetingModelTests(TestCase):
+    """Test cases for GroupMeeting model"""
+    
+    def setUp(self):
+        """Set up test data"""
+        self.user = User.objects.create_user(
+            username='testuser',
+            email='test@example.com',
+            password='testpass123'
+        )
+        
+        self.local = Local.objects.create(
+            name='Test Local',
+            code='TL',
+            description='Test local description'
+        )
+        
+        self.party = Party.objects.create(
+            name='Test Party',
+            local=self.local
+        )
+        
+        self.group = Group.objects.create(
+            name='Test Group',
+            party=self.party
+        )
+    
+    def test_group_meeting_creation(self):
+        """Test GroupMeeting model creation"""
+        meeting = GroupMeeting.objects.create(
+            group=self.group,
+            title='Test Meeting',
+            scheduled_date=timezone.now() + timedelta(days=1),
+            location='Test Location',
+            description='Test meeting description',
+            created_by=self.user
+        )
+        
+        self.assertEqual(meeting.group, self.group)
+        self.assertEqual(meeting.title, 'Test Meeting')
+        self.assertEqual(meeting.location, 'Test Location')
+        self.assertEqual(meeting.description, 'Test meeting description')
+        self.assertEqual(meeting.created_by, self.user)
+        self.assertTrue(meeting.is_active)  # Default should be True
+        self.assertIsNotNone(meeting.created_at)
+        self.assertIsNotNone(meeting.updated_at)
+    
+    def test_group_meeting_str_representation(self):
+        """Test GroupMeeting model string representation"""
+        scheduled_date = timezone.now() + timedelta(days=1)
+        meeting = GroupMeeting.objects.create(
+            group=self.group,
+            title='Test Meeting',
+            scheduled_date=scheduled_date,
+            created_by=self.user
+        )
+        
+        expected_str = f"Test Meeting - Test Group ({scheduled_date.strftime('%Y-%m-%d %H:%M')})"
+        self.assertEqual(str(meeting), expected_str)
+    
+    def test_group_meeting_default_values(self):
+        """Test GroupMeeting model default values"""
+        meeting = GroupMeeting.objects.create(
+            group=self.group,
+            title='Test Meeting',
+            scheduled_date=timezone.now() + timedelta(days=1)
+        )
+        
+        self.assertTrue(meeting.is_active)  # Default should be True
+        self.assertIsNotNone(meeting.created_at)
+        self.assertIsNotNone(meeting.updated_at)
+    
+    def test_group_meeting_ordering(self):
+        """Test GroupMeeting model ordering"""
+        meeting1 = GroupMeeting.objects.create(
+            group=self.group,
+            title='Meeting 1',
+            scheduled_date=timezone.now() + timedelta(days=2)
+        )
+        meeting2 = GroupMeeting.objects.create(
+            group=self.group,
+            title='Meeting 2',
+            scheduled_date=timezone.now() + timedelta(days=1)
+        )
+        
+        meetings = GroupMeeting.objects.all()
+        # Should be ordered by scheduled_date (most recent first)
+        self.assertEqual(meetings[0], meeting1)
+        self.assertEqual(meetings[1], meeting2)
+    
+    def test_group_meeting_active_filter(self):
+        """Test GroupMeeting model active filter"""
+        active_meeting = GroupMeeting.objects.create(
+            group=self.group,
+            title='Active Meeting',
+            scheduled_date=timezone.now() + timedelta(days=1),
+            is_active=True
+        )
+        inactive_meeting = GroupMeeting.objects.create(
+            group=self.group,
+            title='Inactive Meeting',
+            scheduled_date=timezone.now() + timedelta(days=1),
+            is_active=False
+        )
+        
+        active_meetings = GroupMeeting.objects.filter(is_active=True)
+        self.assertIn(active_meeting, active_meetings)
+        self.assertNotIn(inactive_meeting, active_meetings)
+    
+    def test_group_meeting_group_relationship(self):
+        """Test GroupMeeting model group relationship"""
+        meeting = GroupMeeting.objects.create(
+            group=self.group,
+            title='Test Meeting',
+            scheduled_date=timezone.now() + timedelta(days=1)
+        )
+        
+        self.assertEqual(meeting.group, self.group)
+        self.assertIn(meeting, self.group.meetings.all())
+    
+    def test_group_meeting_is_past_property(self):
+        """Test GroupMeeting is_past property"""
+        past_meeting = GroupMeeting.objects.create(
+            group=self.group,
+            title='Past Meeting',
+            scheduled_date=timezone.now() - timedelta(days=1)
+        )
+        future_meeting = GroupMeeting.objects.create(
+            group=self.group,
+            title='Future Meeting',
+            scheduled_date=timezone.now() + timedelta(days=1)
+        )
+        
+        self.assertTrue(past_meeting.is_past)
+        self.assertFalse(future_meeting.is_past)
+    
+    def test_group_meeting_is_upcoming_property(self):
+        """Test GroupMeeting is_upcoming property"""
+        past_meeting = GroupMeeting.objects.create(
+            group=self.group,
+            title='Past Meeting',
+            scheduled_date=timezone.now() - timedelta(days=1)
+        )
+        future_meeting = GroupMeeting.objects.create(
+            group=self.group,
+            title='Future Meeting',
+            scheduled_date=timezone.now() + timedelta(days=1)
+        )
+        
+        self.assertFalse(past_meeting.is_upcoming)
+        self.assertTrue(future_meeting.is_upcoming)
+    
+    def test_group_meeting_time_until_meeting_property(self):
+        """Test GroupMeeting time_until_meeting property"""
+        future_meeting = GroupMeeting.objects.create(
+            group=self.group,
+            title='Future Meeting',
+            scheduled_date=timezone.now() + timedelta(days=2, hours=3)
+        )
+        past_meeting = GroupMeeting.objects.create(
+            group=self.group,
+            title='Past Meeting',
+            scheduled_date=timezone.now() - timedelta(days=1)
+        )
+        
+        # Future meeting should have time until meeting
+        self.assertNotEqual(future_meeting.time_until_meeting, "Past")
+        # Past meeting should return "Past"
+        self.assertEqual(past_meeting.time_until_meeting, "Past")
+    
+    def test_group_meeting_optional_fields(self):
+        """Test GroupMeeting model with optional fields"""
+        meeting = GroupMeeting.objects.create(
+            group=self.group,
+            title='Test Meeting',
+            scheduled_date=timezone.now() + timedelta(days=1)
+            # location and description are optional
+        )
+        
+        self.assertEqual(meeting.location, '')
+        self.assertEqual(meeting.description, '')
+        self.assertTrue(meeting.is_active)
+    
+    def test_group_meeting_get_absolute_url(self):
+        """Test GroupMeeting get_absolute_url method"""
+        meeting = GroupMeeting.objects.create(
+            group=self.group,
+            title='Test Meeting',
+            scheduled_date=timezone.now() + timedelta(days=1)
+        )
+        
+        expected_url = f'/group/meetings/{meeting.pk}/'
+        self.assertEqual(meeting.get_absolute_url(), expected_url)

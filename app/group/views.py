@@ -2,12 +2,12 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.urls import reverse_lazy
+from django.urls import reverse_lazy, reverse
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from django.db.models import Q
 from django.contrib.auth import get_user_model
-from .models import Group, GroupMember
-from .forms import GroupForm, GroupFilterForm, GroupMemberForm, GroupMemberFilterForm
+from .models import Group, GroupMember, GroupMeeting
+from .forms import GroupForm, GroupFilterForm, GroupMemberForm, GroupMemberFilterForm, GroupMeetingForm
 
 User = get_user_model()
 
@@ -69,6 +69,10 @@ class GroupDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context = super().get_context_data(**kwargs)
         context['members'] = self.object.members.select_related('user').filter(is_active=True).order_by('user__first_name', 'user__last_name', 'user__username')
         context['active_members'] = context['members'].filter(is_active=True)
+        
+        # Add meetings data
+        context['meetings'] = self.object.meetings.filter(is_active=True).order_by('-scheduled_date')[:6]
+        context['total_meetings'] = self.object.meetings.filter(is_active=True).count()
         
         # Add available roles for role management
         from user.models import Role
@@ -314,3 +318,152 @@ def update_member_roles(request):
     
     messages.success(request, f"Roles updated for '{member.user.username}' successfully.")
     return redirect('group:group-detail', pk=member.group.pk)
+
+
+# Group Meeting Views
+class GroupMeetingListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
+    """View for listing all GroupMeeting objects"""
+    model = GroupMeeting
+    context_object_name = 'meetings'
+    template_name = 'group/meeting_list.html'
+    paginate_by = 20
+
+    def test_func(self):
+        """Check if user has permission to view GroupMeeting objects"""
+        return self.request.user.is_superuser
+
+    def get_queryset(self):
+        """Filter queryset based on search parameters"""
+        queryset = GroupMeeting.objects.all().select_related('group', 'created_by').order_by('-scheduled_date')
+        
+        # Filter by search query
+        search_query = self.request.GET.get('search', '')
+        if search_query:
+            queryset = queryset.filter(
+                Q(title__icontains=search_query) |
+                Q(description__icontains=search_query) |
+                Q(group__name__icontains=search_query) |
+                Q(location__icontains=search_query)
+            )
+        
+        # Filter by meeting type
+        meeting_type_filter = self.request.GET.get('meeting_type', '')
+        if meeting_type_filter:
+            queryset = queryset.filter(meeting_type=meeting_type_filter)
+        
+        # Filter by group
+        group_filter = self.request.GET.get('group', '')
+        if group_filter:
+            queryset = queryset.filter(group_id=group_filter)
+        
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        """Add filter form to context"""
+        context = super().get_context_data(**kwargs)
+        context['search_query'] = self.request.GET.get('search', '')
+        context['meeting_type_filter'] = self.request.GET.get('meeting_type', '')
+        context['group_filter'] = self.request.GET.get('group', '')
+        context['groups'] = Group.objects.filter(is_active=True)
+        return context
+
+
+class GroupMeetingDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
+    """View for displaying a single GroupMeeting object"""
+    model = GroupMeeting
+    context_object_name = 'meeting'
+    template_name = 'group/meeting_detail.html'
+
+    def test_func(self):
+        """Check if user has permission to view GroupMeeting objects"""
+        return self.request.user.is_superuser
+
+
+class GroupMeetingCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
+    """View for creating a new GroupMeeting object"""
+    model = GroupMeeting
+    form_class = GroupMeetingForm
+    template_name = 'group/meeting_form.html'
+
+    def test_func(self):
+        """Check if user has permission to create GroupMeeting objects"""
+        return self.request.user.is_superuser
+
+    def get_initial(self):
+        """Set initial values for the form"""
+        initial = super().get_initial()
+        group_id = self.request.GET.get('group')
+        if group_id:
+            initial['group'] = group_id
+        return initial
+
+    def get_context_data(self, **kwargs):
+        """Add context data for the template"""
+        context = super().get_context_data(**kwargs)
+        group_id = self.request.GET.get('group')
+        if group_id:
+            try:
+                context['selected_group'] = Group.objects.get(pk=group_id)
+            except Group.DoesNotExist:
+                pass
+        return context
+
+    def form_valid(self, form):
+        """Set the created_by field and group field, then display success message"""
+        form.instance.created_by = self.request.user
+        
+        # Ensure group is set from URL parameter if not already set
+        group_id = self.request.GET.get('group')
+        if group_id and not form.instance.group_id:
+            try:
+                from .models import Group
+                form.instance.group = Group.objects.get(pk=group_id)
+            except Group.DoesNotExist:
+                pass
+        
+        messages.success(self.request, f"Meeting '{form.instance.title}' created successfully.")
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        """Redirect to the group detail page after successful creation"""
+        return reverse('group:group-detail', kwargs={'pk': self.object.group.pk})
+
+
+class GroupMeetingUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
+    """View for updating an existing GroupMeeting object"""
+    model = GroupMeeting
+    form_class = GroupMeetingForm
+    template_name = 'group/meeting_form.html'
+
+    def test_func(self):
+        """Check if user has permission to edit GroupMeeting objects"""
+        return self.request.user.is_superuser
+
+    def get_success_url(self):
+        """Redirect to the group detail page after successful update"""
+        return reverse('group:group-detail', kwargs={'pk': self.object.group.pk})
+
+    def form_valid(self, form):
+        """Display success message on form validation"""
+        messages.success(self.request, f"Meeting '{form.instance.title}' updated successfully.")
+        return super().form_valid(form)
+
+
+class GroupMeetingDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
+    """View for deleting a GroupMeeting object"""
+    model = GroupMeeting
+    template_name = 'group/meeting_confirm_delete.html'
+
+    def test_func(self):
+        """Check if user has permission to delete GroupMeeting objects"""
+        return self.request.user.is_superuser
+
+    def get_success_url(self):
+        """Redirect to the group detail page after successful deletion"""
+        return reverse('group:group-detail', kwargs={'pk': self.object.group.pk})
+
+    def delete(self, request, *args, **kwargs):
+        """Display success message on deletion"""
+        meeting_obj = self.get_object()
+        messages.success(request, f"Meeting '{meeting_obj.title}' deleted successfully.")
+        return super().delete(request, *args, **kwargs)

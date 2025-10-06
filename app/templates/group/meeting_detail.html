@@ -1,0 +1,126 @@
+{% extends "_base.html" %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}{{ meeting.title }} - {% trans "Meeting Details" %}{% endblock title %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1><i class="bi bi-calendar-event"></i> {{ meeting.title }}</h1>
+                <div>
+                    <a href="{% url 'group:meeting-edit' meeting.pk %}" class="btn btn-primary">
+                        <i class="bi bi-pencil"></i> {% trans "Edit" %}
+                    </a>
+                    <a href="{% url 'group:meeting-delete' meeting.pk %}" class="btn btn-danger"
+                       onclick="return confirm('{% trans 'Are you sure you want to delete this meeting?' %}')">
+                        <i class="bi bi-trash"></i> {% trans "Delete" %}
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">{% trans "Meeting Information" %}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">{% trans "Title" %}</dt>
+                                <dd class="col-sm-8">{{ meeting.title }}</dd>
+                                
+                                <dt class="col-sm-4">{% trans "Group" %}</dt>
+                                <dd class="col-sm-8">
+                                    <a href="{% url 'group:group-detail' meeting.group.pk %}">{{ meeting.group.name }}</a>
+                                </dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">{% trans "Date & Time" %}</dt>
+                                <dd class="col-sm-8">
+                                    {{ meeting.scheduled_date|date:"M d, Y H:i" }}
+                                    {% if meeting.is_upcoming %}
+                                        <br><small class="text-success">{% trans "In" %} {{ meeting.time_until_meeting }}</small>
+                                    {% else %}
+                                        <br><small class="text-muted">{% trans "Past meeting" %}</small>
+                                    {% endif %}
+                                </dd>
+                                
+                                {% if meeting.location %}
+                                <dt class="col-sm-4">{% trans "Location" %}</dt>
+                                <dd class="col-sm-8">{{ meeting.location }}</dd>
+                                {% endif %}
+                                
+                                <dt class="col-sm-4">{% trans "Status" %}</dt>
+                                <dd class="col-sm-8">
+                                    {% if meeting.is_past %}
+                                        <span class="badge bg-secondary">{% trans "Past" %}</span>
+                                    {% else %}
+                                        <span class="badge bg-success">{% trans "Upcoming" %}</span>
+                                    {% endif %}
+                                </dd>
+                            </dl>
+                        </div>
+                    </div>
+                    
+                    {% if meeting.description %}
+                        <hr>
+                        <h6>{% trans "Description" %}</h6>
+                        <p>{{ meeting.description|linebreaks }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">{% trans "Actions" %}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'group:meeting-edit' meeting.pk %}" class="btn btn-primary">
+                            <i class="bi bi-pencil"></i> {% trans "Edit Meeting" %}
+                        </a>
+                        <a href="{% url 'group:group-detail' meeting.group.pk %}" class="btn btn-outline-info">
+                            <i class="bi bi-people"></i> {% trans "View Group" %}
+                        </a>
+                        <a href="{% url 'group:meeting-delete' meeting.pk %}" class="btn btn-danger"
+                           onclick="return confirm('{% trans 'Are you sure you want to delete this meeting?' %}')">
+                            <i class="bi bi-trash"></i> {% trans "Delete Meeting" %}
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="mb-0">{% trans "Meeting Details" %}</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-5">{% trans "Created" %}</dt>
+                        <dd class="col-sm-7">{{ meeting.created_at|date:"M d, Y H:i" }}</dd>
+                        
+                        {% if meeting.created_by %}
+                        <dt class="col-sm-5">{% trans "Created by" %}</dt>
+                        <dd class="col-sm-7">{{ meeting.created_by.get_full_name|default:meeting.created_by.username }}</dd>
+                        {% endif %}
+                        
+                        <dt class="col-sm-5">{% trans "Last updated" %}</dt>
+                        <dd class="col-sm-7">{{ meeting.updated_at|date:"M d, Y H:i" }}</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

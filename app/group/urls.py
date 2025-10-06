@@ -2,6 +2,7 @@ from django.urls import path
 from .views import (
     GroupListView, GroupDetailView, GroupCreateView, GroupUpdateView, GroupDeleteView,
     GroupMemberListView, GroupMemberDetailView, GroupMemberCreateView, GroupMemberUpdateView, GroupMemberDeleteView,
+    GroupMeetingListView, GroupMeetingDetailView, GroupMeetingCreateView, GroupMeetingUpdateView, GroupMeetingDeleteView,
     set_group_admin, remove_group_admin, update_member_roles
 )
 
@@ -21,6 +22,13 @@ urlpatterns = [
     path('members/<int:pk>/', GroupMemberDetailView.as_view(), name='member-detail'),
     path('members/<int:pk>/edit/', GroupMemberUpdateView.as_view(), name='member-edit'),
     path('members/<int:pk>/delete/', GroupMemberDeleteView.as_view(), name='member-delete'),
+    
+    # Group Meeting URLs
+    path('meetings/', GroupMeetingListView.as_view(), name='meeting-list'),
+    path('meetings/create/', GroupMeetingCreateView.as_view(), name='meeting-create'),
+    path('meetings/<int:pk>/', GroupMeetingDetailView.as_view(), name='meeting-detail'),
+    path('meetings/<int:pk>/edit/', GroupMeetingUpdateView.as_view(), name='meeting-edit'),
+    path('meetings/<int:pk>/delete/', GroupMeetingDeleteView.as_view(), name='meeting-delete'),
     
     # Group Admin URLs
     path('members/<int:pk>/set-admin/', set_group_admin, name='member-set-admin'),

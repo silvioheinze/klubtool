@@ -120,6 +120,60 @@ class GroupMember(models.Model):
                 return role_name
         return 'Member'
 
+
+class GroupMeeting(models.Model):
+    """Model representing a meeting of a political group"""
+    
+    group = models.ForeignKey(Group, on_delete=models.CASCADE, related_name='meetings', help_text="Group holding the meeting")
+    title = models.CharField(max_length=200, help_text="Title or name of the meeting")
+    scheduled_date = models.DateTimeField(help_text="Date and time when the meeting is scheduled")
+    location = models.CharField(max_length=300, blank=True, help_text="Location where the meeting will be held")
+    description = models.TextField(blank=True, help_text="Description or agenda of the meeting")
+    is_active = models.BooleanField(default=True, help_text="Whether the meeting is currently active")
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_meetings', help_text="User who created the meeting")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    history = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        ordering = ['-scheduled_date']
+        verbose_name = "Group Meeting"
+        verbose_name_plural = "Group Meetings"
+
+    def __str__(self):
+        return f"{self.title} - {self.group.name} ({self.scheduled_date.strftime('%Y-%m-%d %H:%M')})"
+
+    def get_absolute_url(self):
+        from django.urls import reverse
+        return reverse('group:meeting-detail', args=[str(self.pk)])
+
+    @property
+    def is_past(self):
+        """Check if the meeting is in the past"""
+        return self.scheduled_date < timezone.now()
+
+    @property
+    def is_upcoming(self):
+        """Check if the meeting is upcoming"""
+        return self.scheduled_date > timezone.now()
+
+    @property
+    def time_until_meeting(self):
+        """Get time until the meeting"""
+        now = timezone.now()
+        if self.scheduled_date > now:
+            delta = self.scheduled_date - now
+            if delta.days > 0:
+                return f"{delta.days} days"
+            elif delta.seconds > 3600:
+                hours = delta.seconds // 3600
+                return f"{hours} hours"
+            else:
+                minutes = delta.seconds // 60
+                return f"{minutes} minutes"
+        return "Past"
+
 # Register models for audit logging
 auditlog.register(Group)
 auditlog.register(GroupMember)
+auditlog.register(GroupMeeting)
