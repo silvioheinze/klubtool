@@ -299,21 +299,10 @@
                             </table>
                         </div>
                         
-                        {% if total_committees > 5 %}
-                            <div class="text-center mt-3">
-                                <p class="text-muted">
-                                    {% trans "Showing" %} {{ committees|length }} {% trans "of" %} {{ total_committees }} {% trans "committees" %}
-                                </p>
-                                <a href="{% url 'local:committee-list' %}?council={{ council.pk }}" class="btn btn-outline-primary">
-                                    <i class="bi bi-list"></i> {% trans "View All Committees" %}
-                                </a>
-                            </div>
-                        {% endif %}
                     {% else %}
                         <div class="text-center py-4">
                             <i class="bi bi-people fs-1 text-muted"></i>
                             <h6 class="mt-3">{% trans "No Committees found" %}</h6>
-                            <p class="text-muted">{% trans "Create committees to organize council work and delegate responsibilities." %}</p>
                             <a href="{% url 'local:committee-create' %}?council={{ council.pk }}" class="btn btn-primary">
                                 <i class="bi bi-plus-circle"></i> {% trans "Create First Committee" %}
                             </a>

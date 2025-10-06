@@ -105,9 +105,6 @@
                         <a href="{% url 'local:committee-member-create' %}?committee={{ committee.pk }}" class="btn btn-success">
                             <i class="bi bi-person-plus"></i> {% trans "Add Member" %}
                         </a>
-                        <a href="{% url 'local:committee-list' %}" class="btn btn-outline-secondary">
-                            <i class="bi bi-list"></i> {% trans "View All Committees" %}
-                        </a>
                         <a href="{% url 'local:council-detail' committee.council.pk %}" class="btn btn-outline-info">
                             <i class="bi bi-building"></i> {% trans "View Council" %}
                         </a>
