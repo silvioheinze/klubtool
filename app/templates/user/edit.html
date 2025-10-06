@@ -1,14 +1,28 @@
 {% extends '_base.html' %}
 {% load i18n %}
 {% load static %}
-{% load crispy_forms_tags %}
 {% load allauth i18n %}
 
 {% block content %}
   <h2 class="mt-5">{% trans "Edit User" %}: {{ object.username }}</h2>
   <form method="post">
     {% csrf_token %}
-    {{ form|crispy }}
+    {% for field in form %}
+      <div class="mb-3">
+        <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+        {{ field }}
+        {% if field.errors %}
+          <div class="invalid-feedback d-block">
+            {% for error in field.errors %}
+              {{ error }}
+            {% endfor %}
+          </div>
+        {% endif %}
+        {% if field.help_text %}
+          <div class="form-text">{{ field.help_text }}</div>
+        {% endif %}
+      </div>
+    {% endfor %}
     <button type="submit" class="btn btn-primary">{% trans "Save" %}</button>
   </form>
 {% endblock %}
