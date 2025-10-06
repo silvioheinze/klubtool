@@ -169,6 +169,26 @@ class GroupMemberCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView)
     def test_func(self):
         return self.request.user.is_superuser or self.request.user.has_role_permission('group.create')
 
+    def get_initial(self):
+        """Set initial values for the form"""
+        initial = super().get_initial()
+        group_id = self.request.GET.get('group')
+        if group_id:
+            initial['group'] = group_id
+        return initial
+
+    def get_context_data(self, **kwargs):
+        """Add context data for the template"""
+        context = super().get_context_data(**kwargs)
+        group_id = self.request.GET.get('group')
+        if group_id:
+            try:
+                from .models import Group
+                context['selected_group'] = Group.objects.get(pk=group_id)
+            except Group.DoesNotExist:
+                pass
+        return context
+
     def form_valid(self, form):
         messages.success(self.request, f"Member '{form.instance.user.username}' added to group '{form.instance.group.name}' successfully.")
         return super().form_valid(form)
