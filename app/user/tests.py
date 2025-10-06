@@ -1037,3 +1037,227 @@ class UserSettingsViewTests(TestCase):
         self.user.refresh_from_db()
         self.assertEqual(self.user.email, 'newemail@example.com')
         self.assertEqual(self.user.language, 'en')
+
+
+class UserRegistrationTests(TestCase):
+    """Test cases for user registration functionality"""
+    
+    def setUp(self):
+        """Set up test data"""
+        self.client = Client()
+        self.role = Role.objects.create(
+            name='Test Role',
+            description='Test role for registration',
+            is_active=True
+        )
+    
+    def test_registration_view_get(self):
+        """Test that registration page loads correctly"""
+        response = self.client.get(reverse('user-signup'))
+        
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Register')
+        self.assertIsInstance(response.context['form'], CustomUserCreationForm)
+    
+    def test_registration_form_fields(self):
+        """Test that registration form has all required fields"""
+        response = self.client.get(reverse('user-signup'))
+        form = response.context['form']
+        
+        # Check that all expected fields are present
+        expected_fields = ['username', 'email', 'first_name', 'last_name', 'role', 'password1', 'password2']
+        for field in expected_fields:
+            self.assertIn(field, form.fields)
+    
+    def test_registration_form_valid_data(self):
+        """Test registration with valid data"""
+        form_data = {
+            'username': 'newuser',
+            'email': 'newuser@example.com',
+            'first_name': 'New',
+            'last_name': 'User',
+            'role': self.role.pk,
+            'password1': 'testpass123',
+            'password2': 'testpass123'
+        }
+        
+        response = self.client.post(reverse('user-signup'), form_data)
+        
+        # Should redirect to home page on success
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('home'))
+        
+        # Check that user was created
+        self.assertTrue(User.objects.filter(username='newuser').exists())
+        user = User.objects.get(username='newuser')
+        self.assertEqual(user.email, 'newuser@example.com')
+        self.assertEqual(user.first_name, 'New')
+        self.assertEqual(user.last_name, 'User')
+        self.assertEqual(user.role, self.role)
+    
+    def test_registration_form_duplicate_username(self):
+        """Test registration with duplicate username"""
+        # Create existing user
+        User.objects.create_user(
+            username='existinguser',
+            email='existing@example.com',
+            password='testpass123'
+        )
+        
+        form_data = {
+            'username': 'existinguser',  # Duplicate username
+            'email': 'newuser@example.com',
+            'first_name': 'New',
+            'last_name': 'User',
+            'role': self.role.pk,
+            'password1': 'testpass123',
+            'password2': 'testpass123'
+        }
+        
+        response = self.client.post(reverse('user-signup'), form_data)
+        
+        # Should stay on registration page with errors
+        self.assertEqual(response.status_code, 200)
+        # Check for either English or German error message
+        response_text = response.content.decode()
+        self.assertTrue('already exists' in response_text or 'bereits vergeben' in response_text)
+    
+    def test_registration_form_duplicate_email(self):
+        """Test registration with duplicate email"""
+        # Create existing user
+        User.objects.create_user(
+            username='existinguser',
+            email='existing@example.com',
+            password='testpass123'
+        )
+        
+        form_data = {
+            'username': 'newuser',
+            'email': 'existing@example.com',  # Duplicate email
+            'first_name': 'New',
+            'last_name': 'User',
+            'role': self.role.pk,
+            'password1': 'testpass123',
+            'password2': 'testpass123'
+        }
+        
+        response = self.client.post(reverse('user-signup'), form_data)
+        
+        # Check if it redirects (success) or stays on page (error)
+        if response.status_code == 302:
+            # If it redirects, check that the user was actually created
+            # This might indicate that email validation is not working
+            self.fail("Registration succeeded with duplicate email - validation not working")
+        else:
+            # Should stay on registration page with errors
+            self.assertEqual(response.status_code, 200)
+            # Check for either English or German error message
+            response_text = response.content.decode()
+            self.assertTrue('already exists' in response_text or 'bereits vorhanden' in response_text)
+    
+    def test_registration_form_password_mismatch(self):
+        """Test registration with mismatched passwords"""
+        form_data = {
+            'username': 'newuser',
+            'email': 'newuser@example.com',
+            'first_name': 'New',
+            'last_name': 'User',
+            'role': self.role.pk,
+            'password1': 'testpass123',
+            'password2': 'differentpass'  # Mismatched password
+        }
+        
+        response = self.client.post(reverse('user-signup'), form_data)
+        
+        # Should stay on registration page with errors
+        self.assertEqual(response.status_code, 200)
+        # Check for either English or German error message
+        response_text = response.content.decode()
+        self.assertTrue('didn\'t match' in response_text or 'nicht identisch' in response_text)
+    
+    def test_registration_form_missing_required_fields(self):
+        """Test registration with missing required fields"""
+        form_data = {
+            'username': '',  # Missing username
+            'email': '',     # Missing email
+            'first_name': 'New',
+            'last_name': 'User',
+            'role': self.role.pk,
+            'password1': 'testpass123',
+            'password2': 'testpass123'
+        }
+        
+        response = self.client.post(reverse('user-signup'), form_data)
+        
+        # Should stay on registration page with errors
+        self.assertEqual(response.status_code, 200)
+        # Check for either English or German error message
+        response_text = response.content.decode()
+        self.assertTrue('required' in response_text or 'erforderlich' in response_text)
+    
+    def test_registration_form_optional_fields(self):
+        """Test registration with only required fields (optional fields empty)"""
+        form_data = {
+            'username': 'newuser',
+            'email': 'newuser@example.com',
+            'first_name': '',  # Optional
+            'last_name': '',   # Optional
+            'role': '',        # Optional
+            'password1': 'testpass123',
+            'password2': 'testpass123'
+        }
+        
+        response = self.client.post(reverse('user-signup'), form_data)
+        
+        # Should redirect to home page on success
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('home'))
+        
+        # Check that user was created
+        self.assertTrue(User.objects.filter(username='newuser').exists())
+        user = User.objects.get(username='newuser')
+        self.assertEqual(user.email, 'newuser@example.com')
+        self.assertEqual(user.first_name, '')
+        self.assertEqual(user.last_name, '')
+        self.assertIsNone(user.role)
+    
+    def test_registration_template_renders_all_fields(self):
+        """Test that registration template renders all form fields"""
+        response = self.client.get(reverse('user-signup'))
+        
+        # Check that all form fields are rendered in the template
+        self.assertContains(response, 'name="username"')
+        self.assertContains(response, 'name="email"')
+        self.assertContains(response, 'name="first_name"')
+        self.assertContains(response, 'name="last_name"')
+        self.assertContains(response, 'name="role"')
+        self.assertContains(response, 'name="password1"')
+        self.assertContains(response, 'name="password2"')
+        
+        # Check that labels are present (can be in English or German)
+        response_text = response.content.decode()
+        self.assertTrue('Username' in response_text or 'Anmeldename' in response_text)
+        self.assertTrue('Email' in response_text or 'E-Mail' in response_text)
+        self.assertTrue('First Name' in response_text)
+        self.assertTrue('Last Name' in response_text)
+        self.assertTrue('Role' in response_text or 'Rolle' in response_text)
+        self.assertTrue('Password' in response_text or 'Passwort' in response_text)
+        self.assertTrue('Confirm Password' in response_text)
+    
+    def test_registration_success_redirect(self):
+        """Test that successful registration redirects to home page"""
+        form_data = {
+            'username': 'newuser',
+            'email': 'newuser@example.com',
+            'first_name': 'New',
+            'last_name': 'User',
+            'role': self.role.pk,
+            'password1': 'testpass123',
+            'password2': 'testpass123'
+        }
+        
+        response = self.client.post(reverse('user-signup'), form_data, follow=True)
+        
+        # Should redirect to home page
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Welcome')  # Assuming home page has welcome message
