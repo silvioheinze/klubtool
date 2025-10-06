@@ -60,18 +60,18 @@
                                     {% endif %}
                                 </dd>
                                 
+                                <dt class="col-sm-4">{% trans "Vice Chairperson" %}</dt>
+                                <dd class="col-sm-8">
+                                    {% if committee.vice_chairperson_name %}
+                                        {{ committee.vice_chairperson_name }}
+                                    {% else %}
+                                        <span class="text-muted">{% trans "Not assigned" %}</span>
+                                    {% endif %}
+                                </dd>
+                                
                                 <dt class="col-sm-4">{% trans "Members" %}</dt>
                                 <dd class="col-sm-8">
                                     <span class="badge bg-info">{{ committee.member_count }}</span>
-                                </dd>
-                                
-                                <dt class="col-sm-4">{% trans "Status" %}</dt>
-                                <dd class="col-sm-8">
-                                    {% if committee.is_active %}
-                                        <span class="badge bg-success">{% trans "Active" %}</span>
-                                    {% else %}
-                                        <span class="badge bg-danger">{% trans "Inactive" %}</span>
-                                    {% endif %}
                                 </dd>
                             </dl>
                         </div>

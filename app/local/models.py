@@ -119,6 +119,22 @@ class Committee(models.Model):
             return f"{chairperson.user.first_name} {chairperson.user.last_name}".strip() or chairperson.user.username
         return None
 
+    @property
+    def vice_chairperson_member(self):
+        """Get the vice chairperson from committee members"""
+        try:
+            return self.members.filter(role='vice_chairperson', is_active=True).first()
+        except CommitteeMember.DoesNotExist:
+            return None
+    
+    @property
+    def vice_chairperson_name(self):
+        """Get the vice chairperson's name from committee members"""
+        vice_chairperson = self.vice_chairperson_member
+        if vice_chairperson:
+            return f"{vice_chairperson.user.first_name} {vice_chairperson.user.last_name}".strip() or vice_chairperson.user.username
+        return None
+
 
 class CommitteeMember(models.Model):
     """Model representing membership in a committee"""
