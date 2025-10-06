@@ -1197,11 +1197,14 @@ class CommitteeMemberUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateV
     model = CommitteeMember
     form_class = CommitteeMemberForm
     template_name = 'local/committee_member_form.html'
-    success_url = reverse_lazy('local:committee-member-list')
 
     def test_func(self):
         """Check if user has permission to edit CommitteeMember objects"""
         return self.request.user.is_superuser
+
+    def get_success_url(self):
+        """Redirect to the committee detail page after successful update"""
+        return reverse('local:committee-detail', kwargs={'pk': self.object.committee.pk})
 
     def form_valid(self, form):
         """Display success message on form validation"""
