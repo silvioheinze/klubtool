@@ -1,6 +1,7 @@
 from django import forms
+from django.db import models
 from django.contrib.auth import get_user_model
-from .models import Group, GroupMember, GroupMeeting
+from .models import Group, GroupMember, GroupMeeting, AgendaItem
 from local.models import Party
 from user.models import Role
 
@@ -92,4 +93,36 @@ class GroupMeetingForm(forms.ModelForm):
         
         # Filter groups to only show active ones
         self.fields['group'].queryset = Group.objects.filter(is_active=True)
-    
+
+
+class AgendaItemForm(forms.ModelForm):
+    """Form for creating and editing agenda items"""
+    class Meta:
+        model = AgendaItem
+        fields = ['title', 'description', 'parent_item', 'order']
+        widgets = {
+            'title': forms.TextInput(attrs={'class': 'form-control'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'parent_item': forms.Select(attrs={'class': 'form-select'}),
+            'order': forms.NumberInput(attrs={'class': 'form-control'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.meeting = kwargs.pop('meeting', None)
+        super().__init__(*args, **kwargs)
+        
+        if self.meeting:
+            # Filter parent items to only show items from the same meeting
+            self.fields['parent_item'].queryset = AgendaItem.objects.filter(
+                meeting=self.meeting, 
+                is_active=True
+            ).exclude(pk=self.instance.pk if self.instance.pk else None)
+            
+            # Set initial order to be the next available order
+            if not self.instance.pk:
+                max_order = AgendaItem.objects.filter(meeting=self.meeting).aggregate(
+                    max_order=models.Max('order')
+                )['max_order'] or 0
+                self.fields['order'].initial = max_order + 1
+        else:
+            self.fields['parent_item'].queryset = AgendaItem.objects.none()

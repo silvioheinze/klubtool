@@ -3,11 +3,11 @@ from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.urls import reverse_lazy, reverse
-from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
+from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView, View
 from django.db.models import Q
 from django.contrib.auth import get_user_model
-from .models import Group, GroupMember, GroupMeeting
-from .forms import GroupForm, GroupFilterForm, GroupMemberForm, GroupMemberFilterForm, GroupMeetingForm
+from .models import Group, GroupMember, GroupMeeting, AgendaItem
+from .forms import GroupForm, GroupFilterForm, GroupMemberForm, GroupMemberFilterForm, GroupMeetingForm, AgendaItemForm
 
 User = get_user_model()
 
@@ -378,6 +378,12 @@ class GroupMeetingDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView
         """Check if user has permission to view GroupMeeting objects"""
         return self.request.user.is_superuser
 
+    def get_context_data(self, **kwargs):
+        """Add agenda items to context"""
+        context = super().get_context_data(**kwargs)
+        context['agenda_items'] = self.object.agenda_items.filter(is_active=True).order_by('order')
+        return context
+
 
 class GroupMeetingCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     """View for creating a new GroupMeeting object"""
@@ -467,3 +473,180 @@ class GroupMeetingDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView
         meeting_obj = self.get_object()
         messages.success(request, f"Meeting '{meeting_obj.title}' deleted successfully.")
         return super().delete(request, *args, **kwargs)
+
+
+# Agenda Item Views
+class AgendaItemDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
+    """View for displaying a single AgendaItem object"""
+    model = AgendaItem
+    context_object_name = 'agenda_item'
+    template_name = 'group/agenda_item_detail.html'
+
+    def test_func(self):
+        """Check if user has permission to view AgendaItem objects"""
+        return self.request.user.is_superuser
+
+
+class AgendaItemCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
+    """View for creating a new AgendaItem"""
+    model = AgendaItem
+    form_class = AgendaItemForm
+    template_name = 'group/agenda_item_form.html'
+
+    def test_func(self):
+        """Check if user has permission to create agenda items"""
+        return self.request.user.is_superuser
+
+    def get_form_kwargs(self):
+        """Pass meeting to form"""
+        kwargs = super().get_form_kwargs()
+        meeting_id = self.kwargs.get('meeting_id')
+        if meeting_id:
+            from .models import GroupMeeting
+            kwargs['meeting'] = GroupMeeting.objects.get(pk=meeting_id)
+        return kwargs
+
+    def form_valid(self, form):
+        """Set the meeting and created_by fields"""
+        meeting_id = self.kwargs.get('meeting_id')
+        if meeting_id:
+            from .models import GroupMeeting
+            form.instance.meeting = GroupMeeting.objects.get(pk=meeting_id)
+        form.instance.created_by = self.request.user
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        """Redirect to the meeting detail page"""
+        return reverse('group:meeting-detail', kwargs={'pk': self.object.meeting.pk})
+
+
+class AgendaItemUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
+    """View for updating an existing AgendaItem"""
+    model = AgendaItem
+    form_class = AgendaItemForm
+    template_name = 'group/agenda_item_form.html'
+
+    def test_func(self):
+        """Check if user has permission to edit agenda items"""
+        return self.request.user.is_superuser
+
+    def get_form_kwargs(self):
+        """Pass meeting to form"""
+        kwargs = super().get_form_kwargs()
+        kwargs['meeting'] = self.object.meeting
+        return kwargs
+
+    def get_success_url(self):
+        """Redirect to the meeting detail page"""
+        return reverse('group:meeting-detail', kwargs={'pk': self.object.meeting.pk})
+
+
+class AgendaItemDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
+    """View for deleting an AgendaItem"""
+    model = AgendaItem
+    template_name = 'group/agenda_item_confirm_delete.html'
+
+    def test_func(self):
+        """Check if user has permission to delete agenda items"""
+        return self.request.user.is_superuser
+
+    def get_success_url(self):
+        """Redirect to the meeting detail page"""
+        return reverse('group:meeting-detail', kwargs={'pk': self.object.meeting.pk})
+
+
+# AJAX Views for agenda management
+class AgendaItemCreateAjaxView(LoginRequiredMixin, UserPassesTestMixin, View):
+    """AJAX view for creating agenda items"""
+    
+    def test_func(self):
+        """Check if user has permission to create agenda items"""
+        return self.request.user.is_superuser
+
+    def post(self, request, meeting_id):
+        """Create a new agenda item via AJAX"""
+        from .models import GroupMeeting
+        from django.http import JsonResponse
+        
+        try:
+            meeting = GroupMeeting.objects.get(pk=meeting_id)
+            form = AgendaItemForm(request.POST, meeting=meeting)
+            
+            if form.is_valid():
+                agenda_item = form.save(commit=False)
+                agenda_item.meeting = meeting
+                agenda_item.created_by = request.user
+                agenda_item.save()
+                
+                return JsonResponse({
+                    'success': True,
+                    'message': 'Agenda item created successfully.',
+                    'agenda_item': {
+                        'id': agenda_item.pk,
+                        'title': agenda_item.title,
+                        'description': agenda_item.description,
+                        'order': agenda_item.order,
+                        'parent_item': agenda_item.parent_item.pk if agenda_item.parent_item else None,
+                        'level': agenda_item.level,
+                    }
+                })
+            else:
+                return JsonResponse({
+                    'success': False,
+                    'errors': form.errors
+                })
+        except GroupMeeting.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'error': 'Meeting not found'
+            })
+
+
+class AgendaItemUpdateOrderAjaxView(LoginRequiredMixin, UserPassesTestMixin, View):
+    """AJAX view for updating agenda item order"""
+    
+    def test_func(self):
+        """Check if user has permission to update agenda items"""
+        return self.request.user.is_superuser
+
+    def post(self, request, meeting_id):
+        """Update agenda item order via AJAX"""
+        from .models import GroupMeeting
+        from django.http import JsonResponse
+        import json
+        
+        try:
+            meeting = GroupMeeting.objects.get(pk=meeting_id)
+            data = json.loads(request.body)
+            item_orders = data.get('item_orders', [])
+            
+            for item_data in item_orders:
+                item_id = item_data.get('id')
+                new_order = item_data.get('order')
+                parent_id = item_data.get('parent_item')
+                
+                try:
+                    agenda_item = AgendaItem.objects.get(pk=item_id, meeting=meeting)
+                    agenda_item.order = new_order
+                    if parent_id:
+                        agenda_item.parent_item = AgendaItem.objects.get(pk=parent_id, meeting=meeting)
+                    else:
+                        agenda_item.parent_item = None
+                    agenda_item.save()
+                except AgendaItem.DoesNotExist:
+                    continue
+            
+            return JsonResponse({
+                'success': True,
+                'message': 'Agenda order updated successfully.'
+            })
+        except GroupMeeting.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'error': 'Meeting not found'
+            })
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            })

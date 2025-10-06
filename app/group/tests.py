@@ -6,9 +6,9 @@ from django import forms
 from datetime import datetime, timedelta
 
 from .forms import (
-    GroupForm, GroupFilterForm, GroupMemberForm, GroupMemberFilterForm, GroupMeetingForm
+    GroupForm, GroupFilterForm, GroupMemberForm, GroupMemberFilterForm, GroupMeetingForm, AgendaItemForm
 )
-from .models import Group, GroupMember, GroupMeeting
+from .models import Group, GroupMember, GroupMeeting, AgendaItem
 from local.models import Local, Party
 from user.models import Role
 
@@ -816,3 +816,414 @@ class GroupMeetingModelTests(TestCase):
         
         expected_url = f'/group/meetings/{meeting.pk}/'
         self.assertEqual(meeting.get_absolute_url(), expected_url)
+
+
+class AgendaItemFormTests(TestCase):
+    """Test cases for AgendaItemForm"""
+    
+    def setUp(self):
+        """Set up test data"""
+        self.user = User.objects.create_user(
+            username='testuser',
+            email='test@example.com',
+            password='testpass123'
+        )
+        
+        self.local = Local.objects.create(
+            name='Test Local',
+            code='TL',
+            description='Test local description'
+        )
+        
+        self.party = Party.objects.create(
+            name='Test Party',
+            local=self.local
+        )
+        
+        self.group = Group.objects.create(
+            name='Test Group',
+            party=self.party
+        )
+        
+        self.meeting = GroupMeeting.objects.create(
+            group=self.group,
+            title='Test Meeting',
+            scheduled_date=timezone.now() + timedelta(days=1),
+            created_by=self.user
+        )
+    
+    def test_agenda_item_form_valid_data(self):
+        """Test AgendaItemForm with valid data"""
+        form_data = {
+            'title': 'Test Agenda Item',
+            'description': 'Test agenda item description',
+            'order': 1
+        }
+        
+        form = AgendaItemForm(data=form_data, meeting=self.meeting)
+        self.assertTrue(form.is_valid())
+    
+    def test_agenda_item_form_required_fields(self):
+        """Test AgendaItemForm with missing required fields"""
+        form_data = {
+            'title': '',  # Required field missing
+            'description': 'Test description',
+            'order': 1
+        }
+        
+        form = AgendaItemForm(data=form_data, meeting=self.meeting)
+        self.assertFalse(form.is_valid())
+        self.assertIn('title', form.errors)
+    
+    def test_agenda_item_form_with_meeting_context(self):
+        """Test AgendaItemForm with meeting context"""
+        form = AgendaItemForm(meeting=self.meeting)
+        
+        # Check that parent_item queryset is filtered to meeting items
+        expected_items = AgendaItem.objects.filter(meeting=self.meeting, is_active=True)
+        self.assertQuerySetEqual(
+            form.fields['parent_item'].queryset,
+            expected_items,
+            transform=lambda x: x
+        )
+    
+    def test_agenda_item_form_auto_order(self):
+        """Test AgendaItemForm auto-sets order for new items"""
+        # Create some existing agenda items
+        AgendaItem.objects.create(
+            meeting=self.meeting,
+            title='Item 1',
+            order=1
+        )
+        AgendaItem.objects.create(
+            meeting=self.meeting,
+            title='Item 2',
+            order=2
+        )
+        
+        form = AgendaItemForm(meeting=self.meeting)
+        # Should set initial order to 3 (next available)
+        self.assertEqual(form.fields['order'].initial, 3)
+    
+    def test_agenda_item_form_parent_filtering(self):
+        """Test AgendaItemForm filters parent items correctly"""
+        # Create some agenda items
+        item1 = AgendaItem.objects.create(
+            meeting=self.meeting,
+            title='Item 1',
+            order=1
+        )
+        item2 = AgendaItem.objects.create(
+            meeting=self.meeting,
+            title='Item 2',
+            order=2
+        )
+        
+        form = AgendaItemForm(meeting=self.meeting)
+        parent_choices = [choice[0] for choice in form.fields['parent_item'].choices]
+        
+        # Should include both items as potential parents
+        self.assertIn(item1.pk, parent_choices)
+        self.assertIn(item2.pk, parent_choices)
+    
+    def test_agenda_item_form_excludes_self_from_parents(self):
+        """Test AgendaItemForm excludes self from parent choices when editing"""
+        item = AgendaItem.objects.create(
+            meeting=self.meeting,
+            title='Item 1',
+            order=1
+        )
+        
+        form = AgendaItemForm(instance=item, meeting=self.meeting)
+        parent_choices = [choice[0] for choice in form.fields['parent_item'].choices]
+        
+        # Should not include self as parent
+        self.assertNotIn(item.pk, parent_choices)
+    
+    def test_agenda_item_form_optional_fields(self):
+        """Test AgendaItemForm with optional fields empty"""
+        form_data = {
+            'title': 'Test Agenda Item',
+            'order': 1
+            # description and parent_item are optional
+        }
+        
+        form = AgendaItemForm(data=form_data, meeting=self.meeting)
+        self.assertTrue(form.is_valid())
+
+
+class AgendaItemModelTests(TestCase):
+    """Test cases for AgendaItem model"""
+    
+    def setUp(self):
+        """Set up test data"""
+        self.user = User.objects.create_user(
+            username='testuser',
+            email='test@example.com',
+            password='testpass123'
+        )
+        
+        self.local = Local.objects.create(
+            name='Test Local',
+            code='TL',
+            description='Test local description'
+        )
+        
+        self.party = Party.objects.create(
+            name='Test Party',
+            local=self.local
+        )
+        
+        self.group = Group.objects.create(
+            name='Test Group',
+            party=self.party
+        )
+        
+        self.meeting = GroupMeeting.objects.create(
+            group=self.group,
+            title='Test Meeting',
+            scheduled_date=timezone.now() + timedelta(days=1),
+            created_by=self.user
+        )
+    
+    def test_agenda_item_creation(self):
+        """Test AgendaItem model creation"""
+        agenda_item = AgendaItem.objects.create(
+            meeting=self.meeting,
+            title='Test Agenda Item',
+            description='Test agenda item description',
+            order=1,
+            created_by=self.user
+        )
+        
+        self.assertEqual(agenda_item.meeting, self.meeting)
+        self.assertEqual(agenda_item.title, 'Test Agenda Item')
+        self.assertEqual(agenda_item.description, 'Test agenda item description')
+        self.assertEqual(agenda_item.order, 1)
+        self.assertEqual(agenda_item.created_by, self.user)
+        self.assertTrue(agenda_item.is_active)  # Default should be True
+        self.assertIsNotNone(agenda_item.created_at)
+        self.assertIsNotNone(agenda_item.updated_at)
+    
+    def test_agenda_item_str_representation(self):
+        """Test AgendaItem model string representation"""
+        agenda_item = AgendaItem.objects.create(
+            meeting=self.meeting,
+            title='Test Agenda Item',
+            order=1
+        )
+        
+        expected_str = f"Test Agenda Item - Test Meeting"
+        self.assertEqual(str(agenda_item), expected_str)
+    
+    def test_agenda_item_default_values(self):
+        """Test AgendaItem model default values"""
+        agenda_item = AgendaItem.objects.create(
+            meeting=self.meeting,
+            title='Test Agenda Item',
+            order=1
+        )
+        
+        self.assertTrue(agenda_item.is_active)  # Default should be True
+        self.assertIsNotNone(agenda_item.created_at)
+        self.assertIsNotNone(agenda_item.updated_at)
+    
+    def test_agenda_item_ordering(self):
+        """Test AgendaItem model ordering"""
+        item1 = AgendaItem.objects.create(
+            meeting=self.meeting,
+            title='Item 1',
+            order=2
+        )
+        item2 = AgendaItem.objects.create(
+            meeting=self.meeting,
+            title='Item 2',
+            order=1
+        )
+        
+        items = AgendaItem.objects.all()
+        # Should be ordered by order, then created_at
+        self.assertEqual(items[0], item2)  # order=1 comes first
+        self.assertEqual(items[1], item1)  # order=2 comes second
+    
+    def test_agenda_item_active_filter(self):
+        """Test AgendaItem model active filter"""
+        active_item = AgendaItem.objects.create(
+            meeting=self.meeting,
+            title='Active Item',
+            order=1,
+            is_active=True
+        )
+        inactive_item = AgendaItem.objects.create(
+            meeting=self.meeting,
+            title='Inactive Item',
+            order=2,
+            is_active=False
+        )
+        
+        active_items = AgendaItem.objects.filter(is_active=True)
+        self.assertIn(active_item, active_items)
+        self.assertNotIn(inactive_item, active_items)
+    
+    def test_agenda_item_meeting_relationship(self):
+        """Test AgendaItem model meeting relationship"""
+        agenda_item = AgendaItem.objects.create(
+            meeting=self.meeting,
+            title='Test Item',
+            order=1
+        )
+        
+        self.assertEqual(agenda_item.meeting, self.meeting)
+        self.assertIn(agenda_item, self.meeting.agenda_items.all())
+    
+    def test_agenda_item_hierarchical_structure(self):
+        """Test AgendaItem hierarchical parent-child relationships"""
+        parent_item = AgendaItem.objects.create(
+            meeting=self.meeting,
+            title='Parent Item',
+            order=1
+        )
+        child_item = AgendaItem.objects.create(
+            meeting=self.meeting,
+            title='Child Item',
+            order=2,
+            parent_item=parent_item
+        )
+        
+        # Test parent-child relationship
+        self.assertEqual(child_item.parent_item, parent_item)
+        self.assertIn(child_item, parent_item.sub_items.all())
+        
+        # Test properties
+        self.assertFalse(parent_item.is_sub_item)
+        self.assertTrue(child_item.is_sub_item)
+        self.assertEqual(parent_item.level, 0)
+        self.assertEqual(child_item.level, 1)
+    
+    def test_agenda_item_nested_hierarchy(self):
+        """Test AgendaItem with multiple levels of nesting"""
+        level0 = AgendaItem.objects.create(
+            meeting=self.meeting,
+            title='Level 0',
+            order=1
+        )
+        level1 = AgendaItem.objects.create(
+            meeting=self.meeting,
+            title='Level 1',
+            order=2,
+            parent_item=level0
+        )
+        level2 = AgendaItem.objects.create(
+            meeting=self.meeting,
+            title='Level 2',
+            order=3,
+            parent_item=level1
+        )
+        
+        # Test levels
+        self.assertEqual(level0.level, 0)
+        self.assertEqual(level1.level, 1)
+        self.assertEqual(level2.level, 2)
+        
+        # Test sub-items
+        self.assertIn(level1, level0.get_sub_items())
+        self.assertIn(level2, level1.get_sub_items())
+        self.assertNotIn(level2, level0.get_sub_items())
+    
+    def test_agenda_item_siblings(self):
+        """Test AgendaItem sibling relationships"""
+        parent = AgendaItem.objects.create(
+            meeting=self.meeting,
+            title='Parent',
+            order=1
+        )
+        child1 = AgendaItem.objects.create(
+            meeting=self.meeting,
+            title='Child 1',
+            order=2,
+            parent_item=parent
+        )
+        child2 = AgendaItem.objects.create(
+            meeting=self.meeting,
+            title='Child 2',
+            order=3,
+            parent_item=parent
+        )
+        child3 = AgendaItem.objects.create(
+            meeting=self.meeting,
+            title='Child 3',
+            order=4,
+            parent_item=parent
+        )
+        
+        # Test siblings
+        child1_siblings = child1.get_siblings()
+        self.assertIn(child2, child1_siblings)
+        self.assertIn(child3, child1_siblings)
+        self.assertNotIn(child1, child1_siblings)
+    
+    def test_agenda_item_get_absolute_url(self):
+        """Test AgendaItem get_absolute_url method"""
+        agenda_item = AgendaItem.objects.create(
+            meeting=self.meeting,
+            title='Test Item',
+            order=1
+        )
+        
+        expected_url = f'/group/agenda/{agenda_item.pk}/'
+        self.assertEqual(agenda_item.get_absolute_url(), expected_url)
+    
+    def test_agenda_item_optional_fields(self):
+        """Test AgendaItem model with optional fields"""
+        agenda_item = AgendaItem.objects.create(
+            meeting=self.meeting,
+            title='Test Item',
+            order=1
+            # description and parent_item are optional
+        )
+        
+        self.assertEqual(agenda_item.description, '')
+        self.assertIsNone(agenda_item.parent_item)
+        self.assertTrue(agenda_item.is_active)
+    
+    def test_agenda_item_meeting_filtering(self):
+        """Test AgendaItem filtering by meeting"""
+        meeting2 = GroupMeeting.objects.create(
+            group=self.group,
+            title='Meeting 2',
+            scheduled_date=timezone.now() + timedelta(days=2),
+            created_by=self.user
+        )
+        
+        item1 = AgendaItem.objects.create(
+            meeting=self.meeting,
+            title='Item 1',
+            order=1
+        )
+        item2 = AgendaItem.objects.create(
+            meeting=meeting2,
+            title='Item 2',
+            order=1
+        )
+        
+        meeting1_items = AgendaItem.objects.filter(meeting=self.meeting)
+        self.assertIn(item1, meeting1_items)
+        self.assertNotIn(item2, meeting1_items)
+    
+    def test_agenda_item_ordering_with_same_order(self):
+        """Test AgendaItem ordering when items have same order"""
+        item1 = AgendaItem.objects.create(
+            meeting=self.meeting,
+            title='Item 1',
+            order=1
+        )
+        item2 = AgendaItem.objects.create(
+            meeting=self.meeting,
+            title='Item 2',
+            order=1
+        )
+        
+        items = AgendaItem.objects.all()
+        # Should be ordered by order, then created_at (first created first)
+        self.assertEqual(items[0], item1)
+        self.assertEqual(items[1], item2)
