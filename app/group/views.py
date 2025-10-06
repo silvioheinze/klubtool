@@ -67,7 +67,7 @@ class GroupDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['members'] = self.object.members.select_related('user').filter(is_active=True)
+        context['members'] = self.object.members.select_related('user').filter(is_active=True).order_by('user__first_name', 'user__last_name', 'user__username')
         context['active_members'] = context['members'].filter(is_active=True)
         
         # Add available roles for role management
