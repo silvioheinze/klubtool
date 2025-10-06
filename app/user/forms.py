@@ -38,15 +38,17 @@ class CustomAuthenticationForm(AuthenticationForm):
 
 
 class CustomUserCreationForm(UserCreationForm):
-    role = forms.ModelChoiceField(
-        queryset=Role.objects.filter(is_active=True),
-        required=False,
-        empty_label="No role assigned"
-    )
-
     class Meta(UserCreationForm.Meta):
         model = CustomUser
-        fields = ('username', 'email', 'first_name', 'last_name', 'role')
+        fields = ('email', 'first_name', 'last_name')
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Remove username and role fields from the form
+        if 'username' in self.fields:
+            del self.fields['username']
+        if 'role' in self.fields:
+            del self.fields['role']
     
     def clean_email(self):
         email = self.cleaned_data.get('email')
@@ -54,6 +56,48 @@ class CustomUserCreationForm(UserCreationForm):
             if CustomUser.objects.filter(email=email).exists():
                 raise forms.ValidationError(_('A user with that email already exists.'))
         return email
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        first_name = cleaned_data.get('first_name', '').strip()
+        last_name = cleaned_data.get('last_name', '').strip()
+        email = cleaned_data.get('email', '').strip()
+        
+        # Generate username based on available data
+        if first_name and last_name:
+            # Generate username from first_name.last_name
+            username = f"{first_name.lower()}.{last_name.lower()}"
+        elif first_name:
+            # Only first name available
+            username = first_name.lower()
+        elif last_name:
+            # Only last name available
+            username = last_name.lower()
+        elif email:
+            # Use email prefix as fallback
+            username = email.split('@')[0].lower()
+        else:
+            # Fallback to a generic username
+            username = 'user'
+        
+        # Check if username already exists, if so add a number
+        original_username = username
+        counter = 1
+        while CustomUser.objects.filter(username=username).exists():
+            username = f"{original_username}{counter}"
+            counter += 1
+        
+        cleaned_data['username'] = username
+        return cleaned_data
+    
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        # Set the generated username
+        if hasattr(self, 'cleaned_data') and 'username' in self.cleaned_data:
+            user.username = self.cleaned_data['username']
+        if commit:
+            user.save()
+        return user
 
 
 class CustomUserEditForm(UserChangeForm):

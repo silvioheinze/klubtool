@@ -1064,19 +1064,21 @@ class UserRegistrationTests(TestCase):
         response = self.client.get(reverse('user-signup'))
         form = response.context['form']
         
-        # Check that all expected fields are present
-        expected_fields = ['username', 'email', 'first_name', 'last_name', 'role', 'password1', 'password2']
+        # Check that all expected fields are present (username and role are now hidden)
+        expected_fields = ['email', 'first_name', 'last_name', 'password1', 'password2']
         for field in expected_fields:
             self.assertIn(field, form.fields)
+        
+        # Check that username and role fields are not present
+        self.assertNotIn('username', form.fields)
+        self.assertNotIn('role', form.fields)
     
     def test_registration_form_valid_data(self):
         """Test registration with valid data"""
         form_data = {
-            'username': 'newuser',
             'email': 'newuser@example.com',
             'first_name': 'New',
             'last_name': 'User',
-            'role': self.role.pk,
             'password1': 'testpass123',
             'password2': 'testpass123'
         }
@@ -1087,40 +1089,45 @@ class UserRegistrationTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, reverse('home'))
         
-        # Check that user was created
-        self.assertTrue(User.objects.filter(username='newuser').exists())
-        user = User.objects.get(username='newuser')
+        # Check that user was created with auto-generated username
+        self.assertTrue(User.objects.filter(username='new.user').exists())
+        user = User.objects.get(username='new.user')
         self.assertEqual(user.email, 'newuser@example.com')
         self.assertEqual(user.first_name, 'New')
         self.assertEqual(user.last_name, 'User')
-        self.assertEqual(user.role, self.role)
+        self.assertIsNone(user.role)  # No role assigned by default
     
-    def test_registration_form_duplicate_username(self):
-        """Test registration with duplicate username"""
-        # Create existing user
+    def test_registration_form_duplicate_username_handling(self):
+        """Test registration handles duplicate auto-generated usernames"""
+        # Create existing user with the same name pattern
         User.objects.create_user(
-            username='existinguser',
+            username='new.user',
             email='existing@example.com',
-            password='testpass123'
+            password='testpass123',
+            first_name='New',
+            last_name='User'
         )
         
         form_data = {
-            'username': 'existinguser',  # Duplicate username
             'email': 'newuser@example.com',
             'first_name': 'New',
             'last_name': 'User',
-            'role': self.role.pk,
             'password1': 'testpass123',
             'password2': 'testpass123'
         }
         
         response = self.client.post(reverse('user-signup'), form_data)
         
-        # Should stay on registration page with errors
-        self.assertEqual(response.status_code, 200)
-        # Check for either English or German error message
-        response_text = response.content.decode()
-        self.assertTrue('already exists' in response_text or 'bereits vergeben' in response_text)
+        # Should redirect to home page on success (username will be auto-incremented)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('home'))
+        
+        # Check that user was created with incremented username
+        self.assertTrue(User.objects.filter(username='new.user1').exists())
+        user = User.objects.get(username='new.user1')
+        self.assertEqual(user.email, 'newuser@example.com')
+        self.assertEqual(user.first_name, 'New')
+        self.assertEqual(user.last_name, 'User')
     
     def test_registration_form_duplicate_email(self):
         """Test registration with duplicate email"""
@@ -1132,11 +1139,9 @@ class UserRegistrationTests(TestCase):
         )
         
         form_data = {
-            'username': 'newuser',
             'email': 'existing@example.com',  # Duplicate email
             'first_name': 'New',
             'last_name': 'User',
-            'role': self.role.pk,
             'password1': 'testpass123',
             'password2': 'testpass123'
         }
@@ -1158,11 +1163,9 @@ class UserRegistrationTests(TestCase):
     def test_registration_form_password_mismatch(self):
         """Test registration with mismatched passwords"""
         form_data = {
-            'username': 'newuser',
             'email': 'newuser@example.com',
             'first_name': 'New',
             'last_name': 'User',
-            'role': self.role.pk,
             'password1': 'testpass123',
             'password2': 'differentpass'  # Mismatched password
         }
@@ -1178,13 +1181,11 @@ class UserRegistrationTests(TestCase):
     def test_registration_form_missing_required_fields(self):
         """Test registration with missing required fields"""
         form_data = {
-            'username': '',  # Missing username
             'email': '',     # Missing email
-            'first_name': 'New',
-            'last_name': 'User',
-            'role': self.role.pk,
-            'password1': 'testpass123',
-            'password2': 'testpass123'
+            'first_name': '',  # Missing first name
+            'last_name': '',   # Missing last name
+            'password1': '',   # Missing password
+            'password2': ''    # Missing password confirmation
         }
         
         response = self.client.post(reverse('user-signup'), form_data)
@@ -1198,11 +1199,9 @@ class UserRegistrationTests(TestCase):
     def test_registration_form_optional_fields(self):
         """Test registration with only required fields (optional fields empty)"""
         form_data = {
-            'username': 'newuser',
             'email': 'newuser@example.com',
             'first_name': '',  # Optional
             'last_name': '',   # Optional
-            'role': '',        # Optional
             'password1': 'testpass123',
             'password2': 'testpass123'
         }
@@ -1213,10 +1212,10 @@ class UserRegistrationTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, reverse('home'))
         
-        # Check that user was created
-        self.assertTrue(User.objects.filter(username='newuser').exists())
-        user = User.objects.get(username='newuser')
-        self.assertEqual(user.email, 'newuser@example.com')
+        # Check that user was created with auto-generated username
+        # Since first_name and last_name are empty, username will be generated from email
+        self.assertTrue(User.objects.filter(email='newuser@example.com').exists())
+        user = User.objects.get(email='newuser@example.com')
         self.assertEqual(user.first_name, '')
         self.assertEqual(user.last_name, '')
         self.assertIsNone(user.role)
@@ -1225,33 +1224,31 @@ class UserRegistrationTests(TestCase):
         """Test that registration template renders all form fields"""
         response = self.client.get(reverse('user-signup'))
         
-        # Check that all form fields are rendered in the template
-        self.assertContains(response, 'name="username"')
+        # Check that all form fields are rendered in the template (username and role are hidden)
         self.assertContains(response, 'name="email"')
         self.assertContains(response, 'name="first_name"')
         self.assertContains(response, 'name="last_name"')
-        self.assertContains(response, 'name="role"')
         self.assertContains(response, 'name="password1"')
         self.assertContains(response, 'name="password2"')
         
+        # Check that username and role fields are NOT rendered
+        self.assertNotContains(response, 'name="username"')
+        self.assertNotContains(response, 'name="role"')
+        
         # Check that labels are present (can be in English or German)
         response_text = response.content.decode()
-        self.assertTrue('Username' in response_text or 'Anmeldename' in response_text)
         self.assertTrue('Email' in response_text or 'E-Mail' in response_text)
         self.assertTrue('First Name' in response_text)
         self.assertTrue('Last Name' in response_text)
-        self.assertTrue('Role' in response_text or 'Rolle' in response_text)
         self.assertTrue('Password' in response_text or 'Passwort' in response_text)
         self.assertTrue('Confirm Password' in response_text)
     
     def test_registration_success_redirect(self):
         """Test that successful registration redirects to home page"""
         form_data = {
-            'username': 'newuser',
             'email': 'newuser@example.com',
             'first_name': 'New',
             'last_name': 'User',
-            'role': self.role.pk,
             'password1': 'testpass123',
             'password2': 'testpass123'
         }

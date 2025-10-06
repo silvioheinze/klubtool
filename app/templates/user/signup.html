@@ -4,145 +4,258 @@
 {% block title %}{% trans "Register" %}{% endblock title %}
 
 {% block content %}
-<div class="container mt-5">
-    <div class="row justify-content-center">
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header bg-secondary text-white">
-                    <h3 class="mb-0">
-                        <i class="bi bi-person-plus me-2"></i>
-                        {% trans "Register" %}
-                    </h3>
+<div class="container-fluid min-vh-100 d-flex align-items-center">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8 col-xl-6">
+                <!-- Header Section -->
+                <div class="text-center mt-3 mb-3">
+                    <h1 class="display-6 fw-bold text-primary mb-3">{% trans "Create Your Account" %}</h1>
                 </div>
-                <div class="card-body">
-                    <form method="post">
-                        {% csrf_token %}
-                        
-                        {% if form.errors %}
-                            <div class="alert alert-danger">
-                                <i class="bi bi-exclamation-triangle me-2"></i>
-                                {% trans "Please correct the errors below." %}
-                            </div>
-                        {% endif %}
-                        
-                        <div class="mb-3">
-                            <label for="{{ form.username.id_for_label }}" class="form-label">
-                                <i class="bi bi-person me-1"></i>
-                                {% trans "Username" %}
-                            </label>
-                            {{ form.username }}
-                            {% if form.username.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {{ form.username.errors.0 }}
+
+                <!-- Registration Form -->
+                <div class="card shadow-lg border-0">
+                    <div class="card-body p-5">
+                        <form method="post" class="needs-validation" novalidate>
+                            {% csrf_token %}
+                            
+                            <!-- Error Messages -->
+                            {% if form.errors %}
+                                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                    <strong>{% trans "Please correct the errors below:" %}</strong>
+                                    <ul class="mb-0 mt-2">
+                                        {% for field, errors in form.errors.items %}
+                                            {% for error in errors %}
+                                                <li>{{ error }}</li>
+                                            {% endfor %}
+                                        {% endfor %}
+                                    </ul>
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                                 </div>
                             {% endif %}
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="{{ form.email.id_for_label }}" class="form-label">
-                                <i class="bi bi-envelope me-1"></i>
-                                {% trans "Email Address" %}
-                            </label>
-                            {{ form.email }}
-                            {% if form.email.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {{ form.email.errors.0 }}
-                                </div>
-                            {% endif %}
-                        </div>
-                        
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="{{ form.first_name.id_for_label }}" class="form-label">
-                                    <i class="bi bi-person me-1"></i>
-                                    {% trans "First Name" %}
-                                </label>
-                                {{ form.first_name }}
-                                {% if form.first_name.errors %}
-                                    <div class="invalid-feedback d-block">
-                                        {{ form.first_name.errors.0 }}
+                            
+                            <!-- Personal Information Section -->
+                            <div class="mb-4">
+                                <h5 class="text-primary mb-3">
+                                    <i class="bi bi-person-lines-fill me-2"></i>
+                                    {% trans "Personal Information" %}
+                                </h5>
+                                
+                                <!-- Name Fields -->
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="{{ form.first_name.id_for_label }}" class="form-label">
+                                                <i class="bi bi-person me-1"></i>
+                                                {% trans "First Name" %}
+                                            </label>
+                                            {{ form.first_name }}
+                                            {% if form.first_name.errors %}
+                                                <div class="invalid-feedback d-block">
+                                                    {{ form.first_name.errors.0 }}
+                                                </div>
+                                            {% endif %}
+                                        </div>
                                     </div>
-                                {% endif %}
+                                    
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="{{ form.last_name.id_for_label }}" class="form-label">
+                                                <i class="bi bi-person me-1"></i>
+                                                {% trans "Last Name" %}
+                                            </label>
+                                            {{ form.last_name }}
+                                            {% if form.last_name.errors %}
+                                                <div class="invalid-feedback d-block">
+                                                    {{ form.last_name.errors.0 }}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                             
-                            <div class="col-md-6 mb-3">
-                                <label for="{{ form.last_name.id_for_label }}" class="form-label">
-                                    <i class="bi bi-person me-1"></i>
-                                    {% trans "Last Name" %}
-                                </label>
-                                {{ form.last_name }}
-                                {% if form.last_name.errors %}
-                                    <div class="invalid-feedback d-block">
-                                        {{ form.last_name.errors.0 }}
+                            <!-- Contact Information Section -->
+                            <div class="mb-4">
+                                <h5 class="text-primary mb-3">
+                                    <i class="bi bi-envelope-fill me-2"></i>
+                                    {% trans "Contact Information" %}
+                                </h5>
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.email.id_for_label }}" class="form-label">
+                                        <i class="bi bi-envelope me-1"></i>
+                                        {% trans "Email Address" %}
+                                    </label>
+                                    {{ form.email }}
+                                    {% if form.email.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.email.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                    <div class="form-text">
+                                        <i class="bi bi-info-circle me-1"></i>
+                                        {% trans "We'll use this to send you important updates and notifications." %}
                                     </div>
-                                {% endif %}
+                                </div>
                             </div>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="{{ form.role.id_for_label }}" class="form-label">
-                                <i class="bi bi-shield me-1"></i>
-                                {% trans "Role" %}
-                            </label>
-                            {{ form.role }}
-                            {% if form.role.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {{ form.role.errors.0 }}
+                            
+                            <!-- Security Section -->
+                            <div class="mb-4">
+                                <h5 class="text-primary mb-3">
+                                    <i class="bi bi-shield-lock-fill me-2"></i>
+                                    {% trans "Security" %}
+                                </h5>
+                                
+                                <div class="row g-3">
+                                    <div class="col-12">
+                                        <div class="mb-3">
+                                            <label for="{{ form.password1.id_for_label }}" class="form-label">
+                                                <i class="bi bi-key me-1"></i>
+                                                {% trans "Password" %}
+                                            </label>
+                                            {{ form.password1 }}
+                                            {% if form.password1.errors %}
+                                                <div class="invalid-feedback d-block">
+                                                    {{ form.password1.errors.0 }}
+                                                </div>
+                                            {% endif %}
+                                            {% if form.password1.help_text %}
+                                                <div class="form-text">
+                                                    {{ form.password1.help_text|safe }}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-12">
+                                        <div class="mb-3">
+                                            <label for="{{ form.password2.id_for_label }}" class="form-label">
+                                                <i class="bi bi-key-fill me-1"></i>
+                                                {% trans "Confirm Password" %}
+                                            </label>
+                                            {{ form.password2 }}
+                                            {% if form.password2.errors %}
+                                                <div class="invalid-feedback d-block">
+                                                    {{ form.password2.errors.0 }}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
                                 </div>
-                            {% endif %}
-                        </div>
+                            </div>
+                            
+                            <!-- Submit Button -->
+                            <div class="d-grid gap-2 mb-4">
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    <i class="bi bi-person-plus-fill me-2"></i>
+                                    {% trans "Create Account" %}
+                                </button>
+                            </div>
+                        </form>
                         
-                        <div class="mb-3">
-                            <label for="{{ form.password1.id_for_label }}" class="form-label">
-                                <i class="bi bi-key me-1"></i>
-                                {% trans "Password" %}
-                            </label>
-                            {{ form.password1 }}
-                            {% if form.password1.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {{ form.password1.errors.0 }}
-                                </div>
-                            {% endif %}
-                            {% if form.password1.help_text %}
-                                <div class="form-text">
-                                    {{ form.password1.help_text|safe }}
-                                </div>
-                            {% endif %}
+                        <!-- Login Link -->
+                        <div class="text-center">
+                            <hr class="my-4">
+                            <p class="text-muted mb-3">{% trans "Already have an account?" %}</p>
+                            <a href="{% url 'account_login' %}" class="btn btn-outline-primary">
+                                <i class="bi bi-box-arrow-in-right me-2"></i>
+                                {% trans "Sign In" %}
+                            </a>
                         </div>
-                        
-                        <div class="mb-3">
-                            <label for="{{ form.password2.id_for_label }}" class="form-label">
-                                <i class="bi bi-key-fill me-1"></i>
-                                {% trans "Confirm Password" %}
-                            </label>
-                            {{ form.password2 }}
-                            {% if form.password2.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {{ form.password2.errors.0 }}
-                                </div>
-                            {% endif %}
-                        </div>
-                        
-                        <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-person-plus me-2"></i>
-                                {% trans "Register" %}
-                            </button>
-                        </div>
-                    </form>
-                    
-                    <hr class="my-4">
-                    
-                    <div class="text-center">
-                        <p class="text-muted mb-2">{% trans "Already have an account?" %}</p>
-                        <a href="{% url 'account_login' %}" class="btn btn-outline-secondary">
-                            <i class="bi bi-box-arrow-in-right me-2"></i>
-                            {% trans "Log in" %}
-                        </a>
                     </div>
+                </div>
+                
+                <!-- Additional Information -->
+                <div class="text-center mt-4">
+                    <small class="text-muted">
+                        <i class="bi bi-shield-check me-1"></i>
+                        {% trans "Your information is secure and will never be shared with third parties." %}
+                    </small>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<style>
+.min-vh-100 {
+    min-height: 100vh;
+}
+
+.card {
+    border-radius: 1rem;
+}
+
+/* Enhanced form styling */
+.form-control {
+    border-radius: 0.5rem;
+    border: 2px solid #e9ecef;
+    transition: all 0.2s ease-in-out;
+    padding: 0.75rem;
+}
+
+.form-control:focus {
+    border-color: var(--bs-primary);
+    box-shadow: 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.25);
+}
+
+/* Form labels */
+.form-label {
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 0.5rem;
+}
+
+.form-label i {
+    margin-right: 0.5rem;
+    color: var(--bs-primary);
+}
+
+/* Form text spacing */
+.form-text {
+    margin-top: 0.5rem;
+    font-size: 0.875rem;
+    color: #6c757d;
+}
+
+/* Button styling */
+.btn-lg {
+    border-radius: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+    transition: all 0.2s ease-in-out;
+}
+
+.btn-lg:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+/* Alert styling */
+.alert {
+    border-radius: 0.5rem;
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+/* Primary color consistency */
+.text-primary {
+    color: var(--bs-primary) !important;
+}
+
+/* Enhanced focus states */
+.form-control:focus {
+    border-color: var(--bs-primary);
+    box-shadow: 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.25);
+}
+
+/* Icon styling in labels */
+.form-label i {
+    margin-right: 0.5rem;
+    font-size: 0.9rem;
+}
+</style>
+
 {% endblock content %}
