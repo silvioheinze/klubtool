@@ -53,8 +53,8 @@
                             <dl class="row">
                                 <dt class="col-sm-4">{% trans "Chairperson" %}</dt>
                                 <dd class="col-sm-8">
-                                    {% if committee.chairperson %}
-                                        {{ committee.chairperson }}
+                                    {% if committee.chairperson_name %}
+                                        {{ committee.chairperson_name }}
                                     {% else %}
                                         <span class="text-muted">{% trans "Not assigned" %}</span>
                                     {% endif %}

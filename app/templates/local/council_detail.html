@@ -271,8 +271,8 @@
                                                 <span class="badge bg-secondary">{{ committee.get_committee_type_display }}</span>
                                             </td>
                                             <td>
-                                                {% if committee.chairperson %}
-                                                    {{ committee.chairperson }}
+                                                {% if committee.chairperson_name %}
+                                                    {{ committee.chairperson_name }}
                                                 {% else %}
                                                     <span class="text-muted">{% trans "Not assigned" %}</span>
                                                 {% endif %}

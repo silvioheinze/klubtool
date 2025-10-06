@@ -1428,6 +1428,7 @@ class CommitteeMemberViewTests(TestCase):
         self.assertContains(response, 'Chairperson')
         self.assertContains(response, 'Vice Chairperson')
         self.assertContains(response, 'Member')
+        self.assertContains(response, 'Substitute Member')
     
     def test_committee_member_create_view_user_queryset(self):
         """Test that only active users are available in the form"""

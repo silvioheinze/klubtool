@@ -102,6 +102,22 @@ class Committee(models.Model):
     def member_count(self):
         """Number of active members in the committee"""
         return self.members.filter(is_active=True).count()
+    
+    @property
+    def chairperson_member(self):
+        """Get the chairperson from committee members"""
+        try:
+            return self.members.filter(role='chairperson', is_active=True).first()
+        except CommitteeMember.DoesNotExist:
+            return None
+    
+    @property
+    def chairperson_name(self):
+        """Get the chairperson's name from committee members"""
+        chairperson = self.chairperson_member
+        if chairperson:
+            return f"{chairperson.user.first_name} {chairperson.user.last_name}".strip() or chairperson.user.username
+        return None
 
 
 class CommitteeMember(models.Model):
@@ -110,6 +126,7 @@ class CommitteeMember(models.Model):
         ('chairperson', 'Chairperson'),
         ('vice_chairperson', 'Vice Chairperson'),
         ('member', 'Member'),
+        ('substitute_member', 'Substitute Member'),
     ]
 
     committee = models.ForeignKey(Committee, on_delete=models.CASCADE, related_name='members', help_text="Committee the user belongs to")
