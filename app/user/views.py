@@ -246,25 +246,6 @@ class RoleDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
         return super().delete(request, *args, **kwargs)
 
 
-@login_required
-def user_management_view(request):
-    # Allow access only if user is superuser
-    if not request.user.is_superuser:
-        raise PermissionDenied
-    """Comprehensive user management dashboard"""
-    User = get_user_model()
-    context = {
-        'total_users': User.objects.count(),
-        'active_users': User.objects.filter(is_active=True).count(),
-        'inactive_users': User.objects.filter(is_active=False).count(),
-        'users_with_roles': User.objects.filter(role__isnull=False).count(),
-        'users_without_roles': User.objects.filter(role__isnull=True).count(),
-        'total_roles': Role.objects.count(),
-        'active_roles': Role.objects.filter(is_active=True).count(),
-        'recent_users': User.objects.prefetch_related('group_memberships__roles').order_by('-date_joined')[:5],
-        'recent_roles': Role.objects.order_by('-created_at')[:5],
-    }
-    return render(request, 'user/management.html', context)
 
 
 class AdminUserCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
@@ -272,7 +253,7 @@ class AdminUserCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     model = CustomUser
     form_class = AdminUserCreationForm
     template_name = 'user/admin_user_form.html'
-    success_url = reverse_lazy('user-management')
+    success_url = reverse_lazy('user-list')
 
     def test_func(self):
         """Check if user has permission to create users administratively"""

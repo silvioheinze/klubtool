@@ -4,7 +4,7 @@ from django.shortcuts import redirect
 from user.views import (
     AccountDeleteView, SettingsView, SignupPageView, 
     UsersUpdateView, UsersListView, RoleListView, RoleCreateView, 
-    RoleUpdateView, RoleDeleteView, user_management_view, AdminUserCreateView
+    RoleUpdateView, RoleDeleteView, AdminUserCreateView
 )
 
 
@@ -28,7 +28,6 @@ urlpatterns = [
     path('roles/<int:pk>/delete/', RoleDeleteView.as_view(), name='role-delete'),
     
     # User Management Dashboard
-    path('management/', user_management_view, name='user-management'),
     path('admin-create/', AdminUserCreateView.as_view(), name='admin-user-create'),
     
     # Allauth URLs
