@@ -24,9 +24,15 @@
                     {% endif %}
                 </h1>
                 <div>
-                    <a href="{% url 'local:committee-member-list' %}" class="btn btn-secondary">
-                        <i class="bi bi-arrow-left"></i> {% trans "Back to List" %}
-                    </a>
+                    {% if form.committee.value %}
+                        <a href="{% url 'local:committee-detail' form.committee.value %}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> {% trans "Back to Committee" %}
+                        </a>
+                    {% else %}
+                        <a href="{% url 'local:committee-member-list' %}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> {% trans "Back to List" %}
+                        </a>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -144,9 +150,15 @@
                         </div>
 
                         <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                            <a href="{% url 'local:committee-member-list' %}" class="btn btn-secondary me-md-2">
-                                {% trans "Cancel" %}
-                            </a>
+                            {% if form.committee.value %}
+                                <a href="{% url 'local:committee-detail' form.committee.value %}" class="btn btn-secondary me-md-2">
+                                    {% trans "Cancel" %}
+                                </a>
+                            {% else %}
+                                <a href="{% url 'local:committee-member-list' %}" class="btn btn-secondary me-md-2">
+                                    {% trans "Cancel" %}
+                                </a>
+                            {% endif %}
                             <button type="submit" class="btn btn-primary">
                                 {% if committeemember %}
                                     <i class="bi bi-check-circle"></i> {% trans "Update Member" %}

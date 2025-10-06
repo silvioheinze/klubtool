@@ -2,15 +2,12 @@ from django.urls import path
 from .views import (
     GroupListView, GroupDetailView, GroupCreateView, GroupUpdateView, GroupDeleteView,
     GroupMemberListView, GroupMemberDetailView, GroupMemberCreateView, GroupMemberUpdateView, GroupMemberDeleteView,
-    group_management_view, set_group_admin, remove_group_admin, update_member_roles
+    set_group_admin, remove_group_admin, update_member_roles
 )
 
 app_name = 'group'
 
 urlpatterns = [
-    # Group Management Dashboard
-    path('management/', group_management_view, name='group-management'),
-    
     # Group URLs
     path('', GroupListView.as_view(), name='group-list'),
     path('create/', GroupCreateView.as_view(), name='group-create'),

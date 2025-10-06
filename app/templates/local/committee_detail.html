@@ -15,8 +15,8 @@
                     <a href="{% url 'local:committee-edit' committee.pk %}" class="btn btn-primary">
                         <i class="bi bi-pencil"></i> {% trans "Edit" %}
                     </a>
-                    <a href="{% url 'local:committee-list' %}" class="btn btn-secondary">
-                        <i class="bi bi-arrow-left"></i> {% trans "Back to List" %}
+                    <a href="{% url 'local:council-detail' committee.council.pk %}" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left"></i> {% trans "Back to Council" %}
                     </a>
                 </div>
             </div>

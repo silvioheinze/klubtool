@@ -253,21 +253,6 @@ def remove_group_admin(request, pk):
     return redirect('group:group-detail', pk=member.group.pk)
 
 # Additional Views
-@login_required
-@is_superuser_or_has_permission('group.view')
-def group_management_view(request):
-    """Comprehensive group management dashboard"""
-    context = {
-        'total_groups': Group.objects.count(),
-        'active_groups': Group.objects.filter(is_active=True).count(),
-        'inactive_groups': Group.objects.filter(is_active=False).count(),
-        'total_members': GroupMember.objects.count(),
-        'active_members': GroupMember.objects.filter(is_active=True).count(),
-        'inactive_members': GroupMember.objects.filter(is_active=False).count(),
-        'recent_groups': Group.objects.order_by('-created_at')[:5],
-        'recent_members': GroupMember.objects.order_by('-created_at')[:5],
-    }
-    return render(request, 'group/management.html', context)
 
 
 @login_required

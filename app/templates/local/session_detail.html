@@ -237,9 +237,6 @@
                         <a href="{% url 'local:session-delete' session.pk %}" class="btn btn-danger">
                             <i class="bi bi-trash"></i> {% trans "Delete Session" %}
                         </a>
-                        <a href="{% url 'local:session-list' %}" class="btn btn-outline-secondary">
-                            <i class="bi bi-list"></i> {% trans "View All Sessions" %}
-                        </a>
                         {% if session.council %}
                             <a href="{% url 'local:council-detail' session.council.pk %}" class="btn btn-outline-info">
                                 <i class="bi bi-building"></i> {% trans "View Council" %}
