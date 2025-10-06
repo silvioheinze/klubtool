@@ -1011,9 +1011,20 @@ class CommitteeDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         """Add committee members and motions data to context"""
+        from django.db.models import Case, When, CharField, Value
+        
         context = super().get_context_data(**kwargs)
-        # Get active members for this committee
-        context['members'] = self.object.members.filter(is_active=True).select_related('user').order_by('role', 'user__first_name')
+        # Get active members for this committee with custom role ordering
+        context['members'] = self.object.members.filter(is_active=True).select_related('user').annotate(
+            role_order=Case(
+                When(role='chairperson', then=Value(1)),
+                When(role='vice_chairperson', then=Value(2)),
+                When(role='member', then=Value(3)),
+                When(role='substitute_member', then=Value(4)),
+                default=Value(5),
+                output_field=CharField(),
+            )
+        ).order_by('role_order', 'user__first_name', 'user__last_name')
         context['total_members'] = self.object.members.count()
         # Get motions assigned to this committee
         context['motions'] = self.object.motions.filter(is_active=True).order_by('-submitted_date')[:5]
