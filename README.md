@@ -35,7 +35,7 @@ A modern Django-based political group management system built with Docker, Postg
 
 ```bash
 git clone <repository-url>
-cd antragstool
+cd klubtool
 ```
 
 ### 2. Set Up Environment Variables
@@ -50,9 +50,9 @@ Edit `.env` file with your configuration:
 
 ```env
 # Database Configuration
-POSTGRES_DB=antragstool
-POSTGRES_USER=antragstooluser
-POSTGRES_PASSWORD=antragstoolpassword
+POSTGRES_DB=klubtool
+POSTGRES_USER=klubtooluser
+POSTGRES_PASSWORD=klubtoolpassword
 POSTGRES_HOST=db
 POSTGRES_PORT=5432
 
@@ -128,7 +128,7 @@ docker compose exec app python manage.py createsuperuser
 ## 🏗️ Project Structure
 
 ```
-antragstool/
+klubtool/
 ├── app/                          # Django application
 │   ├── main/                     # Main Django project
 │   │   ├── settings.py          # Django settings
