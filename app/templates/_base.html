@@ -107,6 +107,11 @@
                                 {% if user.is_superuser %}
                                 <li><hr class="dropdown-divider"></li>
                                 <li>
+                                    <a class="dropdown-item" href="{% url 'admin-settings' %}">
+                                        <i class="bi bi-gear me-2"></i>{% trans "Admin Settings" %}
+                                    </a>
+                                </li>
+                                <li>
                                     <a class="dropdown-item" href="{% url 'user-list' %}">{% trans "User Management" %}</a>
                                 </li>
                                 <li>
