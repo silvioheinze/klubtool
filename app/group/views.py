@@ -382,6 +382,20 @@ class GroupMeetingDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView
         """Add agenda items to context"""
         context = super().get_context_data(**kwargs)
         context['agenda_items'] = self.object.agenda_items.filter(is_active=True).order_by('order')
+        
+        # Check if user is a group admin or leader of the meeting's group
+        user = self.request.user
+        meeting_group = self.object.group
+        context['can_view_meeting_details'] = (
+            user.is_superuser or 
+            meeting_group.has_group_admin(user) or
+            GroupMember.objects.filter(
+                user=user,
+                group=meeting_group,
+                is_active=True,
+                roles__name__in=['Leader', 'Deputy Leader']
+            ).exists()
+        )
         return context
 
 
