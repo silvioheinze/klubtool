@@ -11,6 +11,9 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.db.models import Q
 from django.core.paginator import Paginator
 from django.core.exceptions import PermissionDenied
+from django.core.mail import send_mail
+from django.conf import settings
+from django.utils.translation import gettext_lazy as _
 
 from .forms import CustomUserCreationForm, CustomUserEditForm, RoleForm, RoleFilterForm, CustomAuthenticationForm, LanguageSelectionForm, UserSettingsForm, AdminUserCreationForm
 from .models import Role
@@ -268,3 +271,58 @@ class AdminUserCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
             f"The user will need to set their password on first login."
         )
         return super().form_valid(form)
+
+
+class AdminSettingsView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
+    """View for admin settings including test email functionality"""
+    template_name = 'user/admin_settings.html'
+
+    def test_func(self):
+        """Check if user is superuser"""
+        return self.request.user.is_superuser
+
+    def post(self, request, *args, **kwargs):
+        """Handle POST request for sending test email"""
+        if 'send_test_email' in request.POST:
+            user = request.user
+            if not user.email:
+                messages.error(request, _("Your account doesn't have an email address configured. Please add an email address in your settings first."))
+                return redirect('admin-settings')
+            
+            try:
+                # Send test email
+                subject = _("Test Email from Klubtool")
+                message = _(
+                    "This is a test email from Klubtool.\n\n"
+                    "If you received this email, your email configuration is working correctly.\n\n"
+                    "Sent to: {email}\n"
+                    "User: {username}\n"
+                    "Time: {time}"
+                ).format(
+                    email=user.email,
+                    username=user.username,
+                    time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                )
+                
+                from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@klubtool.local')
+                send_mail(
+                    subject,
+                    message,
+                    from_email,
+                    [user.email],
+                    fail_silently=False,
+                )
+                messages.success(request, _("Test email sent successfully to {email}").format(email=user.email))
+            except Exception as e:
+                messages.error(request, _("Failed to send test email: {error}").format(error=str(e)))
+            
+            return redirect('admin-settings')
+        
+        return self.get(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['user'] = self.request.user
+        # Add email backend info for display
+        context['email_backend'] = settings.EMAIL_BACKEND.split('.')[-1] if hasattr(settings, 'EMAIL_BACKEND') else 'Not configured'
+        return context

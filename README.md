@@ -202,6 +202,27 @@ docker compose down -v
 docker compose up -d
 ```
 
+### Importing Database Dump
+
+To import a SQL dump file (e.g., `pgsql_antragstool_db_20251119-030000.sql.gz`) into the database:
+
+**Option 1: Import into existing database (may show errors if tables already exist)**
+```bash
+gunzip -c pgsql_antragstool_db_20251119-030000.sql.gz | docker compose exec -T db psql -U antragstooluser -d antragstool
+```
+
+**Option 2: Fresh import (drops and recreates database - WARNING: This will delete all existing data)**
+```bash
+# Drop and recreate the database
+docker compose exec db psql -U antragstooluser -d postgres -c "DROP DATABASE IF EXISTS antragstool;"
+docker compose exec db psql -U antragstooluser -d postgres -c "CREATE DATABASE antragstool;"
+
+# Import the dump
+gunzip -c pgsql_antragstool_db_20251119-030000.sql.gz | docker compose exec -T db psql -U antragstooluser -d antragstool
+```
+
+**Note:** Replace `pgsql_antragstool_db_20251119-030000.sql.gz` with your actual dump filename.
+
 ## 👥 User Management
 
 ### Custom User Model
