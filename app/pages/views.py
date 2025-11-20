@@ -25,6 +25,21 @@ class HomePageView(TemplateView):
         # Falls du den API_URL in der Template-Logik brauchst:
         context['API_URL'] = settings.API_URL
         
+        # Check email verification status for authenticated users
+        if self.request.user.is_authenticated:
+            from allauth.account.models import EmailAddress
+            try:
+                email_address = EmailAddress.objects.get(
+                    user=self.request.user,
+                    email=self.request.user.email,
+                    primary=True
+                )
+                context['email_verified'] = email_address.verified
+                context['user_email'] = self.request.user.email
+            except EmailAddress.DoesNotExist:
+                context['email_verified'] = False
+                context['user_email'] = self.request.user.email
+        
         # Add group membership data for the current user
         if self.request.user.is_authenticated:
             try:

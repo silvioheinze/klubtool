@@ -10,6 +10,32 @@
             <h1>Welcome to Klubtool</h1>
             <p class="lead">Your application management system</p>
             
+            {% if user.is_authenticated and not email_verified %}
+            <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                <h5 class="alert-heading">
+                    <i class="bi bi-envelope-exclamation me-2"></i>
+                    {% trans "Email Verification Required" %}
+                </h5>
+                <p class="mb-2">
+                    {% blocktrans with email=user_email %}
+                    Your email address <strong>{{ email }}</strong> has not been verified yet. 
+                    Please check your inbox and click the confirmation link in the email we sent you.
+                    {% endblocktrans %}
+                </p>
+                <p class="mb-0">
+                    <a href="{% url 'account_email' %}" class="btn btn-sm btn-outline-primary me-2">
+                        <i class="bi bi-envelope-check me-1"></i>
+                        {% trans "Manage Email" %}
+                    </a>
+                    <a href="{% url 'account_email_verification_sent' %}" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-arrow-repeat me-1"></i>
+                        {% trans "Resend Verification Email" %}
+                    </a>
+                </p>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endif %}
+            
             <!-- Group Memberships Section -->
             {% if group_memberships %}
                 <div class="row mt-4">

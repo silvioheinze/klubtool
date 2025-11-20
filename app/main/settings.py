@@ -179,10 +179,12 @@ AUTHENTICATION_BACKENDS = [
 ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_USERNAME_REQUIRED = False
 ACCOUNT_AUTHENTICATION_METHOD = 'email'
-ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
+ACCOUNT_EMAIL_VERIFICATION = 'optional'  # Changed to optional so users can continue without verification
+ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True  # Keep user logged in after email confirmation
 ACCOUNT_RATE_LIMITS = {
     'login_failed': '5/5m',
 }
+ACCOUNT_ADAPTER = 'user.adapters.CustomAccountAdapter'  # Custom adapter to handle email confirmation
 
 # Allauth URL settings
 LOGIN_URL = '/user/settings/'
