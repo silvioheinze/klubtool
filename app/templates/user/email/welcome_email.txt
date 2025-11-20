@@ -1,0 +1,19 @@
+{% load i18n %}
+{% trans "Welcome to Klubtool" %}
+
+{% trans "Hello" %} {{ user.get_full_name|default:user.username }},
+
+{% trans "Welcome to Klubtool! Your account has been created successfully." %}
+
+{% trans "Account Information" %}:
+{% trans "Username" %}: {{ user.username }}
+{% trans "Email" %}: {{ user.email }}
+
+{% trans "You can now log in to your account at:" %}
+{{ site_url }}
+
+{% trans "If you have any questions or need assistance, please don't hesitate to contact us." %}
+
+{% trans "Best regards" %},
+{% trans "The Klubtool Team" %}
+

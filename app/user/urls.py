@@ -4,7 +4,8 @@ from django.shortcuts import redirect
 from user.views import (
     AccountDeleteView, SettingsView, SignupPageView, 
     UsersUpdateView, UsersListView, RoleListView, RoleCreateView, 
-    RoleUpdateView, RoleDeleteView, AdminUserCreateView, AdminSettingsView
+    RoleUpdateView, RoleDeleteView, AdminUserCreateView, AdminSettingsView,
+    send_welcome_email
 )
 
 
@@ -20,6 +21,7 @@ urlpatterns = [
     path('list/', UsersListView.as_view(), name='user-list'),
     path('edit/<int:user_id>/', UsersUpdateView.as_view(), name='user-edit'),
     path('edit/password/', redirect_password_change, name='user-password-change-redirect'),
+    path('send-welcome-email/<int:user_id>/', send_welcome_email, name='user-send-welcome-email'),
     
     # Role Management
     path('roles/', RoleListView.as_view(), name='role-list'),

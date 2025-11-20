@@ -35,11 +35,8 @@
             <tr>
             <th data-field="id" data-sortable="true">{% trans "ID" %}</th>
             <th data-field="username" data-sortable="true">{% trans "Username" %}</th>
-            <th data-field="email" data-sortable="true">{% trans "Email" %}</th>
+            <th data-field="local" data-sortable="true">{% trans "Local" %}</th>
             <th data-field="role" data-sortable="true">{% trans "Role" %}</th>
-            <th data-field="is_active" data-sortable="true">{% trans "Status" %}</th>
-            <th data-field="is_staff" data-sortable="true">{% trans "Staff" %}</th>
-            <th data-field="is_superuser" data-sortable="true">{% trans "Superuser" %}</th>
             <th data-field="date_joined" data-sortable="true">{% trans "Date joined" %}</th>
             <th data-field="actions" class="text-end">{% trans "Actions" %}</th>
             </tr>
@@ -49,7 +46,15 @@
             <tr>
                 <td>{{ user.id }}</td>
                 <td>{{ user.username }}</td>
-                <td>{{ user.email }}</td>
+                <td>
+                    {% if user.unique_locals %}
+                        {% for local in user.unique_locals %}
+                            <span class="badge bg-primary me-1">{{ local.name }}</span>
+                        {% endfor %}
+                    {% else %}
+                        <span class="text-muted">-</span>
+                    {% endif %}
+                </td>
                 <td>
                     {% if user.role %}
                         <span class="badge bg-secondary">{{ user.role.name }}</span>
@@ -83,20 +88,21 @@
                         <span class="text-muted">-</span>
                     {% endif %}
                 </td>
-                <td>
-                    {% if user.is_active %}
-                        <span class="badge bg-success">{% trans "Active" %}</span>
-                    {% else %}
-                        <span class="badge bg-danger">{% trans "Inactive" %}</span>
-                    {% endif %}
-                </td>
-                <td>{{ user.is_staff|yesno:"Yes,No" }}</td>
-                <td>{{ user.is_superuser|yesno:"Yes,No" }}</td>
                 <td>{{ user.date_joined|naturaltime }}</td>
                 <td class="text-end">
-                <a href="{% url 'user-edit' user.id %}" class="btn btn-secondary btn-sm" title="{% trans 'Edit' %}">
-                    <i class="bi bi-pencil-square"></i> <span class="d-none d-sm-inline">{% trans "Edit" %}</span>
-                </a>
+                    <div class="btn-group" role="group">
+                        <a href="{% url 'user-edit' user.id %}" class="btn btn-secondary btn-sm" title="{% trans 'Edit' %}">
+                            <i class="bi bi-pencil-square"></i> <span class="d-none d-sm-inline">{% trans "Edit" %}</span>
+                        </a>
+                        {% if user.email and not user.last_login %}
+                        <form method="post" action="{% url 'user-send-welcome-email' user.id %}" style="display: inline;" onsubmit="return confirm('{% trans 'Send welcome email to this user?' %}');">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-success btn-sm" title="{% trans 'Send Welcome Email' %}">
+                                <i class="bi bi-envelope"></i> <span class="d-none d-sm-inline">{% trans "Welcome Email" %}</span>
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
                 </td>
             </tr>
             {% endfor %}
