@@ -15,6 +15,8 @@ from django.core.mail import send_mail
 from django.conf import settings
 from django.template.loader import render_to_string
 from django.utils.translation import gettext_lazy as _
+from allauth.account.views import ConfirmEmailView as AllauthConfirmEmailView
+from allauth.account.models import EmailConfirmation
 
 from .forms import CustomUserCreationForm, CustomUserEditForm, RoleForm, RoleFilterForm, CustomAuthenticationForm, LanguageSelectionForm, UserSettingsForm, AdminUserCreationForm
 from .models import Role
@@ -399,3 +401,44 @@ def send_welcome_email(request, user_id):
         logger.error(f"Failed to send welcome email to {target_user.email}: {str(e)}")
     
     return redirect('user-list')
+
+
+class CustomConfirmEmailView(AllauthConfirmEmailView):
+    """Custom email confirmation view that logs the user in after confirmation"""
+    
+    def get(self, *args, **kwargs):
+        """Handle GET request for email confirmation"""
+        response = super().get(*args, **kwargs)
+        return response
+    
+    def post(self, *args, **kwargs):
+        """Override to log user in after email confirmation"""
+        # Get the confirmation key from URL before calling super
+        confirmation_key = kwargs.get('key')
+        user_to_login = None
+        
+        if confirmation_key:
+            try:
+                confirmation = EmailConfirmation.objects.get(key=confirmation_key)
+                user_to_login = confirmation.email_address.user
+            except EmailConfirmation.DoesNotExist:
+                pass
+        
+        # Call parent to confirm email
+        response = super().post(*args, **kwargs)
+        
+        # Log the user in after confirmation
+        if user_to_login:
+            if not self.request.user.is_authenticated:
+                login(self.request, user_to_login, backend='django.contrib.auth.backends.ModelBackend')
+                messages.success(self.request, _("Your email has been confirmed and you have been logged in."))
+            elif self.request.user != user_to_login:
+                # If a different user is logged in, log them out and log in the correct user
+                from django.contrib.auth import logout
+                logout(self.request)
+                login(self.request, user_to_login, backend='django.contrib.auth.backends.ModelBackend')
+                messages.success(self.request, _("Your email has been confirmed and you have been logged in."))
+            else:
+                messages.success(self.request, _("Your email has been confirmed."))
+        
+        return response

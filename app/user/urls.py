@@ -5,7 +5,7 @@ from user.views import (
     AccountDeleteView, SettingsView, SignupPageView, 
     UsersUpdateView, UsersListView, RoleListView, RoleCreateView, 
     RoleUpdateView, RoleDeleteView, AdminUserCreateView, AdminSettingsView,
-    send_welcome_email
+    send_welcome_email, CustomConfirmEmailView
 )
 
 
@@ -34,6 +34,9 @@ urlpatterns = [
     
     # Admin Settings
     path('admin-settings/', AdminSettingsView.as_view(), name='admin-settings'),
+    
+    # Custom email confirmation view (override allauth's default - must come before include)
+    path('confirm-email/<str:key>/', CustomConfirmEmailView.as_view(), name='account_confirm_email'),
     
     # Allauth URLs
     path("", include("allauth.account.urls")),
