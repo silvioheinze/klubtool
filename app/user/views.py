@@ -13,6 +13,7 @@ from django.core.paginator import Paginator
 from django.core.exceptions import PermissionDenied
 from django.core.mail import send_mail
 from django.conf import settings
+from django.template.loader import render_to_string
 from django.utils.translation import gettext_lazy as _
 
 from .forms import CustomUserCreationForm, CustomUserEditForm, RoleForm, RoleFilterForm, CustomAuthenticationForm, LanguageSelectionForm, UserSettingsForm, AdminUserCreationForm
@@ -130,7 +131,9 @@ class UsersListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
 
     def get_queryset(self):
         queryset = CustomUser.objects.select_related('role').prefetch_related(
-            'group_memberships__roles'
+            'group_memberships__roles',
+            'group_memberships__group__party__local',
+            'committee_memberships__committee__council__local'
         ).all().order_by('username')
         
         # Filter by search query
@@ -163,6 +166,20 @@ class UsersListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
         context['search_query'] = self.request.GET.get('search', '')
         context['role_filter'] = self.request.GET.get('role', '')
         context['status_filter'] = self.request.GET.get('status', '')
+        
+        # Pre-calculate unique locals for each user to avoid template complexity
+        for user in context['users']:
+            locals_set = set()
+            # Get locals from group memberships
+            for membership in user.group_memberships.filter(is_active=True):
+                if membership.group.party and membership.group.party.local:
+                    locals_set.add(membership.group.party.local)
+            # Get locals from committee memberships
+            for membership in user.committee_memberships.filter(is_active=True):
+                if membership.committee.council and membership.committee.council.local:
+                    locals_set.add(membership.committee.council.local)
+            user.unique_locals = sorted(locals_set, key=lambda x: x.name)
+        
         return context
 
 
@@ -326,3 +343,59 @@ class AdminSettingsView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         # Add email backend info for display
         context['email_backend'] = settings.EMAIL_BACKEND.split('.')[-1] if hasattr(settings, 'EMAIL_BACKEND') else 'Not configured'
         return context
+
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def send_welcome_email(request, user_id):
+    """Send welcome email to a user (only for users who haven't logged in yet)"""
+    target_user = get_object_or_404(CustomUser, pk=user_id)
+    
+    if not target_user.email:
+        messages.error(request, _("User {username} doesn't have an email address configured.").format(username=target_user.username))
+        return redirect('user-list')
+    
+    # Check if user has already logged in
+    if target_user.last_login is not None:
+        messages.warning(request, _("User {username} has already logged in. Welcome emails can only be sent to users who haven't logged in yet.").format(username=target_user.username))
+        return redirect('user-list')
+    
+    try:
+        # Prepare email content
+        from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@klubtool.local')
+        subject = _("Welcome to Klubtool")
+        
+        # Render email template
+        email_context = {
+            'user': target_user,
+            'site_url': request.build_absolute_uri('/'),
+        }
+        
+        # Try to render HTML email first, fallback to plain text
+        try:
+            html_message = render_to_string('user/email/welcome_email.html', email_context)
+            plain_message = render_to_string('user/email/welcome_email.txt', email_context)
+        except:
+            # Fallback to plain text if HTML template doesn't exist
+            plain_message = render_to_string('user/email/welcome_email.txt', email_context)
+            html_message = None
+        
+        send_mail(
+            subject,
+            plain_message,
+            from_email,
+            [target_user.email],
+            html_message=html_message,
+            fail_silently=False,
+        )
+        messages.success(
+            request, 
+            _("Welcome email sent successfully to {email}").format(email=target_user.email)
+        )
+    except Exception as e:
+        messages.error(request, _("Failed to send welcome email: {error}").format(error=str(e)))
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Failed to send welcome email to {target_user.email}: {str(e)}")
+    
+    return redirect('user-list')
