@@ -151,9 +151,29 @@
 
                         <!-- Form Actions -->
                         <div class="d-flex justify-content-between mt-4">
-                            <a href="{% url 'motion:motion-list' %}" class="btn btn-secondary">
-                                <i class="bi bi-x-circle"></i> {% trans "Cancel" %}
-                            </a>
+                            {% if object %}
+                                {# When editing, link to motion's session #}
+                                {% if object.session %}
+                                    <a href="{% url 'local:session-detail' object.session.pk %}" class="btn btn-secondary">
+                                        <i class="bi bi-x-circle"></i> {% trans "Cancel" %}
+                                    </a>
+                                {% else %}
+                                    <a href="{% url 'motion:motion-list' %}" class="btn btn-secondary">
+                                        <i class="bi bi-x-circle"></i> {% trans "Cancel" %}
+                                    </a>
+                                {% endif %}
+                            {% else %}
+                                {# When creating, link to session from form if available #}
+                                {% if form.session.value %}
+                                    <a href="{% url 'local:session-detail' form.session.value %}" class="btn btn-secondary">
+                                        <i class="bi bi-x-circle"></i> {% trans "Cancel" %}
+                                    </a>
+                                {% else %}
+                                    <a href="{% url 'motion:motion-list' %}" class="btn btn-secondary">
+                                        <i class="bi bi-x-circle"></i> {% trans "Cancel" %}
+                                    </a>
+                                {% endif %}
+                            {% endif %}
                             <button type="submit" class="btn btn-primary">
                                 <i class="bi bi-check-circle"></i>
                                 {% if object %}
