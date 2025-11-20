@@ -6,6 +6,10 @@ from django.urls import reverse_lazy, reverse
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView, View
 from django.db.models import Q
 from django.contrib.auth import get_user_model
+from django.core.mail import send_mail
+from django.conf import settings
+from django.template.loader import render_to_string
+from django.utils.translation import gettext_lazy as _
 from .models import Group, GroupMember, GroupMeeting, AgendaItem
 from .forms import GroupForm, GroupFilterForm, GroupMemberForm, GroupMemberFilterForm, GroupMeetingForm, AgendaItemForm
 
@@ -386,7 +390,7 @@ class GroupMeetingDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView
         # Check if user is a group admin or leader of the meeting's group
         user = self.request.user
         meeting_group = self.object.group
-        context['can_view_meeting_details'] = (
+        can_manage = (
             user.is_superuser or 
             meeting_group.has_group_admin(user) or
             GroupMember.objects.filter(
@@ -396,6 +400,8 @@ class GroupMeetingDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView
                 roles__name__in=['Leader', 'Deputy Leader']
             ).exists()
         )
+        context['can_view_meeting_details'] = can_manage
+        context['can_send_invites'] = can_manage
         return context
 
 
@@ -788,3 +794,105 @@ class AgendaItemUpdateOrderAjaxView(LoginRequiredMixin, UserPassesTestMixin, Vie
                 'success': False,
                 'error': str(e)
             })
+
+
+@login_required
+def send_meeting_invites(request, pk):
+    """Send meeting invites to all group members"""
+    meeting = get_object_or_404(GroupMeeting, pk=pk)
+    user = request.user
+    meeting_group = meeting.group
+    
+    # Check permissions: only superusers, group admins, or leaders can send invites
+    can_send = (
+        user.is_superuser or 
+        meeting_group.has_group_admin(user) or
+        GroupMember.objects.filter(
+            user=user,
+            group=meeting_group,
+            is_active=True,
+            roles__name__in=['Leader', 'Deputy Leader']
+        ).exists()
+    )
+    
+    if not can_send:
+        messages.error(request, _("You don't have permission to send meeting invites."))
+        return redirect('group:meeting-detail', pk=meeting.pk)
+    
+    # Get all active group members with email addresses
+    members = GroupMember.objects.filter(
+        group=meeting_group,
+        is_active=True,
+        user__email__isnull=False
+    ).exclude(user__email='').select_related('user')
+    
+    if not members.exists():
+        messages.warning(request, _("No group members with email addresses found."))
+        return redirect('group:meeting-detail', pk=meeting.pk)
+    
+    # Get agenda items
+    agenda_items = meeting.agenda_items.filter(is_active=True).order_by('order')
+    
+    # Prepare email content
+    from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@klubtool.local')
+    subject = _("Meeting Invitation: {meeting_title}").format(meeting_title=meeting.title)
+    
+    # Count successful and failed sends
+    success_count = 0
+    failed_count = 0
+    failed_emails = []
+    
+    # Send email to each member
+    for member in members:
+        try:
+            # Render email template
+            email_context = {
+                'meeting': meeting,
+                'member': member,
+                'agenda_items': agenda_items,
+                'group': meeting_group,
+            }
+            
+            # Try to render HTML email first, fallback to plain text
+            try:
+                message = render_to_string('group/email/meeting_invite.html', email_context)
+                html_message = message
+                plain_message = render_to_string('group/email/meeting_invite.txt', email_context)
+            except:
+                # Fallback to plain text if HTML template doesn't exist
+                plain_message = render_to_string('group/email/meeting_invite.txt', email_context)
+                html_message = None
+            
+            send_mail(
+                subject,
+                plain_message,
+                from_email,
+                [member.user.email],
+                html_message=html_message,
+                fail_silently=False,
+            )
+            success_count += 1
+        except Exception as e:
+            failed_count += 1
+            failed_emails.append(member.user.email)
+            # Log error but continue with other members
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Failed to send meeting invite to {member.user.email}: {str(e)}")
+    
+    # Show success/error messages
+    if success_count > 0:
+        messages.success(
+            request, 
+            _("Meeting invites sent successfully to {count} member(s).").format(count=success_count)
+        )
+    if failed_count > 0:
+        messages.error(
+            request,
+            _("Failed to send invites to {count} member(s): {emails}").format(
+                count=failed_count,
+                emails=', '.join(failed_emails[:5]) + ('...' if len(failed_emails) > 5 else '')
+            )
+        )
+    
+    return redirect('group:meeting-detail', pk=meeting.pk)

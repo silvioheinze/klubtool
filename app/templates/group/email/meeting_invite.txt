@@ -1,0 +1,32 @@
+{% load i18n %}
+{% trans "Meeting Invitation" %}
+
+{% trans "Hello" %} {{ member.user.get_full_name|default:member.user.username }},
+
+{% trans "You are invited to attend the following group meeting:" %}
+
+{% trans "Meeting Title" %}: {{ meeting.title }}
+{% trans "Group" %}: {{ group.name }}
+{% trans "Date & Time" %}: {{ meeting.scheduled_date|date:"F d, Y H:i" }}
+{% if meeting.location %}
+{% trans "Location" %}: {{ meeting.location }}
+{% endif %}
+
+{% if meeting.description %}
+{% trans "Description" %}:
+{{ meeting.description }}
+{% endif %}
+
+{% if agenda_items %}
+{% trans "Agenda" %}:
+{% for item in agenda_items %}
+{% if item.level == 0 %}{{ forloop.counter }}. {{ item.title }}{% else %}{% for i in "x"|ljust:item.level %}  {% endfor %}{{ forloop.counter }}. {{ item.title }}{% endif %}
+{% if item.description %}
+   {{ item.description }}
+{% endif %}
+{% endfor %}
+{% endif %}
+
+{% trans "Best regards" %},
+{{ group.name }}
+
