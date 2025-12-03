@@ -633,14 +633,6 @@ class MotionExportPDFView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         
         # Create PDF using WeasyPrint
         # Use MEDIA_ROOT as base_url so WeasyPrint can find images via file paths
-        from django.conf import settings
-        import os
-        if settings.MEDIA_ROOT:
-            # Use file:// protocol with absolute path for WeasyPrint
-            base_url = f"file://{os.path.abspath(settings.MEDIA_ROOT)}/"
-        else:
-            base_url = None
-        html = HTML(string=html_string, base_url=base_url)
         css = CSS(string='''
             body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
             p { line-height: 1.6; }
@@ -663,8 +655,24 @@ class MotionExportPDFView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             .attachment { margin-bottom: 10px; padding: 8px; border: 1px solid #ddd; }
         ''')
         
-        # Generate PDF
-        pdf = html.write_pdf(stylesheets=[css])
+        if settings.MEDIA_ROOT:
+            # Use file:// protocol with absolute path for WeasyPrint
+            base_url = f"file://{os.path.abspath(settings.MEDIA_ROOT)}/"
+        else:
+            base_url = None
+        
+        try:
+            html = HTML(string=html_string, base_url=base_url)
+            # Generate PDF
+            pdf = html.write_pdf(stylesheets=[css])
+        except (AttributeError, TypeError) as e:
+            # Handle Python 3.13 compatibility issue with WeasyPrint
+            # Try without base_url as a workaround
+            if 'transform' in str(e) or 'super' in str(e) or 'base_url' in str(e):
+                html = HTML(string=html_string)
+                pdf = html.write_pdf(stylesheets=[css])
+            else:
+                raise
         
         # Create response
         response = HttpResponse(pdf, content_type='application/pdf')
