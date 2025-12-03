@@ -29,7 +29,7 @@
 
     <div class="motion-intro">
         <p>Die unterzeichnenden Bezirksrät:innen {% if motion.parties.exists %}der {% for party in motion.parties.all %}{% if not forloop.first %}{% if forloop.last %} und {% else %}, {% endif %}{% endif %}{{ party.short_name|default:party.name }}{% endfor %}{% endif %} stellen zur Bezirksvertretungssitzung am
-            {% if motion.session %}{{ motion.session.scheduled_date|date:"d.m.Y" }}{% else %}{{ motion.submitted_date|date:"d.m.Y" }}{% endif %} gemäß § 104 WStv. {% if motion.motion_type == 'resolution' %}folgende{% else %}folgenden{% endif %}</p>
+            {% if motion.session %}{{ motion.session.scheduled_date|date:"d.m.Y" }}{% else %}{{ motion.submitted_date|date:"d.m.Y" }}{% endif %} gemäß § 104 WStv. folgenden</p>
     </div>
 
     <div class="motion-text">

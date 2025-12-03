@@ -21,7 +21,7 @@ class Motion(models.Model):
     ]
     
     MOTION_TYPE_CHOICES = [
-        ('resolution', _('Resolution')),
+        ('resolution', _('Resolutionsantrag')),
         ('general', _('General motion')),
     ]
     
