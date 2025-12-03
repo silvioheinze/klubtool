@@ -70,25 +70,10 @@ API_URL=http://localhost:8000/api/
 
 #### Generating a Django Secret Key
 
-To generate a secure Django secret key, you can use one of these methods:
-
-**Method 1: Using Django's built-in function**
+To generate a secure Django secret key:
 ```bash
 # Run this command to generate a secret key
 docker compose exec app python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
-```
-
-**Method 2: Using Python directly**
-```bash
-# Generate a secret key using Python
-python -c "import secrets; print(secrets.token_urlsafe(50))"
-```
-
-**Method 3: Using Django's shell**
-```bash
-# Start Django shell and generate key
-docker compose exec app python manage.py shell
-# Then run: from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())
 ```
 
 Copy the generated key and replace `your-secret-key-here-change-this-in-production` in your `.env` file with the actual secret key.

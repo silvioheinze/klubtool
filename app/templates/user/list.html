@@ -91,9 +91,9 @@
                 <td>{{ user.date_joined|naturaltime }}</td>
                 <td class="text-end">
                     <div class="btn-group" role="group">
-                        <a href="{% url 'user-edit' user.id %}" class="btn btn-secondary btn-sm" title="{% trans 'Edit' %}">
-                            <i class="bi bi-pencil-square"></i> <span class="d-none d-sm-inline">{% trans "Edit" %}</span>
-                        </a>
+                <a href="{% url 'user-edit' user.id %}" class="btn btn-secondary btn-sm" title="{% trans 'Edit' %}">
+                    <i class="bi bi-pencil-square"></i> <span class="d-none d-sm-inline">{% trans "Edit" %}</span>
+                </a>
                         {% if user.email and not user.last_login %}
                         <form method="post" action="{% url 'user-send-welcome-email' user.id %}" style="display: inline;" onsubmit="return confirm('{% trans 'Send welcome email to this user?' %}');">
                             {% csrf_token %}

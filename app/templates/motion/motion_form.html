@@ -152,16 +152,10 @@
                         <!-- Form Actions -->
                         <div class="d-flex justify-content-between mt-4">
                             {% if object %}
-                                {# When editing, link to motion's session #}
-                                {% if object.session %}
-                                    <a href="{% url 'local:session-detail' object.session.pk %}" class="btn btn-secondary">
-                                        <i class="bi bi-x-circle"></i> {% trans "Cancel" %}
-                                    </a>
-                                {% else %}
-                                    <a href="{% url 'motion:motion-list' %}" class="btn btn-secondary">
-                                        <i class="bi bi-x-circle"></i> {% trans "Cancel" %}
-                                    </a>
-                                {% endif %}
+                                {# When editing, link to motion detail #}
+                                <a href="{% url 'motion:motion-detail' object.pk %}" class="btn btn-secondary">
+                                    <i class="bi bi-x-circle"></i> {% trans "Cancel" %}
+                                </a>
                             {% else %}
                                 {# When creating, link to session from form if available #}
                                 {% if form.session.value %}
@@ -169,9 +163,9 @@
                                         <i class="bi bi-x-circle"></i> {% trans "Cancel" %}
                                     </a>
                                 {% else %}
-                                    <a href="{% url 'motion:motion-list' %}" class="btn btn-secondary">
-                                        <i class="bi bi-x-circle"></i> {% trans "Cancel" %}
-                                    </a>
+                            <a href="{% url 'motion:motion-list' %}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> {% trans "Cancel" %}
+                            </a>
                                 {% endif %}
                             {% endif %}
                             <button type="submit" class="btn btn-primary">

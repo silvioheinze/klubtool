@@ -3,203 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ motion.title }} - Motion Export</title>
+    <title>{{ motion.title }}</title>
 </head>
 <body>
+    <div class="motion-info">
+        {% if motion.parties.exists %}
+        <div class="parties-section">
+            <div style="margin-bottom: 20px; text-align: center;">
+                {% for party_data in parties_with_logos %}
+                    {% if party_data.logo_name %}
+                        <img src="{{ party_data.logo_name }}" alt="{{ party_data.party.name }} logo" style="max-height: 80px; max-width: 240px; margin: 2px 5px; vertical-align: middle;">
+                    {% else %}
+                        <span style="display: inline-block; background-color: {{ party_data.party.color }}; color: white; padding: 4px 8px; margin: 2px; border-radius: 4px;">
+                            {{ party_data.party.name }}
+                        </span>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
     <div class="header">
         <h1>{{ motion.title }}</h1>
-        <p><strong>Motion Export</strong></p>
-        <p>Generated on: {% now "d.m.Y H:i" %}</p>
     </div>
 
-    <div class="motion-info">
-        <h2>Motion Information</h2>
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
-            <tr>
-                <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; width: 30%;">Title:</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">{{ motion.title }}</td>
-            </tr>
-            <tr>
-                <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">Type:</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">{{ motion.get_motion_type_display }}</td>
-            </tr>
-            <tr>
-                <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">Status:</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">{{ motion.get_status_display }}</td>
-            </tr>
-            <tr>
-                <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">Submitted:</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">{{ motion.submitted_date|date:"l, d.m.Y" }}</td>
-            </tr>
-            <tr>
-                <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">Group:</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">
-                    {% if motion.group %}
-                        {{ motion.group.name }}
-                    {% else %}
-                        Not assigned
-                    {% endif %}
-                </td>
-            </tr>
-            <tr>
-                <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">Session:</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">
-                    {% if motion.session %}
-                        {{ motion.session.title }}
-                    {% else %}
-                        Not assigned
-                    {% endif %}
-                </td>
-            </tr>
-            <tr>
-                <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">Committee:</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">
-                    {% if motion.committee %}
-                        {{ motion.committee.name }}
-                    {% else %}
-                        Not assigned
-                    {% endif %}
-                </td>
-            </tr>
-            <tr>
-                <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">Active:</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">
-                    {% if motion.is_active %}
-                        Yes
-                    {% else %}
-                        No
-                    {% endif %}
-                </td>
-            </tr>
-        </table>
+    <div class="motion-intro">
+        <p>Die unterzeichnenden Bezirksrät:innen {% if motion.parties.exists %}der {% for party in motion.parties.all %}{% if not forloop.first %}{% if forloop.last %} und {% else %}, {% endif %}{% endif %}{{ party.short_name|default:party.name }}{% endfor %}{% endif %} stellen zur Bezirksvertretungssitzung am
+            {% if motion.session %}{{ motion.session.scheduled_date|date:"d.m.Y" }}{% else %}{{ motion.submitted_date|date:"d.m.Y" }}{% endif %} gemäß § 104 WStv. {% if motion.motion_type == 'resolution' %}folgende{% else %}folgenden{% endif %}</p>
+    </div>
 
-        {% if motion.text %}
-        <h3>Motion Text</h3>
-        <div class="motion-text">
-            {{ motion.text|linebreaks }}
-        </div>
-        {% endif %}
-
+    <div class="motion-text">
+        <h2>{{ motion.get_motion_type_display }}</h2>
+        <p>{{ motion.text }}</p>
+    </div>
+    <div class="motion-rationale">
         {% if motion.rationale %}
-        <h3>Rationale</h3>
-        <div class="motion-text">
-            {{ motion.rationale|linebreaks }}
-        </div>
+        <h2>Begründung</h2>
+        <p>{{ motion.rationale }}</p>
         {% endif %}
-    </div>
-
-    {% if motion.parties.exists %}
-    <div class="parties-section">
-        <h2>Supporting Parties</h2>
-        <div style="margin-bottom: 20px;">
-            {% for party in motion.parties.all %}
-                <span style="display: inline-block; background-color: {{ party.color }}; color: white; padding: 4px 8px; margin: 2px; border-radius: 4px;">
-                    {{ party.name }}
-                </span>
-            {% endfor %}
-        </div>
-    </div>
-    {% endif %}
-
-    <div class="voting-section">
-        <h2>Voting Results</h2>
-        <div style="margin-bottom: 20px;">
-            <div style="display: flex; justify-content: space-around; text-align: center; margin-bottom: 20px;">
-                <div style="border: 1px solid #ddd; padding: 10px; flex: 1; margin: 0 5px;">
-                    <div style="font-size: 24px; font-weight: bold; color: #28a745;">{{ vote_stats.yes }}</div>
-                    <small style="color: #666;">Yes</small>
-                </div>
-                <div style="border: 1px solid #ddd; padding: 10px; flex: 1; margin: 0 5px;">
-                    <div style="font-size: 24px; font-weight: bold; color: #dc3545;">{{ vote_stats.no }}</div>
-                    <small style="color: #666;">No</small>
-                </div>
-                <div style="border: 1px solid #ddd; padding: 10px; flex: 1; margin: 0 5px;">
-                    <div style="font-size: 24px; font-weight: bold; color: #ffc107;">{{ vote_stats.abstain }}</div>
-                    <small style="color: #666;">Abstain</small>
-                </div>
-                <div style="border: 1px solid #ddd; padding: 10px; flex: 1; margin: 0 5px;">
-                    <div style="font-size: 24px; font-weight: bold; color: #6c757d;">{{ vote_stats.absent }}</div>
-                    <small style="color: #666;">Absent</small>
-                </div>
-            </div>
-            <div style="text-align: center; color: #666;">
-                <small>Total Votes: {{ vote_stats.total }}</small>
-            </div>
-        </div>
-
-        {% if votes %}
-        <h3>Individual Votes</h3>
-        <table class="votes-table">
-            <thead>
-                <tr>
-                    <th style="width: 40%;">Voter</th>
-                    <th style="width: 20%;">Vote</th>
-                    <th style="width: 40%;">Reason</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for vote in votes %}
-                <tr>
-                    <td>{{ vote.voter.get_full_name|default:vote.voter.username }}</td>
-                    <td>
-                        <span class="vote-badge vote-{{ vote.vote }}">
-                            {{ vote.get_vote_display }}
-                        </span>
-                    </td>
-                    <td>
-                        {% if vote.reason %}
-                            {{ vote.reason }}
-                        {% else %}
-                            <em>No reason provided</em>
-                        {% endif %}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        {% else %}
-        <p style="text-align: center; color: #666; font-style: italic;">
-            No votes have been recorded for this motion.
-        </p>
-        {% endif %}
-    </div>
-
-    {% if comments %}
-    <div class="comments-section">
-        <h2>Public Comments ({{ comments.count }})</h2>
-        {% for comment in comments %}
-        <div class="comment">
-            <div style="margin-bottom: 10px;">
-                <strong>{{ comment.author.get_full_name|default:comment.author.username }}</strong>
-                <small style="color: #666;">{{ comment.created_at|date:"d.m.Y H:i" }}</small>
-            </div>
-            <div>{{ comment.content|linebreaks }}</div>
-        </div>
-        {% endfor %}
-    </div>
-    {% endif %}
-
-    {% if attachments %}
-    <div class="attachments-section">
-        <h2>Attachments ({{ attachments.count }})</h2>
-        {% for attachment in attachments %}
-        <div class="attachment">
-            <div style="margin-bottom: 5px;">
-                <strong>{{ attachment.filename }}</strong>
-                <small style="color: #666;">({{ attachment.get_file_type_display }})</small>
-            </div>
-            {% if attachment.description %}
-            <div style="color: #666; font-size: 14px;">{{ attachment.description }}</div>
-            {% endif %}
-            <div style="color: #666; font-size: 12px;">Uploaded: {{ attachment.uploaded_at|date:"d.m.Y H:i" }}</div>
-        </div>
-        {% endfor %}
-    </div>
-    {% endif %}
-
-    <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center; color: #666; font-size: 12px;">
-        <p>Generated by Klubtool</p>
-        <p>Motion ID: {{ motion.pk }} | Export Date: {% now "d.m.Y H:i" %}</p>
     </div>
 </body>
 </html>

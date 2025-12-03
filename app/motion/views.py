@@ -291,6 +291,10 @@ class MotionUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
         kwargs['user'] = self.request.user
         return kwargs
 
+    def get_success_url(self):
+        """Redirect to motion detail page after successful update"""
+        return reverse('motion:motion-detail', kwargs={'pk': self.object.pk})
+
     def form_valid(self, form):
         """Display success message on form validation"""
         response = super().form_valid(form)
@@ -578,19 +582,42 @@ class MotionExportPDFView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
     def get_context_data(self, **kwargs):
         """Add additional context data"""
         context = super().get_context_data(**kwargs)
-        # Get votes for this motion
-        context['votes'] = self.object.votes.all().select_related('voter').order_by('voter__first_name')
+        # Get votes for this motion (party-based votes)
+        votes = self.object.votes.all().select_related('party', 'status').order_by('party__name')
+        context['votes'] = votes
+        
+        # Calculate vote statistics
+        total_approve = sum(vote.approve_votes for vote in votes)
+        total_reject = sum(vote.reject_votes for vote in votes)
+        total_cast = total_approve + total_reject
+        
         context['vote_stats'] = {
-            'yes': self.object.votes.filter(vote='yes').count(),
-            'no': self.object.votes.filter(vote='no').count(),
-            'abstain': self.object.votes.filter(vote='abstain').count(),
-            'absent': self.object.votes.filter(vote='absent').count(),
-            'total': self.object.votes.count(),
+            'approve': total_approve,
+            'reject': total_reject,
+            'total_cast': total_cast,
+            'parties_voted': len(set(vote.party for vote in votes)),
+            'total': votes.count(),
         }
+        
         # Get comments for this motion
         context['comments'] = self.object.comments.filter(is_public=True).select_related('author').order_by('created_at')
         # Get attachments for this motion
         context['attachments'] = self.object.attachments.all().order_by('uploaded_at')
+        
+        # Prepare parties with logo paths for PDF generation
+        # WeasyPrint works better with file paths than URLs, especially in Docker
+        parties_with_logos = []
+        for party in self.object.parties.all():
+            party_data = {
+                'party': party,
+                'logo_name': None
+            }
+            if party.logo:
+                # Store the relative path from MEDIA_ROOT (just the filename/relative path)
+                party_data['logo_name'] = party.logo.name
+            parties_with_logos.append(party_data)
+        context['parties_with_logos'] = parties_with_logos
+        
         return context
 
     def render_to_response(self, context, **response_kwargs):
@@ -605,12 +632,23 @@ class MotionExportPDFView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         html_string = render_to_string(self.template_name, context)
         
         # Create PDF using WeasyPrint
-        html = HTML(string=html_string)
+        # Use MEDIA_ROOT as base_url so WeasyPrint can find images via file paths
+        from django.conf import settings
+        import os
+        if settings.MEDIA_ROOT:
+            # Use file:// protocol with absolute path for WeasyPrint
+            base_url = f"file://{os.path.abspath(settings.MEDIA_ROOT)}/"
+        else:
+            base_url = None
+        html = HTML(string=html_string, base_url=base_url)
         css = CSS(string='''
-            body { font-family: Arial, sans-serif; margin: 20px; }
+            body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
+            p { line-height: 1.6; }
+            h1 { font-size: 20px; }
+            h2 { font-size: 16px; text-align: center; }
             .header { text-align: center; margin-bottom: 30px; }
             .motion-info { margin-bottom: 30px; }
-            .motion-text { margin-bottom: 20px; padding: 15px; border: 1px solid #ddd; background-color: #f9f9f9; }
+            .motion-text { margin-bottom: 20px; }
             .votes-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
             .votes-table th, .votes-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
             .votes-table th { background-color: #f2f2f2; }
