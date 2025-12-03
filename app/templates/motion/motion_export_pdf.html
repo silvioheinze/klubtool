@@ -34,12 +34,12 @@
 
     <div class="motion-text">
         <h2>{{ motion.get_motion_type_display }}</h2>
-        <p>{{ motion.text }}</p>
+        <p>{{ motion.text|linebreaks }}</p>
     </div>
     <div class="motion-rationale">
         {% if motion.rationale %}
         <h2>Begründung</h2>
-        <p>{{ motion.rationale }}</p>
+        <p>{{ motion.rationale|linebreaks }}</p>
         {% endif %}
     </div>
 </body>
