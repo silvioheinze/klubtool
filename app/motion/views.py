@@ -675,7 +675,12 @@ class MotionExportPDFView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
                 raise
         
         # Create response
+        # Generate filename: motion_type_motion_title.pdf (with spaces replaced by underscores)
+        motion_type = self.object.get_motion_type_display().replace(" ", "_")
+        motion_title = self.object.title.replace(" ", "_")
+        filename = f"{motion_type}_{motion_title}.pdf"
+        
         response = HttpResponse(pdf, content_type='application/pdf')
-        response['Content-Disposition'] = f'attachment; filename="motion_{self.object.pk}_{self.object.title.replace(" ", "_")}.pdf"'
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
         
         return response
