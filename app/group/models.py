@@ -48,10 +48,21 @@ class Group(models.Model):
         return self.members.filter(user=user, roles__name='Group Admin', is_active=True).exists()
 
     def can_user_manage_group(self, user):
-        """Check if a user can manage this group (superuser or group admin)"""
+        """Check if a user can manage this group (superuser, group admin, leader, or deputy leader)"""
         if user.is_superuser:
             return True
-        return self.has_group_admin(user)
+        
+        # Check if user is a group admin
+        if self.has_group_admin(user):
+            return True
+        
+        # Check if user is a leader or deputy leader of this group
+        return GroupMember.objects.filter(
+            user=user,
+            group=self,
+            is_active=True,
+            roles__name__in=['Leader', 'Deputy Leader']
+        ).exists()
 
 
 

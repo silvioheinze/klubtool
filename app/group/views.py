@@ -380,26 +380,21 @@ class GroupMeetingDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView
 
     def test_func(self):
         """Check if user has permission to view GroupMeeting objects"""
-        return self.request.user.is_superuser
+        if self.request.user.is_superuser:
+            return True
+        # Check if user can manage the meeting's group
+        meeting = self.get_object()
+        return meeting.group.can_user_manage_group(self.request.user)
 
     def get_context_data(self, **kwargs):
         """Add agenda items to context"""
         context = super().get_context_data(**kwargs)
         context['agenda_items'] = self.object.agenda_items.filter(is_active=True).order_by('order')
         
-        # Check if user is a group admin or leader of the meeting's group
+        # Check if user can manage the meeting's group
         user = self.request.user
         meeting_group = self.object.group
-        can_manage = (
-            user.is_superuser or 
-            meeting_group.has_group_admin(user) or
-            GroupMember.objects.filter(
-                user=user,
-                group=meeting_group,
-                is_active=True,
-                roles__name__in=['Leader', 'Deputy Leader']
-            ).exists()
-        )
+        can_manage = meeting_group.can_user_manage_group(user)
         context['can_view_meeting_details'] = can_manage
         context['can_send_invites'] = can_manage
         return context
@@ -413,7 +408,17 @@ class GroupMeetingCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView
 
     def test_func(self):
         """Check if user has permission to create GroupMeeting objects"""
-        return self.request.user.is_superuser
+        if self.request.user.is_superuser:
+            return True
+        # Check if user can manage the group (if specified in URL)
+        group_id = self.request.GET.get('group')
+        if group_id:
+            try:
+                group = Group.objects.get(pk=group_id)
+                return group.can_user_manage_group(self.request.user)
+            except Group.DoesNotExist:
+                pass
+        return False
 
     def get_initial(self):
         """Set initial values for the form"""
@@ -463,7 +468,11 @@ class GroupMeetingUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView
 
     def test_func(self):
         """Check if user has permission to edit GroupMeeting objects"""
-        return self.request.user.is_superuser
+        if self.request.user.is_superuser:
+            return True
+        # Check if user can manage the meeting's group
+        meeting = self.get_object()
+        return meeting.group.can_user_manage_group(self.request.user)
 
     def get_success_url(self):
         """Redirect to the group detail page after successful update"""
@@ -482,7 +491,11 @@ class GroupMeetingDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView
 
     def test_func(self):
         """Check if user has permission to delete GroupMeeting objects"""
-        return self.request.user.is_superuser
+        if self.request.user.is_superuser:
+            return True
+        # Check if user can manage the meeting's group
+        meeting = self.get_object()
+        return meeting.group.can_user_manage_group(self.request.user)
 
     def get_success_url(self):
         """Redirect to the group detail page after successful deletion"""
