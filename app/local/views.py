@@ -914,10 +914,11 @@ class SessionExportPDFView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         from motion.models import MotionGroupDecision
         
         context = super().get_context_data(**kwargs)
-        # Get all motions for this session with prefetched parties and group_decisions
+        # Get all motions for this session with prefetched parties, group_decisions, and interventions
         # Order group_decisions by decision_time descending to get latest first
         context['motions'] = self.object.motions.filter(is_active=True).prefetch_related(
             'parties',
+            'interventions',
             Prefetch(
                 'group_decisions',
                 queryset=MotionGroupDecision.objects.order_by('-decision_time')
@@ -985,13 +986,16 @@ class SessionExportPDFView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
                 font-weight: bold;
             }
             .motions-table td:first-child {
-                width: 40%;
+                width: 30%;
             }
             .motions-table td:nth-child(2) {
-                width: 30%;
+                width: 20%;
             }
             .motions-table td:nth-child(3) {
-                width: 30%;
+                width: 25%;
+            }
+            .motions-table td:nth-child(4) {
+                width: 25%;
             }
             .no-motions {
                 text-align: center;
