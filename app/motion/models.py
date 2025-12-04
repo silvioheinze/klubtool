@@ -74,7 +74,7 @@ class Motion(models.Model):
     @property
     def can_be_edited(self):
         """Check if motion can still be edited"""
-        return self.status == 'draft'
+        return True  # Motions can be edited regardless of status
     
     def can_be_deleted_by(self, user):
         """Check if a user can delete this motion"""

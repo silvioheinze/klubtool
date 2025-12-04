@@ -48,39 +48,13 @@
                                     {% endif %}
                                 </div>
                             </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="{{ form.decision_date.id_for_label }}" class="form-label">
-                                        <strong>{% trans "Decision Date" %}</strong>
-                                    </label>
-                                    {{ form.decision_date }}
-                                    {% if form.decision_date.errors %}
-                                        <div class="text-danger">
-                                            {% for error in form.decision_date.errors %}
-                                                <small>{{ error }}</small>
-                                            {% endfor %}
-                                        </div>
-                                    {% endif %}
-                                </div>
-                            </div>
                         </div>
                         
+                        <!-- Hidden fields for date and time (automatically filled with current date/time) -->
+                        {{ form.decision_date }}
+                        {{ form.decision_time }}
+                        
                         <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="{{ form.decision_time.id_for_label }}" class="form-label">
-                                        <strong>{% trans "Decision Time" %}</strong>
-                                    </label>
-                                    {{ form.decision_time }}
-                                    {% if form.decision_time.errors %}
-                                        <div class="text-danger">
-                                            {% for error in form.decision_time.errors %}
-                                                <small>{{ error }}</small>
-                                            {% endfor %}
-                                        </div>
-                                    {% endif %}
-                                </div>
-                            </div>
                             <div class="col-md-6">
                                 <div class="mb-3" id="committee-field" style="display: none;">
                                     <label for="{{ form.committee.id_for_label }}" class="form-label">

@@ -27,7 +27,9 @@
                 <td>
                     {% if motion.parties.exists %}
                         {% for party in motion.parties.all %}
-                            {% if not forloop.first %}, {% endif %}{{ party.short_name|default:party.name }}
+                            <span style="display: inline-block; background-color: {{ party.color|default:'#6c757d' }}; color: white; padding: 2px 6px; margin: 1px 2px; border-radius: 3px; font-size: 9pt;">
+                                {{ party.short_name|default:party.name }}
+                            </span>
                         {% endfor %}
                     {% else %}
                         -

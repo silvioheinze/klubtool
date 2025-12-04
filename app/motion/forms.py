@@ -445,12 +445,12 @@ class MotionGroupDecisionForm(forms.ModelForm):
     )
     
     decision_date = forms.DateField(
-        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}, format='%Y-%m-%d'),
+        widget=forms.HiddenInput(attrs={'format': '%Y-%m-%d'}),
         help_text="Date of the decision"
     )
     
     decision_time = forms.TimeField(
-        widget=forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}, format='%H:%M'),
+        widget=forms.HiddenInput(attrs={'format': '%H:%M'}),
         help_text="Time of the decision"
     )
     
@@ -468,9 +468,17 @@ class MotionGroupDecisionForm(forms.ModelForm):
         }
     
     def __init__(self, *args, **kwargs):
+        from django.utils import timezone
+        import datetime
+        
         self.motion = kwargs.pop('motion', None)
         self.created_by = kwargs.pop('created_by', None)
         super().__init__(*args, **kwargs)
+        
+        # Set initial values for date and time to current date and time
+        now = timezone.now()
+        self.fields['decision_date'].initial = now.date()
+        self.fields['decision_time'].initial = now.time()
         
         # Filter committees to only show those from the same council as the motion's session
         if self.motion and self.motion.session and self.motion.session.council:
@@ -493,6 +501,9 @@ class MotionGroupDecisionForm(forms.ModelForm):
         return cleaned_data
     
     def save(self, commit=True):
+        from django.utils import timezone
+        import datetime
+        
         instance = super().save(commit=False)
         if self.motion:
             instance.motion = self.motion
@@ -503,11 +514,12 @@ class MotionGroupDecisionForm(forms.ModelForm):
         decision_date = self.cleaned_data.get('decision_date')
         decision_time = self.cleaned_data.get('decision_time')
         if decision_date and decision_time:
-            from django.utils import timezone
-            import datetime
             instance.decision_time = timezone.make_aware(
                 datetime.datetime.combine(decision_date, decision_time)
             )
+        else:
+            # Fallback to current time if date/time are not provided
+            instance.decision_time = timezone.now()
         
         if commit:
             instance.save()
