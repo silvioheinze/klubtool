@@ -91,7 +91,6 @@
                                         <th>{% trans "Type" %}</th>
                                         <th>{% trans "Status" %}</th>
                                         <th>{% trans "Session" %}</th>
-                                        <th>{% trans "Actions" %}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -138,24 +137,6 @@
                                                 {% else %}
                                                     <span class="text-muted">{% trans "No session" %}</span>
                                                 {% endif %}
-                                            </td>
-
-                                            <td>
-                                                <div class="btn-group" role="group">
-                                                    <a href="{% url 'motion:motion-detail' motion.pk %}" class="btn btn-sm btn-outline-info" title="{% trans 'View Details' %}">
-                                                        <i class="bi bi-eye"></i>
-                                                    </a>
-                                                    {% if motion.can_be_edited %}
-                                                        <a href="{% url 'motion:motion-edit' motion.pk %}" class="btn btn-sm btn-outline-primary" title="{% trans 'Edit Motion' %}">
-                                                            <i class="bi bi-pencil"></i>
-                                                        </a>
-                                                    {% endif %}
-                                                    {% if motion|can_delete_motion:user %}
-                                                        <a href="{% url 'motion:motion-delete' motion.pk %}" class="btn btn-sm btn-outline-danger" title="{% trans 'Delete Motion' %}">
-                                                            <i class="bi bi-trash"></i>
-                                                        </a>
-                                                    {% endif %}
-                                                </div>
                                             </td>
                                         </tr>
                                     {% endfor %}

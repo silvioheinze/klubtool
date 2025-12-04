@@ -872,6 +872,10 @@ class SessionUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
         """Check if user has permission to edit Session objects"""
         return self.request.user.is_superuser
 
+    def get_success_url(self):
+        """Redirect to session detail page after successful update"""
+        return reverse('local:session-detail', kwargs={'pk': self.object.pk})
+
     def form_valid(self, form):
         """Display success message on form validation"""
         messages.success(self.request, f"Session '{form.instance.title}' updated successfully.")

@@ -102,7 +102,7 @@
                                     <tr>
                                         <th>{% trans "Title" %}</th>
                                         <th>{% trans "Status" %}</th>
-                                        <th>{% trans "Actions" %}</th>
+                                        <th>{% trans "Parties" %}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -130,16 +130,15 @@
                                                 {% endif %}
                                             </td>
                                             <td>
-                                                <div class="btn-group btn-group-sm" role="group">
-                                                    <a href="{% url 'motion:motion-detail' motion.pk %}" class="btn btn-outline-primary" title="{% trans 'View' %}">
-                                                        <i class="bi bi-eye"></i>
-                                                    </a>
-                                                    {% if motion.can_be_edited %}
-                                                        <a href="{% url 'motion:motion-edit' motion.pk %}" class="btn btn-outline-secondary" title="{% trans 'Edit' %}">
-                                                            <i class="bi bi-pencil"></i>
-                                                        </a>
-                                                    {% endif %}
-                                                </div>
+                                                {% if motion.parties.exists %}
+                                                    {% for party in motion.parties.all %}
+                                                        <span class="badge" style="background-color: {{ party.color }}; color: white; margin-right: 2px;">
+                                                            {{ party.short_name|default:party.name }}
+                                                        </span>
+                                                    {% endfor %}
+                                                {% else %}
+                                                    <span class="text-muted">-</span>
+                                                {% endif %}
                                             </td>
                                         </tr>
                                     {% endfor %}

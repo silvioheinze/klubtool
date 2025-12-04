@@ -220,7 +220,6 @@ class MotionVoteFormSet(BaseFormSet):
                     if existing_vote:
                         self.forms[i].fields['approve_votes'].initial = existing_vote.approve_votes
                         self.forms[i].fields['reject_votes'].initial = existing_vote.reject_votes
-                        self.forms[i].fields['abstain_votes'].initial = existing_vote.abstain_votes
                         self.forms[i].fields['notes'].initial = existing_vote.notes
     
     def clean(self):
