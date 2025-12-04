@@ -1,10 +1,14 @@
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.urls import reverse_lazy, reverse
 from django.db.models import Q, Prefetch
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
+from django.http import JsonResponse
+from django.views.decorators.http import require_http_methods
+import json
 
 from .models import Local, Term, Council, TermSeatDistribution, Party, Session, Committee, CommitteeMember, SessionAttachment
 from .forms import LocalForm, LocalFilterForm, CouncilForm, CouncilFilterForm, TermForm, TermFilterForm, CouncilNameForm, TermSeatDistributionForm, PartyForm, PartyFilterForm, SessionForm, SessionFilterForm, CommitteeForm, CommitteeFilterForm, CommitteeMemberForm, CommitteeMemberFilterForm, SessionAttachmentForm
@@ -826,8 +830,8 @@ class SessionDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
     def get_context_data(self, **kwargs):
         """Add motions data to context"""
         context = super().get_context_data(**kwargs)
-        # Get motions for this session
-        context['motions'] = self.object.motions.filter(is_active=True).order_by('-submitted_date')[:10]
+        # Get all motions for this session, ordered by session_rank (then by submitted_date as fallback)
+        context['motions'] = self.object.motions.filter(is_active=True).order_by('session_rank', '-submitted_date')
         context['total_motions'] = self.object.motions.count()
         return context
 
@@ -915,6 +919,7 @@ class SessionExportPDFView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         
         context = super().get_context_data(**kwargs)
         # Get all motions for this session with prefetched parties, group_decisions, and interventions
+        # Order by session_rank (then by submitted_date as fallback) to match the detail view
         # Order group_decisions by decision_time descending to get latest first
         context['motions'] = self.object.motions.filter(is_active=True).prefetch_related(
             'parties',
@@ -923,7 +928,7 @@ class SessionExportPDFView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
                 'group_decisions',
                 queryset=MotionGroupDecision.objects.order_by('-decision_time')
             )
-        ).order_by('-submitted_date')
+        ).order_by('session_rank', '-submitted_date')
         context['total_motions'] = self.object.motions.count()
         return context
 
@@ -986,15 +991,23 @@ class SessionExportPDFView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
                 font-weight: bold;
             }
             .motions-table td:first-child {
-                width: 30%;
+                width: 5%;
+                text-align: center;
+                font-weight: bold;
+            }
+            .motions-table th:first-child {
+                text-align: center;
             }
             .motions-table td:nth-child(2) {
-                width: 20%;
-            }
-            .motions-table td:nth-child(3) {
                 width: 25%;
             }
+            .motions-table td:nth-child(3) {
+                width: 20%;
+            }
             .motions-table td:nth-child(4) {
+                width: 25%;
+            }
+            .motions-table td:nth-child(5) {
                 width: 25%;
             }
             .no-motions {
@@ -1024,6 +1037,39 @@ class SessionExportPDFView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         response['Content-Disposition'] = f'attachment; filename="session_{self.object.pk}_{self.object.title.replace(" ", "_")}.pdf"'
         
         return response
+
+
+@login_required
+@require_http_methods(["POST"])
+def update_motion_order(request, session_pk):
+    """AJAX view to update the order/rank of motions in a session"""
+    from motion.models import Motion
+    
+    # Check permissions - user must be superuser or have session view permission
+    if not (request.user.is_superuser or request.user.has_role_permission('session.view')):
+        return JsonResponse({'error': 'Permission denied'}, status=403)
+    
+    try:
+        session = get_object_or_404(Session, pk=session_pk)
+        data = json.loads(request.body)
+        motion_orders = data.get('motion_orders', [])
+        
+        # Update each motion's session_rank
+        for order_data in motion_orders:
+            motion_id = order_data.get('motion_id')
+            rank = order_data.get('rank')
+            
+            if motion_id and rank is not None:
+                try:
+                    motion = Motion.objects.get(pk=motion_id, session=session)
+                    motion.session_rank = rank
+                    motion.save(update_fields=['session_rank'])
+                except Motion.DoesNotExist:
+                    continue
+        
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
 
 
 # Committee Views

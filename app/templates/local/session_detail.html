@@ -100,14 +100,22 @@
                             <table class="table table-hover">
                                 <thead>
                                     <tr>
+                                        <th style="width: 30px;"><i class="bi bi-grip-vertical"></i></th>
+                                        <th style="width: 50px;">#</th>
                                         <th>{% trans "Title" %}</th>
                                         <th>{% trans "Status" %}</th>
                                         <th>{% trans "Parties" %}</th>
                                     </tr>
                                 </thead>
-                                <tbody>
+                                <tbody id="motions-sortable">
                                     {% for motion in motions %}
-                                        <tr>
+                                        <tr data-motion-id="{{ motion.pk }}" style="cursor: move;">
+                                            <td class="text-muted">
+                                                <i class="bi bi-grip-vertical"></i>
+                                            </td>
+                                            <td class="text-center fw-bold">
+                                                {{ forloop.counter }}
+                                            </td>
                                             <td>
                                                 <a href="{% url 'motion:motion-detail' motion.pk %}">
                                                     {{ motion.title }}
@@ -145,14 +153,9 @@
                                 </tbody>
                             </table>
                         </div>
-                        
-                        {% if total_motions > 10 %}
-                            <div class="text-center mt-3">
-                                <a href="{% url 'motion:motion-list' %}?session={{ session.pk }}" class="btn btn-outline-primary">
-                                    {% trans "View All Motions" %} ({{ total_motions }})
-                                </a>
-                            </div>
-                        {% endif %}
+                        <div id="save-order-message" class="alert alert-info mt-2" style="display: none;">
+                            <i class="bi bi-info-circle"></i> {% trans "Order saved successfully!" %}
+                        </div>
                     {% else %}
                         <div class="text-center py-4">
                             <i class="bi bi-file-text text-muted" style="font-size: 3rem;"></i>
@@ -262,4 +265,87 @@
         {% endif %}
     </div>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const motionsTable = document.getElementById('motions-sortable');
+    const saveMessage = document.getElementById('save-order-message');
+    
+    if (!motionsTable) return;
+    
+    // Initialize SortableJS
+    const sortable = Sortable.create(motionsTable, {
+        handle: '.bi-grip-vertical',
+        animation: 150,
+        ghostClass: 'sortable-ghost',
+        onEnd: function(evt) {
+            // Get all motion rows in their new order
+            const rows = motionsTable.querySelectorAll('tr[data-motion-id]');
+            const motionOrders = [];
+            
+            rows.forEach((row, index) => {
+                const motionId = row.getAttribute('data-motion-id');
+                motionOrders.push({
+                    motion_id: parseInt(motionId),
+                    rank: index + 1
+                });
+            });
+            
+            // Send AJAX request to save the order
+            fetch('{% url "local:session-update-motion-order" session.pk %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    motion_orders: motionOrders
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update the numbers in the # column
+                    const rows = motionsTable.querySelectorAll('tr[data-motion-id]');
+                    rows.forEach((row, index) => {
+                        const numberCell = row.querySelector('td:nth-child(2)');
+                        if (numberCell) {
+                            numberCell.textContent = index + 1;
+                        }
+                    });
+                    
+                    // Show success message
+                    saveMessage.style.display = 'block';
+                    setTimeout(() => {
+                        saveMessage.style.display = 'none';
+                    }, 3000);
+                } else {
+                    console.error('Error saving order:', data.error);
+                    alert('Error saving order: ' + (data.error || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error saving order. Please try again.');
+            });
+        }
+    });
+});
+</script>
+<style>
+.sortable-ghost {
+    opacity: 0.4;
+    background-color: #f0f0f0;
+}
+#motions-sortable tr[data-motion-id]:hover {
+    background-color: #f8f9fa;
+}
+#motions-sortable tr[data-motion-id] .bi-grip-vertical {
+    cursor: grab;
+}
+#motions-sortable tr[data-motion-id] .bi-grip-vertical:active {
+    cursor: grabbing;
+}
+</style>
 {% endblock content %}

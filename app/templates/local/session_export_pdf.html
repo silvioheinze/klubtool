@@ -14,6 +14,7 @@
     <table class="motions-table">
         <thead>
             <tr>
+                <th>#</th>
                 <th>Antrag</th>
                 <th>Eingebracht durch</th>
                 <th>Wortmeldung</th>
@@ -23,6 +24,7 @@
         <tbody>
             {% for motion in motions %}
             <tr>
+                <td>{{ forloop.counter }}</td>
                 <td>{{ motion.title }}</td>
                 <td>
                     {% if motion.parties.exists %}

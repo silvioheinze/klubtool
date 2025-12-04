@@ -48,6 +48,7 @@ class Motion(models.Model):
     submitted_date = models.DateTimeField(auto_now_add=True)
     last_modified = models.DateTimeField(auto_now=True)
     is_active = models.BooleanField(default=True)
+    session_rank = models.PositiveIntegerField(default=0, help_text="Rank/order of this motion within its session")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     history = models.JSONField(default=dict, blank=True)
