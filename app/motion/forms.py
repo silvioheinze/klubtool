@@ -3,7 +3,7 @@ from django.contrib.auth import get_user_model
 from django.forms import BaseFormSet, formset_factory
 from .models import Motion, MotionVote, MotionComment, MotionAttachment, MotionStatus, MotionGroupDecision
 from local.models import Session, Party, Committee
-from group.models import Group
+from group.models import Group, GroupMember
 
 User = get_user_model()
 
@@ -15,7 +15,7 @@ class MotionForm(forms.ModelForm):
         model = Motion
         fields = [
             'title', 'text', 'rationale', 'motion_type', 'status',
-            'session', 'committee', 'group', 'parties'
+            'session', 'committee', 'group', 'parties', 'interventions'
         ]
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control'}),
@@ -27,6 +27,7 @@ class MotionForm(forms.ModelForm):
             'committee': forms.Select(attrs={'class': 'form-select'}),
             'group': forms.HiddenInput(),
             'parties': forms.SelectMultiple(attrs={'class': 'form-select'}),
+            'interventions': forms.SelectMultiple(attrs={'class': 'form-select'}),
         }
     
     def __init__(self, *args, **kwargs):
@@ -68,6 +69,34 @@ class MotionForm(forms.ModelForm):
                 self.fields['session'].required = False
             except Session.DoesNotExist:
                 pass
+        
+        # Filter interventions to only show users from the motion's group
+        if self.instance and self.instance.pk and self.instance.group:
+            # Editing existing motion - filter by the motion's group
+            group = self.instance.group
+            group_member_users = User.objects.filter(
+                group_memberships__group=group,
+                group_memberships__is_active=True
+            ).distinct()
+            self.fields['interventions'].queryset = group_member_users
+        elif 'group' in self.initial or 'group' in self.data:
+            # Creating new motion with group set
+            group_id = self.initial.get('group') or self.data.get('group')
+            if group_id:
+                try:
+                    group = Group.objects.get(pk=group_id)
+                    group_member_users = User.objects.filter(
+                        group_memberships__group=group,
+                        group_memberships__is_active=True
+                    ).distinct()
+                    self.fields['interventions'].queryset = group_member_users
+                except Group.DoesNotExist:
+                    self.fields['interventions'].queryset = User.objects.none()
+            else:
+                self.fields['interventions'].queryset = User.objects.none()
+        else:
+            # No group set yet - show no users
+            self.fields['interventions'].queryset = User.objects.none()
     
     def clean(self):
         cleaned_data = super().clean()
@@ -93,6 +122,19 @@ class MotionForm(forms.ModelForm):
             if group.party.local != session.council.local:
                 raise forms.ValidationError(
                     "The selected group must belong to a party in the same local district as the session's council."
+                )
+        
+        # Validate that interventions are from the motion's group
+        interventions = cleaned_data.get('interventions', [])
+        if group and interventions:
+            group_member_users = User.objects.filter(
+                group_memberships__group=group,
+                group_memberships__is_active=True
+            ).distinct()
+            invalid_users = [user for user in interventions if user not in group_member_users]
+            if invalid_users:
+                raise forms.ValidationError(
+                    f"All interventions must be members of the motion's group. Invalid users: {', '.join([u.username for u in invalid_users])}"
                 )
         
         return cleaned_data

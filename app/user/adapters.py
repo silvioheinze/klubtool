@@ -26,8 +26,8 @@ class CustomAccountAdapter(DefaultAccountAdapter):
         """Allow signups"""
         return True
     
-    def get_email_confirmation_redirect_url(self, request):
-        """Return the URL to redirect to after email confirmation"""
+    def get_email_verification_redirect_url(self, email_address):
+        """Return the URL to redirect to after email verification"""
         # Redirect to home page after confirmation, user will be logged in
         from django.urls import reverse
         return reverse('home')

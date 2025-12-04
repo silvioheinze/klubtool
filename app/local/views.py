@@ -2,7 +2,7 @@ from django.views.generic import ListView, CreateView, UpdateView, DeleteView, D
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib import messages
 from django.urls import reverse_lazy, reverse
-from django.db.models import Q
+from django.db.models import Q, Prefetch
 from django.shortcuts import render, redirect
 from django.utils import timezone
 
@@ -911,9 +911,18 @@ class SessionExportPDFView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         """Add motions data to context"""
+        from motion.models import MotionGroupDecision
+        
         context = super().get_context_data(**kwargs)
-        # Get all motions for this session
-        context['motions'] = self.object.motions.filter(is_active=True).order_by('-submitted_date')
+        # Get all motions for this session with prefetched parties and group_decisions
+        # Order group_decisions by decision_time descending to get latest first
+        context['motions'] = self.object.motions.filter(is_active=True).prefetch_related(
+            'parties',
+            Prefetch(
+                'group_decisions',
+                queryset=MotionGroupDecision.objects.order_by('-decision_time')
+            )
+        ).order_by('-submitted_date')
         context['total_motions'] = self.object.motions.count()
         return context
 
@@ -931,18 +940,76 @@ class SessionExportPDFView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         # Create PDF using WeasyPrint
         html = HTML(string=html_string)
         css = CSS(string='''
-            body { font-family: Arial, sans-serif; margin: 20px; }
-            .header { text-align: center; margin-bottom: 30px; }
-            .session-info { margin-bottom: 30px; }
-            .motions-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-            .motions-table th, .motions-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-            .motions-table th { background-color: #f2f2f2; }
-            .status-badge { padding: 4px 8px; border-radius: 4px; font-size: 12px; }
-            .status-draft { background-color: #6c757d; color: white; }
-            .status-submitted { background-color: #007bff; color: white; }
-            .status-approved { background-color: #28a745; color: white; }
-            .status-rejected { background-color: #dc3545; color: white; }
-            .status-withdrawn { background-color: #ffc107; color: black; }
+            @page {
+                size: A4 landscape;
+                margin: 15mm;
+            }
+            body { 
+                font-family: Arial, sans-serif; 
+                margin: 0;
+                font-size: 10pt;
+            }
+            .header { 
+                text-align: center; 
+                margin-bottom: 20px; 
+            }
+            .header h1 {
+                font-size: 18pt;
+                margin: 0 0 5px 0;
+            }
+            .header p {
+                font-size: 10pt;
+                margin: 2px 0;
+            }
+            .motions-table { 
+                width: 100%; 
+                border-collapse: collapse; 
+                margin-top: 20px;
+                page-break-inside: auto;
+            }
+            .motions-table thead {
+                display: table-header-group;
+            }
+            .motions-table tbody tr {
+                page-break-inside: avoid;
+                page-break-after: auto;
+            }
+            .motions-table th, .motions-table td { 
+                border: 1px solid #333; 
+                padding: 8px; 
+                text-align: left;
+                vertical-align: top;
+            }
+            .motions-table th { 
+                background-color: #f2f2f2; 
+                font-weight: bold;
+            }
+            .motions-table td:first-child {
+                width: 40%;
+            }
+            .motions-table td:nth-child(2) {
+                width: 30%;
+            }
+            .motions-table td:nth-child(3) {
+                width: 30%;
+            }
+            .no-motions {
+                text-align: center;
+                color: #666;
+                font-style: italic;
+                margin: 40px 0;
+            }
+            .footer {
+                margin-top: 30px;
+                padding-top: 15px;
+                border-top: 1px solid #ddd;
+                text-align: center;
+                color: #666;
+                font-size: 8pt;
+            }
+            .footer p {
+                margin: 2px 0;
+            }
         ''')
         
         # Generate PDF

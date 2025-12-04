@@ -9,120 +9,51 @@
     <div class="header">
         <h1>{{ session.title }}</h1>
         <p><strong>Session Export</strong></p>
-        <p>Generated on: {{ session.scheduled_date|date:"d.m.Y H:i" }}</p>
-    </div>
-
-    <div class="session-info">
-        <h2>Session Information</h2>
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
-            <tr>
-                <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; width: 30%;">Title:</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">{{ session.title }}</td>
-            </tr>
-            <tr>
-                <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">Type:</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">{{ session.get_session_type_display }}</td>
-            </tr>
-            <tr>
-                <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">Status:</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">{{ session.get_status_display }}</td>
-            </tr>
-            <tr>
-                <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">Date:</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">{{ session.scheduled_date|date:"l, d.m.Y" }}</td>
-            </tr>
-            <tr>
-                <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">Time:</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">{{ session.scheduled_date|time:"H:i" }}</td>
-            </tr>
-            {% if session.location %}
-            <tr>
-                <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">Location:</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">{{ session.location }}</td>
-            </tr>
-            {% endif %}
-            {% if session.council %}
-            <tr>
-                <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">Council:</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">{{ session.council.name }}</td>
-            </tr>
-            {% endif %}
-            {% if session.term %}
-            <tr>
-                <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">Term:</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">{{ session.term.name }}</td>
-            </tr>
-            {% endif %}
-        </table>
-
-        {% if session.agenda %}
-        <h3>Agenda</h3>
-        <div style="margin-bottom: 20px; padding: 10px; border: 1px solid #ddd; background-color: #f9f9f9;">
-            {{ session.agenda|linebreaks }}
-        </div>
-        {% endif %}
-
-        {% if session.notes %}
-        <h3>Notes</h3>
-        <div style="margin-bottom: 20px; padding: 10px; border: 1px solid #ddd; background-color: #f9f9f9;">
-            {{ session.notes|linebreaks }}
-        </div>
+        {% if session.scheduled_date %}
+        <p>{{ session.scheduled_date|date:"d.m.Y H:i" }}</p>
         {% endif %}
     </div>
 
-    <div class="motions-section">
-        <h2>Motions ({{ total_motions }})</h2>
-        {% if motions %}
-        <table class="motions-table">
-            <thead>
-                <tr>
-                    <th style="width: 40%;">Title</th>
-                    <th style="width: 20%;">Group</th>
-                    <th style="width: 15%;">Type</th>
-                    <th style="width: 15%;">Status</th>
-                    <th style="width: 10%;">Submitted</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for motion in motions %}
-                <tr>
-                    <td>{{ motion.title }}</td>
-                    <td>{{ motion.group.name }}</td>
-                    <td>{{ motion.get_motion_type_display }}</td>
-                    <td>
-                        <span class="status-badge status-{{ motion.status }}">
-                            {{ motion.get_status_display }}
-                        </span>
-                    </td>
-                    <td>{{ motion.submitted_date|date:"d.m.Y" }}</td>
-                </tr>
-                {% if motion.text %}
-                <tr>
-                    <td colspan="5" style="padding: 10px; background-color: #f9f9f9;">
-                        <strong>Text:</strong><br>
-                        {{ motion.text|truncatewords:50 }}
-                    </td>
-                </tr>
-                {% endif %}
-                {% if motion.rationale %}
-                <tr>
-                    <td colspan="5" style="padding: 10px; background-color: #f9f9f9;">
-                        <strong>Rationale:</strong><br>
-                        {{ motion.rationale|truncatewords:50 }}
-                    </td>
-                </tr>
-                {% endif %}
-                {% endfor %}
-            </tbody>
-        </table>
-        {% else %}
-        <p style="text-align: center; color: #666; font-style: italic; margin: 20px 0;">
-            No motions have been submitted for this session.
-        </p>
-        {% endif %}
-    </div>
+    {% if motions %}
+    <table class="motions-table">
+        <thead>
+            <tr>
+                <th>Name of the Motion</th>
+                <th>Parties</th>
+                <th>Group Decision</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for motion in motions %}
+            <tr>
+                <td>{{ motion.title }}</td>
+                <td>
+                    {% if motion.parties.exists %}
+                        {% for party in motion.parties.all %}
+                            {% if not forloop.first %}, {% endif %}{{ party.short_name|default:party.name }}
+                        {% endfor %}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td>
+                    {% with latest_decision=motion.group_decisions.first %}
+                        {% if latest_decision %}
+                            {{ latest_decision.get_decision_display }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    {% endwith %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="no-motions">No motions have been submitted for this session.</p>
+    {% endif %}
 
-    <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center; color: #666; font-size: 12px;">
+    <div class="footer">
         <p>Generated by Klubtool</p>
         <p>Session ID: {{ session.pk }} | Export Date: {% now "d.m.Y H:i" %}</p>
     </div>

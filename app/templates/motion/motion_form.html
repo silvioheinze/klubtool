@@ -147,6 +147,23 @@
                             </div>
                         </div>
 
+                        <div class="mb-3">
+                            <label for="{{ form.interventions.id_for_label }}" class="form-label">
+                                {% trans "Wortmeldung" %}
+                            </label>
+                            {{ form.interventions }}
+                            {% if form.interventions.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.interventions.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">
+                                {% trans "Select users from the motion's group who can speak in session (optional)" %}
+                            </div>
+                        </div>
+
 
 
                         <!-- Form Actions -->

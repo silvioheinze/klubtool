@@ -646,13 +646,13 @@ msgstr "Klubinformation"
 #: templates/group/member_detail.html:75 templates/group/member_form.html:192
 #: templates/user/list.html:61 templates/user/management.html:157
 msgid "Leader"
-msgstr "Vorsitzender"
+msgstr "Klubobmensch"
 
 #: templates/group/group_detail.html:129 templates/group/group_detail.html:265
 #: templates/group/member_detail.html:79 templates/group/member_form.html:193
 #: templates/user/list.html:65 templates/user/management.html:161
 msgid "Deputy Leader"
-msgstr "Stellvertretender Vorsitzender"
+msgstr "Klubobmensch Stv."
 
 #: templates/group/group_detail.html:134 templates/group/group_detail.html:270
 #: templates/group/member_detail.html:84 templates/group/member_form.html:196

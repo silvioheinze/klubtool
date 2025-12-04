@@ -117,6 +117,20 @@
                             {% endfor %}
                         </div>
                     {% endif %}
+                    
+                    {% if motion.interventions.exists %}
+                        <hr>
+                        <h6><i class="bi bi-megaphone"></i> {% trans "Wortmeldung" %}</h6>
+                        <div class="row">
+                            {% for user in motion.interventions.all %}
+                                <div class="col-md-6 col-lg-4 mb-2">
+                                    <span class="badge bg-info me-2">
+                                        {{ user.get_full_name|default:user.username }}
+                                    </span>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
                 </div>
             </div>
             <!-- Group Decisions -->

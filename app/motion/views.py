@@ -128,6 +128,10 @@ class MotionDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
     def test_func(self):
         """Check if user has permission to view Motion objects"""
         return self.request.user.is_superuser or self.request.user.has_role_permission('motion.view')
+    
+    def get_queryset(self):
+        """Prefetch related objects for better performance"""
+        return Motion.objects.prefetch_related('interventions', 'parties', 'group_decisions')
 
     def get_context_data(self, **kwargs):
         """Add additional context data"""
