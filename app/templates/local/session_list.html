@@ -49,7 +49,7 @@
                         <option value="in_progress" {% if status_filter == 'in_progress' %}selected{% endif %}>{% trans "In Progress" %}</option>
                         <option value="completed" {% if status_filter == 'completed' %}selected{% endif %}>{% trans "Completed" %}</option>
                         <option value="cancelled" {% if status_filter == 'cancelled' %}selected{% endif %}>{% trans "Cancelled" %}</option>
-                        <option value="postponed" {% if status_filter == 'postponed' %}selected{% endif %}>{% trans "Postponed" %}</option>
+                        <option value="invited" {% if status_filter == 'invited' %}selected{% endif %}>{% trans "Invited" %}</option>
                     </select>
                 </div>
                 <div class="col-md-2">
@@ -129,8 +129,8 @@
                                             <span class="badge bg-success">{% trans "Completed" %}</span>
                                         {% elif session.status == 'cancelled' %}
                                             <span class="badge bg-danger">{% trans "Cancelled" %}</span>
-                                        {% elif session.status == 'postponed' %}
-                                            <span class="badge bg-info">{% trans "Postponed" %}</span>
+                                        {% elif session.status == 'invited' %}
+                                            <span class="badge bg-info">{% trans "Invited" %}</span>
                                         {% endif %}
                                         {% if not session.is_active %}
                                             <br><span class="badge bg-secondary">{% trans "Inactive" %}</span>

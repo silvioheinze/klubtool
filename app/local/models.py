@@ -269,7 +269,7 @@ class Session(models.Model):
         ('in_progress', 'In Progress'),
         ('completed', 'Completed'),
         ('cancelled', 'Cancelled'),
-        ('postponed', 'Postponed'),
+        ('invited', 'Invited'),
     ]
     
     title = models.CharField(max_length=200, help_text="Title of the session")
