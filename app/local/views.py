@@ -941,7 +941,7 @@ class SessionExportPDFView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             'interventions',
             Prefetch(
                 'group_decisions',
-                queryset=MotionGroupDecision.objects.order_by('-decision_time')
+                queryset=MotionGroupDecision.objects.select_related('committee').order_by('-decision_time')
             )
         ).order_by('session_rank', '-submitted_date')
         context['total_motions'] = self.object.motions.count()

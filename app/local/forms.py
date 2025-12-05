@@ -260,9 +260,10 @@ class CommitteeForm(forms.ModelForm):
     
     class Meta:
         model = Committee
-        fields = ['name', 'council', 'committee_type', 'description']
+        fields = ['name', 'abbreviation', 'council', 'committee_type', 'description']
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control'}),
+            'abbreviation': forms.TextInput(attrs={'class': 'form-control', 'maxlength': '20'}),
             'council': forms.Select(attrs={'class': 'form-select'}),
             'committee_type': forms.Select(attrs={'class': 'form-select'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),

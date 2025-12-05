@@ -114,15 +114,15 @@ class TermSeatDistributionAdmin(admin.ModelAdmin):
 
 @admin.register(Committee)
 class CommitteeAdmin(admin.ModelAdmin):
-    list_display = ['name', 'council', 'committee_type', 'chairperson', 'member_count', 'is_active']
+    list_display = ['name', 'abbreviation', 'council', 'committee_type', 'chairperson', 'member_count', 'is_active']
     list_filter = ['committee_type', 'is_active', 'council', 'created_at']
-    search_fields = ['name', 'description', 'chairperson', 'council__name']
+    search_fields = ['name', 'abbreviation', 'description', 'chairperson', 'council__name']
     readonly_fields = ['created_at', 'updated_at', 'member_count']
     ordering = ['name']
     
     fieldsets = (
         ('Basic Information', {
-            'fields': ('name', 'council', 'committee_type', 'description', 'is_active')
+            'fields': ('name', 'abbreviation', 'council', 'committee_type', 'description', 'is_active')
         }),
         ('Leadership', {
             'fields': ('chairperson',)

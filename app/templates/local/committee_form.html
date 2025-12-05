@@ -74,6 +74,24 @@
                             {% endif %}
                         </div>
 
+                        <!-- Abbreviation -->
+                        <div class="mb-3">
+                            <label for="{{ form.abbreviation.id_for_label }}" class="form-label">
+                                {% trans "Abbreviation" %}
+                            </label>
+                            {{ form.abbreviation }}
+                            {% if form.abbreviation.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.abbreviation.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            {% if form.abbreviation.help_text %}
+                                <div class="form-text">{{ form.abbreviation.help_text }}</div>
+                            {% endif %}
+                        </div>
+
                         <!-- Council Field -->
                         {% if form.council.field.widget.input_type != 'hidden' %}
                             <div class="mb-3">

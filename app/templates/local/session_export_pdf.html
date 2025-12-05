@@ -49,7 +49,11 @@
                 <td>
                     {% with latest_decision=motion.group_decisions.first %}
                         {% if latest_decision %}
-                            {{ latest_decision.get_decision_display }}
+                            {% if latest_decision.decision == 'refer_to_committee' and latest_decision.committee %}
+                                an {{ latest_decision.committee.abbreviation|default:latest_decision.committee.name }} zuweisen
+                            {% else %}
+                                {{ latest_decision.get_decision_display }}
+                            {% endif %}
                         {% else %}
                             -
                         {% endif %}
