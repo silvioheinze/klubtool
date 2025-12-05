@@ -197,7 +197,7 @@ class SessionForm(forms.ModelForm):
     
     class Meta:
         model = Session
-        fields = ['title', 'council', 'term', 'session_type', 'status', 'scheduled_date', 'location', 'agenda', 'minutes', 'notes']
+        fields = ['title', 'council', 'term', 'session_type', 'status', 'scheduled_date', 'location', 'notes']
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control'}),
             'council': forms.Select(attrs={'class': 'form-select'}),
@@ -206,8 +206,6 @@ class SessionForm(forms.ModelForm):
             'status': forms.Select(attrs={'class': 'form-select'}),
             'scheduled_date': forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}, format='%Y-%m-%dT%H:%M'),
             'location': forms.TextInput(attrs={'class': 'form-control'}),
-            'agenda': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
-            'minutes': forms.Textarea(attrs={'class': 'form-control', 'rows': 6}),
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
     
