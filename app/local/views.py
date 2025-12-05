@@ -829,9 +829,19 @@ class SessionDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         """Add motions data to context"""
+        from django.db.models import Case, When, IntegerField
+        
         context = super().get_context_data(**kwargs)
-        # Get all motions for this session, ordered by session_rank (then by submitted_date as fallback)
-        context['motions'] = self.object.motions.filter(is_active=True).order_by('session_rank', '-submitted_date')
+        # Get all motions for this session
+        # Order: regular motions by session_rank, then not_admitted motions at the end
+        motions_queryset = self.object.motions.filter(is_active=True)
+        context['motions'] = motions_queryset.annotate(
+            status_order=Case(
+                When(status='not_admitted', then=1),
+                default=0,
+                output_field=IntegerField()
+            )
+        ).order_by('status_order', 'session_rank', '-submitted_date')
         context['total_motions'] = self.object.motions.count()
         return context
 
@@ -919,9 +929,14 @@ class SessionExportPDFView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         
         context = super().get_context_data(**kwargs)
         # Get all motions for this session with prefetched parties, group_decisions, and interventions
-        # Order by session_rank (then by submitted_date as fallback) to match the detail view
+        # Exclude not_admitted motions from PDF export
+        # Order by session_rank (then by submitted_date as fallback)
         # Order group_decisions by decision_time descending to get latest first
-        context['motions'] = self.object.motions.filter(is_active=True).prefetch_related(
+        context['motions'] = self.object.motions.filter(
+            is_active=True
+        ).exclude(
+            status='not_admitted'
+        ).prefetch_related(
             'parties',
             'interventions',
             Prefetch(

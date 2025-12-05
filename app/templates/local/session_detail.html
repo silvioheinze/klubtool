@@ -109,12 +109,18 @@
                                 </thead>
                                 <tbody id="motions-sortable">
                                     {% for motion in motions %}
-                                        <tr data-motion-id="{{ motion.pk }}" style="cursor: move;">
+                                        <tr data-motion-id="{{ motion.pk }}" {% if motion.status != 'not_admitted' %}style="cursor: move;"{% endif %} data-motion-status="{{ motion.status }}">
                                             <td class="text-muted">
-                                                <i class="bi bi-grip-vertical"></i>
+                                                {% if motion.status != 'not_admitted' %}
+                                                    <i class="bi bi-grip-vertical"></i>
+                                                {% endif %}
                                             </td>
                                             <td class="text-center fw-bold">
-                                                {{ forloop.counter }}
+                                                {% if motion.status != 'not_admitted' %}
+                                                    <span class="motion-number"></span>
+                                                {% else %}
+                                                    -
+                                                {% endif %}
                                             </td>
                                             <td>
                                                 <a href="{% url 'motion:motion-detail' motion.pk %}">
@@ -276,22 +282,47 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (!motionsTable) return;
     
-    // Initialize SortableJS
+    // Set initial numbers for non-not_admitted motions
+    function updateMotionNumbers() {
+        const rows = motionsTable.querySelectorAll('tr[data-motion-id]');
+        let numberCounter = 1;
+        rows.forEach((row) => {
+            const motionStatus = row.getAttribute('data-motion-status');
+            const numberCell = row.querySelector('td:nth-child(2) .motion-number');
+            if (motionStatus !== 'not_admitted' && numberCell) {
+                numberCell.textContent = numberCounter;
+                numberCounter++;
+            }
+        });
+    }
+    
+    // Set initial numbers on page load
+    updateMotionNumbers();
+    
+    // Initialize SortableJS - only allow dragging of non-not_admitted motions
     const sortable = Sortable.create(motionsTable, {
         handle: '.bi-grip-vertical',
         animation: 150,
         ghostClass: 'sortable-ghost',
+        filter: 'tr[data-motion-status="not_admitted"]',
         onEnd: function(evt) {
-            // Get all motion rows in their new order
+            // Get all motion rows in their new order (excluding not_admitted)
             const rows = motionsTable.querySelectorAll('tr[data-motion-id]');
             const motionOrders = [];
+            let rankCounter = 1;
             
-            rows.forEach((row, index) => {
+            rows.forEach((row) => {
                 const motionId = row.getAttribute('data-motion-id');
-                motionOrders.push({
-                    motion_id: parseInt(motionId),
-                    rank: index + 1
-                });
+                const motionStatus = row.getAttribute('data-motion-status');
+                
+                // Only assign ranks to non-not_admitted motions
+                if (motionStatus !== 'not_admitted') {
+                    motionOrders.push({
+                        motion_id: parseInt(motionId),
+                        rank: rankCounter
+                    });
+                    rankCounter++;
+                }
             });
             
             // Send AJAX request to save the order
@@ -308,14 +339,8 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    // Update the numbers in the # column
-                    const rows = motionsTable.querySelectorAll('tr[data-motion-id]');
-                    rows.forEach((row, index) => {
-                        const numberCell = row.querySelector('td:nth-child(2)');
-                        if (numberCell) {
-                            numberCell.textContent = index + 1;
-                        }
-                    });
+                    // Update the numbers in the # column (only for non-not_admitted motions)
+                    updateMotionNumbers();
                     
                     // Show success message
                     saveMessage.style.display = 'block';
