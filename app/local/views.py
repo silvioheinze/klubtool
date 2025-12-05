@@ -975,7 +975,7 @@ class SessionExportPDFView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
                 margin-bottom: 20px; 
             }
             .header h1 {
-                font-size: 18pt;
+                font-size: 14pt;
                 margin: 0 0 5px 0;
             }
             .header p {
