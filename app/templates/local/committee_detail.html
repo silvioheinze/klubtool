@@ -243,6 +243,8 @@
                                                     <span class="badge bg-danger">{% trans "Rejected" %}</span>
                                                 {% elif motion.status == 'withdrawn' %}
                                                     <span class="badge bg-warning">{% trans "Withdrawn" %}</span>
+                                                {% elif motion.status == 'not_admitted' %}
+                                                    <span class="badge bg-dark">{% trans "Nicht zugelassen" %}</span>
                                                 {% endif %}
                                             </td>
                                             <td>

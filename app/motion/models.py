@@ -18,6 +18,7 @@ class Motion(models.Model):
         ('approved', _('Approved')),
         ('rejected', _('Rejected')),
         ('withdrawn', _('Withdrawn')),
+        ('not_admitted', _('Nicht zugelassen')),
     ]
     
     MOTION_TYPE_CHOICES = [

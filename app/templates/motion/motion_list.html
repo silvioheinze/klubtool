@@ -124,6 +124,8 @@
                                                     <span class="badge bg-dark">{% trans "Withdrawn" %}</span>
                                                 {% elif motion.status == 'tabled' %}
                                                     <span class="badge bg-light text-dark">{% trans "Tabled" %}</span>
+                                                {% elif motion.status == 'not_admitted' %}
+                                                    <span class="badge bg-dark">{% trans "Nicht zugelassen" %}</span>
                                                 {% endif %}
                                             </td>
 
