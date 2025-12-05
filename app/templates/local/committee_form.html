@@ -24,9 +24,19 @@
                     {% endif %}
                 </h1>
                 <div>
-                    <a href="{% url 'local:committee-list' %}" class="btn btn-secondary">
-                        <i class="bi bi-arrow-left"></i> {% trans "Back to List" %}
-                    </a>
+                    {% if form.instance.council %}
+                        <a href="{% url 'local:local-detail' form.instance.council.local.pk %}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> {% trans "Back to Local" %}
+                        </a>
+                    {% elif local %}
+                        <a href="{% url 'local:local-detail' local.pk %}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> {% trans "Back to Local" %}
+                        </a>
+                    {% else %}
+                        <a href="{% url 'local:committee-list' %}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> {% trans "Back to List" %}
+                        </a>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -164,9 +174,22 @@
 
 
                         <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                            <a href="{% url 'local:committee-list' %}" class="btn btn-secondary me-md-2">
-                                {% trans "Cancel" %}
-                            </a>
+                            {% if form.instance.pk %}
+                                {# When editing, link to committee detail #}
+                                <a href="{% url 'local:committee-detail' form.instance.pk %}" class="btn btn-secondary me-md-2">
+                                    {% trans "Cancel" %}
+                                </a>
+                            {% elif local %}
+                                {# When creating with pre-filled council, link to local detail #}
+                                <a href="{% url 'local:local-detail' local.pk %}" class="btn btn-secondary me-md-2">
+                                    {% trans "Cancel" %}
+                                </a>
+                            {% else %}
+                                {# When creating without council, link to committee list #}
+                                <a href="{% url 'local:committee-list' %}" class="btn btn-secondary me-md-2">
+                                    {% trans "Cancel" %}
+                                </a>
+                            {% endif %}
                             <button type="submit" class="btn btn-primary">
                                 {% if committee %}
                                     <i class="bi bi-check-circle"></i> {% trans "Update Committee" %}

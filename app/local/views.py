@@ -1189,6 +1189,18 @@ class CommitteeCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
             except Council.DoesNotExist:
                 pass
         return initial
+    
+    def get_context_data(self, **kwargs):
+        """Add local to context if council is pre-filled"""
+        context = super().get_context_data(**kwargs)
+        council_id = self.request.GET.get('council')
+        if council_id:
+            try:
+                council = Council.objects.get(pk=council_id)
+                context['local'] = council.local
+            except Council.DoesNotExist:
+                pass
+        return context
 
     def get_success_url(self):
         """Redirect to the linked council after successful creation"""
@@ -1212,6 +1224,13 @@ class CommitteeUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     def test_func(self):
         """Check if user has permission to edit Committee objects"""
         return self.request.user.is_superuser
+    
+    def get_context_data(self, **kwargs):
+        """Add local to context"""
+        context = super().get_context_data(**kwargs)
+        if self.object and self.object.council:
+            context['local'] = self.object.council.local
+        return context
 
     def form_valid(self, form):
         """Display success message on form validation"""
