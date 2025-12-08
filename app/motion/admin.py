@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Motion, MotionVote, MotionComment, MotionAttachment, MotionStatus
+from .models import Motion, MotionVote, MotionComment, MotionAttachment, MotionStatus, Question, QuestionAttachment
 
 
 @admin.register(Motion)
@@ -136,6 +136,65 @@ class MotionStatusAdmin(admin.ModelAdmin):
         }),
         ('Timestamps', {
             'fields': ('changed_at',),
+            'classes': ('collapse',)
+        }),
+    )
+
+
+@admin.register(Question)
+class QuestionAdmin(admin.ModelAdmin):
+    """Admin configuration for Question model"""
+    list_display = [
+        'title', 'status', 'group', 'session', 
+        'submitted_by', 'submitted_date', 'supporting_parties_count'
+    ]
+    list_filter = [
+        'status', 'group__party__local', 
+        'session__council', 'submitted_date', 'is_active'
+    ]
+    search_fields = ['title', 'text', 'answer', 'group__name', 'submitted_by__username']
+    readonly_fields = ['submitted_date', 'last_modified', 'created_at', 'updated_at']
+    filter_horizontal = ['parties', 'interventions']
+    date_hierarchy = 'submitted_date'
+    
+    fieldsets = (
+        ('Basic Information', {
+            'fields': ('title', 'text', 'answer', 'status')
+        }),
+        ('Relationships', {
+            'fields': ('session', 'group', 'parties', 'interventions')
+        }),
+        ('Metadata', {
+            'fields': ('submitted_by', 'submitted_date', 'last_modified', 'is_active', 'session_rank'),
+            'classes': ('collapse',)
+        }),
+        ('Timestamps', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def supporting_parties_count(self, obj):
+        """Display count of supporting parties"""
+        return obj.supporting_parties_count
+    supporting_parties_count.short_description = 'Supporting Parties'
+
+
+@admin.register(QuestionAttachment)
+class QuestionAttachmentAdmin(admin.ModelAdmin):
+    """Admin configuration for QuestionAttachment model"""
+    list_display = ['filename', 'question', 'file_type', 'uploaded_by', 'uploaded_at']
+    list_filter = ['file_type', 'uploaded_at', 'question__status']
+    search_fields = ['filename', 'question__title', 'uploaded_by__username', 'description']
+    readonly_fields = ['uploaded_at']
+    date_hierarchy = 'uploaded_at'
+    
+    fieldsets = (
+        ('Attachment Information', {
+            'fields': ('question', 'file', 'filename', 'file_type', 'description')
+        }),
+        ('Upload Information', {
+            'fields': ('uploaded_by', 'uploaded_at'),
             'classes': ('collapse',)
         }),
     )

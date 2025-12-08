@@ -1,0 +1,201 @@
+{% extends "_base.html" %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}
+    {% if object %}
+        {% trans "Edit Question" %} - {{ object.title }}
+    {% else %}
+        {% trans "Create Question" %}
+    {% endif %}
+{% endblock title %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-question-circle"></i>
+                        {% if object %}
+                            {% trans "Edit Question" %}
+                        {% else %}
+                            {% trans "Create Question" %}
+                        {% endif %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.title.id_for_label }}" class="form-label">
+                                {% trans "Title" %} <span class="text-danger">*</span>
+                            </label>
+                            {{ form.title }}
+                            {% if form.title.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.title.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.text.id_for_label }}" class="form-label">
+                                {% trans "Question Text" %} <span class="text-danger">*</span>
+                            </label>
+                            {{ form.text }}
+                            {% if form.text.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.text.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            {% if form.text.help_text %}
+                                <div class="form-text">{{ form.text.help_text }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.answer.id_for_label }}" class="form-label">
+                                {% trans "Answer" %}
+                            </label>
+                            {{ form.answer }}
+                            {% if form.answer.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.answer.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            {% if form.answer.help_text %}
+                                <div class="form-text">{{ form.answer.help_text }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Hidden fields for automatic assignment -->
+                        {{ form.status }}
+                        {{ form.group }}
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.session.id_for_label }}" class="form-label">
+                                {% trans "Session" %} <span class="text-danger">*</span>
+                            </label>
+                            {% if form.session.widget.attrs.readonly %}
+                                <!-- Show session info when field is read-only -->
+                                {% for session in form.session.field.queryset %}
+                                    {% if session.pk == form.session.value %}
+                                        <div class="form-control-plaintext bg-light p-2 border rounded">
+                                            <strong>{{ session.title }}</strong>
+                                            <br><small class="text-muted">{{ session.council.name }} - {{ session.scheduled_date|date:"SHORT_DATE_FORMAT" }}</small>
+                                        </div>
+                                    {% endif %}
+                                {% endfor %}
+                                <!-- Render the read-only field -->
+                                {{ form.session }}
+                                <!-- Add hidden input to ensure session value is submitted -->
+                                <input type="hidden" name="session" value="{{ form.session.value }}">
+                            {% else %}
+                                <!-- Show normal select field when no value -->
+                                {{ form.session }}
+                            {% endif %}
+                            {% if form.session.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.session.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.parties.id_for_label }}" class="form-label">
+                                {% trans "Supporting Parties" %}
+                            </label>
+                            {{ form.parties }}
+                            {% if form.parties.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.parties.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">
+                                {% trans "Select parties that support this question (optional)" %}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.interventions.id_for_label }}" class="form-label">
+                                {% trans "Wortmeldung" %}
+                            </label>
+                            {{ form.interventions }}
+                            {% if form.interventions.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.interventions.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">
+                                {% trans "Select users from the question's group who can speak in session (optional)" %}
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="d-flex justify-content-between mt-4">
+                            {% if object %}
+                                {# When editing, link to question detail #}
+                                <a href="{% url 'motion:question-detail' object.pk %}" class="btn btn-secondary">
+                                    <i class="bi bi-x-circle"></i> {% trans "Cancel" %}
+                                </a>
+                            {% else %}
+                                {# When creating, link to session from form if available #}
+                                {% if form.session.value %}
+                                    <a href="{% url 'local:session-detail' form.session.value %}" class="btn btn-secondary">
+                                        <i class="bi bi-x-circle"></i> {% trans "Cancel" %}
+                                    </a>
+                                {% else %}
+                            <a href="{% url 'motion:question-list' %}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> {% trans "Cancel" %}
+                            </a>
+                                {% endif %}
+                            {% endif %}
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i>
+                                {% if object %}
+                                    {% trans "Update Question" %}
+                                {% else %}
+                                    {% trans "Create Question" %}
+                                {% endif %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">{% trans "Help" %}</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li><strong>{% trans "Title" %}:</strong> {% trans "Enter a clear, descriptive title for the question." %}</li>
+                        <li><strong>{% trans "Question Text" %}:</strong> {% trans "Provide the detailed text and content of the question." %}</li>
+                        <li><strong>{% trans "Answer" %}:</strong> {% trans "Provide the answer to the question (optional)." %}</li>
+                        <li><strong>{% trans "Session" %}:</strong> {% trans "Select the council session where this question will be presented." %}</li>
+                        <li><strong>{% trans "Supporting Parties" %}:</strong> {% trans "Select parties that support this question (optional)." %}</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+

@@ -91,7 +91,7 @@
                         <i class="bi bi-file-text"></i> {% trans "Session Motions" %}
                     </h5>
                     <a href="{% url 'motion:motion-create' %}?session={{ session.pk }}" class="btn btn-sm btn-primary">
-                        <i class="bi bi-plus-circle"></i> {% trans "Add Motion" %}
+                        <i class="bi bi-plus-circle"></i> {% trans "Add" %}
                     </a>
                 </div>
                 <div class="card-body">
@@ -170,6 +170,88 @@
                             <p class="text-muted mt-2">{% trans "No motions have been submitted for this session yet." %}</p>
                             <a href="{% url 'motion:motion-create' %}?session={{ session.pk }}" class="btn btn-primary">
                                 <i class="bi bi-plus-circle"></i> {% trans "Create First Motion" %}
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Session Questions -->
+            <div class="card mt-3">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-question-circle"></i> {% trans "Session Questions" %}
+                    </h5>
+                    <a href="{% url 'motion:question-create' %}?session={{ session.pk }}" class="btn btn-sm btn-primary">
+                        <i class="bi bi-plus-circle"></i> {% trans "Add" %}
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if questions %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 30px;"><i class="bi bi-grip-vertical"></i></th>
+                                        <th style="width: 50px;">#</th>
+                                        <th>{% trans "Title" %}</th>
+                                        <th>{% trans "Status" %}</th>
+                                        <th>{% trans "Parties" %}</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="questions-sortable">
+                                    {% for question in questions %}
+                                        <tr data-question-id="{{ question.pk }}" style="cursor: move;">
+                                            <td class="text-muted">
+                                                <i class="bi bi-grip-vertical"></i>
+                                            </td>
+                                            <td class="text-center fw-bold">
+                                                <span class="question-number"></span>
+                                            </td>
+                                            <td>
+                                                <a href="{% url 'motion:question-detail' question.pk %}">
+                                                    {{ question.title }}
+                                                </a>
+                                                {% if not question.is_active %}
+                                                    <span class="badge bg-danger ms-1">{% trans "Inactive" %}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if question.status == 'draft' %}
+                                                    <span class="badge bg-secondary">{% trans "Draft" %}</span>
+                                                {% elif question.status == 'submitted' %}
+                                                    <span class="badge bg-primary">{% trans "Submitted" %}</span>
+                                                {% elif question.status == 'answered' %}
+                                                    <span class="badge bg-success">{% trans "Answered" %}</span>
+                                                {% elif question.status == 'withdrawn' %}
+                                                    <span class="badge bg-warning">{% trans "Withdrawn" %}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if question.parties.exists %}
+                                                    {% for party in question.parties.all %}
+                                                        <span class="badge" style="background-color: {{ party.color }}; color: white; margin-right: 2px;">
+                                                            {{ party.short_name|default:party.name }}
+                                                        </span>
+                                                    {% endfor %}
+                                                {% else %}
+                                                    <span class="text-muted">-</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div id="save-question-order-message" class="alert alert-info mt-2" style="display: none;">
+                            <i class="bi bi-info-circle"></i> {% trans "Order saved successfully!" %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="bi bi-question-circle text-muted" style="font-size: 3rem;"></i>
+                            <p class="text-muted mt-2">{% trans "No questions have been submitted for this session yet." %}</p>
+                            <a href="{% url 'motion:question-create' %}?session={{ session.pk }}" class="btn btn-primary">
+                                <i class="bi bi-plus-circle"></i> {% trans "Create First Question" %}
                             </a>
                         </div>
                     {% endif %}
@@ -358,6 +440,82 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
     });
+    
+    // Questions drag and drop functionality
+    const questionsTable = document.getElementById('questions-sortable');
+    const saveQuestionMessage = document.getElementById('save-question-order-message');
+    
+    if (questionsTable) {
+        // Set initial numbers for questions
+        function updateQuestionNumbers() {
+            const rows = questionsTable.querySelectorAll('tr[data-question-id]');
+            let numberCounter = 1;
+            rows.forEach((row) => {
+                const numberCell = row.querySelector('td:nth-child(2) .question-number');
+                if (numberCell) {
+                    numberCell.textContent = numberCounter;
+                    numberCounter++;
+                }
+            });
+        }
+        
+        // Set initial numbers on page load
+        updateQuestionNumbers();
+        
+        // Initialize SortableJS for questions
+        const questionSortable = Sortable.create(questionsTable, {
+            handle: '.bi-grip-vertical',
+            animation: 150,
+            ghostClass: 'sortable-ghost',
+            onEnd: function(evt) {
+                // Get all question rows in their new order
+                const rows = questionsTable.querySelectorAll('tr[data-question-id]');
+                const questionOrders = [];
+                let rankCounter = 1;
+                
+                rows.forEach((row) => {
+                    const questionId = row.getAttribute('data-question-id');
+                    questionOrders.push({
+                        question_id: parseInt(questionId),
+                        rank: rankCounter
+                    });
+                    rankCounter++;
+                });
+                
+                // Send AJAX request to save the order
+                fetch('{% url "local:session-update-question-order" session.pk %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({
+                        question_orders: questionOrders
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Update the numbers in the # column
+                        updateQuestionNumbers();
+                        
+                        // Show success message
+                        saveQuestionMessage.style.display = 'block';
+                        setTimeout(() => {
+                            saveQuestionMessage.style.display = 'none';
+                        }, 3000);
+                    } else {
+                        console.error('Error saving order:', data.error);
+                        alert('Error saving order: ' + (data.error || 'Unknown error'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error saving order. Please try again.');
+                });
+            }
+        });
+    }
 });
 </script>
 <style>
@@ -372,6 +530,15 @@ document.addEventListener('DOMContentLoaded', function() {
     cursor: grab;
 }
 #motions-sortable tr[data-motion-id] .bi-grip-vertical:active {
+    cursor: grabbing;
+}
+#questions-sortable tr[data-question-id]:hover {
+    background-color: #f8f9fa;
+}
+#questions-sortable tr[data-question-id] .bi-grip-vertical {
+    cursor: grab;
+}
+#questions-sortable tr[data-question-id] .bi-grip-vertical:active {
     cursor: grabbing;
 }
 </style>

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-10-04 22:29+0200\n"
+"POT-Creation-Date: 2025-12-08 15:48+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,206 +18,262 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: main/settings.py:132 user/forms.py:102 user/models.py:48
+#: group/views.py:837
+msgid "You don't have permission to send meeting invites."
+msgstr ""
+
+#: group/views.py:848
+msgid "No group members with email addresses found."
+msgstr ""
+
+#: group/views.py:856
+#, python-brace-format
+msgid "Meeting Invitation: {meeting_title}"
+msgstr ""
+
+#: group/views.py:905
+#, python-brace-format
+msgid "Meeting invites sent successfully to {count} member(s)."
+msgstr ""
+
+#: group/views.py:910
+#, python-brace-format
+msgid "Failed to send invites to {count} member(s): {emails}"
+msgstr ""
+
+#: main/settings.py:132 user/forms.py:153 user/forms.py:166 user/models.py:48
 msgid "English"
 msgstr "Englisch"
 
-#: main/settings.py:133 user/forms.py:103 user/models.py:49
+#: main/settings.py:133 user/forms.py:154 user/forms.py:167 user/models.py:49
 msgid "German"
 msgstr "Deutsch"
 
-#: motion/models.py:15 templates/local/committee_detail.html:276
-#: templates/local/session_detail.html:121
-#: templates/motion/motion_detail.html:80 templates/motion/motion_list.html:115
+#: motion/models.py:15 motion/models.py:292
+#: templates/local/committee_detail.html:237
+#: templates/local/session_detail.html:135
+#: templates/local/session_detail.html:221
+#: templates/motion/motion_detail.html:80 templates/motion/motion_list.html:112
+#: templates/motion/question_detail.html:85
+#: templates/motion/question_list.html:54
 msgid "Draft"
 msgstr "Entwurf"
 
-#: motion/models.py:16 templates/local/committee_detail.html:257
-#: templates/local/committee_detail.html:278
-#: templates/local/session_detail.html:123
-#: templates/motion/motion_detail.html:82 templates/motion/motion_list.html:117
+#: motion/models.py:16 motion/models.py:293
+#: templates/local/committee_detail.html:218
+#: templates/local/committee_detail.html:239
+#: templates/local/session_detail.html:137
+#: templates/local/session_detail.html:223
+#: templates/motion/motion_detail.html:82 templates/motion/motion_list.html:114
+#: templates/motion/question_detail.html:87
+#: templates/motion/question_list.html:56
 msgid "Submitted"
 msgstr "Eingereicht"
 
-#: motion/models.py:17 motion/models.py:265
+#: motion/models.py:17 motion/models.py:268
 msgid "Refer to Committee"
 msgstr "An Ausschuss verweisen"
 
-#: motion/models.py:18 templates/local/committee_detail.html:280
-#: templates/local/session_detail.html:125
-#: templates/motion/motion_detail.html:84 templates/motion/motion_list.html:121
+#: motion/models.py:18 templates/local/committee_detail.html:241
+#: templates/local/session_detail.html:139
+#: templates/motion/motion_detail.html:84 templates/motion/motion_list.html:118
 msgid "Approved"
 msgstr "Angenommen"
 
-#: motion/models.py:19 templates/local/committee_detail.html:282
-#: templates/local/session_detail.html:127
-#: templates/motion/motion_detail.html:86 templates/motion/motion_list.html:123
+#: motion/models.py:19 templates/local/committee_detail.html:243
+#: templates/local/session_detail.html:141
+#: templates/motion/motion_detail.html:86 templates/motion/motion_list.html:120
 msgid "Rejected"
 msgstr "Abgelehnt"
 
-#: motion/models.py:20 templates/local/committee_detail.html:284
-#: templates/local/session_detail.html:129
-#: templates/motion/motion_detail.html:88 templates/motion/motion_list.html:127
+#: motion/models.py:20 motion/models.py:295
+#: templates/local/committee_detail.html:245
+#: templates/local/session_detail.html:143
+#: templates/local/session_detail.html:227
+#: templates/motion/motion_detail.html:88 templates/motion/motion_list.html:124
+#: templates/motion/question_detail.html:91
+#: templates/motion/question_list.html:60
 msgid "Withdrawn"
 msgstr "Zurückgezogen"
 
-#: motion/models.py:24
-msgid "Resolution"
-msgstr "Resolution"
+#: motion/models.py:21 templates/local/committee_detail.html:247
+#: templates/local/session_detail.html:145
+#: templates/motion/motion_detail.html:90 templates/motion/motion_list.html:128
+msgid "Nicht zugelassen"
+msgstr ""
 
 #: motion/models.py:25
+#, fuzzy
+#| msgid "Resolution"
+msgid "Resolutionsantrag"
+msgstr "Resolution"
+
+#: motion/models.py:26
 msgid "General motion"
 msgstr "Antrag"
 
-#: motion/models.py:141 motion/models.py:261
-#: templates/motion/motion_detail.html:220
-#: templates/motion/motion_detail.html:264
-#: templates/motion/motion_detail.html:286
+#: motion/models.py:43 motion/models.py:308
+msgid ""
+"Wortmeldung: Users from the corresponding group who can speak in session"
+msgstr ""
+
+#: motion/models.py:144 motion/models.py:264
+#: templates/motion/motion_detail.html:236
+#: templates/motion/motion_detail.html:280
+#: templates/motion/motion_detail.html:302
 #: templates/motion/motion_status_change.html:137
 #: templates/motion/motion_vote.html:49
 msgid "Approve"
 msgstr "Zustimmen"
 
-#: motion/models.py:142 motion/models.py:262
-#: templates/motion/motion_detail.html:226
-#: templates/motion/motion_detail.html:270
-#: templates/motion/motion_detail.html:287
+#: motion/models.py:145 motion/models.py:265
+#: templates/motion/motion_detail.html:242
+#: templates/motion/motion_detail.html:286
+#: templates/motion/motion_detail.html:303
 #: templates/motion/motion_status_change.html:138
 #: templates/motion/motion_vote.html:50
 msgid "Reject"
 msgstr "Ablehnen"
 
-#: motion/models.py:263 templates/motion/motion_status_change.html:139
+#: motion/models.py:266 templates/motion/motion_status_change.html:139
 msgid "Abstain"
 msgstr ""
 
-#: motion/models.py:264
+#: motion/models.py:267
 msgid "Withdraw"
 msgstr "Zurückziehen"
 
+#: motion/models.py:294 templates/local/session_detail.html:225
+#: templates/motion/question_detail.html:89
+#: templates/motion/question_list.html:58
+msgid "Answered"
+msgstr ""
+
 #: templates/_base.html:11 templates/_base.html:29
-msgid "Antragstool"
-msgstr "Antragstool"
+msgid "Klubtool"
+msgstr ""
 
 #: templates/_base.html:33
 msgid "Toggle navigation"
 msgstr "Navigation umschalten"
 
 #: templates/_base.html:44 templates/group/group_confirm_delete.html:63
-#: templates/group/group_list.html:89
+#: templates/group/group_list.html:86
 #: templates/group/member_confirm_delete.html:66
-#: templates/group/member_detail.html:99 templates/group/member_detail.html:155
-#: templates/group/member_list.html:94 templates/home.html:96
-#: templates/home.html:119 templates/local/committee_confirm_delete.html:126
-#: templates/local/committee_detail.html:73
-#: templates/local/committee_detail.html:128
-#: templates/local/committee_detail.html:185
+#: templates/group/member_detail.html:99 templates/group/member_list.html:95
+#: templates/home.html:122 templates/home.html:145
+#: templates/local/committee_confirm_delete.html:126
+#: templates/local/committee_detail.html:162
 #: templates/local/council_confirm_delete.html:54
 #: templates/local/council_list.html:50 templates/local/council_list.html:102
 #: templates/local/council_name_form.html:88 templates/local/local_list.html:39
 #: templates/local/local_list.html:93
 #: templates/local/party_confirm_delete.html:57
 #: templates/local/party_list.html:50 templates/local/party_list.html:114
-#: templates/local/session_detail.html:116
+#: templates/local/session_detail.html:130
+#: templates/local/session_detail.html:216
 #: templates/local/session_list.html:136
 #: templates/local/term_confirm_delete.html:60
 #: templates/local/term_detail.html:47 templates/local/term_detail.html:112
 #: templates/local/term_list.html:49 templates/local/term_list.html:116
-#: templates/local/term_seat_distribution.html:135 templates/user/list.html:85
-#: templates/user/management.html:207 templates/user/role_list.html:42
-#: templates/user/role_list.html:96
+#: templates/local/term_seat_distribution.html:135
+#: templates/user/role_list.html:42 templates/user/role_list.html:96
 msgid "Inactive"
 msgstr "Inaktiv"
 
-#: templates/_base.html:54 templates/motion/motion_list.html:84
+#: templates/_base.html:54 templates/motion/motion_list.html:82
 msgid "Motions"
 msgstr "Anträge"
 
-#: templates/_base.html:62
+#: templates/_base.html:72
 msgid "Next Session"
 msgstr "Nächste Sitzung"
 
-msgid "Order"
-msgstr "Reihenfolge"
-
-msgid "Order of the agenda item (1, 2, 3, etc.)"
-msgstr "Reihenfolge des Tagesordnungspunkts (1, 2, 3, etc.)"
-
-#: templates/_base.html:81 templates/user/settings.html:6
+#: templates/_base.html:91 templates/user/settings.html:6
 #: templates/user/settings.html:9
 msgid "Settings"
 msgstr "Einstellungen"
 
-#: templates/_base.html:100 templates/user/management.html:6
-#: templates/user/management.html:13 templates/user/role_form.html:98
+#: templates/_base.html:111 templates/user/admin_settings.html:5
+#: templates/user/admin_settings.html:8
+#, fuzzy
+#| msgid "Account Settings"
+msgid "Admin Settings"
+msgstr "Kontoeinstellungen"
+
+#: templates/_base.html:115 templates/user/role_form.html:98
 msgid "User Management"
 msgstr "Benutzerverwaltung"
 
-#: templates/_base.html:103 templates/local/local_list.html:6
+#: templates/_base.html:118 templates/local/local_list.html:6
 #: templates/local/local_list.html:13
 msgid "Local Management"
 msgstr "Bezirksverwaltung"
 
-#: templates/_base.html:106 templates/local/council_list.html:6
+#: templates/_base.html:121 templates/local/council_list.html:6
 #: templates/local/council_list.html:13
 msgid "Council Management"
 msgstr "Vertretungsverwaltung"
 
-#: templates/_base.html:112
+#: templates/_base.html:124
+msgid "Group Management"
+msgstr "Gruppenverwaltung"
+
+#: templates/_base.html:130
 msgid "Log Out"
 msgstr "Abmelden"
 
-#: templates/_base.html:119 templates/user/password_reset_from_key.html:119
+#: templates/_base.html:137 templates/user/password_reset_from_key.html:119
 msgid "Log In"
 msgstr "Anmelden"
 
-#: templates/_base.html:123
+#: templates/_base.html:141
 msgid "Sign Up"
 msgstr "Registrieren"
 
-#: templates/_base.html:148
+#: templates/_base.html:166
 msgid "Privacy"
 msgstr "Datenschutz"
 
-#: templates/_base.html:151
+#: templates/_base.html:169
 msgid "About Us"
 msgstr "Über uns"
 
 #: templates/account/login.html:4 templates/account/login.html:14
 #: templates/account/login.html:85 templates/account/signup.html:96
 #: templates/user/login.html:4 templates/user/login.html:14
-#: templates/user/login.html:91 templates/user/signup.html:107
+#: templates/user/login.html:91
 msgid "Log in"
 msgstr ""
 
 #: templates/account/login.html:24 templates/account/logout.html:36
 #: templates/account/signup.html:24 templates/user/login.html:29
-#: templates/user/logout.html:36 templates/user/password_reset.html:35
-#: templates/user/password_reset_from_key.html:52 templates/user/signup.html:24
+#: templates/user/logout.html:36 templates/user/password_change.html:25
+#: templates/user/password_reset.html:35
+#: templates/user/password_reset_from_key.html:52
 msgid "Please correct the errors below."
 msgstr ""
 
 #: templates/account/login.html:31 templates/account/signup.html:31
 #: templates/user/login.html:37 templates/user/password_reset.html:42
-#: templates/user/signup.html:31
+#: templates/user/signup.html:89 user/forms.py:181 user/forms.py:219
 msgid "Email Address"
 msgstr "E-Mail-Adresse"
 
 #: templates/account/login.html:38 templates/account/signup.html:38
 #: templates/user/login.html:44 templates/user/password_reset.html:49
-#: templates/user/signup.html:38
 msgid "Enter your email address"
 msgstr ""
 
 #: templates/account/login.html:51 templates/account/signup.html:51
-#: templates/user/login.html:57 templates/user/signup.html:51
+#: templates/user/login.html:57 templates/user/signup.html:116
 msgid "Password"
-msgstr ""
+msgstr "Passwort"
 
 #: templates/account/login.html:58 templates/account/signup.html:58
-#: templates/user/login.html:64 templates/user/signup.html:58
+#: templates/user/login.html:64
 msgid "Enter your password"
-msgstr ""
+msgstr "Gib dein Passwort ein."
 
 #: templates/account/login.html:77 templates/account/signup.html:77
 #: templates/user/login.html:83
@@ -232,7 +288,7 @@ msgstr ""
 #: templates/account/signup.html:14 templates/account/signup.html:85
 #: templates/user/login.html:102
 msgid "Sign up"
-msgstr ""
+msgstr "Registrieren"
 
 #: templates/account/login.html:103 templates/user/login.html:109
 msgid "Forgot your password?"
@@ -242,23 +298,32 @@ msgstr ""
 #: templates/account/logout.html:43 templates/user/logout.html:4
 #: templates/user/logout.html:14 templates/user/logout.html:43
 msgid "Log out"
-msgstr ""
+msgstr "Abmelden"
 
 #: templates/account/logout.html:23 templates/user/logout.html:23
 msgid "Confirm Logout"
-msgstr ""
+msgstr "Abmeldebestätigung"
 
 #: templates/account/logout.html:27 templates/user/logout.html:27
 msgid "Do you really want to log out?"
-msgstr ""
+msgstr "Wirklich abmelden?"
 
 #: templates/account/logout.html:47
 #: templates/group/group_confirm_delete.html:83
-#: templates/group/group_detail.html:283 templates/group/group_form.html:117
+#: templates/group/group_detail.html:352 templates/group/group_form.html:117
+#: templates/group/meeting_confirm_delete.html:66
+#: templates/group/meeting_detail.html:225
+#: templates/group/meeting_detail.html:266
+#: templates/group/meeting_form.html:201 templates/group/meeting_form.html:205
+#: templates/group/meeting_form.html:209
 #: templates/group/member_confirm_delete.html:86
-#: templates/group/member_form.html:155
+#: templates/group/member_form.html:175 templates/group/member_form.html:179
 #: templates/local/committee_confirm_delete.html:82
-#: templates/local/committee_form.html:150
+#: templates/local/committee_form.html:180
+#: templates/local/committee_form.html:185
+#: templates/local/committee_form.html:190
+#: templates/local/committee_member_form.html:155
+#: templates/local/committee_member_form.html:159
 #: templates/local/council_confirm_delete.html:74
 #: templates/local/council_form.html:92
 #: templates/local/council_name_form.html:59
@@ -268,38 +333,148 @@ msgstr ""
 #: templates/local/party_form.html:213
 #: templates/local/session_attachment_form.html:94
 #: templates/local/session_confirm_delete.html:117
-#: templates/local/session_form.html:246 templates/local/session_form.html:250
+#: templates/local/session_form.html:210 templates/local/session_form.html:214
 #: templates/local/term_confirm_delete.html:83
 #: templates/local/term_form.html:137
 #: templates/local/term_seat_distribution_form.html:151
-#: templates/motion/motion_form.html:138
-#: templates/motion/motion_group_decision.html:127
+#: templates/motion/motion_confirm_delete.html:95
+#: templates/motion/motion_form.html:174 templates/motion/motion_form.html:180
+#: templates/motion/motion_form.html:184
+#: templates/motion/motion_group_decision.html:101
 #: templates/motion/motion_group_decision_confirm_delete.html:61
 #: templates/motion/motion_status_change.html:220
 #: templates/motion/motion_status_confirm_delete.html:77
-#: templates/motion/motion_vote.html:118 templates/user/confirm_delete.html:13
-#: templates/user/data_confirm_delete.html:13 templates/user/logout.html:47
+#: templates/motion/motion_vote.html:118
+#: templates/motion/question_attachment.html:75
+#: templates/motion/question_confirm_delete.html:92
+#: templates/motion/question_form.html:154
+#: templates/motion/question_form.html:160
+#: templates/motion/question_form.html:164
+#: templates/user/confirm_delete.html:34
+#: templates/user/data_confirm_delete.html:34 templates/user/logout.html:47
 #: templates/user/role_confirm_delete.html:53 templates/user/role_form.html:123
 msgid "Cancel"
 msgstr "Abbrechen"
 
-#: templates/account/signup.html:93 templates/user/signup.html:104
+#: templates/account/signup.html:93 templates/user/signup.html:161
 msgid "Already have an account?"
+msgstr ""
+
+#: templates/group/email/meeting_invite.html:91
+#: templates/group/email/meeting_invite.txt:2
+#, fuzzy
+#| msgid "Motion Information"
+msgid "Meeting Invitation"
+msgstr "Antragsinformation"
+
+#: templates/group/email/meeting_invite.html:94
+#: templates/group/email/meeting_invite.txt:4
+#: templates/user/email/password_reset_key_message.html:94
+#: templates/user/email/welcome_email.html:67
+#: templates/user/email/welcome_email.txt:4
+msgid "Hello"
+msgstr "Hallo"
+
+#: templates/group/email/meeting_invite.html:96
+#: templates/group/email/meeting_invite.txt:6
+msgid "You are invited to attend the following group meeting:"
+msgstr ""
+
+#: templates/group/email/meeting_invite.html:101
+#: templates/group/email/meeting_invite.txt:9
+#: templates/group/meeting_confirm_delete.html:37
+#: templates/group/meeting_detail.html:44 templates/group/meeting_form.html:167
+#: templates/group/meeting_form.html:241 templates/group/meeting_list.html:45
+#: templates/group/meeting_list.html:85
+#: templates/group/member_confirm_delete.html:50
+#: templates/group/member_detail.html:42 templates/group/member_form.html:113
+#: templates/group/member_form.html:210 templates/group/member_list.html:58
+#: templates/local/committee_detail.html:217
+#: templates/motion/motion_confirm_delete.html:62
+#: templates/motion/motion_detail.html:55
+#: templates/motion/question_confirm_delete.html:59
+#: templates/motion/question_detail.html:60
+#: templates/motion/question_list.html:39
+msgid "Group"
+msgstr ""
+
+#: templates/group/email/meeting_invite.html:105
+#: templates/group/email/meeting_invite.txt:10
+#: templates/group/meeting_confirm_delete.html:42
+#: templates/group/meeting_detail.html:52 templates/group/meeting_form.html:240
+#: templates/local/council_detail.html:146 templates/local/session_list.html:91
+msgid "Date & Time"
+msgstr ""
+
+#: templates/group/email/meeting_invite.html:110
+#: templates/group/email/meeting_invite.txt:12
+#: templates/group/group_detail.html:206
+#: templates/group/meeting_confirm_delete.html:46
+#: templates/group/meeting_detail.html:63 templates/group/meeting_form.html:246
+#: templates/group/meeting_list.html:94 templates/local/session_detail.html:67
+msgid "Location"
+msgstr "Ort"
+
+#: templates/group/email/meeting_invite.html:118
+#: templates/group/email/meeting_invite.txt:16
+#: templates/group/group_confirm_delete.html:73
+#: templates/group/group_detail.html:212 templates/group/meeting_detail.html:81
+#: templates/group/meeting_detail.html:206
+#: templates/group/meeting_detail.html:250
+#: templates/group/meeting_form.html:247 templates/group/meeting_list.html:100
+#: templates/local/committee_confirm_delete.html:65
+#: templates/local/committee_detail.html:82
+#: templates/local/committee_form.html:159
+#: templates/local/council_confirm_delete.html:64
+#: templates/local/local_confirm_delete.html:28
+#: templates/local/local_form.html:91 templates/local/local_list.html:71
+#: templates/local/party_confirm_delete.html:67
+#: templates/local/party_detail.html:70 templates/local/party_form.html:251
+#: templates/local/session_attachment_form.html:73
+#: templates/local/session_confirm_delete.html:105
+#: templates/local/session_detail.html:81
+#: templates/local/term_confirm_delete.html:73
+#: templates/local/term_detail.html:74 templates/local/term_form.html:121
+#: templates/local/term_form.html:164
+#: templates/motion/motion_group_decision.html:80
+#: templates/motion/motion_group_decision_confirm_delete.html:50
+#: templates/motion/question_attachment.html:61
+#: templates/motion/question_attachment.html:95
+#: templates/user/role_confirm_delete.html:27 templates/user/role_form.html:61
+#: templates/user/role_list.html:73
+msgid "Description"
+msgstr "Beschreibung"
+
+#: templates/group/email/meeting_invite.html:125
+#: templates/group/email/meeting_invite.txt:21
+#: templates/group/meeting_detail.html:90
+msgid "Agenda"
+msgstr ""
+
+#: templates/group/email/meeting_invite.html:138
+#: templates/group/email/meeting_invite.txt:30
+#: templates/user/email/welcome_email.html:92
+#: templates/user/email/welcome_email.txt:17
+msgid "Best regards"
+msgstr ""
+
+#: templates/group/email/meeting_invite.txt:8
+msgid "Meeting Title"
 msgstr ""
 
 #: templates/group/group_confirm_delete.html:5
 #: templates/group/group_confirm_delete.html:12
 #: templates/group/group_confirm_delete.html:86
-#: templates/group/group_detail.html:199
+#: templates/group/group_detail.html:286
 msgid "Delete Group"
 msgstr "Gruppe löschen"
 
 #: templates/group/group_confirm_delete.html:15
-#: templates/group/group_detail.html:19 templates/group/group_form.html:28
+#: templates/group/group_form.html:28 templates/group/meeting_form.html:37
 #: templates/group/member_confirm_delete.html:15
-#: templates/group/member_detail.html:19 templates/group/member_form.html:28
-#: templates/local/committee_detail.html:19
-#: templates/local/committee_form.html:28
+#: templates/group/member_detail.html:19 templates/group/member_form.html:33
+#: templates/local/committee_form.html:37
+#: templates/local/committee_member_form.html:33
 #: templates/local/council_confirm_delete.html:15
 #: templates/local/council_form.html:28
 #: templates/local/party_confirm_delete.html:15
@@ -315,20 +490,25 @@ msgstr "Zurück zur Liste"
 #: templates/local/council_confirm_delete.html:26
 #: templates/local/party_confirm_delete.html:26
 #: templates/local/term_confirm_delete.html:26
+#: templates/motion/motion_confirm_delete.html:26
 #: templates/motion/motion_group_decision_confirm_delete.html:30
 #: templates/motion/motion_status_confirm_delete.html:29
+#: templates/motion/question_confirm_delete.html:26
 msgid "Confirm Deletion"
 msgstr "Löschung bestätigen"
 
 #: templates/group/group_confirm_delete.html:30
+#: templates/group/meeting_confirm_delete.html:17
 #: templates/group/member_confirm_delete.html:30
 #: templates/local/committee_confirm_delete.html:31
 #: templates/local/council_confirm_delete.html:30
 #: templates/local/local_confirm_delete.html:19
 #: templates/local/party_confirm_delete.html:30
 #: templates/local/term_confirm_delete.html:30
+#: templates/motion/motion_confirm_delete.html:30
 #: templates/motion/motion_group_decision_confirm_delete.html:35
 #: templates/motion/motion_status_confirm_delete.html:34
+#: templates/motion/question_confirm_delete.html:30
 #: templates/user/role_confirm_delete.html:19
 msgid "Warning"
 msgstr "Warnung"
@@ -342,8 +522,10 @@ msgstr "Sind Sie sicher, dass Sie die Gruppe löschen möchten"
 #: templates/local/council_confirm_delete.html:33
 #: templates/local/party_confirm_delete.html:33
 #: templates/local/term_confirm_delete.html:33
+#: templates/motion/motion_confirm_delete.html:33
 #: templates/motion/motion_group_decision_confirm_delete.html:36
 #: templates/motion/motion_status_confirm_delete.html:34
+#: templates/motion/question_confirm_delete.html:33
 msgid "This action cannot be undone."
 msgstr "Diese Aktion kann nicht rückgängig gemacht werden."
 
@@ -353,8 +535,8 @@ msgid "Group Details"
 msgstr "Gruppendetails"
 
 #: templates/group/group_confirm_delete.html:43
-#: templates/group/group_detail.html:36 templates/group/group_form.html:146
-#: templates/group/group_list.html:57
+#: templates/group/group_detail.html:33 templates/group/group_form.html:146
+#: templates/group/group_list.html:54
 #: templates/local/committee_confirm_delete.html:37
 #: templates/local/committee_detail.html:36
 #: templates/local/committee_list.html:95
@@ -382,16 +564,16 @@ msgid "Short Name"
 msgstr "Kurzname"
 
 #: templates/group/group_confirm_delete.html:49
-#: templates/group/group_detail.html:39 templates/group/group_detail.html:217
-#: templates/group/group_form.html:147 templates/group/group_list.html:58
+#: templates/group/group_detail.html:36 templates/group/group_form.html:147
+#: templates/group/group_list.html:55
 #: templates/group/member_confirm_delete.html:53
-#: templates/group/member_detail.html:49 templates/group/member_detail.html:160
-#: templates/group/member_list.html:62 templates/home.html:34
-#: templates/local/council_detail.html:45 templates/local/local_detail.html:48
+#: templates/group/member_detail.html:49 templates/group/member_list.html:59
+#: templates/home.html:60 templates/local/council_detail.html:45
+#: templates/local/local_detail.html:48
 #: templates/local/term_seat_distribution.html:59
 #: templates/local/term_seat_distribution_list.html:41
 #: templates/local/term_seat_distribution_list.html:89
-#: templates/motion/motion_detail.html:285
+#: templates/motion/motion_detail.html:301
 #: templates/motion/motion_status_change.html:136
 #: templates/motion/motion_status_change.html:157
 #: templates/motion/motion_vote.html:48 templates/motion/motion_vote.html:68
@@ -399,10 +581,9 @@ msgid "Party"
 msgstr "Partei"
 
 #: templates/group/group_confirm_delete.html:52
-#: templates/group/group_detail.html:55 templates/group/group_detail.html:218
-#: templates/group/group_list.html:59 templates/group/member_detail.html:56
+#: templates/group/group_detail.html:52 templates/group/group_list.html:56
+#: templates/group/member_detail.html:56
 #: templates/local/committee_confirm_delete.html:130
-#: templates/local/committee_detail.html:132
 #: templates/local/council_confirm_delete.html:46
 #: templates/local/council_detail.html:27 templates/local/council_form.html:72
 #: templates/local/council_form.html:116 templates/local/council_list.html:35
@@ -416,25 +597,24 @@ msgid "Local District"
 msgstr "Bezirk"
 
 #: templates/group/group_confirm_delete.html:55
-#: templates/group/group_detail.html:50 templates/group/group_detail.html:93
-#: templates/group/group_detail.html:219 templates/group/group_list.html:60
+#: templates/group/group_detail.html:47 templates/group/group_detail.html:90
+#: templates/group/group_list.html:57
 #: templates/local/committee_confirm_delete.html:55
-#: templates/local/committee_detail.html:63
+#: templates/local/committee_detail.html:72
 #: templates/local/committee_list.html:99
 #: templates/local/council_detail.html:253
 msgid "Members"
 msgstr "Mitglieder"
 
 #: templates/group/group_confirm_delete.html:58
-#: templates/group/group_list.html:61
+#: templates/group/group_detail.html:217 templates/group/group_list.html:58
+#: templates/group/meeting_confirm_delete.html:50
+#: templates/group/meeting_detail.html:67 templates/group/meeting_list.html:105
 #: templates/group/member_confirm_delete.html:61
-#: templates/group/member_detail.html:94 templates/group/member_detail.html:151
-#: templates/group/member_list.html:65
+#: templates/group/member_detail.html:94 templates/group/member_list.html:62
 #: templates/local/committee_confirm_delete.html:122
-#: templates/local/committee_detail.html:68
-#: templates/local/committee_detail.html:124
-#: templates/local/committee_detail.html:164
-#: templates/local/committee_detail.html:255
+#: templates/local/committee_detail.html:141
+#: templates/local/committee_detail.html:216
 #: templates/local/council_confirm_delete.html:49
 #: templates/local/council_detail.html:147 templates/local/council_list.html:46
 #: templates/local/council_list.html:82
@@ -445,28 +625,30 @@ msgstr "Mitglieder"
 #: templates/local/party_list.html:46 templates/local/party_list.html:84
 #: templates/local/session_confirm_delete.html:58
 #: templates/local/session_detail.html:42
-#: templates/local/session_detail.html:104 templates/local/session_list.html:45
+#: templates/local/session_detail.html:106
+#: templates/local/session_detail.html:198 templates/local/session_list.html:45
 #: templates/local/session_list.html:92
 #: templates/local/term_confirm_delete.html:55
 #: templates/local/term_detail.html:42 templates/local/term_detail.html:108
 #: templates/local/term_list.html:45 templates/local/term_list.html:91
 #: templates/local/term_seat_distribution.html:130
-#: templates/motion/motion_detail.html:77 templates/motion/motion_list.html:94
+#: templates/motion/motion_confirm_delete.html:46
+#: templates/motion/motion_detail.html:77 templates/motion/motion_list.html:92
 #: templates/motion/motion_status_confirm_delete.html:41
-#: templates/user/list.html:35 templates/user/role_list.html:38
+#: templates/motion/question_confirm_delete.html:46
+#: templates/motion/question_detail.html:82
+#: templates/motion/question_list.html:37 templates/user/role_list.html:38
 #: templates/user/role_list.html:75
 msgid "Status"
 msgstr "Status"
 
 #: templates/group/group_confirm_delete.html:61
-#: templates/group/group_list.html:87
+#: templates/group/group_list.html:84
 #: templates/group/member_confirm_delete.html:64
-#: templates/group/member_detail.html:97 templates/group/member_detail.html:153
-#: templates/group/member_list.html:92 templates/home.html:94
-#: templates/home.html:117 templates/local/committee_confirm_delete.html:124
-#: templates/local/committee_detail.html:71
-#: templates/local/committee_detail.html:126
-#: templates/local/committee_detail.html:183
+#: templates/group/member_detail.html:97 templates/group/member_list.html:93
+#: templates/home.html:120 templates/home.html:143
+#: templates/local/committee_confirm_delete.html:124
+#: templates/local/committee_detail.html:160
 #: templates/local/council_confirm_delete.html:52
 #: templates/local/council_list.html:49 templates/local/council_list.html:100
 #: templates/local/council_name_form.html:86 templates/local/local_list.html:38
@@ -476,17 +658,16 @@ msgstr "Status"
 #: templates/local/term_confirm_delete.html:58
 #: templates/local/term_detail.html:45 templates/local/term_detail.html:110
 #: templates/local/term_list.html:48 templates/local/term_list.html:114
-#: templates/local/term_seat_distribution.html:133 templates/user/list.html:83
-#: templates/user/management.html:207 templates/user/role_list.html:41
-#: templates/user/role_list.html:94
+#: templates/local/term_seat_distribution.html:133
+#: templates/user/role_list.html:41 templates/user/role_list.html:94
 msgid "Active"
 msgstr "Aktiv"
 
 #: templates/group/group_confirm_delete.html:67
-#: templates/group/group_list.html:62 templates/group/member_detail.html:106
+#: templates/group/group_list.html:59 templates/group/meeting_detail.html:172
+#: templates/group/member_detail.html:106
 #: templates/local/committee_confirm_delete.html:60
 #: templates/local/committee_confirm_delete.html:131
-#: templates/local/committee_detail.html:133
 #: templates/local/council_confirm_delete.html:58
 #: templates/local/council_list.html:83
 #: templates/local/council_name_form.html:92
@@ -502,37 +683,15 @@ msgstr "Aktiv"
 msgid "Created"
 msgstr "Erstellt"
 
-#: templates/group/group_confirm_delete.html:73
-#: templates/local/committee_confirm_delete.html:65
-#: templates/local/committee_detail.html:82
-#: templates/local/committee_form.html:131
-#: templates/local/council_confirm_delete.html:64
-#: templates/local/local_confirm_delete.html:28
-#: templates/local/local_form.html:91 templates/local/local_list.html:71
-#: templates/local/party_confirm_delete.html:67
-#: templates/local/party_detail.html:70 templates/local/party_form.html:251
-#: templates/local/session_attachment_form.html:73
-#: templates/local/session_confirm_delete.html:105
-#: templates/local/session_detail.html:81
-#: templates/local/term_confirm_delete.html:73
-#: templates/local/term_detail.html:74 templates/local/term_form.html:121
-#: templates/local/term_form.html:164
-#: templates/motion/motion_group_decision.html:106
-#: templates/motion/motion_group_decision_confirm_delete.html:50
-#: templates/user/role_confirm_delete.html:27 templates/user/role_form.html:61
-#: templates/user/role_list.html:73
-msgid "Description"
-msgstr "Beschreibung"
-
 #: templates/group/group_confirm_delete.html:97
-#: templates/group/group_detail.html:107 templates/group/group_detail.html:187
-#: templates/group/group_list.html:63
+#: templates/group/group_detail.html:104 templates/group/group_detail.html:271
+#: templates/group/group_list.html:60 templates/group/meeting_detail.html:139
 #: templates/group/member_confirm_delete.html:100
-#: templates/group/member_detail.html:124 templates/group/member_list.html:66
+#: templates/group/member_detail.html:124 templates/group/member_list.html:63
 #: templates/local/committee_confirm_delete.html:96
 #: templates/local/committee_detail.html:94
-#: templates/local/committee_detail.html:165
-#: templates/local/committee_detail.html:258
+#: templates/local/committee_detail.html:142
+#: templates/local/committee_detail.html:219
 #: templates/local/committee_list.html:100
 #: templates/local/council_confirm_delete.html:88
 #: templates/local/council_detail.html:148
@@ -541,184 +700,254 @@ msgstr "Beschreibung"
 #: templates/local/local_list.html:74
 #: templates/local/party_confirm_delete.html:91
 #: templates/local/party_detail.html:86 templates/local/party_list.html:86
-#: templates/local/session_detail.html:105
-#: templates/local/session_detail.html:230 templates/local/session_list.html:93
+#: templates/local/session_detail.html:322 templates/local/session_list.html:93
 #: templates/local/term_confirm_delete.html:97
 #: templates/local/term_detail.html:84 templates/local/term_list.html:93
 #: templates/local/term_seat_distribution.html:62
 #: templates/local/term_seat_distribution.html:147
 #: templates/local/term_seat_distribution_list.html:93
-#: templates/motion/motion_detail.html:401 templates/motion/motion_list.html:96
-#: templates/user/list.html:39 templates/user/role_list.html:77
+#: templates/motion/motion_confirm_delete.html:109
+#: templates/motion/motion_detail.html:417
+#: templates/motion/question_confirm_delete.html:106
+#: templates/user/list.html:41 templates/user/role_list.html:77
 msgid "Actions"
 msgstr "Aktionen"
 
 #: templates/group/group_confirm_delete.html:102
 #: templates/group/member_confirm_delete.html:111
-#: templates/group/member_detail.html:139 templates/home.html:58
+#: templates/group/member_detail.html:139 templates/home.html:84
 msgid "View Group"
 msgstr "Klub anzeigen"
 
 #: templates/group/group_confirm_delete.html:105
-#: templates/group/group_detail.html:192 templates/group/group_form.html:7
+#: templates/group/group_detail.html:276 templates/group/group_form.html:7
 #: templates/group/group_form.html:21 templates/group/group_form.html:41
 msgid "Edit Group"
 msgstr "Klub bearbeiten"
 
 #: templates/group/group_confirm_delete.html:108
-#: templates/group/group_detail.html:205
 #: templates/local/party_confirm_delete.html:96
 msgid "View Party"
 msgstr "Partei anzeigen"
 
-#: templates/group/group_detail.html:16 templates/group/group_list.html:99
-#: templates/group/member_detail.html:16 templates/group/member_list.html:103
+#: templates/group/group_detail.html:16 templates/group/group_list.html:96
+#: templates/group/meeting_detail.html:20 templates/group/meeting_list.html:119
+#: templates/group/member_detail.html:16 templates/group/member_list.html:104
 #: templates/local/committee_detail.html:16
 #: templates/local/council_detail.html:16 templates/local/council_list.html:114
 #: templates/local/local_detail.html:16 templates/local/local_detail.html:178
 #: templates/local/local_detail.html:245 templates/local/local_list.html:105
 #: templates/local/party_detail.html:16 templates/local/party_list.html:126
-#: templates/local/session_detail.html:138 templates/local/term_detail.html:16
-#: templates/local/term_list.html:131
+#: templates/local/term_detail.html:16 templates/local/term_list.html:131
 #: templates/local/term_seat_distribution.html:90
 #: templates/local/term_seat_distribution_list.html:129
-#: templates/motion/motion_detail.html:23 templates/user/list.html:92
-#: templates/user/list.html:93 templates/user/role_list.html:105
+#: templates/motion/motion_detail.html:23
+#: templates/motion/question_detail.html:22 templates/user/list.html:94
+#: templates/user/list.html:95 templates/user/role_list.html:105
 msgid "Edit"
 msgstr "Bearbeiten"
 
-#: templates/group/group_detail.html:30
+#: templates/group/group_detail.html:27
 msgid "Group Information"
 msgstr "Klubinformation"
 
-#: templates/group/group_detail.html:71
+#: templates/group/group_detail.html:68
 #, fuzzy
 #| msgid "Group Decisions"
 msgid "Group Admins"
 msgstr "Klubentscheidungen"
 
-#: templates/group/group_detail.html:77
+#: templates/group/group_detail.html:74
 msgid "Admin"
 msgstr ""
 
-#: templates/group/group_detail.html:95 templates/group/group_detail.html:176
-#: templates/group/group_detail.html:195 templates/group/management.html:135
-#: templates/group/management.html:160 templates/group/member_form.html:9
-#: templates/group/member_form.html:23 templates/group/member_form.html:162
-#: templates/group/member_list.html:22 templates/group/member_list.html:122
+#: templates/group/group_detail.html:92 templates/group/group_detail.html:173
+#: templates/group/group_detail.html:279 templates/group/member_form.html:9
+#: templates/group/member_form.html:23 templates/group/member_form.html:187
+#: templates/group/member_list.html:19 templates/group/member_list.html:123
 #: templates/local/committee_detail.html:106
-#: templates/local/committee_detail.html:148
+#: templates/local/committee_detail.html:127
+#: templates/local/committee_member_form.html:166
 msgid "Add Member"
 msgstr "Mitglied hinzufügen"
 
-#: templates/group/group_detail.html:104
+#: templates/group/group_detail.html:101
 #: templates/group/member_confirm_delete.html:44
-#: templates/group/member_detail.html:36 templates/group/member_form.html:184
-#: templates/group/member_list.html:60
+#: templates/group/member_detail.html:36 templates/group/member_form.html:209
+#: templates/group/member_list.html:57
+#: templates/local/committee_member_form.html:98
 msgid "User"
 msgstr "Benutzer"
 
-#: templates/group/group_detail.html:105
+#: templates/group/group_detail.html:102
 #: templates/group/member_confirm_delete.html:56
-#: templates/group/member_form.html:186 templates/group/member_list.html:63
-#: templates/home.html:33 templates/local/committee_detail.html:162
-#: templates/user/list.html:34
+#: templates/group/member_form.html:211 templates/group/member_list.html:60
+#: templates/home.html:59 templates/local/committee_detail.html:139
+#: templates/local/committee_member_form.html:117 templates/user/list.html:39
 msgid "Role"
 msgstr "Rolle"
 
-#: templates/group/group_detail.html:106
+#: templates/group/group_detail.html:103
 #: templates/group/member_confirm_delete.html:70
-#: templates/group/member_detail.html:103
-#: templates/group/member_detail.html:161 templates/group/member_list.html:64
-#: templates/home.html:35 templates/local/committee_detail.html:163
+#: templates/group/member_detail.html:103 templates/group/member_list.html:61
+#: templates/home.html:61 templates/local/committee_detail.html:140
 msgid "Joined"
 msgstr "Beigetreten"
 
-#: templates/group/group_detail.html:121 templates/group/group_detail.html:257
-#: templates/group/member_detail.html:71 templates/user/list.html:57
-#: templates/user/management.html:153
+#: templates/group/group_detail.html:118 templates/group/group_detail.html:326
+#: templates/group/member_detail.html:71 templates/user/list.html:67
 #, fuzzy
 #| msgid "Group Information"
 msgid "Group Admin"
 msgstr "Klubinformation"
 
-#: templates/group/group_detail.html:125 templates/group/group_detail.html:261
-#: templates/group/member_detail.html:75 templates/group/member_form.html:192
-#: templates/user/list.html:61 templates/user/management.html:157
+#: templates/group/group_detail.html:122 templates/group/group_detail.html:330
+#: templates/group/member_detail.html:75 templates/group/member_form.html:217
+#: templates/user/list.html:71
 msgid "Leader"
 msgstr "Klubobmensch"
 
-#: templates/group/group_detail.html:129 templates/group/group_detail.html:265
-#: templates/group/member_detail.html:79 templates/group/member_form.html:193
-#: templates/user/list.html:65 templates/user/management.html:161
+#: templates/group/group_detail.html:126 templates/group/group_detail.html:334
+#: templates/group/member_detail.html:79 templates/group/member_form.html:218
+#: templates/user/list.html:75
 msgid "Deputy Leader"
 msgstr "Klubobmensch Stv."
 
-#: templates/group/group_detail.html:134 templates/group/group_detail.html:270
-#: templates/group/member_detail.html:84 templates/group/member_form.html:196
-#: templates/user/list.html:69 templates/user/management.html:165
+#: templates/group/group_detail.html:131 templates/group/group_detail.html:339
+#: templates/group/member_detail.html:84 templates/user/list.html:79
 msgid "Board Member"
 msgstr ""
 
-#: templates/group/group_detail.html:140 templates/group/group_detail.html:240
-#: templates/group/member_detail.html:90 templates/group/member_form.html:191
-#: templates/local/committee_detail.html:161
+#: templates/group/group_detail.html:137 templates/group/group_detail.html:309
+#: templates/group/member_detail.html:90 templates/group/member_form.html:216
+#: templates/local/committee_detail.html:138
+#: templates/local/committee_member_form.html:185
 msgid "Member"
 msgstr "Mitglied"
 
-#: templates/group/group_detail.html:155 templates/user/management.html:19
+#: templates/group/group_detail.html:152
 msgid "Manage Roles"
 msgstr ""
 
-#: templates/group/group_detail.html:160 templates/group/member_detail.html:132
-#: templates/group/member_list.html:106
+#: templates/group/group_detail.html:157 templates/group/member_detail.html:132
+#: templates/group/member_list.html:107
 msgid "Are you sure you want to remove this member?"
 msgstr ""
 
-#: templates/group/group_detail.html:173 templates/group/member_list.html:119
-#: templates/local/committee_detail.html:220
+#: templates/group/group_detail.html:170 templates/group/member_list.html:120
+#: templates/local/committee_detail.html:187
 msgid "No Members found"
 msgstr "Keine Mitglieder gefunden"
 
-#: templates/group/group_detail.html:174
+#: templates/group/group_detail.html:171
 msgid "Add members to this group to get started."
 msgstr ""
 
-#: templates/group/group_detail.html:198 templates/group/group_list.html:102
+#: templates/group/group_detail.html:183 templates/group/meeting_list.html:5
+#: templates/group/meeting_list.html:12
+#, fuzzy
+#| msgid "Group Details"
+msgid "Group Meetings"
+msgstr "Gruppendetails"
+
+#: templates/group/group_detail.html:186 templates/group/group_detail.html:260
+#: templates/group/group_detail.html:282 templates/group/meeting_form.html:9
+#: templates/group/meeting_form.html:23 templates/group/meeting_list.html:15
+#, fuzzy
+#| msgid "Add Motion"
+msgid "Add Meeting"
+msgstr "Antrag hinzufügen"
+
+#: templates/group/group_detail.html:201 templates/group/meeting_list.html:89
+#: templates/local/session_confirm_delete.html:76
+#: templates/local/session_detail.html:61
+msgid "Date"
+msgstr "Datum"
+
+#: templates/group/group_detail.html:219
+#: templates/group/meeting_confirm_delete.html:53
+#: templates/group/meeting_detail.html:70 templates/group/meeting_list.html:107
+msgid "Past"
+msgstr ""
+
+#: templates/group/group_detail.html:221
+#: templates/group/meeting_confirm_delete.html:55
+#: templates/group/meeting_detail.html:72 templates/group/meeting_list.html:109
+msgid "Upcoming"
+msgstr ""
+
+#: templates/group/group_detail.html:234 templates/group/meeting_detail.html:23
+#: templates/group/meeting_detail.html:158
+#: templates/group/meeting_list.html:122
+#, fuzzy
+#| msgid "Are you sure you want to delete this group decision?"
+msgid "Are you sure you want to delete this meeting?"
+msgstr "Sind Sie sicher, dass Sie diese Klubentscheidung löschen möchten?"
+
+#: templates/group/group_detail.html:247
+#: templates/local/committee_detail.html:277
+#: templates/local/council_detail.html:210
+msgid "Showing"
+msgstr ""
+
+#: templates/group/group_detail.html:247 templates/group/meeting_list.html:151
+#: templates/local/committee_detail.html:277
+#: templates/local/committee_list.html:173
+#: templates/local/council_detail.html:210
+#: templates/local/council_list.html:147 templates/local/local_list.html:138
+#: templates/local/party_list.html:159 templates/local/session_list.html:177
+#: templates/local/term_list.html:164
+#: templates/local/term_seat_distribution_list.html:162
+#: templates/motion/motion_list.html:168
+#: templates/motion/question_list.html:107 templates/user/role_list.html:145
+msgid "of"
+msgstr ""
+
+#: templates/group/group_detail.html:247
+#, fuzzy
+#| msgid "Settings"
+msgid "meetings"
+msgstr "Einstellungen"
+
+#: templates/group/group_detail.html:250
+#, fuzzy
+#| msgid "View All Motions"
+msgid "View All Meetings"
+msgstr "Alle Anträge anzeigen"
+
+#: templates/group/group_detail.html:257
+#, fuzzy
+#| msgid "No Motions found"
+msgid "No Meetings found"
+msgstr "Keine Anträge gefunden"
+
+#: templates/group/group_detail.html:258
+msgid "Add meetings to this group to get started."
+msgstr ""
+
+#: templates/group/group_detail.html:285 templates/group/group_list.html:99
 msgid "Are you sure you want to delete this group?"
 msgstr ""
 
-#: templates/group/group_detail.html:202 templates/group/management.html:15
-msgid "View All Groups"
-msgstr "Alle Klubs anzeigen"
-
-#: templates/group/group_detail.html:213 templates/group/member_detail.html:147
-#: templates/local/committee_confirm_delete.html:118
-#: templates/local/committee_detail.html:120
-#: templates/local/party_detail.html:109 templates/local/term_detail.html:104
-msgid "Quick Info"
-msgstr ""
-
-#: templates/group/group_detail.html:232
+#: templates/group/group_detail.html:301
 msgid "Manage Member Roles"
 msgstr ""
 
-#: templates/group/group_detail.html:244
+#: templates/group/group_detail.html:313
 msgid "Current Roles"
 msgstr ""
 
-#: templates/group/group_detail.html:248
+#: templates/group/group_detail.html:317
 msgid "Available Roles"
 msgstr ""
 
-#: templates/group/group_detail.html:284
+#: templates/group/group_detail.html:353
 msgid "Save Changes"
 msgstr ""
 
 #: templates/group/group_form.html:9 templates/group/group_form.html:23
-#: templates/group/group_form.html:124 templates/group/group_list.html:22
-#: templates/group/group_list.html:118 templates/group/management.html:95
-#: templates/group/management.html:155
+#: templates/group/group_form.html:124 templates/group/group_list.html:19
+#: templates/group/group_list.html:115
 msgid "Create Group"
 msgstr "Gruppe erstellen"
 
@@ -730,12 +959,15 @@ msgstr "Neuen Klub erstellen"
 msgid "Update Group"
 msgstr "Klub aktualisieren"
 
-#: templates/group/group_form.html:136 templates/group/member_form.html:174
-#: templates/local/committee_form.html:168
+#: templates/group/group_form.html:136 templates/group/meeting_form.html:229
+#: templates/group/member_form.html:199 templates/local/committee_form.html:209
+#: templates/local/committee_member_form.html:178
 #: templates/local/council_form.html:111 templates/local/party_form.html:232
-#: templates/local/session_form.html:274 templates/local/term_form.html:156
+#: templates/local/session_form.html:238 templates/local/term_form.html:156
 #: templates/local/term_seat_distribution_form.html:170
-#: templates/motion/motion_form.html:157
+#: templates/motion/motion_form.html:205
+#: templates/motion/question_attachment.html:89
+#: templates/motion/question_form.html:185
 msgid "Help"
 msgstr "Hilfe"
 
@@ -748,8 +980,8 @@ msgid ""
 "A political group represents a faction or subgroup within a political party."
 msgstr ""
 
-#: templates/group/group_form.html:144 templates/group/member_form.html:182
-#: templates/local/party_form.html:240
+#: templates/group/group_form.html:144 templates/group/meeting_form.html:237
+#: templates/group/member_form.html:207 templates/local/party_form.html:240
 msgid "Required Fields"
 msgstr ""
 
@@ -761,7 +993,7 @@ msgstr ""
 msgid "The party this group belongs to"
 msgstr ""
 
-#: templates/group/group_form.html:150 templates/group/member_form.html:199
+#: templates/group/group_form.html:150 templates/group/member_form.html:222
 #: templates/local/party_form.html:254
 #: templates/local/term_seat_distribution_form.html:178
 msgid "Validation"
@@ -779,104 +1011,351 @@ msgstr ""
 msgid "Political Groups"
 msgstr "Politische Gruppen"
 
-#: templates/group/group_list.html:19 templates/group/member_list.html:19
-msgid "Management"
-msgstr ""
-
-#: templates/group/group_list.html:30 templates/group/member_list.html:30
+#: templates/group/group_list.html:27 templates/group/member_list.html:27
 msgid "Filters"
 msgstr ""
 
-#: templates/group/group_list.html:45 templates/group/member_list.html:48
-#: templates/local/committee_list.html:59 templates/local/session_list.html:66
-#: templates/motion/motion_list.html:66
+#: templates/group/group_list.html:42 templates/group/meeting_list.html:59
+#: templates/group/member_list.html:45 templates/local/committee_list.html:59
+#: templates/local/session_list.html:66 templates/motion/motion_list.html:64
 msgid "Filter"
 msgstr "Filter"
 
-#: templates/group/group_list.html:96 templates/group/member_list.html:100
-#: templates/local/council_list.html:111 templates/local/local_detail.html:175
-#: templates/local/local_detail.html:242 templates/local/local_list.html:102
-#: templates/local/party_list.html:123 templates/local/session_detail.html:134
+#: templates/group/group_list.html:93 templates/group/meeting_list.html:116
+#: templates/group/member_list.html:101 templates/local/council_list.html:111
+#: templates/local/local_detail.html:175 templates/local/local_detail.html:242
+#: templates/local/local_list.html:102 templates/local/party_list.html:123
 #: templates/local/term_list.html:128
 #: templates/local/term_seat_distribution.html:87
 #: templates/local/term_seat_distribution_list.html:126
 msgid "View"
 msgstr "Anzeigen"
 
-#: templates/group/group_list.html:103 templates/local/council_list.html:118
+#: templates/group/group_list.html:100 templates/group/meeting_detail.html:24
+#: templates/group/meeting_list.html:123 templates/local/council_list.html:118
 #: templates/local/local_detail.html:182 templates/local/local_list.html:109
 #: templates/local/party_list.html:130 templates/local/term_list.html:135
 #: templates/local/term_seat_distribution.html:94
 #: templates/local/term_seat_distribution_list.html:133
-#: templates/user/role_list.html:110 templates/user/role_list.html:115
+#: templates/motion/question_detail.html:27 templates/user/role_list.html:110
+#: templates/user/role_list.html:115
 msgid "Delete"
 msgstr "Löschen"
 
-#: templates/group/group_list.html:115
+#: templates/group/group_list.html:112
 msgid "No Groups found"
 msgstr ""
 
-#: templates/group/group_list.html:116
+#: templates/group/group_list.html:113
 msgid "Create your first political group to get started."
 msgstr ""
 
-#: templates/group/management.html:5 templates/group/management.html:12
-msgid "Group Management"
-msgstr "Gruppenverwaltung"
+#: templates/group/meeting_confirm_delete.html:5
+#: templates/group/meeting_confirm_delete.html:13
+#: templates/group/meeting_confirm_delete.html:69
+#: templates/group/meeting_detail.html:159
+#, fuzzy
+#| msgid "Delete Motion"
+msgid "Delete Meeting"
+msgstr "Antrag löschen"
 
-#: templates/group/management.html:29
-msgid "Total Groups"
+#: templates/group/meeting_confirm_delete.html:18
+#, fuzzy
+#| msgid "Are you sure you want to delete this status entry?"
+msgid ""
+"Are you sure you want to delete this meeting? This action cannot be undone."
+msgstr "Sind Sie sicher, dass Sie diesen Status-Eintrag löschen möchten?"
+
+#: templates/group/meeting_confirm_delete.html:23
+#: templates/group/meeting_detail.html:5
+#: templates/group/meeting_detail.html:168
+#, fuzzy
+#| msgid "Motion Details"
+msgid "Meeting Details"
+msgstr "Antragsdetails"
+
+#: templates/group/meeting_confirm_delete.html:27
+#: templates/group/meeting_detail.html:41
+#: templates/group/meeting_detail.html:202
+#: templates/group/meeting_detail.html:246
+#: templates/group/meeting_form.html:239
+#: templates/local/committee_detail.html:214
+#: templates/local/council_detail.html:144
+#: templates/local/session_confirm_delete.html:50
+#: templates/local/session_detail.html:34
+#: templates/local/session_detail.html:105
+#: templates/local/session_detail.html:197 templates/local/session_list.html:88
+#: templates/motion/motion_confirm_delete.html:43
+#: templates/motion/motion_detail.html:44 templates/motion/motion_form.html:34
+#: templates/motion/motion_form.html:209 templates/motion/motion_list.html:90
+#: templates/motion/question_confirm_delete.html:43
+#: templates/motion/question_detail.html:54
+#: templates/motion/question_form.html:34
+#: templates/motion/question_form.html:189
+#: templates/motion/question_list.html:36
+msgid "Title"
+msgstr "Titel"
+
+#: templates/group/meeting_confirm_delete.html:30
+#: templates/local/committee_confirm_delete.html:43
+#: templates/local/committee_detail.html:46
+#: templates/local/committee_detail.html:215
+#: templates/local/committee_list.html:97
+#: templates/local/council_detail.html:145
+#: templates/local/council_detail.html:251
+#: templates/local/session_confirm_delete.html:53
+#: templates/local/session_detail.html:37 templates/local/session_list.html:56
+#: templates/local/session_list.html:90 templates/motion/motion_detail.html:47
+#: templates/motion/motion_list.html:91
+msgid "Type"
 msgstr ""
 
-#: templates/group/management.html:38
-msgid "Active Groups"
+#: templates/group/meeting_detail.html:14
+#: templates/group/meeting_detail.html:144 templates/group/meeting_form.html:33
+#: templates/group/member_form.html:29
+#, fuzzy
+#| msgid "Back to Motion"
+msgid "Back to Group"
+msgstr "Zurück zum Antrag"
+
+#: templates/group/meeting_detail.html:35 templates/group/meeting_form.html:232
+#, fuzzy
+#| msgid "Motion Information"
+msgid "Meeting Information"
+msgstr "Antragsinformation"
+
+#: templates/group/meeting_detail.html:56
+msgid "In"
 msgstr ""
 
-#: templates/group/management.html:47
-msgid "Total Members"
+#: templates/group/meeting_detail.html:58
+msgid "Past meeting"
 msgstr ""
 
-#: templates/group/management.html:56
-msgid "Active Members"
+#: templates/group/meeting_detail.html:93
+#: templates/group/meeting_detail.html:226
+#, fuzzy
+#| msgid "Add Member"
+msgid "Add Item"
+msgstr "Mitglied hinzufügen"
+
+#: templates/group/meeting_detail.html:127
+msgid "No agenda items"
 msgstr ""
 
-#: templates/group/management.html:67
-msgid "Recent Groups"
+#: templates/group/meeting_detail.html:128
+msgid "Add agenda items to organize the meeting topics."
 msgstr ""
 
-#: templates/group/management.html:69 templates/group/management.html:109
-msgid "View All"
+#: templates/group/meeting_detail.html:149
+msgid "Send meeting invites to all group members?"
 msgstr ""
 
-#: templates/group/management.html:93
-msgid "No groups created yet"
+#: templates/group/meeting_detail.html:150
+msgid "Send Invites"
 msgstr ""
 
-#: templates/group/management.html:107
-msgid "Recent Members"
+#: templates/group/meeting_detail.html:155 templates/group/meeting_form.html:7
+#: templates/group/meeting_form.html:21 templates/group/meeting_form.html:51
+#, fuzzy
+#| msgid "Edit Motion"
+msgid "Edit Meeting"
+msgstr "Antrag bearbeiten"
+
+#: templates/group/meeting_detail.html:176
+#, fuzzy
+#| msgid "Created"
+msgid "Created by"
+msgstr "Erstellt"
+
+#: templates/group/meeting_detail.html:180
+#, fuzzy
+#| msgid "Last changed"
+msgid "Last updated"
+msgstr "Zuletzt geändert"
+
+#: templates/group/meeting_detail.html:195
+msgid "Add Agenda Item"
 msgstr ""
 
-#: templates/group/management.html:133
-msgid "No members added yet"
+#: templates/group/meeting_detail.html:210
+#: templates/group/meeting_detail.html:254
+msgid "Parent Item"
 msgstr ""
 
-#: templates/group/management.html:149 templates/user/management.html:98
-msgid "Quick Actions"
+#: templates/group/meeting_detail.html:212
+#: templates/group/meeting_detail.html:256
+#: templates/group/meeting_detail.html:291
+msgid "No parent (top level)"
 msgstr ""
 
-#: templates/group/management.html:165
-msgid "View Groups"
+#: templates/group/meeting_detail.html:219
+#: templates/group/meeting_detail.html:260
+msgid "Order"
+msgstr "Reihenfolge"
+
+#: templates/group/meeting_detail.html:221
+#: templates/group/meeting_detail.html:262
+msgid "Order of the agenda item (1, 2, 3, etc.)"
+msgstr "Reihenfolge des Tagesordnungspunkts (1, 2, 3, etc.)"
+
+#: templates/group/meeting_detail.html:238
+msgid "Edit Agenda Item"
 msgstr ""
 
-#: templates/group/management.html:170
-msgid "View Members"
+#: templates/group/meeting_detail.html:267
+#, fuzzy
+#| msgid "Update Motion"
+msgid "Update Item"
+msgstr "Antrag aktualisieren"
+
+#: templates/group/meeting_detail.html:497
+#, fuzzy
+#| msgid "Are you sure you want to delete this status entry?"
+msgid "Are you sure you want to delete this agenda item?"
+msgstr "Sind Sie sicher, dass Sie diesen Status-Eintrag löschen möchten?"
+
+#: templates/group/meeting_form.html:29
+#, fuzzy
+#| msgid "Back to Motion"
+msgid "Back to Meeting"
+msgstr "Zurück zum Antrag"
+
+#: templates/group/meeting_form.html:53
+#, fuzzy
+#| msgid "Add Motion"
+msgid "Add New Meeting"
+msgstr "Antrag hinzufügen"
+
+#: templates/group/meeting_form.html:215
+#, fuzzy
+#| msgid "Update Settings"
+msgid "Update Meeting"
+msgstr "Einstellungen aktualisieren"
+
+#: templates/group/meeting_form.html:217
+#, fuzzy
+#| msgid "Create Motion"
+msgid "Create Meeting"
+msgstr "Antrag erstellen"
+
+#: templates/group/meeting_form.html:234
+msgid ""
+"Create and manage group meetings with details about date, location, and "
+"agenda."
 msgstr ""
+
+#: templates/group/meeting_form.html:239
+msgid "Name or title of the meeting"
+msgstr ""
+
+#: templates/group/meeting_form.html:240
+msgid "When the meeting will take place"
+msgstr ""
+
+#: templates/group/meeting_form.html:241
+msgid "Which group is holding the meeting"
+msgstr ""
+
+#: templates/group/meeting_form.html:244 templates/local/party_form.html:246
+msgid "Optional Fields"
+msgstr ""
+
+#: templates/group/meeting_form.html:246
+msgid "Where the meeting will take place"
+msgstr ""
+
+#: templates/group/meeting_form.html:247
+msgid "Agenda or additional details"
+msgstr ""
+
+#: templates/group/meeting_list.html:29 templates/local/committee_list.html:32
+#: templates/local/council_list.html:30 templates/local/council_list.html:55
+#: templates/local/local_list.html:30 templates/local/local_list.html:44
+#: templates/local/party_list.html:30 templates/local/party_list.html:55
+#: templates/local/session_list.html:29 templates/local/term_list.html:40
+#: templates/local/term_list.html:62
+#: templates/local/term_seat_distribution_list.html:63
+#: templates/motion/motion_list.html:45 templates/user/role_list.html:33
+#: templates/user/role_list.html:47
+msgid "Search"
+msgstr "Suchen"
+
+#: templates/group/meeting_list.html:31
+msgid "Search meetings..."
+msgstr ""
+
+#: templates/group/meeting_list.html:34
+#, fuzzy
+#| msgid "Motion Type"
+msgid "Meeting Type"
+msgstr "Antragstyp"
+
+#: templates/group/meeting_list.html:36 templates/local/committee_list.html:39
+#: templates/local/session_list.html:58
+msgid "All Types"
+msgstr ""
+
+#: templates/group/meeting_list.html:47
+#, fuzzy
+#| msgid "View All Groups"
+msgid "All Groups"
+msgstr "Alle Klubs anzeigen"
+
+#: templates/group/meeting_list.html:134
+#, fuzzy
+#| msgid "Motion Information"
+msgid "Meeting pagination"
+msgstr "Antragsinformation"
+
+#: templates/group/meeting_list.html:139
+msgid "First"
+msgstr ""
+
+#: templates/group/meeting_list.html:144
+msgid "Previous"
+msgstr ""
+
+#: templates/group/meeting_list.html:151
+#: templates/local/committee_list.html:173
+#: templates/local/council_list.html:147 templates/local/local_list.html:138
+#: templates/local/party_list.html:159 templates/local/session_list.html:177
+#: templates/local/term_list.html:164
+#: templates/local/term_seat_distribution_list.html:162
+#: templates/motion/motion_list.html:168
+#: templates/motion/question_list.html:107 templates/user/role_list.html:145
+msgid "Page"
+msgstr ""
+
+#: templates/group/meeting_list.html:158
+msgid "Next"
+msgstr ""
+
+#: templates/group/meeting_list.html:163
+msgid "Last"
+msgstr ""
+
+#: templates/group/meeting_list.html:173
+#, fuzzy
+#| msgid "No Motions found"
+msgid "No meetings found"
+msgstr "Keine Anträge gefunden"
+
+#: templates/group/meeting_list.html:174
+msgid "No group meetings match your search criteria."
+msgstr ""
+
+#: templates/group/meeting_list.html:176
+#, fuzzy
+#| msgid "Create First Motion"
+msgid "Add First Meeting"
+msgstr "Erstelle den ersten Antrag"
 
 #: templates/group/member_confirm_delete.html:5
 #: templates/group/member_confirm_delete.html:12
 #: templates/group/member_confirm_delete.html:89
 #: templates/group/member_detail.html:133
-#: templates/local/committee_detail.html:196
+#: templates/local/committee_detail.html:173
 msgid "Remove Member"
 msgstr ""
 
@@ -896,16 +1375,9 @@ msgstr ""
 msgid "Membership Details"
 msgstr ""
 
-#: templates/group/member_confirm_delete.html:50
-#: templates/group/member_detail.html:42 templates/group/member_detail.html:159
-#: templates/group/member_form.html:185 templates/group/member_list.html:61
-#: templates/local/committee_detail.html:256
-#: templates/motion/motion_detail.html:55
-msgid "Group"
-msgstr ""
-
 #: templates/group/member_confirm_delete.html:76
 #: templates/group/member_detail.html:114
+#: templates/local/committee_member_form.html:137
 #: templates/motion/motion_status_change.html:141
 #: templates/motion/motion_vote.html:52
 msgid "Notes"
@@ -917,8 +1389,8 @@ msgstr ""
 
 #: templates/group/member_confirm_delete.html:108
 #: templates/group/member_form.html:7 templates/group/member_form.html:21
-#: templates/group/member_form.html:41
-#: templates/local/committee_detail.html:193
+#: templates/group/member_form.html:47
+#: templates/local/committee_detail.html:170
 msgid "Edit Member"
 msgstr ""
 
@@ -930,8 +1402,7 @@ msgstr ""
 msgid "Membership Information"
 msgstr ""
 
-#: templates/group/member_detail.html:66 templates/group/member_detail.html:158
-#: templates/user/role_list.html:64
+#: templates/group/member_detail.html:66 templates/user/role_list.html:64
 msgid "Roles"
 msgstr ""
 
@@ -940,86 +1411,73 @@ msgid "Edit Membership"
 msgstr ""
 
 #: templates/group/member_detail.html:136
-#: templates/local/committee_detail.html:151
-#: templates/local/committee_detail.html:213
 msgid "View All Members"
 msgstr ""
 
-#: templates/group/member_form.html:43
+#: templates/group/member_form.html:49
 msgid "Add New Member"
 msgstr ""
 
-#: templates/group/member_form.html:160
+#: templates/group/member_form.html:185
+#: templates/local/committee_member_form.html:164
 msgid "Update Member"
 msgstr ""
 
-#: templates/group/member_form.html:177
+#: templates/group/member_form.html:202
 msgid "Group Membership Information"
 msgstr ""
 
-#: templates/group/member_form.html:179
+#: templates/group/member_form.html:204
 msgid ""
 "Add users to political groups and assign them specific roles within the "
 "group."
 msgstr ""
 
-#: templates/group/member_form.html:184
+#: templates/group/member_form.html:209
 msgid "The user to add to the group"
 msgstr ""
 
-#: templates/group/member_form.html:185
+#: templates/group/member_form.html:210
 msgid "The political group to add the user to"
 msgstr ""
 
-#: templates/group/member_form.html:186
+#: templates/group/member_form.html:211
 msgid "The role of the user within the group"
 msgstr ""
 
-#: templates/group/member_form.html:189
+#: templates/group/member_form.html:214
 msgid "Role Options"
 msgstr ""
 
-#: templates/group/member_form.html:191
+#: templates/group/member_form.html:216
 msgid "Regular group member"
 msgstr ""
 
-#: templates/group/member_form.html:192
+#: templates/group/member_form.html:217
 msgid "Group leader with decision-making authority"
 msgstr ""
 
-#: templates/group/member_form.html:193
+#: templates/group/member_form.html:218
 msgid "Assistant to the group leader"
 msgstr ""
 
-#: templates/group/member_form.html:194
+#: templates/group/member_form.html:219
 msgid "Secretary"
 msgstr ""
 
-#: templates/group/member_form.html:194
+#: templates/group/member_form.html:219
 msgid "Handles administrative tasks"
 msgstr ""
 
-#: templates/group/member_form.html:195
-msgid "Treasurer"
-msgstr ""
-
-#: templates/group/member_form.html:195
-msgid "Manages financial matters"
-msgstr ""
-
-#: templates/group/member_form.html:196
-msgid "Member of the group's board"
-msgstr ""
-
-#: templates/group/member_form.html:201
+#: templates/group/member_form.html:224
 msgid "A user can only be a member of a group once"
 msgstr ""
 
-#: templates/group/member_form.html:202
+#: templates/group/member_form.html:225
 msgid "Only active users and groups can be selected"
 msgstr ""
 
-#: templates/group/member_form.html:203
+#: templates/group/member_form.html:226
 msgid "Role determines the user's responsibilities"
 msgstr ""
 
@@ -1027,31 +1485,58 @@ msgstr ""
 msgid "Group Members"
 msgstr ""
 
-#: templates/group/member_list.html:107
+#: templates/group/member_list.html:87
+msgid "No roles"
+msgstr ""
+
+#: templates/group/member_list.html:108
 msgid "Remove"
 msgstr "Entfernen"
 
-#: templates/group/member_list.html:120
+#: templates/group/member_list.html:121
 msgid "Add members to groups to get started."
 msgstr ""
 
-#: templates/home.html:19
+#: templates/home.html:17
+msgid "Email Verification Required"
+msgstr ""
+
+#: templates/home.html:20
+#, python-format
+msgid ""
+"\n"
+"                    Your email address <strong>%(email)s</strong> has not "
+"been verified yet. \n"
+"                    Please check your inbox and click the confirmation link "
+"in the email we sent you.\n"
+"                    "
+msgstr ""
+
+#: templates/home.html:28
+msgid "Manage Email"
+msgstr ""
+
+#: templates/home.html:32
+msgid "Resend Verification Email"
+msgstr ""
+
+#: templates/home.html:45
 msgid "Your Group Memberships"
 msgstr ""
 
-#: templates/home.html:40
+#: templates/home.html:66
 msgid "Connected to"
 msgstr ""
 
-#: templates/home.html:78
+#: templates/home.html:104
 msgid "Quick Access"
 msgstr ""
 
-#: templates/home.html:84
+#: templates/home.html:110
 msgid "Your Locals"
 msgstr ""
 
-#: templates/home.html:107
+#: templates/home.html:133
 msgid "Your Councils"
 msgstr ""
 
@@ -1065,6 +1550,7 @@ msgid "Delete Committee"
 msgstr ""
 
 #: templates/local/committee_confirm_delete.html:16
+#: templates/local/committee_member_form.html:29
 msgid "Back to Committee"
 msgstr ""
 
@@ -1075,15 +1561,14 @@ msgstr ""
 
 #: templates/local/committee_confirm_delete.html:35
 #: templates/local/committee_detail.html:30
-#: templates/local/committee_form.html:43
+#: templates/local/committee_form.html:53
 msgid "Committee Information"
 msgstr ""
 
 #: templates/local/committee_confirm_delete.html:40
 #: templates/local/committee_confirm_delete.html:129
 #: templates/local/committee_detail.html:39
-#: templates/local/committee_detail.html:131
-#: templates/local/committee_form.html:81
+#: templates/local/committee_form.html:109
 #: templates/local/committee_list.html:45
 #: templates/local/committee_list.html:96 templates/local/local_detail.html:28
 #: templates/local/session_confirm_delete.html:91
@@ -1091,33 +1576,25 @@ msgstr ""
 msgid "Council"
 msgstr "Vertretung"
 
-#: templates/local/committee_confirm_delete.html:43
-#: templates/local/committee_detail.html:46
-#: templates/local/committee_detail.html:254
-#: templates/local/committee_list.html:97
-#: templates/local/council_detail.html:145
-#: templates/local/council_detail.html:251
-#: templates/local/session_confirm_delete.html:53
-#: templates/local/session_detail.html:37 templates/local/session_list.html:56
-#: templates/local/session_list.html:90 templates/motion/motion_detail.html:47
-#: templates/motion/motion_list.html:93
-msgid "Type"
-msgstr ""
-
 #: templates/local/committee_confirm_delete.html:46
 #: templates/local/committee_detail.html:54
 #: templates/local/committee_list.html:98
+#: templates/local/committee_member_form.html:183
 #: templates/local/council_detail.html:252
 msgid "Chairperson"
 msgstr ""
 
 #: templates/local/committee_confirm_delete.html:51
 #: templates/local/committee_detail.html:59
+#: templates/local/committee_detail.html:68
 #: templates/local/committee_list.html:129
 #: templates/local/council_detail.html:277
 #: templates/local/session_confirm_delete.html:96
 #: templates/motion/motion_detail.html:62
 #: templates/motion/motion_detail.html:73
+#: templates/motion/question_detail.html:67
+#: templates/motion/question_detail.html:78
+#: templates/motion/question_list.html:79
 msgid "Not assigned"
 msgstr ""
 
@@ -1152,175 +1629,150 @@ msgid "Edit Committee"
 msgstr ""
 
 #: templates/local/committee_confirm_delete.html:107
-#: templates/local/committee_detail.html:109
-#: templates/local/council_detail.html:308
 msgid "View All Committees"
 msgstr ""
 
 #: templates/local/committee_confirm_delete.html:110
-#: templates/local/committee_detail.html:112
+#: templates/local/committee_detail.html:109
 #: templates/local/council_confirm_delete.html:93
-#: templates/local/session_detail.html:245
+#: templates/local/session_detail.html:334
 msgid "View Council"
+msgstr ""
+
+#: templates/local/committee_confirm_delete.html:118
+#: templates/local/party_detail.html:109 templates/local/term_detail.html:104
+msgid "Quick Info"
 msgstr ""
 
 #: templates/local/committee_detail.html:6
 msgid "Committee Details"
 msgstr ""
 
+#: templates/local/committee_detail.html:19
+#, fuzzy
+#| msgid "Back to Motion"
+msgid "Back to Council"
+msgstr "Zurück zum Antrag"
+
+#: templates/local/committee_detail.html:63
+#: templates/local/committee_member_form.html:184
+msgid "Vice Chairperson"
+msgstr ""
+
 #: templates/local/committee_detail.html:102
 msgid "Are you sure you want to delete this Committee?"
 msgstr ""
 
-#: templates/local/committee_detail.html:145
+#: templates/local/committee_detail.html:123
 msgid "Committee Members"
 msgstr ""
 
-#: templates/local/committee_detail.html:190
-#: templates/local/committee_detail.html:297
+#: templates/local/committee_detail.html:167
+#: templates/local/committee_detail.html:260
 #: templates/local/committee_list.html:137
 #: templates/local/council_detail.html:190
 #: templates/local/council_detail.html:285
-#: templates/local/session_list.html:141 templates/motion/motion_list.html:147
+#: templates/local/session_list.html:141
 msgid "View Details"
 msgstr ""
 
-#: templates/local/committee_detail.html:210
-#: templates/local/committee_detail.html:314
-#: templates/local/council_detail.html:210
-#: templates/local/council_detail.html:305
-msgid "Showing"
-msgstr ""
-
-#: templates/local/committee_detail.html:210
-#: templates/local/committee_detail.html:314
-#: templates/local/committee_list.html:173
-#: templates/local/council_detail.html:210
-#: templates/local/council_detail.html:305
-#: templates/local/council_list.html:147 templates/local/local_list.html:138
-#: templates/local/party_list.html:159 templates/local/session_list.html:177
-#: templates/local/term_list.html:164
-#: templates/local/term_seat_distribution_list.html:162
-#: templates/motion/motion_list.html:187 templates/user/role_list.html:145
-msgid "of"
-msgstr ""
-
-#: templates/local/committee_detail.html:210
-msgid "members"
-msgstr "Mitglieder"
-
-#: templates/local/committee_detail.html:221
+#: templates/local/committee_detail.html:188
 msgid "Add committee members to start organizing the committee work."
 msgstr ""
 
-#: templates/local/committee_detail.html:223
+#: templates/local/committee_detail.html:190
 msgid "Add First Member"
 msgstr ""
 
-#: templates/local/committee_detail.html:237
+#: templates/local/committee_detail.html:204
 msgid "Committee Motions"
 msgstr ""
 
-#: templates/local/committee_detail.html:240
-#: templates/local/session_detail.html:94
-msgid "Add Motion"
-msgstr "Antrag hinzufügen"
-
-#: templates/local/committee_detail.html:243
-#: templates/local/committee_detail.html:317
-#: templates/local/session_detail.html:153
-#: templates/motion/motion_detail.html:414
-msgid "View All Motions"
-msgstr "Alle Anträge anzeigen"
-
-#: templates/local/committee_detail.html:253
-#: templates/local/council_detail.html:144
-#: templates/local/session_confirm_delete.html:50
-#: templates/local/session_detail.html:34
-#: templates/local/session_detail.html:103 templates/local/session_list.html:88
-#: templates/motion/motion_detail.html:44 templates/motion/motion_form.html:34
-#: templates/motion/motion_form.html:161 templates/motion/motion_list.html:92
-msgid "Title"
-msgstr "Titel"
-
-#: templates/local/committee_detail.html:300
-#: templates/motion/motion_detail.html:407 templates/motion/motion_form.html:7
-#: templates/motion/motion_form.html:22 templates/motion/motion_list.html:151
+#: templates/local/committee_detail.html:263
+#: templates/motion/motion_confirm_delete.html:117
+#: templates/motion/motion_detail.html:423 templates/motion/motion_form.html:7
+#: templates/motion/motion_form.html:22
 msgid "Edit Motion"
 msgstr "Antrag bearbeiten"
 
-#: templates/local/committee_detail.html:314
+#: templates/local/committee_detail.html:277
 msgid "motions"
 msgstr "Anträge"
 
-#: templates/local/committee_detail.html:324
+#: templates/local/committee_detail.html:280
+#: templates/motion/motion_detail.html:430
+msgid "View All Motions"
+msgstr "Alle Anträge anzeigen"
+
+#: templates/local/committee_detail.html:287
 msgid "No Motions found"
 msgstr "Keine Anträge gefunden"
 
-#: templates/local/committee_detail.html:325
-msgid "Create motions to be handled by this committee."
-msgstr ""
-
-#: templates/local/committee_detail.html:327
-#: templates/local/session_detail.html:162
-#: templates/motion/motion_list.html:212
-msgid "Create First Motion"
-msgstr "Erstelle den ersten Antrag"
-
 #: templates/local/committee_form.html:9 templates/local/committee_form.html:23
-#: templates/local/committee_form.html:156
+#: templates/local/committee_form.html:197
 msgid "Create Committee"
 msgstr ""
 
-#: templates/local/committee_form.html:41
+#: templates/local/committee_form.html:29
+#: templates/local/committee_form.html:33
+#: templates/local/council_name_form.html:18
+msgid "Back to Local"
+msgstr ""
+
+#: templates/local/committee_form.html:51
 msgid "Edit Committee Information"
 msgstr ""
 
-#: templates/local/committee_form.html:62
+#: templates/local/committee_form.html:72
 msgid "Committee Name"
 msgstr ""
 
-#: templates/local/committee_form.html:111
+#: templates/local/committee_form.html:90
+msgid "Abbreviation"
+msgstr ""
+
+#: templates/local/committee_form.html:139
 #: templates/local/committee_list.html:37
 msgid "Committee Type"
 msgstr ""
 
-#: templates/local/committee_form.html:154
+#: templates/local/committee_form.html:195
 msgid "Update Committee"
 msgstr ""
 
-#: templates/local/committee_form.html:171
+#: templates/local/committee_form.html:212
 msgid "Committee Types"
 msgstr ""
 
-#: templates/local/committee_form.html:173
+#: templates/local/committee_form.html:214
 #: templates/local/committee_list.html:40
 msgid "Ausschuss"
 msgstr ""
 
-#: templates/local/committee_form.html:173
+#: templates/local/committee_form.html:214
 msgid "Committee for specific areas of responsibility"
 msgstr ""
 
-#: templates/local/committee_form.html:174
+#: templates/local/committee_form.html:215
 #: templates/local/committee_list.html:41
 msgid "Kommission"
 msgstr ""
 
-#: templates/local/committee_form.html:174
+#: templates/local/committee_form.html:215
 msgid "Commission for specialized tasks and investigations"
 msgstr ""
 
-#: templates/local/committee_form.html:179
-#: templates/local/session_form.html:292
+#: templates/local/committee_form.html:220
+#: templates/local/committee_member_form.html:190
+#: templates/local/session_form.html:256
 msgid "Tips"
 msgstr ""
 
-#: templates/local/committee_form.html:181
+#: templates/local/committee_form.html:222
 msgid "Choose a descriptive name for the committee"
 msgstr ""
 
-#: templates/local/committee_form.html:182
+#: templates/local/committee_form.html:223
 msgid "Provide a clear description of the committee's purpose"
 msgstr ""
 
@@ -1337,23 +1789,8 @@ msgstr ""
 msgid "Filter Committees"
 msgstr ""
 
-#: templates/local/committee_list.html:32 templates/local/council_list.html:30
-#: templates/local/council_list.html:55 templates/local/local_list.html:30
-#: templates/local/local_list.html:44 templates/local/party_list.html:30
-#: templates/local/party_list.html:55 templates/local/session_list.html:29
-#: templates/local/term_list.html:40 templates/local/term_list.html:62
-#: templates/local/term_seat_distribution_list.html:63
-#: templates/motion/motion_list.html:46 templates/user/role_list.html:33
-#: templates/user/role_list.html:47
-msgid "Search"
-msgstr "Suchen"
-
 #: templates/local/committee_list.html:34
 msgid "Search by name, description, chairperson..."
-msgstr ""
-
-#: templates/local/committee_list.html:39 templates/local/session_list.html:58
-msgid "All Types"
 msgstr ""
 
 #: templates/local/committee_list.html:47 templates/local/session_list.html:36
@@ -1372,15 +1809,6 @@ msgstr ""
 msgid "Committee pagination"
 msgstr ""
 
-#: templates/local/committee_list.html:173
-#: templates/local/council_list.html:147 templates/local/local_list.html:138
-#: templates/local/party_list.html:159 templates/local/session_list.html:177
-#: templates/local/term_list.html:164
-#: templates/local/term_seat_distribution_list.html:162
-#: templates/motion/motion_list.html:187 templates/user/role_list.html:145
-msgid "Page"
-msgstr ""
-
 #: templates/local/committee_list.html:195
 msgid "No Committees Found"
 msgstr ""
@@ -1394,8 +1822,70 @@ msgid "No committees have been created yet."
 msgstr ""
 
 #: templates/local/committee_list.html:204
-#: templates/local/council_detail.html:318
+#: templates/local/council_detail.html:307
 msgid "Create First Committee"
+msgstr ""
+
+#: templates/local/committee_member_form.html:7
+#: templates/local/committee_member_form.html:21
+msgid "Edit Committee Member"
+msgstr ""
+
+#: templates/local/committee_member_form.html:9
+#: templates/local/committee_member_form.html:23
+#, fuzzy
+#| msgid "Add Member"
+msgid "Add Committee Member"
+msgstr "Mitglied hinzufügen"
+
+#: templates/local/committee_member_form.html:47
+#, fuzzy
+#| msgid "Group Information"
+msgid "Edit Member Information"
+msgstr "Klubinformation"
+
+#: templates/local/committee_member_form.html:49
+#, fuzzy
+#| msgid "Group Information"
+msgid "Member Information"
+msgstr "Klubinformation"
+
+#: templates/local/committee_member_form.html:69
+#: templates/motion/motion_group_decision.html:61
+#: templates/motion/motion_group_decision_confirm_delete.html:47
+#: templates/motion/motion_status_change.html:80
+#: templates/motion/motion_status_confirm_delete.html:57
+msgid "Committee"
+msgstr ""
+
+#: templates/local/committee_member_form.html:181
+#, fuzzy
+#| msgid "Members"
+msgid "Member Roles"
+msgstr "Mitglieder"
+
+#: templates/local/committee_member_form.html:183
+msgid "Leader of the committee with full authority"
+msgstr ""
+
+#: templates/local/committee_member_form.html:184
+msgid "Deputy leader who can act in the chairperson's absence"
+msgstr ""
+
+#: templates/local/committee_member_form.html:185
+msgid "Regular committee member with voting rights"
+msgstr ""
+
+#: templates/local/committee_member_form.html:192
+msgid "Only active users can be added to committees"
+msgstr ""
+
+#: templates/local/committee_member_form.html:193
+msgid "Each user can only be a member of a committee once"
+msgstr ""
+
+#: templates/local/committee_member_form.html:194
+msgid "Use notes to record special responsibilities or conditions"
 msgstr ""
 
 #: templates/local/council_confirm_delete.html:5
@@ -1463,47 +1953,43 @@ msgstr "Sitzungen"
 msgid "Add Session"
 msgstr ""
 
-#: templates/local/council_detail.html:146 templates/local/session_list.html:91
-msgid "Date & Time"
-msgstr ""
-
 #: templates/local/council_detail.html:177
 #: templates/local/session_confirm_delete.html:61
-#: templates/local/session_detail.html:45 templates/local/session_form.html:285
+#: templates/local/session_detail.html:45 templates/local/session_form.html:249
 #: templates/local/session_list.html:48 templates/local/session_list.html:125
 msgid "Scheduled"
 msgstr "Geplant"
 
 #: templates/local/council_detail.html:179
 #: templates/local/session_confirm_delete.html:63
-#: templates/local/session_detail.html:47 templates/local/session_form.html:286
+#: templates/local/session_detail.html:47 templates/local/session_form.html:250
 #: templates/local/session_list.html:49 templates/local/session_list.html:127
 msgid "In Progress"
 msgstr "In Bearbeitung"
 
 #: templates/local/council_detail.html:181
 #: templates/local/session_confirm_delete.html:65
-#: templates/local/session_detail.html:49 templates/local/session_form.html:287
+#: templates/local/session_detail.html:49 templates/local/session_form.html:251
 #: templates/local/session_list.html:50 templates/local/session_list.html:129
 msgid "Completed"
 msgstr "Abgeschlossen"
 
 #: templates/local/council_detail.html:183
 #: templates/local/session_confirm_delete.html:67
-#: templates/local/session_detail.html:51 templates/local/session_form.html:288
+#: templates/local/session_detail.html:51 templates/local/session_form.html:252
 #: templates/local/session_list.html:51 templates/local/session_list.html:131
 msgid "Cancelled"
 msgstr "Abgebrochen"
 
 #: templates/local/council_detail.html:185
 #: templates/local/session_confirm_delete.html:69
-#: templates/local/session_detail.html:53 templates/local/session_form.html:289
+#: templates/local/session_detail.html:53 templates/local/session_form.html:253
 #: templates/local/session_list.html:52 templates/local/session_list.html:133
-msgid "Postponed"
-msgstr "Verschoben"
+msgid "Invited"
+msgstr ""
 
 #: templates/local/council_detail.html:193
-#: templates/local/session_detail.html:235 templates/local/session_form.html:7
+#: templates/local/session_detail.html:327 templates/local/session_form.html:7
 #: templates/local/session_form.html:20 templates/local/session_list.html:144
 msgid "Edit Session"
 msgstr "Sitzung bearbeiten"
@@ -1512,7 +1998,7 @@ msgstr "Sitzung bearbeiten"
 #: templates/local/session_confirm_delete.html:5
 #: templates/local/session_confirm_delete.html:13
 #: templates/local/session_confirm_delete.html:125
-#: templates/local/session_detail.html:238
+#: templates/local/session_detail.html:330
 #: templates/local/session_list.html:147
 msgid "Delete Session"
 msgstr "Sitzung löschen"
@@ -1522,7 +2008,6 @@ msgid "sessions"
 msgstr ""
 
 #: templates/local/council_detail.html:213
-#: templates/local/session_detail.html:241
 msgid "View All Sessions"
 msgstr ""
 
@@ -1544,16 +2029,7 @@ msgid "Council Committees"
 msgstr "Kommissionen und Ausschüsse"
 
 #: templates/local/council_detail.html:305
-msgid "committees"
-msgstr ""
-
-#: templates/local/council_detail.html:315
 msgid "No Committees found"
-msgstr ""
-
-#: templates/local/council_detail.html:316
-msgid ""
-"Create committees to organize council work and delegate responsibilities."
 msgstr ""
 
 #: templates/local/council_form.html:9 templates/local/council_form.html:23
@@ -1606,7 +2082,7 @@ msgstr "Alle"
 #: templates/local/party_list.html:58 templates/local/session_list.html:69
 #: templates/local/term_list.html:65
 #: templates/local/term_seat_distribution_list.html:66
-#: templates/motion/motion_list.html:49 templates/motion/motion_list.html:69
+#: templates/motion/motion_list.html:48 templates/motion/motion_list.html:67
 #: templates/user/role_list.html:50
 msgid "Clear"
 msgstr "Löschen"
@@ -1638,10 +2114,6 @@ msgstr ""
 #: templates/local/council_name_form.html:5
 #: templates/local/council_name_form.html:14
 msgid "Edit Council Name"
-msgstr ""
-
-#: templates/local/council_name_form.html:18
-msgid "Back to Local"
 msgstr ""
 
 #: templates/local/council_name_form.html:62
@@ -1904,10 +2376,6 @@ msgstr ""
 msgid "The local district this party belongs to"
 msgstr ""
 
-#: templates/local/party_form.html:246
-msgid "Optional Fields"
-msgstr ""
-
 #: templates/local/party_form.html:248
 msgid "Abbreviated name for display"
 msgstr ""
@@ -1944,7 +2412,9 @@ msgstr ""
 msgid "Search by name, short name, description or local"
 msgstr ""
 
-#: templates/local/party_list.html:72 templates/motion/motion_detail.html:277
+#: templates/local/party_list.html:72 templates/local/session_detail.html:107
+#: templates/local/session_detail.html:199
+#: templates/motion/motion_detail.html:293
 msgid "Parties"
 msgstr ""
 
@@ -1958,6 +2428,8 @@ msgstr ""
 
 #: templates/local/session_attachment_form.html:5
 #: templates/local/session_attachment_form.html:14
+#: templates/motion/question_attachment.html:6
+#: templates/motion/question_attachment.html:16
 #, fuzzy
 #| msgid "Attachments"
 msgid "Upload Attachment"
@@ -1966,17 +2438,21 @@ msgstr "Anhänge"
 #: templates/local/session_attachment_form.html:20
 #: templates/local/session_confirm_delete.html:19
 #: templates/motion/motion_detail.html:27
+#: templates/motion/question_detail.html:32
 msgid "Back to Session"
 msgstr "Zurück zur Sitzung"
 
 #: templates/local/session_attachment_form.html:29
 #: templates/local/session_attachment_form.html:91
-#: templates/local/session_detail.html:176
-#: templates/motion/motion_detail.html:430
+#: templates/local/session_detail.html:268
+#: templates/motion/motion_detail.html:446
+#: templates/motion/question_detail.html:145
 msgid "Upload File"
 msgstr "Datei hochladen"
 
 #: templates/local/session_attachment_form.html:39
+#: templates/motion/question_attachment.html:30
+#: templates/motion/question_attachment.html:93
 #, fuzzy
 #| msgid "Files"
 msgid "File"
@@ -1989,13 +2465,15 @@ msgid ""
 msgstr ""
 
 #: templates/local/session_attachment_form.html:57
+#: templates/motion/question_attachment.html:47
+#: templates/motion/question_attachment.html:94
 #, fuzzy
 #| msgid "Motion Type"
 msgid "File Type"
 msgstr "Antragstyp"
 
 #: templates/local/session_attachment_form.html:74
-#: templates/motion/motion_group_decision.html:107
+#: templates/motion/motion_group_decision.html:81
 #: templates/motion/motion_status_change.html:98
 msgid "optional"
 msgstr "optional"
@@ -2026,11 +2504,6 @@ msgstr ""
 msgid "Session to be deleted"
 msgstr ""
 
-#: templates/local/session_confirm_delete.html:76
-#: templates/local/session_detail.html:61
-msgid "Date"
-msgstr "Datum"
-
 #: templates/local/session_confirm_delete.html:79
 #: templates/local/session_detail.html:64
 msgid "Time"
@@ -2051,45 +2524,77 @@ msgstr ""
 msgid "Session Details"
 msgstr "Sitzungsdetails"
 
-#: templates/local/session_detail.html:67
-msgid "Location"
-msgstr "Ort"
-
 #: templates/local/session_detail.html:91
 msgid "Session Motions"
-msgstr "Sitzungsanträge"
+msgstr "Anträge"
 
-#: templates/local/session_detail.html:160
+#: templates/local/session_detail.html:94
+#: templates/local/session_detail.html:186
+msgid "Add"
+msgstr "Hinzufügen"
+
+#: templates/local/session_detail.html:165
+#: templates/local/session_detail.html:247
+msgid "Order saved successfully!"
+msgstr ""
+
+#: templates/local/session_detail.html:170
 msgid "No motions have been submitted for this session yet."
 msgstr ""
 
-#: templates/local/session_detail.html:173
+#: templates/local/session_detail.html:172
+#: templates/motion/motion_list.html:193
+msgid "Create First Motion"
+msgstr "Erstelle den ersten Antrag"
+
+#: templates/local/session_detail.html:183
+#, fuzzy
+#| msgid "Session Motions"
+msgid "Session Questions"
+msgstr "Anfragen"
+
+#: templates/local/session_detail.html:252
+#, fuzzy
+#| msgid "No attachments uploaded for this session yet."
+msgid "No questions have been submitted for this session yet."
+msgstr "Noch keine Anhänge für diese Sitzung hochgeladen."
+
+#: templates/local/session_detail.html:254
+#: templates/motion/question_list.html:132
+#, fuzzy
+#| msgid "Create First Motion"
+msgid "Create First Question"
+msgstr "Erstelle den ersten Antrag"
+
+#: templates/local/session_detail.html:265
 msgid "Session Attachments"
 msgstr "Sitzungsanhänge"
 
-#: templates/local/session_detail.html:194
-#: templates/motion/motion_detail.html:456
+#: templates/local/session_detail.html:286
+#: templates/motion/motion_detail.html:472
+#: templates/motion/question_detail.html:164
 msgid "Uploaded by"
 msgstr "Hochgeladen von"
 
-#: templates/local/session_detail.html:204
-#: templates/motion/motion_detail.html:466
+#: templates/local/session_detail.html:296
+#: templates/motion/motion_detail.html:482
+#: templates/motion/question_detail.html:174
 msgid "Download"
 msgstr "Herunterladen"
 
-#: templates/local/session_detail.html:215
+#: templates/local/session_detail.html:307
 msgid "No attachments uploaded for this session yet."
 msgstr "Noch keine Anhänge für diese Sitzung hochgeladen."
 
-#: templates/local/session_detail.html:217
+#: templates/local/session_detail.html:309
 msgid "Upload First File"
 msgstr "Erste Datei hochladen"
 
-#: templates/local/session_detail.html:255
+#: templates/local/session_detail.html:344
 msgid "Exports"
 msgstr "Exporte"
 
-#: templates/local/session_detail.html:260
+#: templates/local/session_detail.html:349
 msgid "Export Session as PDF"
 msgstr "Sitzung als PDF exportieren"
 
@@ -2109,71 +2614,71 @@ msgstr ""
 msgid "Session Information"
 msgstr "Sitzungsinformation"
 
-#: templates/local/session_form.html:258
+#: templates/local/session_form.html:222
 msgid "Update Session"
 msgstr "Sitzung aktualisieren"
 
-#: templates/local/session_form.html:260
+#: templates/local/session_form.html:224
 msgid "Create Session"
 msgstr "Sitzung erstellen"
 
-#: templates/local/session_form.html:277
+#: templates/local/session_form.html:241
 msgid "Session Types"
 msgstr ""
 
-#: templates/local/session_form.html:279 templates/local/session_list.html:59
+#: templates/local/session_form.html:243 templates/local/session_list.html:59
 msgid "Regular"
 msgstr ""
 
-#: templates/local/session_form.html:279
+#: templates/local/session_form.html:243
 msgid "Standard council meeting"
 msgstr ""
 
-#: templates/local/session_form.html:280 templates/local/session_list.html:60
+#: templates/local/session_form.html:244 templates/local/session_list.html:60
 msgid "Special"
 msgstr ""
 
-#: templates/local/session_form.html:280
+#: templates/local/session_form.html:244
 msgid "Special or emergency meeting"
 msgstr ""
 
-#: templates/local/session_form.html:283
+#: templates/local/session_form.html:247
 msgid "Session Status"
 msgstr ""
 
-#: templates/local/session_form.html:285
+#: templates/local/session_form.html:249
 msgid "Session is planned and confirmed"
 msgstr ""
 
-#: templates/local/session_form.html:286
+#: templates/local/session_form.html:250
 msgid "Session is currently happening"
 msgstr ""
 
-#: templates/local/session_form.html:287
+#: templates/local/session_form.html:251
 msgid "Session has finished"
 msgstr ""
 
-#: templates/local/session_form.html:288
+#: templates/local/session_form.html:252
 msgid "Session was cancelled"
 msgstr ""
 
-#: templates/local/session_form.html:289
-msgid "Session was postponed to later date"
+#: templates/local/session_form.html:253
+msgid "Invitations have been sent for this session"
 msgstr ""
 
-#: templates/local/session_form.html:294
+#: templates/local/session_form.html:258
 msgid "Use descriptive titles for easy identification"
 msgstr ""
 
-#: templates/local/session_form.html:295
+#: templates/local/session_form.html:259
 msgid "Set the correct date and time for scheduling"
 msgstr ""
 
-#: templates/local/session_form.html:296
+#: templates/local/session_form.html:260
 msgid "Include location details for physical meetings"
 msgstr ""
 
-#: templates/local/session_form.html:297
+#: templates/local/session_form.html:261
 msgid "Add description for additional context"
 msgstr ""
 
@@ -2498,222 +3003,14 @@ msgstr ""
 msgid "Create First Distribution"
 msgstr ""
 
-#: templates/motion/motion_detail.html:6
-msgid "Motion Details"
-msgstr "Antragsdetails"
-
-#: templates/motion/motion_detail.html:38
-msgid "Motion Information"
-msgstr "Antragsinformation"
-
-#: templates/motion/motion_detail.html:66 templates/motion/motion_form.html:104
-#: templates/motion/motion_form.html:165 templates/motion/motion_list.html:95
-msgid "Session"
-msgstr "Sitzung"
-
-#: templates/motion/motion_detail.html:97 templates/motion/motion_form.html:48
-#: templates/motion/motion_form.html:162
-msgid "Motion Text"
-msgstr "Antragstext"
-
-#: templates/motion/motion_detail.html:103 templates/motion/motion_form.html:65
-#: templates/motion/motion_form.html:163
-msgid "Rationale"
-msgstr "Begründung"
-
-#: templates/motion/motion_detail.html:109
-#: templates/motion/motion_form.html:118 templates/motion/motion_form.html:166
-msgid "Supporting Parties"
-msgstr "Einbringende Partei(en)"
-
-#: templates/motion/motion_detail.html:125
-msgid "Group Decisions"
-msgstr "Klubentscheidungen"
-
-#: templates/motion/motion_detail.html:128
-#: templates/motion/motion_group_decision.html:5
-#: templates/motion/motion_group_decision.html:14
-#: templates/motion/motion_group_decision.html:124
-#, fuzzy
-#| msgid "Group Decisions"
-msgid "Add Group Decision"
-msgstr "Klubentscheidungen"
-
-#: templates/motion/motion_detail.html:164
-#: templates/motion/motion_detail.html:249
-#: templates/motion/motion_detail.html:520
-#: templates/motion/motion_status_change.html:44
-msgid "by"
-msgstr "von"
-
-#: templates/motion/motion_detail.html:172
-msgid "Delete group decision"
-msgstr "Klubentscheidung löschen"
-
-#: templates/motion/motion_detail.html:186
-#: templates/motion/motion_detail.html:542
-msgid "Referred to"
-msgstr "Verwiesen an"
-
-#: templates/motion/motion_detail.html:196
-msgid "No group decisions recorded."
-msgstr "Keine Klubentscheidungen aufgezeichnet."
-
-#: templates/motion/motion_detail.html:205
-msgid "Voting Results"
-msgstr "Abstimmungsergebnisse"
-
-#: templates/motion/motion_detail.html:209
-msgid "Edit Votes"
-msgstr "Stimmen bearbeiten"
-
-#: templates/motion/motion_detail.html:232
-msgid "Total votes cast"
-msgstr "Gesamte abgegebene Stimmen"
-
-#: templates/motion/motion_detail.html:233
-msgid "Parties voted"
-msgstr "Abstimmende Parteien"
-
-#: templates/motion/motion_detail.html:234
-msgid "Voting sessions"
-msgstr "Abstimmungssitzungen"
-
-#: templates/motion/motion_detail.html:244
-msgid "Voting Session"
-msgstr "Abstimmungssitzung"
-
-#: templates/motion/motion_detail.html:254
-msgid "Standalone Voting Session"
-msgstr "Eigenständige Abstimmungssitzung"
-
-#: templates/motion/motion_detail.html:276
-msgid "Session total"
-msgstr "Sitzungssumme"
-
-#: templates/motion/motion_detail.html:288
-#: templates/motion/motion_status_change.html:140
-#: templates/motion/motion_vote.html:51
-msgid "Total"
-msgstr ""
-
-#: templates/motion/motion_detail.html:289
-msgid "Result"
-msgstr "Ergebnis"
-
-#: templates/motion/motion_detail.html:333
-msgid "No votes recorded yet."
-msgstr "Noch keine Stimmen aufgezeichnet."
-
-#: templates/motion/motion_detail.html:335
-msgid "Record First Votes"
-msgstr "Erste Stimmen aufzeichnen"
-
-#: templates/motion/motion_detail.html:345
-#: templates/motion/motion_detail.html:370
-msgid "Comments"
-msgstr "Kommentare"
-
-#: templates/motion/motion_detail.html:358
-msgid "Make this comment public"
-msgstr ""
-
-#: templates/motion/motion_detail.html:363
-msgid "Add Comment"
-msgstr ""
-
-#: templates/motion/motion_detail.html:378
-msgid "Private"
-msgstr ""
-
-#: templates/motion/motion_detail.html:387
-msgid "No comments yet."
-msgstr ""
-
-#: templates/motion/motion_detail.html:411
-#: templates/motion/motion_list.html:156
+#: templates/motion/motion_confirm_delete.html:5
+#: templates/motion/motion_confirm_delete.html:12
+#: templates/motion/motion_confirm_delete.html:98
+#: templates/motion/motion_detail.html:427
 msgid "Delete Motion"
 msgstr "Antrag löschen"
 
-#: templates/motion/motion_detail.html:418
-msgid "View Session"
-msgstr "Sitzung anzeigen"
-
-#: templates/motion/motion_detail.html:428
-msgid "Files"
-msgstr "Dateien"
-
-#: templates/motion/motion_detail.html:436
-msgid "Export Motion as PDF"
-msgstr "Antrag als PDF exportieren"
-
-#: templates/motion/motion_detail.html:442
-msgid "Attachments"
-msgstr "Anhänge"
-
-#: templates/motion/motion_detail.html:475
-msgid "No attachments uploaded."
-msgstr "Keine Anhänge hochgeladen."
-
-#: templates/motion/motion_detail.html:483
-#: templates/motion/motion_status_change.html:232
-msgid "Status History"
-msgstr "Statusverlauf"
-
-#: templates/motion/motion_detail.html:485
-msgid "Add Status"
-msgstr "Status hinzufügen"
-
-#: templates/motion/motion_detail.html:528
-msgid "Delete status entry"
-msgstr "Status-Eintrag löschen"
-
-#: templates/motion/motion_detail.html:552
-#: templates/motion/motion_status_change.html:289
-msgid "No status changes recorded."
-msgstr "Keine Statusänderungen aufgezeichnet."
-
-#: templates/motion/motion_form.html:9 templates/motion/motion_form.html:24
-#: templates/motion/motion_form.html:145 templates/motion/motion_list.html:17
-msgid "Create Motion"
-msgstr "Antrag erstellen"
-
-#: templates/motion/motion_form.html:84 templates/motion/motion_form.html:164
-msgid "Motion Type"
-msgstr "Antragstyp"
-
-#: templates/motion/motion_form.html:129
-msgid "Select parties that support this motion (optional)"
-msgstr ""
-
-#: templates/motion/motion_form.html:143
-msgid "Update Motion"
-msgstr "Antrag aktualisieren"
-
-#: templates/motion/motion_form.html:161
-msgid "Enter a clear, descriptive title for the motion."
-msgstr ""
-
-#: templates/motion/motion_form.html:162
-msgid "Provide the detailed text and content of the motion."
-msgstr ""
-
-#: templates/motion/motion_form.html:163
-msgid "Explain the reasoning and justification for this motion."
-msgstr ""
-
-#: templates/motion/motion_form.html:164
-msgid "Select the appropriate type of motion."
-msgstr ""
-
-#: templates/motion/motion_form.html:165
-msgid "Select the council session where this motion will be presented."
-msgstr ""
-
-#: templates/motion/motion_form.html:166
-msgid "Select parties that support this motion (optional)."
-msgstr ""
-
+#: templates/motion/motion_confirm_delete.html:15
 #: templates/motion/motion_group_decision.html:20
 #: templates/motion/motion_group_decision_confirm_delete.html:20
 #: templates/motion/motion_status_change.html:20
@@ -2721,6 +3018,272 @@ msgstr ""
 #: templates/motion/motion_vote.html:20
 msgid "Back to Motion"
 msgstr "Zurück zum Antrag"
+
+#: templates/motion/motion_confirm_delete.html:32
+#, fuzzy
+#| msgid "Are you sure you want to delete the Group"
+msgid "Are you sure you want to delete the Motion"
+msgstr "Sind Sie sicher, dass Sie die Gruppe löschen möchten"
+
+#: templates/motion/motion_confirm_delete.html:39
+#: templates/motion/motion_detail.html:6
+msgid "Motion Details"
+msgstr "Antragsdetails"
+
+#: templates/motion/motion_confirm_delete.html:51
+#: templates/motion/motion_form.html:84 templates/motion/motion_form.html:212
+msgid "Motion Type"
+msgstr "Antragstyp"
+
+#: templates/motion/motion_confirm_delete.html:55
+#: templates/motion/motion_detail.html:66 templates/motion/motion_form.html:104
+#: templates/motion/motion_form.html:213 templates/motion/motion_list.html:93
+#: templates/motion/question_confirm_delete.html:52
+#: templates/motion/question_detail.html:71
+#: templates/motion/question_form.html:86
+#: templates/motion/question_form.html:192
+#: templates/motion/question_list.html:38
+msgid "Session"
+msgstr "Sitzung"
+
+#: templates/motion/motion_confirm_delete.html:69
+#: templates/motion/question_confirm_delete.html:66
+#, fuzzy
+#| msgid "Submitted"
+msgid "Submitted By"
+msgstr "Eingereicht"
+
+#: templates/motion/motion_confirm_delete.html:73
+#: templates/motion/question_confirm_delete.html:70
+#, fuzzy
+#| msgid "Submitted"
+msgid "Submitted Date"
+msgstr "Eingereicht"
+
+#: templates/motion/motion_confirm_delete.html:79
+#: templates/motion/motion_detail.html:99 templates/motion/motion_form.html:48
+#: templates/motion/motion_form.html:210
+msgid "Motion Text"
+msgstr "Antragstext"
+
+#: templates/motion/motion_confirm_delete.html:85
+#: templates/motion/motion_detail.html:105 templates/motion/motion_form.html:65
+#: templates/motion/motion_form.html:211
+msgid "Rationale"
+msgstr "Begründung"
+
+#: templates/motion/motion_confirm_delete.html:114
+#, fuzzy
+#| msgid "View All Motions"
+msgid "View Motion"
+msgstr "Alle Anträge anzeigen"
+
+#: templates/motion/motion_confirm_delete.html:121
+#: templates/motion/motion_detail.html:434
+#: templates/motion/question_confirm_delete.html:118
+msgid "View Session"
+msgstr "Sitzung anzeigen"
+
+#: templates/motion/motion_detail.html:38
+msgid "Motion Information"
+msgstr "Antragsinformation"
+
+#: templates/motion/motion_detail.html:111
+#: templates/motion/motion_form.html:135 templates/motion/motion_form.html:214
+#: templates/motion/question_detail.html:112
+#: templates/motion/question_form.html:117
+#: templates/motion/question_form.html:193
+msgid "Supporting Parties"
+msgstr "Einbringende Partei(en)"
+
+#: templates/motion/motion_detail.html:125
+#: templates/motion/motion_form.html:152
+#: templates/motion/question_detail.html:126
+#: templates/motion/question_form.html:134
+msgid "Wortmeldung"
+msgstr ""
+
+#: templates/motion/motion_detail.html:141
+msgid "Group Decisions"
+msgstr "Klubentscheidungen"
+
+#: templates/motion/motion_detail.html:144
+#: templates/motion/motion_group_decision.html:5
+#: templates/motion/motion_group_decision.html:14
+#: templates/motion/motion_group_decision.html:98
+#, fuzzy
+#| msgid "Group Decisions"
+msgid "Add Group Decision"
+msgstr "Klubentscheidungen"
+
+#: templates/motion/motion_detail.html:180
+#: templates/motion/motion_detail.html:265
+#: templates/motion/motion_detail.html:539
+#: templates/motion/motion_status_change.html:44
+msgid "by"
+msgstr "von"
+
+#: templates/motion/motion_detail.html:188
+msgid "Delete group decision"
+msgstr "Klubentscheidung löschen"
+
+#: templates/motion/motion_detail.html:202
+#: templates/motion/motion_detail.html:561
+msgid "Referred to"
+msgstr "Verwiesen an"
+
+#: templates/motion/motion_detail.html:212
+msgid "No group decisions recorded."
+msgstr "Keine Klubentscheidungen aufgezeichnet."
+
+#: templates/motion/motion_detail.html:221
+msgid "Voting Results"
+msgstr "Abstimmungsergebnisse"
+
+#: templates/motion/motion_detail.html:225
+msgid "Edit Votes"
+msgstr "Stimmen bearbeiten"
+
+#: templates/motion/motion_detail.html:248
+msgid "Total votes cast"
+msgstr "Gesamte abgegebene Stimmen"
+
+#: templates/motion/motion_detail.html:249
+msgid "Parties voted"
+msgstr "Abstimmende Parteien"
+
+#: templates/motion/motion_detail.html:250
+msgid "Voting sessions"
+msgstr "Abstimmungssitzungen"
+
+#: templates/motion/motion_detail.html:260
+msgid "Voting Session"
+msgstr "Abstimmungssitzung"
+
+#: templates/motion/motion_detail.html:270
+msgid "Standalone Voting Session"
+msgstr "Eigenständige Abstimmungssitzung"
+
+#: templates/motion/motion_detail.html:292
+msgid "Session total"
+msgstr "Sitzungssumme"
+
+#: templates/motion/motion_detail.html:304
+#: templates/motion/motion_status_change.html:140
+#: templates/motion/motion_vote.html:51
+msgid "Total"
+msgstr ""
+
+#: templates/motion/motion_detail.html:305
+msgid "Result"
+msgstr "Ergebnis"
+
+#: templates/motion/motion_detail.html:349
+msgid "No votes recorded yet."
+msgstr "Noch keine Stimmen aufgezeichnet."
+
+#: templates/motion/motion_detail.html:351
+msgid "Record First Votes"
+msgstr "Erste Stimmen aufzeichnen"
+
+#: templates/motion/motion_detail.html:361
+#: templates/motion/motion_detail.html:386
+msgid "Comments"
+msgstr "Kommentare"
+
+#: templates/motion/motion_detail.html:374
+msgid "Make this comment public"
+msgstr ""
+
+#: templates/motion/motion_detail.html:379
+msgid "Add Comment"
+msgstr ""
+
+#: templates/motion/motion_detail.html:394
+msgid "Private"
+msgstr ""
+
+#: templates/motion/motion_detail.html:403
+msgid "No comments yet."
+msgstr ""
+
+#: templates/motion/motion_detail.html:444
+#: templates/motion/question_detail.html:143
+msgid "Files"
+msgstr "Dateien"
+
+#: templates/motion/motion_detail.html:452
+msgid "Export Motion as PDF"
+msgstr "Antrag als PDF exportieren"
+
+#: templates/motion/motion_detail.html:458
+#: templates/motion/question_detail.html:150
+msgid "Attachments"
+msgstr "Anhänge"
+
+#: templates/motion/motion_detail.html:491
+msgid "No attachments uploaded."
+msgstr "Keine Anhänge hochgeladen."
+
+#: templates/motion/motion_detail.html:499
+#: templates/motion/motion_status_change.html:232
+msgid "Status History"
+msgstr "Statusverlauf"
+
+#: templates/motion/motion_detail.html:501
+msgid "Add Status"
+msgstr "Status hinzufügen"
+
+#: templates/motion/motion_detail.html:547
+msgid "Delete status entry"
+msgstr "Status-Eintrag löschen"
+
+#: templates/motion/motion_detail.html:571
+#: templates/motion/motion_status_change.html:292
+msgid "No status changes recorded."
+msgstr "Keine Statusänderungen aufgezeichnet."
+
+#: templates/motion/motion_form.html:9 templates/motion/motion_form.html:24
+#: templates/motion/motion_form.html:193 templates/motion/motion_list.html:17
+msgid "Create Motion"
+msgstr "Antrag erstellen"
+
+#: templates/motion/motion_form.html:146
+msgid "Select parties that support this motion (optional)"
+msgstr ""
+
+#: templates/motion/motion_form.html:163
+msgid ""
+"Select users from the motion's group who can speak in session (optional)"
+msgstr ""
+
+#: templates/motion/motion_form.html:191
+msgid "Update Motion"
+msgstr "Antrag aktualisieren"
+
+#: templates/motion/motion_form.html:209
+msgid "Enter a clear, descriptive title for the motion."
+msgstr ""
+
+#: templates/motion/motion_form.html:210
+msgid "Provide the detailed text and content of the motion."
+msgstr ""
+
+#: templates/motion/motion_form.html:211
+msgid "Explain the reasoning and justification for this motion."
+msgstr ""
+
+#: templates/motion/motion_form.html:212
+msgid "Select the appropriate type of motion."
+msgstr ""
+
+#: templates/motion/motion_form.html:213
+msgid "Select the council session where this motion will be presented."
+msgstr ""
+
+#: templates/motion/motion_form.html:214
+msgid "Select parties that support this motion (optional)."
+msgstr ""
 
 #: templates/motion/motion_group_decision.html:29
 #: templates/motion/motion_group_decision_confirm_delete.html:39
@@ -2736,31 +3299,13 @@ msgstr "Klubentscheidungen"
 msgid "Decision"
 msgstr "Klubentscheidungen"
 
-#: templates/motion/motion_group_decision.html:54
-msgid "Decision Date"
-msgstr ""
-
 #: templates/motion/motion_group_decision.html:72
-#: templates/motion/motion_group_decision_confirm_delete.html:42
-#, fuzzy
-#| msgid "Session Type"
-msgid "Decision Time"
-msgstr "Sitzungstyp"
-
-#: templates/motion/motion_group_decision.html:87
-#: templates/motion/motion_group_decision_confirm_delete.html:47
-#: templates/motion/motion_status_change.html:80
-#: templates/motion/motion_status_confirm_delete.html:57
-msgid "Committee"
-msgstr ""
-
-#: templates/motion/motion_group_decision.html:98
 #: templates/motion/motion_status_change.html:91
 msgid "Select the committee to refer this motion to."
 msgstr ""
 "Wählen Sie den Ausschuss aus, an den dieser Antrag verwiesen werden soll."
 
-#: templates/motion/motion_group_decision.html:118
+#: templates/motion/motion_group_decision.html:92
 msgid "Provide additional details about the group decision."
 msgstr ""
 
@@ -2769,6 +3314,12 @@ msgstr ""
 #: templates/motion/motion_group_decision_confirm_delete.html:58
 msgid "Delete Group Decision"
 msgstr "Klubentscheidung löschen"
+
+#: templates/motion/motion_group_decision_confirm_delete.html:42
+#, fuzzy
+#| msgid "Session Type"
+msgid "Decision Time"
+msgstr "Sitzungstyp"
 
 #: templates/motion/motion_group_decision_confirm_delete.html:44
 #, fuzzy
@@ -2784,31 +3335,31 @@ msgstr "Antragsverwaltung"
 msgid "Filter Motions"
 msgstr ""
 
-#: templates/motion/motion_list.html:119
+#: templates/motion/motion_list.html:116
 msgid "Under Review"
 msgstr ""
 
-#: templates/motion/motion_list.html:125
+#: templates/motion/motion_list.html:122
 msgid "Amended"
 msgstr ""
 
-#: templates/motion/motion_list.html:129
+#: templates/motion/motion_list.html:126
 msgid "Tabled"
 msgstr ""
 
-#: templates/motion/motion_list.html:141
+#: templates/motion/motion_list.html:140 templates/motion/question_list.html:70
 msgid "No session"
 msgstr ""
 
-#: templates/motion/motion_list.html:170
+#: templates/motion/motion_list.html:151
 msgid "Motion pagination"
 msgstr ""
 
-#: templates/motion/motion_list.html:209
+#: templates/motion/motion_list.html:190
 msgid "No motions found"
 msgstr ""
 
-#: templates/motion/motion_list.html:210
+#: templates/motion/motion_list.html:191
 msgid "Create motions to manage council proposals and resolutions."
 msgstr ""
 
@@ -2853,7 +3404,7 @@ msgstr ""
 msgid "Record Party Votes"
 msgstr "Erste Stimmen aufzeichnen"
 
-#: templates/motion/motion_status_change.html:284
+#: templates/motion/motion_status_change.html:287
 msgid "View All History"
 msgstr "Alle Historie anzeigen"
 
@@ -2895,35 +3446,335 @@ msgstr "Abstimmungsergebnisse"
 msgid "Record All Votes"
 msgstr "Alle Stimmen aufzeichnen"
 
-#: templates/user/confirm_delete.html:5 templates/user/confirm_delete.html:8
-#: templates/user/data_confirm_delete.html:5
+#: templates/motion/question_attachment.html:21
+#, fuzzy
+#| msgid "Resolution"
+msgid "Question"
+msgstr "Anfrage"
+
+#: templates/motion/question_attachment.html:78
+msgid "Upload"
+msgstr "Hochladen"
+
+#: templates/motion/question_attachment.html:93
+msgid "Select a file to upload (max 10MB)."
+msgstr ""
+
+#: templates/motion/question_attachment.html:94
+msgid "Select the type of file you are uploading."
+msgstr ""
+
+#: templates/motion/question_attachment.html:95
+msgid "Optionally provide a description for the attachment."
+msgstr ""
+
+#: templates/motion/question_attachment.html:96
+#, fuzzy
+#| msgid "Motion Type"
+msgid "Allowed Types"
+msgstr "Anfragetyp"
+
+#: templates/motion/question_confirm_delete.html:5
+#: templates/motion/question_confirm_delete.html:12
+#: templates/motion/question_confirm_delete.html:95
+#, fuzzy
+#| msgid "Delete Session"
+msgid "Delete Question"
+msgstr "Anfrage löschen"
+
+#: templates/motion/question_confirm_delete.html:15
+#, fuzzy
+#| msgid "Back to Session"
+msgid "Back to Question"
+msgstr "Zurück zur Anfrage"
+
+#: templates/motion/question_confirm_delete.html:32
+#, fuzzy
+#| msgid "Are you sure you want to delete the Group"
+msgid "Are you sure you want to delete the Question"
+msgstr "Sind Sie sicher, dass Sie die Gruppe löschen möchten"
+
+#: templates/motion/question_confirm_delete.html:39
+#: templates/motion/question_detail.html:6
+#, fuzzy
+#| msgid "Session Details"
+msgid "Question Details"
+msgstr "Anfragedetails"
+
+#: templates/motion/question_confirm_delete.html:76
+#: templates/motion/question_detail.html:100
+#: templates/motion/question_form.html:48
+#: templates/motion/question_form.html:190
+#, fuzzy
+#| msgid "Motion Text"
+msgid "Question Text"
+msgstr "Anfragetext"
+
+#: templates/motion/question_confirm_delete.html:82
+#: templates/motion/question_detail.html:106
+#: templates/motion/question_form.html:65
+#: templates/motion/question_form.html:191
+msgid "Answer"
+msgstr ""
+
+#: templates/motion/question_confirm_delete.html:111
+#, fuzzy
+#| msgid "View Session"
+msgid "View Question"
+msgstr "Sitzung anzeigen"
+
+#: templates/motion/question_confirm_delete.html:114
+#: templates/motion/question_form.html:7 templates/motion/question_form.html:22
+#, fuzzy
+#| msgid "Edit Session"
+msgid "Edit Question"
+msgstr "Sitzung bearbeiten"
+
+#: templates/motion/question_detail.html:36
+#, fuzzy
+#| msgid "Back to Session"
+msgid "Back to Questions"
+msgstr "Zurück zur Sitzung"
+
+#: templates/motion/question_detail.html:48
+#, fuzzy
+#| msgid "Session Information"
+msgid "Question Information"
+msgstr "Sitzungsinformation"
+
+#: templates/motion/question_detail.html:183
+#, fuzzy
+#| msgid "No attachments uploaded."
+msgid "No attachments uploaded yet."
+msgstr "Keine Anhänge hochgeladen."
+
+#: templates/motion/question_detail.html:194
+msgid "Metadata"
+msgstr ""
+
+#: templates/motion/question_detail.html:198
+#, fuzzy
+#| msgid "Submitted"
+msgid "Submitted by"
+msgstr "Eingereicht"
+
+#: templates/motion/question_detail.html:203
+msgid "Unknown"
+msgstr ""
+
+#: templates/motion/question_detail.html:207
+#, fuzzy
+#| msgid "Submitted"
+msgid "Submitted date"
+msgstr "Eingereicht"
+
+#: templates/motion/question_detail.html:210
+msgid "Last modified"
+msgstr ""
+
+#: templates/motion/question_form.html:9 templates/motion/question_form.html:24
+#: templates/motion/question_form.html:173
+#: templates/motion/question_list.html:16
+#, fuzzy
+#| msgid "Create Session"
+msgid "Create Question"
+msgstr "Sitzung erstellen"
+
+#: templates/motion/question_form.html:128
+msgid "Select parties that support this question (optional)"
+msgstr ""
+
+#: templates/motion/question_form.html:145
+msgid ""
+"Select users from the question's group who can speak in session (optional)"
+msgstr ""
+
+#: templates/motion/question_form.html:171
+#, fuzzy
+#| msgid "Update Session"
+msgid "Update Question"
+msgstr "Sitzung aktualisieren"
+
+#: templates/motion/question_form.html:189
+msgid "Enter a clear, descriptive title for the question."
+msgstr ""
+
+#: templates/motion/question_form.html:190
+msgid "Provide the detailed text and content of the question."
+msgstr ""
+
+#: templates/motion/question_form.html:191
+msgid "Provide the answer to the question (optional)."
+msgstr ""
+
+#: templates/motion/question_form.html:192
+msgid "Select the council session where this question will be presented."
+msgstr ""
+
+#: templates/motion/question_form.html:193
+msgid "Select parties that support this question (optional)."
+msgstr ""
+
+#: templates/motion/question_list.html:6 templates/motion/question_list.html:13
+#, fuzzy
+#| msgid "Motion Management"
+msgid "Question Management"
+msgstr "Antragsverwaltung"
+
+#: templates/motion/question_list.html:6 templates/motion/question_list.html:13
+#: templates/motion/question_list.html:28
+msgid "Anfragen"
+msgstr ""
+
+#: templates/motion/question_list.html:28
+#, fuzzy
+#| msgid "Resolution"
+msgid "Questions"
+msgstr "Resolution"
+
+#: templates/motion/question_list.html:90
+#, fuzzy
+#| msgid "Session Information"
+msgid "Question pagination"
+msgstr "Sitzungsinformation"
+
+#: templates/motion/question_list.html:129
+#, fuzzy
+#| msgid "No Motions found"
+msgid "No questions found"
+msgstr "Keine Anträge gefunden"
+
+#: templates/motion/question_list.html:130
+msgid "Create questions to manage council inquiries."
+msgstr ""
+
+#: templates/user/admin_settings.html:15
+msgid "Test Email"
+msgstr ""
+
+#: templates/user/admin_settings.html:20
+msgid ""
+"Send a test email to verify that your email configuration is working "
+"correctly. The test email will be sent to your account email address."
+msgstr ""
+
+#: templates/user/admin_settings.html:25
+msgid "Email will be sent to:"
+msgstr ""
+
+#: templates/user/admin_settings.html:32
+msgid "Send Test Email"
+msgstr ""
+
+#: templates/user/admin_settings.html:38
+msgid ""
+"Your account doesn't have an email address configured. Please add an email "
+"address in your"
+msgstr ""
+
+#: templates/user/admin_settings.html:39
+#, fuzzy
+#| msgid "Settings"
+msgid "settings"
+msgstr "Einstellungen"
+
+#: templates/user/admin_settings.html:39
+msgid "first."
+msgstr ""
+
+#: templates/user/admin_settings.html:50
+msgid "Email Configuration"
+msgstr ""
+
+#: templates/user/admin_settings.html:55
+msgid "Current email backend:"
+msgstr ""
+
+#: templates/user/admin_settings.html:58
+msgid ""
+"Email configuration is managed in Django settings. For production, ensure "
+"SMTP settings are properly configured."
+msgstr ""
+
+#: templates/user/admin_user_form.html:4
+#: templates/user/admin_user_form.html:158
+#, fuzzy
+#| msgid "Create Group"
+msgid "Create User"
+msgstr "Gruppe erstellen"
+
+#: templates/user/admin_user_form.html:13
+#, fuzzy
+#| msgid "Create New Group"
+msgid "Create New User"
+msgstr "Neuen Klub erstellen"
+
+#: templates/user/admin_user_form.html:18
+msgid ""
+"Create a new user account directly. The user will need to set their password "
+"on first login."
+msgstr ""
+
+#: templates/user/admin_user_form.html:150
+#, fuzzy
+#| msgid "Notes"
+msgid "Note"
+msgstr "Notizen"
+
+#: templates/user/admin_user_form.html:150
+msgid ""
+"The user will be created with a temporary password and will need to set "
+"their own password on first login."
+msgstr ""
+
+#: templates/user/admin_user_form.html:155 templates/user/role_list.html:19
+msgid "Back to Management"
+msgstr ""
+
+#: templates/user/confirm_delete.html:5 templates/user/confirm_delete.html:15
 msgid "Delete Your Account"
 msgstr ""
 
-#: templates/user/confirm_delete.html:9
-msgid ""
-"Are you sure you want to delete your account? This action cannot be undone."
-msgstr ""
+#: templates/user/confirm_delete.html:22
+#, fuzzy
+#| msgid "This action cannot be undone."
+msgid "Warning: This Action Cannot Be Undone"
+msgstr "Diese Aktion kann nicht rückgängig gemacht werden."
 
-#: templates/user/confirm_delete.html:12
-#: templates/user/data_confirm_delete.html:12
+#: templates/user/confirm_delete.html:25
+#, fuzzy
+#| msgid "This action cannot be undone."
+msgid ""
+"Are you sure you want to delete your account? This action cannot be undone "
+"and all your data will be permanently removed."
+msgstr "Diese Aktion kann nicht rückgängig gemacht werden."
+
+#: templates/user/confirm_delete.html:38
+#: templates/user/data_confirm_delete.html:38
 msgid "Confirm Delete"
 msgstr ""
 
-#: templates/user/data_confirm_delete.html:8
+#: templates/user/data_confirm_delete.html:5
+#: templates/user/data_confirm_delete.html:15
 msgid "Delete Your Data"
 msgstr ""
 
-#: templates/user/data_confirm_delete.html:9
-msgid ""
-"Are you sure you want to delete all your Data? This action cannot be undone."
+#: templates/user/data_confirm_delete.html:22
+msgid "Data Deletion Warning"
 msgstr ""
 
-#: templates/user/edit.html:8
+#: templates/user/data_confirm_delete.html:25
+msgid ""
+"Are you sure you want to delete all your data? This action cannot be undone "
+"and all your personal information will be permanently removed from the "
+"system."
+msgstr ""
+
+#: templates/user/edit.html:7
 msgid "Edit User"
 msgstr ""
 
-#: templates/user/edit.html:12
+#: templates/user/edit.html:26
 msgid "Save"
 msgstr "Speichern"
 
@@ -2949,10 +3800,6 @@ msgstr ""
 
 #: templates/user/email/password_reset_key_message.html:90
 msgid "Password Reset Request"
-msgstr ""
-
-#: templates/user/email/password_reset_key_message.html:94
-msgid "Hello"
 msgstr ""
 
 #: templates/user/email/password_reset_key_message.html:96
@@ -3008,27 +3855,96 @@ msgstr ""
 msgid "Password Reset - %(site_name)s"
 msgstr ""
 
-#: templates/user/email_confirm.html:4 templates/user/email_confirm.html:6
+#: templates/user/email/welcome_email.html:64
+#: templates/user/email/welcome_email.txt:2 user/views.py:368
+msgid "Welcome to Klubtool"
+msgstr ""
+
+#: templates/user/email/welcome_email.html:69
+#: templates/user/email/welcome_email.txt:6
+msgid "Welcome to Klubtool! Your account has been created successfully."
+msgstr ""
+
+#: templates/user/email/welcome_email.html:72
+#: templates/user/email/welcome_email.txt:8
+#, fuzzy
+#| msgid "Council Information"
+msgid "Account Information"
+msgstr "Informationen"
+
+#: templates/user/email/welcome_email.html:74
+#: templates/user/email/welcome_email.txt:9 templates/user/list.html:37
+#: user/forms.py:218
+msgid "Username"
+msgstr ""
+
+#: templates/user/email/welcome_email.html:78
+#: templates/user/email/welcome_email.txt:10
+msgid "Email"
+msgstr ""
+
+#: templates/user/email/welcome_email.html:83
+msgid "You can now log in to your account:"
+msgstr ""
+
+#: templates/user/email/welcome_email.html:86
+msgid "Log In to Klubtool"
+msgstr ""
+
+#: templates/user/email/welcome_email.html:89
+#: templates/user/email/welcome_email.txt:15
+msgid ""
+"If you have any questions or need assistance, please don't hesitate to "
+"contact us."
+msgstr ""
+
+#: templates/user/email/welcome_email.html:92
+#: templates/user/email/welcome_email.txt:18
+msgid "The Klubtool Team"
+msgstr ""
+
+#: templates/user/email/welcome_email.txt:12
+msgid "You can now log in to your account at:"
+msgstr ""
+
+#: templates/user/email_confirm.html:5 templates/user/email_confirm.html:15
 msgid "Confirm E-mail Address"
 msgstr ""
 
-#: templates/user/email_confirm.html:8
-#, python-format
-msgid ""
-"Please confirm that <a href=\"mailto:%(email)s\">%(email)s</a> is an e-mail "
-"address for user\n"
-"%(user_display)s."
+#: templates/user/email_confirm.html:24
+msgid "Email Confirmation Required"
 msgstr ""
 
-#: templates/user/email_confirm.html:11
-msgid "Confirm"
-msgstr ""
-
-#: templates/user/email_confirm.html:14
+#: templates/user/email_confirm.html:27
 #, python-format
 msgid ""
-"This e-mail confirmation link expired or is invalid. Please <a "
-"href=\"%(email_url)s\">issue a new e-mail confirmation request</a>.\\\n"
+"\n"
+"                                Please confirm that <a href=\"mailto:"
+"%(email)s\" class=\"fw-bold\">%(email)s</a> is an e-mail address for user "
+"<strong>%(user_display)s</strong>.\n"
+"                                "
+msgstr ""
+
+#: templates/user/email_confirm.html:38
+#, fuzzy
+#| msgid "Email Address"
+msgid "Confirm Email Address"
+msgstr "E-Mail-Adresse"
+
+#: templates/user/email_confirm.html:47
+msgid "Invalid Confirmation Link"
+msgstr ""
+
+#: templates/user/email_confirm.html:50
+msgid ""
+"\n"
+"                                This e-mail confirmation link expired or is "
+"invalid.\n"
+"                                "
+msgstr ""
+
+#: templates/user/email_confirm.html:57
+msgid "Request New Confirmation Email"
 msgstr ""
 
 #: templates/user/list.html:6 templates/user/list.html:17
@@ -3036,126 +3952,49 @@ msgstr ""
 msgid "Users"
 msgstr "Benutzer"
 
-#: templates/user/list.html:31
+#: templates/user/list.html:20
+#, fuzzy
+#| msgid "Add Member"
+msgid "Add User"
+msgstr "Mitglied hinzufügen"
+
+#: templates/user/list.html:36
 msgid "ID"
 msgstr ""
 
-#: templates/user/list.html:32
-msgid "Username"
-msgstr ""
-
-#: templates/user/list.html:33
-msgid "Email"
-msgstr ""
-
-#: templates/user/list.html:36
-msgid "Staff"
-msgstr ""
-
-#: templates/user/list.html:37
-msgid "Superuser"
-msgstr ""
-
 #: templates/user/list.html:38
+#, fuzzy
+#| msgid "My Locals"
+msgid "Local"
+msgstr "Meine Bezirke"
+
+#: templates/user/list.html:40
 msgid "Date joined"
 msgstr ""
 
-#: templates/user/list.html:102
+#: templates/user/list.html:98
+msgid "Send welcome email to this user?"
+msgstr ""
+
+#: templates/user/list.html:100
+msgid "Send Welcome Email"
+msgstr ""
+
+#: templates/user/list.html:101
+msgid "Welcome Email"
+msgstr ""
+
+#: templates/user/list.html:113
 msgid "No users found."
 msgstr ""
 
-#: templates/user/management.html:16 templates/user/management.html:257
-msgid "View All Users"
-msgstr ""
-
-#: templates/user/management.html:34
-msgid "Total Users"
-msgstr ""
-
-#: templates/user/management.html:50 templates/user/management.html:240
-msgid "Active Users"
-msgstr ""
-
-#: templates/user/management.html:66 templates/user/management.html:242
-msgid "Users with Roles"
-msgstr ""
-
-#: templates/user/management.html:82 templates/user/management.html:249
-msgid "Total Roles"
-msgstr ""
-
-#: templates/user/management.html:104
-msgid "Add New User"
-msgstr ""
-
-#: templates/user/management.html:109 templates/user/role_form.html:20
-#: templates/user/role_list.html:16
-msgid "Create New Role"
-msgstr ""
-
-#: templates/user/management.html:114 templates/user/management.html:241
-msgid "Inactive Users"
-msgstr ""
-
-#: templates/user/management.html:119 templates/user/management.html:243
-msgid "Users without Roles"
-msgstr ""
-
-#: templates/user/management.html:133
-msgid "Recent Users"
-msgstr ""
-
-#: templates/user/management.html:185
-msgid "No recent users"
-msgstr ""
-
-#: templates/user/management.html:194
-msgid "Recent Roles"
-msgstr ""
-
-#: templates/user/management.html:221
-msgid "No recent roles"
-msgstr ""
-
-#: templates/user/management.html:233
-msgid "System Information"
-msgstr ""
-
-#: templates/user/management.html:238
-msgid "User Statistics"
-msgstr ""
-
-#: templates/user/management.html:247
-msgid "Role Statistics"
-msgstr ""
-
-#: templates/user/management.html:250
-msgid "Active Roles"
-msgstr ""
-
-#: templates/user/management.html:251
-msgid "Inactive Roles"
-msgstr ""
-
-#: templates/user/management.html:255
-msgid "Quick Links"
-msgstr ""
-
-#: templates/user/management.html:258
-msgid "View All Roles"
-msgstr ""
-
-#: templates/user/management.html:259
-msgid "Django Admin"
-msgstr ""
-
-#: templates/user/password_change.html:6 templates/user/password_change.html:9
-#: templates/user/password_change.html:13 templates/user/settings.html:48
-#: templates/user/settings.html:55
+#: templates/user/password_change.html:5 templates/user/password_change.html:15
+#: templates/user/password_change.html:60 templates/user/settings.html:76
+#: templates/user/settings.html:83
 msgid "Change Password"
 msgstr ""
 
-#: templates/user/password_change.html:14
+#: templates/user/password_change.html:64
 msgid "Forgot Password?"
 msgstr ""
 
@@ -3287,6 +4126,10 @@ msgstr ""
 msgid "Create Role"
 msgstr ""
 
+#: templates/user/role_form.html:20 templates/user/role_list.html:16
+msgid "Create New Role"
+msgstr ""
+
 #: templates/user/role_form.html:38
 msgid "Role Name"
 msgstr ""
@@ -3362,10 +4205,6 @@ msgstr ""
 msgid "Update Role"
 msgstr ""
 
-#: templates/user/role_list.html:19
-msgid "Back to Management"
-msgstr ""
-
 #: templates/user/role_list.html:109
 msgid "Are you sure you want to delete this role?"
 msgstr ""
@@ -3391,64 +4230,239 @@ msgid "Create First Role"
 msgstr ""
 
 #: templates/user/settings.html:16
-#, fuzzy
-#| msgid "Settings"
-msgid "Language Settings"
-msgstr "Einstellungen"
+msgid "Account Settings"
+msgstr "Kontoeinstellungen"
 
 #: templates/user/settings.html:20
-msgid "Choose your preferred language for the interface."
-msgstr ""
+msgid "Update your account information and preferences."
+msgstr "Aktualisieren Sie Ihre Kontoinformationen und Einstellungen."
 
-#: templates/user/settings.html:35
-#, fuzzy
-#| msgid "Change Status"
-msgid "Change Language"
-msgstr "Status ändern"
+#: templates/user/settings.html:63
+msgid "Update Settings"
+msgstr "Einstellungen aktualisieren"
 
-#: templates/user/settings.html:52
+#: templates/user/settings.html:80
 msgid ""
 "Update your account password to keep your account secure. Choose a strong "
 "password that you haven't used elsewhere."
 msgstr ""
 
-#: templates/user/settings.html:65 templates/user/settings.html:72
+#: templates/user/settings.html:93 templates/user/settings.html:100
 msgid "Delete Account"
 msgstr ""
 
-#: templates/user/settings.html:69
+#: templates/user/settings.html:97
 #, fuzzy
 #| msgid "This action cannot be undone."
 msgid "You can safely delete your account. This action cannot be undone."
 msgstr "Diese Aktion kann nicht rückgängig gemacht werden."
 
-#: templates/user/signup.html:4 templates/user/signup.html:14
-#: templates/user/signup.html:96
+#: templates/user/signup.html:4
 msgid "Register"
 msgstr ""
 
-#: templates/user/signup.html:76
+#: templates/user/signup.html:13
+#, fuzzy
+#| msgid "Create Group"
+msgid "Create Your Account"
+msgstr "Gruppe erstellen"
+
+#: templates/user/signup.html:26
+msgid "Please correct the errors below:"
+msgstr ""
+
+#: templates/user/signup.html:42
+#, fuzzy
+#| msgid "Session Information"
+msgid "Personal Information"
+msgstr "Sitzungsinformation"
+
+#: templates/user/signup.html:51 user/forms.py:220
+#, fuzzy
+#| msgid "Short Name"
+msgid "First Name"
+msgstr "Kurzname"
+
+#: templates/user/signup.html:66 user/forms.py:221
+#, fuzzy
+#| msgid "Last changed"
+msgid "Last Name"
+msgstr "Zuletzt geändert"
+
+#: templates/user/signup.html:83
+#, fuzzy
+#| msgid "Council Information"
+msgid "Contact Information"
+msgstr "Informationen"
+
+#: templates/user/signup.html:99
+msgid "We'll use this to send you important updates and notifications."
+msgstr ""
+
+#: templates/user/signup.html:108
+msgid "Security"
+msgstr ""
+
+#: templates/user/signup.html:136
 msgid "Confirm Password"
 msgstr ""
 
-#: templates/user/signup.html:83
-msgid "Confirm your password"
+#: templates/user/signup.html:153
+#, fuzzy
+#| msgid "Create Group"
+msgid "Create Account"
+msgstr "Gruppe erstellen"
+
+#: templates/user/signup.html:164
+#, fuzzy
+#| msgid "Sign Up"
+msgid "Sign In"
+msgstr "Registrieren"
+
+#: templates/user/signup.html:174
+msgid "Your information is secure and will never be shared with third parties."
 msgstr ""
 
-#: user/forms.py:106
+#: user/forms.py:57 user/forms.py:251
+msgid "A user with that email already exists."
+msgstr ""
+
+#: user/forms.py:157 user/forms.py:170 user/forms.py:224
 msgid "Language"
 msgstr ""
 
-#: user/forms.py:107
+#: user/forms.py:158 user/forms.py:171
 msgid "Select your preferred language for the interface"
+msgstr ""
+
+#: user/forms.py:184
+msgid "Your email address for account notifications and password resets"
+msgstr ""
+"Ihre E-Mail-Adresse für Kontobenachrichtigungen und Passwort-Zurücksetzungen"
+
+#: user/forms.py:198
+msgid "This email address is already in use."
+msgstr "Diese E-Mail-Adresse wird bereits verwendet."
+
+#: user/forms.py:222
+#, fuzzy
+#| msgid "Active"
+msgid "Active User"
+msgstr "Aktiv"
+
+#: user/forms.py:223
+msgid "Staff User"
+msgstr ""
+
+#: user/forms.py:227
+msgid "Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only."
+msgstr ""
+
+#: user/forms.py:228
+#, fuzzy
+#| msgid "Your email address for account notifications and password resets"
+msgid "Required. Used for account notifications and password resets."
+msgstr ""
+"Ihre E-Mail-Adresse für Kontobenachrichtigungen und Passwort-Zurücksetzungen"
+
+#: user/forms.py:229
+msgid ""
+"Designates whether this user should be treated as active. Unselect this "
+"instead of deleting accounts."
+msgstr ""
+
+#: user/forms.py:230
+msgid "Designates whether the user can log into the admin site."
+msgstr ""
+
+#: user/forms.py:244
+msgid "A user with that username already exists."
 msgstr ""
 
 #: user/models.py:52
 msgid "Preferred language for the interface"
 msgstr ""
 
-#~ msgid "My Locals"
-#~ msgstr "Meine Bezirke"
+#: user/views.py:308
+msgid ""
+"Your account doesn't have an email address configured. Please add an email "
+"address in your settings first."
+msgstr ""
+
+#: user/views.py:313
+msgid "Test Email from Klubtool"
+msgstr ""
+
+#: user/views.py:315
+#, python-brace-format
+msgid ""
+"This is a test email from Klubtool.\n"
+"\n"
+"If you received this email, your email configuration is working correctly.\n"
+"\n"
+"Sent to: {email}\n"
+"User: {username}\n"
+"Time: {time}"
+msgstr ""
+
+#: user/views.py:334
+#, python-brace-format
+msgid "Test email sent successfully to {email}"
+msgstr ""
+
+#: user/views.py:336
+#, python-brace-format
+msgid "Failed to send test email: {error}"
+msgstr ""
+
+#: user/views.py:357
+#, python-brace-format
+msgid "User {username} doesn't have an email address configured."
+msgstr ""
+
+#: user/views.py:362
+#, python-brace-format
+msgid ""
+"User {username} has already logged in. Welcome emails can only be sent to "
+"users who haven't logged in yet."
+msgstr ""
+
+#: user/views.py:395
+#, python-brace-format
+msgid "Welcome email sent successfully to {email}"
+msgstr ""
+
+#: user/views.py:398
+#, python-brace-format
+msgid "Failed to send welcome email: {error}"
+msgstr ""
+
+#: user/views.py:434 user/views.py:440
+msgid "Your email has been confirmed and you have been logged in."
+msgstr ""
+
+#: user/views.py:442
+msgid "Your email has been confirmed."
+msgstr ""
+
+#~ msgid "Antragstool"
+#~ msgstr "Antragstool"
+
+#~ msgid "members"
+#~ msgstr "Mitglieder"
+
+#~ msgid "Postponed"
+#~ msgstr "Verschoben"
+
+#, fuzzy
+#~| msgid "Settings"
+#~ msgid "Language Settings"
+#~ msgstr "Einstellungen"
+
+#, fuzzy
+#~| msgid "Change Status"
+#~ msgid "Change Language"
+#~ msgstr "Status ändern"
 
 #~ msgid "My Councils"
 #~ msgstr "Meine Vertretungen"
@@ -3465,12 +4479,6 @@ msgstr ""
 #~ msgid "Absent"
 #~ msgstr "Abwesend"
 
-#~ msgid "Upload"
-#~ msgstr "Hochladen"
-
-#~ msgid "Are you sure you want to delete this group decision?"
-#~ msgstr "Sind Sie sicher, dass Sie diese Klubentscheidung löschen möchten?"
-
 #~ msgid "Party Results"
 #~ msgstr "Parteiergebnisse"
 
@@ -3479,22 +4487,3 @@ msgstr ""
 
 #~ msgid "Standalone"
 #~ msgstr "Eigenständig"
-
-#~ msgid "Are you sure you want to delete this status entry?"
-#~ msgstr "Sind Sie sicher, dass Sie diesen Status-Eintrag löschen möchten?"
-
-msgid "Account Settings"
-msgstr "Kontoeinstellungen"
-
-msgid "Update your account information and preferences."
-msgstr "Aktualisieren Sie Ihre Kontoinformationen und Einstellungen."
-
-
-msgid "Your email address for account notifications and password resets"
-msgstr "Ihre E-Mail-Adresse für Kontobenachrichtigungen und Passwort-Zurücksetzungen"
-
-msgid "Update Settings"
-msgstr "Einstellungen aktualisieren"
-
-msgid "This email address is already in use."
-msgstr "Diese E-Mail-Adresse wird bereits verwendet."

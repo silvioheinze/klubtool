@@ -285,6 +285,127 @@ class MotionGroupDecision(models.Model):
         return f"{self.motion.title} - {self.get_decision_display()} ({self.decision_time.strftime('%d.%m.%Y %H:%M')})"
 
 
+class Question(models.Model):
+    """Model representing a question (Anfrage) in a council session"""
+    
+    STATUS_CHOICES = [
+        ('draft', _('Draft')),
+        ('submitted', _('Submitted')),
+        ('answered', _('Answered')),
+        ('withdrawn', _('Withdrawn')),
+    ]
+    
+    # Basic Information
+    title = models.CharField(max_length=200, help_text="Title of the question")
+    text = models.TextField(blank=True, help_text="Detailed text of the question")
+    answer = models.TextField(blank=True, help_text="Answer to the question")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
+    
+    # Relationships
+    session = models.ForeignKey(Session, on_delete=models.CASCADE, related_name='questions', help_text="Session where this question will be presented")
+    group = models.ForeignKey(Group, on_delete=models.CASCADE, related_name='questions', help_text="Group asking this question")
+    parties = models.ManyToManyField(Party, related_name='questions', blank=True, help_text="Parties supporting this question")
+    interventions = models.ManyToManyField(User, related_name='question_interventions', blank=True, help_text=_("Wortmeldung: Users from the corresponding group who can speak in session"))
+    
+    # Metadata
+    submitted_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='submitted_questions')
+    submitted_date = models.DateTimeField(auto_now_add=True)
+    last_modified = models.DateTimeField(auto_now=True)
+    is_active = models.BooleanField(default=True)
+    session_rank = models.PositiveIntegerField(default=0, help_text="Rank/order of this question within its session")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-submitted_date']
+        verbose_name = "Question"
+        verbose_name_plural = "Questions"
+    
+    def __str__(self):
+        return f"{self.title} - {self.group.name}"
+    
+    def get_absolute_url(self):
+        from django.urls import reverse
+        return reverse('motion:question-detail', args=[str(self.pk)])
+    
+    @property
+    def supporting_parties_count(self):
+        """Number of parties supporting this question"""
+        return self.parties.count()
+    
+    @property
+    def can_be_edited(self):
+        """Check if question can still be edited"""
+        return True  # Questions can be edited regardless of status
+    
+    def can_be_deleted_by(self, user):
+        """Check if a user can delete this question"""
+        # Superusers can delete any question
+        if user.is_superuser:
+            return True
+        
+        # Users can delete their own questions
+        if self.submitted_by == user:
+            return True
+        
+        # Group admins can delete questions from their groups
+        if self.group:
+            from group.models import GroupMember
+            from user.models import Role
+            
+            try:
+                # Get leader and deputy leader roles
+                leader_role = Role.objects.get(name='Leader')
+                deputy_leader_role = Role.objects.get(name='Deputy Leader')
+                
+                # Check if user has these roles in the question's group
+                membership = GroupMember.objects.filter(
+                    user=user,
+                    group=self.group,
+                    is_active=True,
+                    roles__in=[leader_role, deputy_leader_role]
+                ).first()
+                
+                return membership is not None
+            except Role.DoesNotExist:
+                return False
+        
+        return False
+    
+    @property
+    def session_date(self):
+        """Get the session date"""
+        return self.session.scheduled_date if self.session else None
+
+
+class QuestionAttachment(models.Model):
+    """Model representing file attachments for questions"""
+    
+    ATTACHMENT_TYPE_CHOICES = [
+        ('document', 'Document'),
+        ('image', 'Image'),
+        ('spreadsheet', 'Spreadsheet'),
+        ('presentation', 'Presentation'),
+        ('other', 'Other'),
+    ]
+    
+    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name='attachments')
+    file = models.FileField(upload_to='question_attachments/%Y/%m/%d/')
+    filename = models.CharField(max_length=255)
+    file_type = models.CharField(max_length=20, choices=ATTACHMENT_TYPE_CHOICES, default='document')
+    description = models.TextField(blank=True)
+    uploaded_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='question_attachments')
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-uploaded_at']
+        verbose_name = "Question Attachment"
+        verbose_name_plural = "Question Attachments"
+    
+    def __str__(self):
+        return f"{self.filename} - {self.question.title}"
+
+
 # Register models for audit logging
 auditlog.register(Motion)
 auditlog.register(MotionVote)
@@ -292,3 +413,5 @@ auditlog.register(MotionComment)
 auditlog.register(MotionAttachment)
 auditlog.register(MotionStatus)
 auditlog.register(MotionGroupDecision)
+auditlog.register(Question)
+auditlog.register(QuestionAttachment)

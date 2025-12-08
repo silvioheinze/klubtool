@@ -208,6 +208,32 @@ gunzip -c pgsql_antragstool_db_20251119-030000.sql.gz | docker compose exec -T d
 
 **Note:** Replace `pgsql_antragstool_db_20251119-030000.sql.gz` with your actual dump filename.
 
+### Translation Commands
+
+The application supports internationalization (i18n) with Django's translation framework.
+
+```bash
+# Extract translatable strings and create/update .po files
+docker compose exec app python manage.py makemessages -l de
+
+# Compile .po files into .mo files (required for translations to work)
+docker compose exec app python manage.py compilemessages
+
+# Extract strings for all languages
+docker compose exec app python manage.py makemessages -a
+
+# Compile messages for all languages
+docker compose exec app python manage.py compilemessages
+```
+
+**Translation Workflow:**
+
+1. **Extract strings**: Run `makemessages` to scan the codebase for translatable strings (marked with `{% trans %}` or `gettext`)
+2. **Edit translations**: Open `app/locale/<language>/LC_MESSAGES/django.po` and add/edit translations
+3. **Compile messages**: Run `compilemessages` to generate `.mo` files that Django uses at runtime
+
+**Note:** After editing `.po` files, you must run `compilemessages` for the changes to take effect.
+
 ## 👥 User Management
 
 ### Custom User Model

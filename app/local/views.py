@@ -828,8 +828,9 @@ class SessionDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         return self.request.user.is_superuser
 
     def get_context_data(self, **kwargs):
-        """Add motions data to context"""
+        """Add motions and questions data to context"""
         from django.db.models import Case, When, IntegerField
+        from motion.models import Question
         
         context = super().get_context_data(**kwargs)
         # Get all motions for this session
@@ -843,6 +844,14 @@ class SessionDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             )
         ).order_by('status_order', 'session_rank', '-submitted_date')
         context['total_motions'] = self.object.motions.count()
+        
+        # Get all questions for this session
+        # Order by session_rank (then by submitted_date as fallback)
+        context['questions'] = Question.objects.filter(
+            session=self.object,
+            is_active=True
+        ).select_related('group', 'submitted_by').prefetch_related('parties', 'interventions').order_by('session_rank', '-submitted_date')
+        context['total_questions'] = context['questions'].count()
         return context
 
 
@@ -924,8 +933,8 @@ class SessionExportPDFView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         return self.request.user.is_superuser or self.request.user.has_role_permission('session.view')
 
     def get_context_data(self, **kwargs):
-        """Add motions data to context"""
-        from motion.models import MotionGroupDecision
+        """Add motions and questions data to context"""
+        from motion.models import MotionGroupDecision, Question
         
         context = super().get_context_data(**kwargs)
         # Get all motions for this session with prefetched parties, group_decisions, and interventions
@@ -945,6 +954,16 @@ class SessionExportPDFView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             )
         ).order_by('session_rank', '-submitted_date')
         context['total_motions'] = self.object.motions.count()
+        
+        # Get all questions for this session
+        context['questions'] = Question.objects.filter(
+            session=self.object,
+            is_active=True
+        ).prefetch_related(
+            'parties',
+            'interventions'
+        ).order_by('session_rank', '-submitted_date')
+        context['total_questions'] = context['questions'].count()
         return context
 
     def render_to_response(self, context, **response_kwargs):
@@ -1080,6 +1099,39 @@ def update_motion_order(request, session_pk):
                     motion.session_rank = rank
                     motion.save(update_fields=['session_rank'])
                 except Motion.DoesNotExist:
+                    continue
+        
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
+
+
+@login_required
+@require_http_methods(["POST"])
+def update_question_order(request, session_pk):
+    """AJAX view to update the order/rank of questions in a session"""
+    from motion.models import Question
+    
+    # Check permissions - user must be superuser or have session view permission
+    if not (request.user.is_superuser or request.user.has_role_permission('session.view')):
+        return JsonResponse({'error': 'Permission denied'}, status=403)
+    
+    try:
+        session = get_object_or_404(Session, pk=session_pk)
+        data = json.loads(request.body)
+        question_orders = data.get('question_orders', [])
+        
+        # Update each question's session_rank
+        for order_data in question_orders:
+            question_id = order_data.get('question_id')
+            rank = order_data.get('rank')
+            
+            if question_id and rank is not None:
+                try:
+                    question = Question.objects.get(pk=question_id, session=session)
+                    question.session_rank = rank
+                    question.save(update_fields=['session_rank'])
+                except Question.DoesNotExist:
                     continue
         
         return JsonResponse({'success': True})

@@ -9,8 +9,8 @@ from django.db.models import Q, Count
 from django.core.paginator import Paginator
 from django.utils import timezone
 
-from .models import Motion, MotionVote, MotionComment, MotionAttachment, MotionStatus, MotionGroupDecision
-from .forms import MotionForm, MotionFilterForm, MotionVoteForm, MotionVoteFormSetFactory, MotionCommentForm, MotionAttachmentForm, MotionStatusForm, MotionGroupDecisionForm
+from .models import Motion, MotionVote, MotionComment, MotionAttachment, MotionStatus, MotionGroupDecision, Question, QuestionAttachment
+from .forms import MotionForm, MotionFilterForm, MotionVoteForm, MotionVoteFormSetFactory, MotionCommentForm, MotionAttachmentForm, MotionStatusForm, MotionGroupDecisionForm, QuestionForm, QuestionAttachmentForm
 from user.models import CustomUser
 from local.models import Session, Party
 from group.models import Group
@@ -688,3 +688,214 @@ class MotionExportPDFView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         response['Content-Disposition'] = f'attachment; filename="{filename}"'
         
         return response
+
+
+# Question Views
+class QuestionListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
+    """View for listing Question objects"""
+    model = Question
+    context_object_name = 'questions'
+    template_name = 'motion/question_list.html'
+    paginate_by = 20
+
+    def test_func(self):
+        """Check if user has permission to view Question objects"""
+        return self.request.user.is_superuser or self.request.user.has_role_permission('motion.view')
+
+    def get_queryset(self):
+        """Filter questions based on search and filter parameters"""
+        queryset = Question.objects.filter(is_active=True).select_related('session', 'group', 'submitted_by').prefetch_related('parties')
+        
+        # Get filter parameters
+        search = self.request.GET.get('search', '')
+        status = self.request.GET.get('status', '')
+        session_id = self.request.GET.get('session', '')
+        
+        # Apply filters
+        if search:
+            queryset = queryset.filter(
+                Q(title__icontains=search) |
+                Q(text__icontains=search) |
+                Q(group__name__icontains=search)
+            )
+        
+        if status:
+            queryset = queryset.filter(status=status)
+        
+        if session_id:
+            queryset = queryset.filter(session_id=session_id)
+        
+        return queryset.order_by('-submitted_date')
+
+    def get_context_data(self, **kwargs):
+        """Add filter form and session list to context"""
+        context = super().get_context_data(**kwargs)
+        context['sessions'] = Session.objects.filter(is_active=True).order_by('-scheduled_date')
+        return context
+
+
+class QuestionDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
+    """View for displaying a single Question object"""
+    model = Question
+    context_object_name = 'question'
+    template_name = 'motion/question_detail.html'
+
+    def test_func(self):
+        """Check if user has permission to view Question objects"""
+        return self.request.user.is_superuser or self.request.user.has_role_permission('motion.view')
+
+    def get_queryset(self):
+        return Question.objects.prefetch_related('interventions', 'parties', 'group', 'attachments')
+    
+    def get_context_data(self, **kwargs):
+        """Add additional context data"""
+        context = super().get_context_data(**kwargs)
+        question = self.object
+        
+        # Add attachment form
+        context['attachment_form'] = QuestionAttachmentForm(question=question, uploaded_by=self.request.user)
+        
+        # Get attachments
+        context['attachments'] = question.attachments.all().order_by('-uploaded_at')
+        
+        return context
+
+
+class QuestionCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
+    """View for creating a new Question object"""
+    model = Question
+    form_class = QuestionForm
+    template_name = 'motion/question_form.html'
+    success_url = reverse_lazy('motion:question-list')
+
+    def test_func(self):
+        """Check if user has permission to create Question objects"""
+        return self.request.user.is_superuser or self.request.user.has_role_permission('motion.create')
+
+    def get_form_kwargs(self):
+        """Pass user to form for automatic group assignment"""
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
+    def get_initial(self):
+        """Set initial values based on URL parameters"""
+        initial = super().get_initial()
+        session_id = self.request.GET.get('session')
+        if session_id:
+            try:
+                session = Session.objects.get(pk=session_id)
+                initial['session'] = session.pk
+            except Session.DoesNotExist:
+                pass
+        return initial
+
+    def get_success_url(self):
+        """Redirect to session detail page after successful question creation"""
+        if hasattr(self.object, 'session') and self.object.session:
+            return reverse('local:session-detail', kwargs={'pk': self.object.session.pk})
+        return super().get_success_url()
+
+    def form_valid(self, form):
+        """Set submitted_by and display success message"""
+        form.instance.submitted_by = self.request.user
+        response = super().form_valid(form)
+        messages.success(self.request, f"Question '{form.instance.title}' created successfully.")
+        return response
+
+
+class QuestionUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
+    """View for updating an existing Question object"""
+    model = Question
+    form_class = QuestionForm
+    template_name = 'motion/question_form.html'
+    success_url = reverse_lazy('motion:question-list')
+
+    def test_func(self):
+        """Check if user has permission to edit Question objects"""
+        return self.request.user.is_superuser or self.request.user.has_role_permission('motion.edit')
+
+    def get_form_kwargs(self):
+        """Pass user to form for automatic group assignment"""
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
+    def get_success_url(self):
+        """Redirect to question detail page after successful update"""
+        return reverse('motion:question-detail', kwargs={'pk': self.object.pk})
+
+    def form_valid(self, form):
+        """Display success message on form validation"""
+        response = super().form_valid(form)
+        messages.success(self.request, f"Question '{form.instance.title}' updated successfully.")
+        return response
+
+
+class QuestionDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
+    """View for deleting a Question object"""
+    model = Question
+    template_name = 'motion/question_confirm_delete.html'
+    success_url = reverse_lazy('motion:question-list')
+
+    def test_func(self):
+        """Check if user has permission to delete Question objects"""
+        question = self.get_object()
+        
+        # Superusers can delete any question
+        if self.request.user.is_superuser:
+            return True
+        
+        # Users can delete their own questions
+        if question.submitted_by == self.request.user:
+            return True
+        
+        # Group admins can delete questions from their groups
+        if question.group:
+            from group.models import GroupMember
+            from user.models import Role
+            
+            try:
+                leader_role = Role.objects.get(name='Leader')
+                deputy_leader_role = Role.objects.get(name='Deputy Leader')
+                
+                membership = GroupMember.objects.filter(
+                    user=self.request.user,
+                    group=question.group,
+                    is_active=True,
+                    roles__in=[leader_role, deputy_leader_role]
+                ).first()
+                
+                if membership:
+                    return True
+            except Role.DoesNotExist:
+                pass
+        
+        return False
+
+    def delete(self, request, *args, **kwargs):
+        """Display success message on deletion"""
+        question_obj = self.get_object()
+        messages.success(request, f"Question '{question_obj.title}' deleted successfully.")
+        return super().delete(request, *args, **kwargs)
+
+
+@login_required
+@user_passes_test(is_superuser_or_has_permission('motion.attach'))
+def question_attachment_view(request, pk):
+    """View for uploading attachments to a question"""
+    question = get_object_or_404(Question, pk=pk)
+    
+    if request.method == 'POST':
+        form = QuestionAttachmentForm(request.POST, request.FILES, question=question, uploaded_by=request.user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Attachment uploaded successfully.")
+            return redirect('motion:question-detail', pk=pk)
+    else:
+        form = QuestionAttachmentForm(question=question, uploaded_by=request.user)
+    
+    return render(request, 'motion/question_attachment.html', {
+        'question': question,
+        'form': form
+    })

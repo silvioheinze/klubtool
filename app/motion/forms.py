@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth import get_user_model
 from django.forms import BaseFormSet, formset_factory
-from .models import Motion, MotionVote, MotionComment, MotionAttachment, MotionStatus, MotionGroupDecision
+from .models import Motion, MotionVote, MotionComment, MotionAttachment, MotionStatus, MotionGroupDecision, Question, QuestionAttachment
 from local.models import Session, Party, Committee
 from group.models import Group, GroupMember
 
@@ -135,6 +135,134 @@ class MotionForm(forms.ModelForm):
             if invalid_users:
                 raise forms.ValidationError(
                     f"All interventions must be members of the motion's group. Invalid users: {', '.join([u.username for u in invalid_users])}"
+                )
+        
+        return cleaned_data
+
+
+class QuestionForm(forms.ModelForm):
+    """Form for creating and editing Question objects"""
+    
+    class Meta:
+        model = Question
+        fields = [
+            'title', 'text', 'answer', 'status',
+            'session', 'group', 'parties', 'interventions'
+        ]
+        widgets = {
+            'title': forms.TextInput(attrs={'class': 'form-control'}),
+            'text': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
+            'answer': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
+            'status': forms.HiddenInput(),
+            'session': forms.Select(attrs={'class': 'form-select'}),
+            'group': forms.HiddenInput(),
+            'parties': forms.SelectMultiple(attrs={'class': 'form-select'}),
+            'interventions': forms.SelectMultiple(attrs={'class': 'form-select'}),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        
+        # Filter sessions to only show active ones
+        self.fields['session'].queryset = Session.objects.filter(is_active=True)
+        # Filter parties to only show active ones
+        self.fields['parties'].queryset = Party.objects.filter(is_active=True)
+        
+        # Set status to draft automatically
+        self.fields['status'].initial = 'draft'
+        
+        # Make group field invisible and set default value
+        self.fields['group'].widget = forms.HiddenInput()
+        self.fields['group'].queryset = Group.objects.filter(is_active=True)
+        
+        # Set default group if none is provided
+        if not self.fields['group'].initial:
+            first_group = Group.objects.filter(is_active=True).first()
+            if first_group:
+                self.fields['group'].initial = first_group.pk
+        
+        # Set initial session if provided in URL
+        session_id = self.initial.get('session') or self.data.get('session')
+        if session_id:
+            try:
+                session = Session.objects.get(pk=session_id)
+                self.fields['session'].initial = session.pk
+                # Make the session field read-only when it's pre-set
+                self.fields['session'].widget.attrs['readonly'] = True
+                self.fields['session'].widget.attrs['class'] = 'form-control-plaintext bg-light'
+                # Store the session for later use
+                self._preset_session = session
+                # Override the field validation to always be valid when preset
+                self.fields['session'].required = False
+            except Session.DoesNotExist:
+                pass
+        
+        # Filter interventions to only show users from the question's group
+        if self.instance and self.instance.pk and self.instance.group:
+            # Editing existing question - filter by the question's group
+            group = self.instance.group
+            group_member_users = User.objects.filter(
+                group_memberships__group=group,
+                group_memberships__is_active=True
+            ).distinct()
+            self.fields['interventions'].queryset = group_member_users
+        elif 'group' in self.initial or 'group' in self.data:
+            # Creating new question with group set
+            group_id = self.initial.get('group') or self.data.get('group')
+            if group_id:
+                try:
+                    group = Group.objects.get(pk=group_id)
+                    group_member_users = User.objects.filter(
+                        group_memberships__group=group,
+                        group_memberships__is_active=True
+                    ).distinct()
+                    self.fields['interventions'].queryset = group_member_users
+                except Group.DoesNotExist:
+                    self.fields['interventions'].queryset = User.objects.none()
+            else:
+                self.fields['interventions'].queryset = User.objects.none()
+        else:
+            # No group set yet - show no users
+            self.fields['interventions'].queryset = User.objects.none()
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        session = cleaned_data.get('session')
+        group = cleaned_data.get('group')
+        
+        # If session is not in cleaned_data but we have a preset session, use it
+        if not session and hasattr(self, '_preset_session'):
+            session = self._preset_session
+            cleaned_data['session'] = session
+        
+        # If session is still not found, check if it's in the data
+        if not session and 'session' in self.data:
+            session_id = self.data['session']
+            try:
+                session = Session.objects.get(pk=session_id)
+                cleaned_data['session'] = session
+            except (Session.DoesNotExist, ValueError):
+                pass
+        
+        # Ensure group belongs to a party that is in the session's council
+        if session and group:
+            if group.party.local != session.council.local:
+                raise forms.ValidationError(
+                    "The selected group must belong to a party in the same local district as the session's council."
+                )
+        
+        # Validate that interventions are from the question's group
+        interventions = cleaned_data.get('interventions', [])
+        if group and interventions:
+            group_member_users = User.objects.filter(
+                group_memberships__group=group,
+                group_memberships__is_active=True
+            ).distinct()
+            invalid_users = [user for user in interventions if user not in group_member_users]
+            if invalid_users:
+                raise forms.ValidationError(
+                    f"All interventions must be members of the question's group. Invalid users: {', '.join([u.username for u in invalid_users])}"
                 )
         
         return cleaned_data
@@ -359,6 +487,56 @@ class MotionAttachmentForm(forms.ModelForm):
         instance = super().save(commit=False)
         if self.motion:
             instance.motion = self.motion
+        if self.uploaded_by:
+            instance.uploaded_by = self.uploaded_by
+        
+        # Set filename
+        if instance.file:
+            import os
+            instance.filename = os.path.basename(instance.file.name)
+        
+        if commit:
+            instance.save()
+        return instance
+
+
+class QuestionAttachmentForm(forms.ModelForm):
+    """Form for uploading attachments to questions"""
+    
+    class Meta:
+        model = QuestionAttachment
+        fields = ['file', 'file_type', 'description']
+        widgets = {
+            'file': forms.FileInput(attrs={'class': 'form-control'}),
+            'file_type': forms.Select(attrs={'class': 'form-select'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        self.question = kwargs.pop('question', None)
+        self.uploaded_by = kwargs.pop('uploaded_by', None)
+        super().__init__(*args, **kwargs)
+    
+    def clean_file(self):
+        file = self.cleaned_data.get('file')
+        if file:
+            # Check file size (max 10MB)
+            if file.size > 10 * 1024 * 1024:
+                raise forms.ValidationError("File size must be under 10MB.")
+            
+            # Check file extension
+            allowed_extensions = ['.pdf', '.doc', '.docx', '.txt', '.jpg', '.jpeg', '.png', '.gif', '.xls', '.xlsx', '.ppt', '.pptx']
+            import os
+            ext = os.path.splitext(file.name)[1].lower()
+            if ext not in allowed_extensions:
+                raise forms.ValidationError(f"File type not allowed. Allowed types: {', '.join(allowed_extensions)}")
+        
+        return file
+    
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        if self.question:
+            instance.question = self.question
         if self.uploaded_by:
             instance.uploaded_by = self.uploaded_by
         

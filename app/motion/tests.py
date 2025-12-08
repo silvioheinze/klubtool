@@ -9,9 +9,9 @@ from datetime import datetime, timedelta
 from .forms import (
     MotionForm, MotionVoteForm, MotionVoteFormSetFactory, 
     MotionStatusForm, MotionCommentForm, MotionAttachmentForm, 
-    MotionGroupDecisionForm
+    MotionGroupDecisionForm, QuestionForm
 )
-from .models import Motion, MotionVote, MotionComment, MotionAttachment, MotionStatus, MotionGroupDecision
+from .models import Motion, MotionVote, MotionComment, MotionAttachment, MotionStatus, MotionGroupDecision, Question
 from local.models import Local, Council, Session, Term, Party, Committee
 from group.models import Group
 
