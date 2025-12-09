@@ -6,7 +6,8 @@ def group_memberships(request):
         'user_councils': [],
         'user_group_admin_groups': [],
         'user_leader_groups': [],
-        'next_session': None
+        'next_session': None,
+        'next_group_meeting': None
     }
     
     if request.user.is_authenticated:
@@ -97,20 +98,33 @@ def group_memberships(request):
             from django.utils import timezone
             from datetime import timedelta
             
-            today = timezone.now().date()
-            fourteen_days_from_now = today + timedelta(days=14)
+            now = timezone.now()
+            fourteen_days_from_now = now + timedelta(days=14)
             
             # Get sessions for user's councils that are within 14 days
             if councils_from_memberships:
                 from local.models import Session
                 next_session = Session.objects.filter(
                     council__in=councils_from_memberships,
-                    scheduled_date__gte=today,
-                    scheduled_date__lte=fourteen_days_from_now,
+                    scheduled_date__gte=now.date(),
+                    scheduled_date__lte=fourteen_days_from_now.date(),
                     is_active=True
                 ).order_by('scheduled_date').first()
                 
                 context['next_session'] = next_session
+            
+            # Get next group meeting within 14 days for user's groups
+            if combined_groups:
+                from group.models import GroupMeeting
+                user_group_ids = [membership.group.pk for membership in combined_groups]
+                next_group_meeting = GroupMeeting.objects.filter(
+                    group__pk__in=user_group_ids,
+                    scheduled_date__gte=now,
+                    scheduled_date__lte=fourteen_days_from_now,
+                    is_active=True
+                ).select_related('group').order_by('scheduled_date').first()
+                
+                context['next_group_meeting'] = next_group_meeting
             
         except ImportError:
             # If models are not available, keep empty lists

@@ -65,6 +65,14 @@
                         </li>
                     {% endif %}
                     
+                    {% if user.is_authenticated and next_group_meeting %}
+                        <li class="nav-item">
+                            <a class="nav-link text-info" href="{% url 'group:meeting-detail' next_group_meeting.pk %}">
+                                <i class="bi bi-calendar-check"></i> {% trans "Next Group Meeting" %}
+                                <span class="badge bg-info ms-1">{{ next_group_meeting.scheduled_date|date:"M d" }}</span>
+                            </a>
+                        </li>
+                    {% endif %}
                     
                 </ul>
                 <!-- Right-side Navigation Items -->
