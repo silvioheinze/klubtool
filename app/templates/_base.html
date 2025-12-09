@@ -55,16 +55,6 @@
                             </a>
                         </li>
                     {% endif %}
-                    
-                    {% if user.is_authenticated and user_leader_groups %}
-                        {% for membership in user_leader_groups %}
-                            <li class="nav-item">
-                                <a class="nav-link" href="{% url 'group:group-detail' membership.group.pk %}">
-                                    <i class="bi bi-people"></i> {{ membership.group.name }}
-                                </a>
-                            </li>
-                        {% endfor %}
-                    {% endif %}
 
                     {% if user.is_authenticated and next_session %}
                         <li class="nav-item">
@@ -91,9 +81,9 @@
                                         {% trans "Settings" %}
                                     </a>
                                 </li>
-                                {% if user_group_admin_groups %}
+                                {% if user_all_groups %}
                                 <li><hr class="dropdown-divider"></li>
-                                {% for membership in user_group_admin_groups %}
+                                {% for membership in user_all_groups %}
                                     <li>
                                         <a class="dropdown-item" href="{% url 'group:group-detail' membership.group.pk %}">
                                             <i class="bi bi-people"></i> {{ membership.group.name }}

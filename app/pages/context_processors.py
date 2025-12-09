@@ -52,6 +52,25 @@ def group_memberships(request):
             
             context['user_leader_groups'] = leader_groups
             
+            # Create a combined, deduplicated list of all groups the user belongs to
+            # (combining leader groups and admin groups, removing duplicates)
+            seen_group_ids = set()
+            combined_groups = []
+            
+            # Add leader groups first
+            for membership in leader_groups:
+                if membership.group.pk not in seen_group_ids:
+                    seen_group_ids.add(membership.group.pk)
+                    combined_groups.append(membership)
+            
+            # Add admin groups (skip if already added as leader)
+            for membership in group_admin_groups:
+                if membership.group.pk not in seen_group_ids:
+                    seen_group_ids.add(membership.group.pk)
+                    combined_groups.append(membership)
+            
+            context['user_all_groups'] = combined_groups
+            
             # Get unique locals and councils from memberships
             locals_from_memberships = set()
             councils_from_memberships = set()
