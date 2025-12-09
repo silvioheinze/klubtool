@@ -1116,7 +1116,7 @@ msgstr ""
 #, fuzzy
 #| msgid "Back to Motion"
 msgid "Back to Group"
-msgstr "Zurück zum Antrag"
+msgstr "Zurück zum Klub"
 
 #: templates/group/meeting_detail.html:35 templates/group/meeting_form.html:232
 #, fuzzy
@@ -1137,7 +1137,7 @@ msgstr ""
 #, fuzzy
 #| msgid "Add Member"
 msgid "Add Item"
-msgstr "Mitglied hinzufügen"
+msgstr "Tagesordnungpunkt hinzufügen"
 
 #: templates/group/meeting_detail.html:127
 msgid "No agenda items"
@@ -1176,7 +1176,7 @@ msgstr "Zuletzt geändert"
 
 #: templates/group/meeting_detail.html:195
 msgid "Add Agenda Item"
-msgstr ""
+msgstr "Tagesordnungpunkt hinzufügen"
 
 #: templates/group/meeting_detail.html:210
 #: templates/group/meeting_detail.html:254
@@ -1207,7 +1207,7 @@ msgstr ""
 #, fuzzy
 #| msgid "Update Motion"
 msgid "Update Item"
-msgstr "Antrag aktualisieren"
+msgstr "Tagesordnungpunkt aktualisieren"
 
 #: templates/group/meeting_detail.html:497
 #, fuzzy
@@ -1219,13 +1219,13 @@ msgstr "Sind Sie sicher, dass Sie diesen Status-Eintrag löschen möchten?"
 #, fuzzy
 #| msgid "Back to Motion"
 msgid "Back to Meeting"
-msgstr "Zurück zum Antrag"
+msgstr "Zurück zur Sitzung"
 
 #: templates/group/meeting_form.html:53
 #, fuzzy
 #| msgid "Add Motion"
 msgid "Add New Meeting"
-msgstr "Antrag hinzufügen"
+msgstr "Sitzung hinzufügen"
 
 #: templates/group/meeting_form.html:215
 #, fuzzy
@@ -1237,7 +1237,7 @@ msgstr "Einstellungen aktualisieren"
 #, fuzzy
 #| msgid "Create Motion"
 msgid "Create Meeting"
-msgstr "Antrag erstellen"
+msgstr "Sitzung erstellen"
 
 #: templates/group/meeting_form.html:234
 msgid ""

@@ -10,6 +10,8 @@ from django.core.mail import send_mail
 from django.conf import settings
 from django.template.loader import render_to_string
 from django.utils.translation import gettext_lazy as _
+from django.http import HttpResponse
+from django.utils import timezone
 from .models import Group, GroupMember, GroupMeeting, AgendaItem
 from .forms import GroupForm, GroupFilterForm, GroupMemberForm, GroupMemberFilterForm, GroupMeetingForm, AgendaItemForm
 
@@ -409,6 +411,99 @@ class GroupMeetingDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView
         context['can_view_meeting_details'] = can_manage
         context['can_send_invites'] = can_manage
         return context
+
+
+@login_required
+def meeting_export_ics(request, pk):
+    """View to export a group meeting as an ICS calendar file"""
+    meeting = get_object_or_404(GroupMeeting, pk=pk)
+    
+    # Check permissions
+    if not (request.user.is_superuser or meeting.group.can_user_manage_group(request.user)):
+        messages.error(request, "You don't have permission to access this page.")
+        return redirect('group:meeting-detail', pk=pk)
+    
+    # Convert scheduled_date to UTC for ICS format
+    dtstart = meeting.scheduled_date
+    if not timezone.is_aware(dtstart):
+        dtstart = timezone.make_aware(dtstart)
+    dtstart_utc = dtstart.astimezone(timezone.utc)
+    
+    # Assume 1 hour duration if not specified
+    dtend_utc = dtstart_utc + timezone.timedelta(hours=1)
+    
+    # Format dates for ICS (YYYYMMDDTHHMMSSZ)
+    dtstart_str = dtstart_utc.strftime('%Y%m%dT%H%M%SZ')
+    dtend_str = dtend_utc.strftime('%Y%m%dT%H%M%SZ')
+    
+    # Generate unique ID for the event
+    uid = f"meeting-{meeting.pk}@{request.get_host()}"
+    
+    # Escape special characters in text fields for ICS format
+    def escape_ics_text(text):
+        if not text:
+            return ""
+        text = str(text)
+        # Replace newlines with \n and escape special characters
+        text = text.replace('\\', '\\\\')
+        text = text.replace(',', '\\,')
+        text = text.replace(';', '\\;')
+        text = text.replace('\n', '\\n')
+        return text
+    
+    # Build ICS content
+    ics_content = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "PRODID:-//Klubtool//Group Meeting//EN",
+        "CALSCALE:GREGORIAN",
+        "METHOD:PUBLISH",
+        "BEGIN:VEVENT",
+        f"UID:{uid}",
+        f"DTSTART:{dtstart_str}",
+        f"DTEND:{dtend_str}",
+        f"SUMMARY:{escape_ics_text(meeting.title)}",
+    ]
+    
+    if meeting.description:
+        ics_content.append(f"DESCRIPTION:{escape_ics_text(meeting.description)}")
+    
+    if meeting.location:
+        ics_content.append(f"LOCATION:{escape_ics_text(meeting.location)}")
+    
+    # Add created and last modified timestamps
+    created = meeting.created_at
+    if not timezone.is_aware(created):
+        created = timezone.make_aware(created)
+    created_utc = created.astimezone(timezone.utc)
+    ics_content.append(f"DTSTAMP:{created_utc.strftime('%Y%m%dT%H%M%SZ')}")
+    
+    updated = meeting.updated_at
+    if not timezone.is_aware(updated):
+        updated = timezone.make_aware(updated)
+    updated_utc = updated.astimezone(timezone.utc)
+    ics_content.append(f"LAST-MODIFIED:{updated_utc.strftime('%Y%m%dT%H%M%SZ')}")
+    
+    # Add URL to the meeting detail page
+    meeting_url = request.build_absolute_uri(reverse('group:meeting-detail', args=[meeting.pk]))
+    ics_content.append(f"URL:{meeting_url}")
+    
+    ics_content.extend([
+        "STATUS:CONFIRMED",
+        "SEQUENCE:0",
+        "END:VEVENT",
+        "END:VCALENDAR"
+    ])
+    
+    # Join lines with \r\n (ICS standard requires CRLF)
+    ics_file = "\r\n".join(ics_content)
+    
+    # Create response
+    response = HttpResponse(ics_file, content_type='text/calendar; charset=utf-8')
+    filename = f"meeting_{meeting.pk}_{meeting.title.replace(' ', '_')}.ics"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    
+    return response
 
 
 class GroupMeetingCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):

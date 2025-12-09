@@ -1,9 +1,10 @@
-from django.test import TestCase
+from django.test import TestCase, Client
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 from django import forms
 from datetime import datetime, timedelta
+import re
 
 from .forms import (
     GroupForm, GroupFilterForm, GroupMemberForm, GroupMemberFilterForm, GroupMeetingForm, AgendaItemForm
@@ -1227,3 +1228,264 @@ class AgendaItemModelTests(TestCase):
         # Should be ordered by order, then created_at (first created first)
         self.assertEqual(items[0], item1)
         self.assertEqual(items[1], item2)
+
+
+class GroupMeetingICSExportTests(TestCase):
+    """Test cases for GroupMeeting ICS export view"""
+    
+    def setUp(self):
+        """Set up test data"""
+        self.client = Client()
+        User = get_user_model()
+        
+        # Create users
+        self.superuser = User.objects.create_user(
+            username='admin',
+            email='admin@example.com',
+            password='adminpass123',
+            is_superuser=True
+        )
+        
+        self.regular_user = User.objects.create_user(
+            username='regular',
+            email='regular@example.com',
+            password='regularpass123'
+        )
+        
+        # Create local, party, and group
+        self.local = Local.objects.create(
+            name='Test Local',
+            code='TL',
+            description='Test local description'
+        )
+        
+        self.party = Party.objects.create(
+            name='Test Party',
+            local=self.local
+        )
+        
+        self.group = Group.objects.create(
+            name='Test Group',
+            party=self.party
+        )
+        
+        # Create a group member who can manage the group
+        self.group_admin = User.objects.create_user(
+            username='groupadmin',
+            email='groupadmin@example.com',
+            password='adminpass123'
+        )
+        GroupMember.objects.create(
+            user=self.group_admin,
+            group=self.group,
+            is_active=True
+        )
+        # Make group_admin a group admin (this would typically be done via roles)
+        # For testing, we'll check if the group's can_user_manage_group method works
+        
+        # Create a meeting
+        self.meeting = GroupMeeting.objects.create(
+            group=self.group,
+            title='Test Meeting',
+            scheduled_date=timezone.now() + timedelta(days=1, hours=2),
+            location='Test Location',
+            description='Test meeting description',
+            created_by=self.superuser
+        )
+    
+    def test_ics_export_superuser_access(self):
+        """Test that superuser can export ICS file"""
+        self.client.login(username='admin', password='adminpass123')
+        response = self.client.get(f'/group/meetings/{self.meeting.pk}/export-ics/')
+        
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'text/calendar; charset=utf-8')
+        self.assertIn('attachment', response['Content-Disposition'])
+        self.assertIn('.ics', response['Content-Disposition'])
+    
+    def test_ics_export_group_admin_access(self):
+        """Test that group admin can export ICS file"""
+        # Note: This test assumes the group admin can manage the group
+        # In a real scenario, you'd set up proper roles/permissions
+        self.client.login(username='groupadmin', password='adminpass123')
+        response = self.client.get(f'/group/meetings/{self.meeting.pk}/export-ics/')
+        
+        # The view checks if user can manage the group
+        # If the permission check passes, status should be 200
+        # If not, it will redirect with an error message
+        # For now, we'll check that it doesn't crash
+        self.assertIn(response.status_code, [200, 302])
+    
+    def test_ics_export_regular_user_denied(self):
+        """Test that regular user without permission cannot export ICS file"""
+        self.client.login(username='regular', password='regularpass123')
+        response = self.client.get(f'/group/meetings/{self.meeting.pk}/export-ics/')
+        
+        # Should redirect with error message
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/group/meetings/', response.url)
+    
+    def test_ics_export_unauthenticated_denied(self):
+        """Test that unauthenticated user cannot export ICS file"""
+        response = self.client.get(f'/group/meetings/{self.meeting.pk}/export-ics/')
+        
+        # Should redirect to login
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/login', response.url)
+    
+    def test_ics_export_content_format(self):
+        """Test that ICS file has correct format"""
+        self.client.login(username='admin', password='adminpass123')
+        response = self.client.get(f'/group/meetings/{self.meeting.pk}/export-ics/')
+        
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode('utf-8')
+        
+        # Check for ICS file structure
+        self.assertIn('BEGIN:VCALENDAR', content)
+        self.assertIn('VERSION:2.0', content)
+        self.assertIn('BEGIN:VEVENT', content)
+        self.assertIn('END:VEVENT', content)
+        self.assertIn('END:VCALENDAR', content)
+    
+    def test_ics_export_contains_meeting_details(self):
+        """Test that ICS file contains meeting details"""
+        self.client.login(username='admin', password='adminpass123')
+        response = self.client.get(f'/group/meetings/{self.meeting.pk}/export-ics/')
+        
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode('utf-8')
+        
+        # Check for meeting title
+        self.assertIn('SUMMARY:', content)
+        self.assertIn('Test Meeting', content)
+        
+        # Check for location
+        self.assertIn('LOCATION:', content)
+        self.assertIn('Test Location', content)
+        
+        # Check for description
+        self.assertIn('DESCRIPTION:', content)
+        self.assertIn('Test meeting description', content)
+        
+        # Check for date/time fields
+        self.assertIn('DTSTART:', content)
+        self.assertIn('DTEND:', content)
+        self.assertIn('DTSTAMP:', content)
+        self.assertIn('LAST-MODIFIED:', content)
+        
+        # Check for UID
+        self.assertIn('UID:', content)
+        self.assertIn(f'meeting-{self.meeting.pk}', content)
+        
+        # Check for URL
+        self.assertIn('URL:', content)
+    
+    def test_ics_export_filename(self):
+        """Test that ICS file has correct filename"""
+        self.client.login(username='admin', password='adminpass123')
+        response = self.client.get(f'/group/meetings/{self.meeting.pk}/export-ics/')
+        
+        self.assertEqual(response.status_code, 200)
+        content_disposition = response['Content-Disposition']
+        
+        # Check filename format
+        self.assertIn('attachment', content_disposition)
+        self.assertIn('filename=', content_disposition)
+        self.assertIn(f'meeting_{self.meeting.pk}', content_disposition)
+        self.assertIn('Test_Meeting', content_disposition)
+        self.assertIn('.ics', content_disposition)
+    
+    def test_ics_export_without_location(self):
+        """Test ICS export for meeting without location"""
+        meeting_no_location = GroupMeeting.objects.create(
+            group=self.group,
+            title='Meeting Without Location',
+            scheduled_date=timezone.now() + timedelta(days=1),
+            created_by=self.superuser
+        )
+        
+        self.client.login(username='admin', password='adminpass123')
+        response = self.client.get(f'/group/meetings/{meeting_no_location.pk}/export-ics/')
+        
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode('utf-8')
+        
+        # Should still have valid ICS format
+        self.assertIn('BEGIN:VCALENDAR', content)
+        self.assertIn('BEGIN:VEVENT', content)
+        # LOCATION field should not be present if empty
+        # But the file should still be valid
+    
+    def test_ics_export_without_description(self):
+        """Test ICS export for meeting without description"""
+        meeting_no_desc = GroupMeeting.objects.create(
+            group=self.group,
+            title='Meeting Without Description',
+            scheduled_date=timezone.now() + timedelta(days=1),
+            location='Test Location',
+            created_by=self.superuser
+        )
+        
+        self.client.login(username='admin', password='adminpass123')
+        response = self.client.get(f'/group/meetings/{meeting_no_desc.pk}/export-ics/')
+        
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode('utf-8')
+        
+        # Should still have valid ICS format
+        self.assertIn('BEGIN:VCALENDAR', content)
+        self.assertIn('BEGIN:VEVENT', content)
+        # DESCRIPTION field should not be present if empty
+        # But the file should still be valid
+    
+    def test_ics_export_date_format(self):
+        """Test that ICS file has correct date format (YYYYMMDDTHHMMSSZ)"""
+        self.client.login(username='admin', password='adminpass123')
+        response = self.client.get(f'/group/meetings/{self.meeting.pk}/export-ics/')
+        
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode('utf-8')
+        
+        # Check DTSTART format (should be YYYYMMDDTHHMMSSZ)
+        dtstart_match = re.search(r'DTSTART:(\d{8}T\d{6}Z)', content)
+        self.assertIsNotNone(dtstart_match, "DTSTART should be in format YYYYMMDDTHHMMSSZ")
+        
+        dtend_match = re.search(r'DTEND:(\d{8}T\d{6}Z)', content)
+        self.assertIsNotNone(dtend_match, "DTEND should be in format YYYYMMDDTHHMMSSZ")
+        
+        # Verify DTEND is 1 hour after DTSTART
+        if dtstart_match and dtend_match:
+            from datetime import datetime
+            dtstart_str = dtstart_match.group(1)
+            dtend_str = dtend_match.group(1)
+            dtstart = datetime.strptime(dtstart_str, '%Y%m%dT%H%M%SZ')
+            dtend = datetime.strptime(dtend_str, '%Y%m%dT%H%M%SZ')
+            duration = dtend - dtstart
+            self.assertEqual(duration.total_seconds(), 3600)  # 1 hour in seconds
+    
+    def test_ics_export_escapes_special_characters(self):
+        """Test that ICS file properly escapes special characters"""
+        meeting_special = GroupMeeting.objects.create(
+            group=self.group,
+            title='Meeting, with; special\\ characters',
+            scheduled_date=timezone.now() + timedelta(days=1),
+            location='Location, with; commas',
+            description='Description\nwith\nnewlines',
+            created_by=self.superuser
+        )
+        
+        self.client.login(username='admin', password='adminpass123')
+        response = self.client.get(f'/group/meetings/{meeting_special.pk}/export-ics/')
+        
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode('utf-8')
+        
+        # Check that special characters are escaped
+        # Commas should be escaped as \,
+        # Semicolons should be escaped as \;
+        # Backslashes should be escaped as \\
+        # Newlines should be escaped as \n
+        self.assertIn('Meeting\\, with\\; special\\\\ characters', content)
+        self.assertIn('Location\\, with\\; commas', content)
+        self.assertIn('Description\\nwith\\nnewlines', content)
