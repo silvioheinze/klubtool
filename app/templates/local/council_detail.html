@@ -145,7 +145,6 @@
                                         <th>{% trans "Type" %}</th>
                                         <th>{% trans "Date & Time" %}</th>
                                         <th>{% trans "Status" %}</th>
-                                        <th>{% trans "Actions" %}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -184,19 +183,6 @@
                                                 {% elif session.status == 'invited' %}
                                                     <span class="badge bg-info">{% trans "Invited" %}</span>
                                                 {% endif %}
-                                            </td>
-                                            <td>
-                                                <div class="btn-group" role="group">
-                                                    <a href="{% url 'local:session-detail' session.pk %}" class="btn btn-sm btn-outline-info" title="{% trans 'View Details' %}">
-                                                        <i class="bi bi-eye"></i>
-                                                    </a>
-                                                    <a href="{% url 'local:session-edit' session.pk %}" class="btn btn-sm btn-outline-primary" title="{% trans 'Edit Session' %}">
-                                                        <i class="bi bi-pencil"></i>
-                                                    </a>
-                                                    <a href="{% url 'local:session-delete' session.pk %}" class="btn btn-sm btn-outline-danger" title="{% trans 'Delete Session' %}">
-                                                        <i class="bi bi-trash"></i>
-                                                    </a>
-                                                </div>
                                             </td>
                                         </tr>
                                     {% endfor %}
@@ -251,7 +237,6 @@
                                         <th>{% trans "Type" %}</th>
                                         <th>{% trans "Chairperson" %}</th>
                                         <th>{% trans "Members" %}</th>
-                                        <th>{% trans "Actions" %}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -279,19 +264,6 @@
                                             </td>
                                             <td>
                                                 <span class="badge bg-info">{{ committee.member_count }}</span>
-                                            </td>
-                                            <td>
-                                                <div class="btn-group" role="group">
-                                                    <a href="{% url 'local:committee-detail' committee.pk %}" class="btn btn-sm btn-outline-info" title="{% trans 'View Details' %}">
-                                                        <i class="bi bi-eye"></i>
-                                                    </a>
-                                                    <a href="{% url 'local:committee-edit' committee.pk %}" class="btn btn-sm btn-outline-primary" title="{% trans 'Edit Committee' %}">
-                                                        <i class="bi bi-pencil"></i>
-                                                    </a>
-                                                    <a href="{% url 'local:committee-delete' committee.pk %}" class="btn btn-sm btn-outline-danger" title="{% trans 'Delete Committee' %}">
-                                                        <i class="bi bi-trash"></i>
-                                                    </a>
-                                                </div>
                                             </td>
                                         </tr>
                                     {% endfor %}
