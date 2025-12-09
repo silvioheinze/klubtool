@@ -220,6 +220,12 @@ class GroupMemberUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView)
         member = self.get_object()
         return member.group.can_user_manage_group(self.request.user)
 
+    def get_success_url(self):
+        """Redirect to the group detail page after successful update"""
+        if hasattr(self.object, 'group') and self.object.group:
+            return reverse('group:group-detail', kwargs={'pk': self.object.group.pk})
+        return reverse('group:member-list')
+
     def form_valid(self, form):
         messages.success(self.request, f"Membership updated successfully.")
         return super().form_valid(form)
