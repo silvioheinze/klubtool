@@ -9,12 +9,12 @@
     <div class="motion-info">
         {% if motion.parties.exists %}
         <div class="parties-section">
-            <div style="margin-bottom: 20px; text-align: center;">
+            <div style="margin-bottom: 20px; text-align: center; white-space: nowrap;">
                 {% for party_data in parties_with_logos %}
                     {% if party_data.logo_name %}
-                        <img src="{{ party_data.logo_name }}" alt="{{ party_data.party.name }} logo" style="max-height: 80px; max-width: 240px; margin: 2px 5px; vertical-align: middle;">
+                        <img src="{{ party_data.logo_name }}" alt="{{ party_data.party.name }} logo" style="max-height: 50px; max-width: 120px; margin: 2px 5px; vertical-align: middle; display: inline-block;">
                     {% else %}
-                        <span style="display: inline-block; background-color: {{ party_data.party.color }}; color: white; padding: 4px 8px; margin: 2px; border-radius: 4px;">
+                        <span style="display: inline-block; background-color: {{ party_data.party.color }}; color: white; padding: 4px 8px; margin: 2px 5px; border-radius: 4px; vertical-align: middle;">
                             {{ party_data.party.name }}
                         </span>
                     {% endif %}
@@ -28,7 +28,7 @@
     </div>
 
     <div class="motion-intro">
-        <p>Die unterzeichnenden Bezirksrät:innen {% if motion.parties.exists %}der {% for party in motion.parties.all %}{% if not forloop.first %}{% if forloop.last %} und {% else %}, {% endif %}{% endif %}{{ party.short_name|default:party.name }}{% endfor %}{% endif %} stellen zur Bezirksvertretungssitzung am
+        <p>Die unterzeichnenden Bezirksrät:innen {% if ordered_parties %}der {% for party in ordered_parties %}{% if not forloop.first %}{% if forloop.last %} und {% else %}, {% endif %}{% endif %}{{ party.short_name|default:party.name }}{% endfor %}{% endif %} stellen zur Bezirksvertretungssitzung am
             {% if motion.session %}{{ motion.session.scheduled_date|date:"d.m.Y" }}{% else %}{{ motion.submitted_date|date:"d.m.Y" }}{% endif %} gemäß § 104 WStv. folgenden</p>
     </div>
 

@@ -609,9 +609,43 @@ class MotionExportPDFView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['attachments'] = self.object.attachments.all().order_by('uploaded_at')
         
         # Prepare parties with logo paths for PDF generation
-        # WeasyPrint works better with file paths than URLs, especially in Docker
+        # Order parties by seat count in the council (if available)
+        from django.utils import timezone
+        from local.models import Term, TermSeatDistribution
+        
         parties_with_logos = []
-        for party in self.object.parties.all():
+        party_seat_map = {}
+        
+        # Get the council from the motion's session
+        council = None
+        if self.object.session and self.object.session.council:
+            council = self.object.session.council
+            
+            # Get current term and seat distributions
+            today = timezone.now().date()
+            current_term = Term.objects.filter(
+                start_date__lte=today,
+                end_date__gte=today,
+                is_active=True
+            ).first()
+            
+            if current_term and council.local:
+                # Get seat distributions for parties in this council's local
+                seat_distributions = TermSeatDistribution.objects.filter(
+                    term=current_term,
+                    party__local=council.local
+                ).select_related('party')
+                
+                # Create a map of party ID to seat count
+                for distribution in seat_distributions:
+                    party_seat_map[distribution.party.pk] = distribution.seats
+        
+        # Get all parties for this motion and sort by seat count (descending)
+        parties = list(self.object.parties.all())
+        parties.sort(key=lambda p: (-party_seat_map.get(p.pk, 0), p.name))
+        
+        # Prepare parties with logo paths
+        for party in parties:
             party_data = {
                 'party': party,
                 'logo_name': None
@@ -620,7 +654,10 @@ class MotionExportPDFView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
                 # Store the relative path from MEDIA_ROOT (just the filename/relative path)
                 party_data['logo_name'] = party.logo.name
             parties_with_logos.append(party_data)
+        
         context['parties_with_logos'] = parties_with_logos
+        # Also provide ordered parties list for use in text
+        context['ordered_parties'] = parties
         
         return context
 
