@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Motion, MotionVote, MotionComment, MotionAttachment, MotionStatus, Question, QuestionAttachment
+from .models import Motion, MotionVote, MotionComment, MotionAttachment, MotionStatus, Question, QuestionStatus, QuestionAttachment
 
 
 @admin.register(Motion)
@@ -133,6 +133,26 @@ class MotionStatusAdmin(admin.ModelAdmin):
     fieldsets = (
         ('Status Change Information', {
             'fields': ('motion', 'status', 'changed_by', 'reason')
+        }),
+        ('Timestamps', {
+            'fields': ('changed_at',),
+            'classes': ('collapse',)
+        }),
+    )
+
+
+@admin.register(QuestionStatus)
+class QuestionStatusAdmin(admin.ModelAdmin):
+    """Admin configuration for QuestionStatus model"""
+    list_display = ['question', 'status', 'changed_by', 'changed_at']
+    list_filter = ['status', 'changed_at', 'question__status']
+    search_fields = ['question__title', 'changed_by__username', 'reason']
+    readonly_fields = ['changed_at']
+    date_hierarchy = 'changed_at'
+    
+    fieldsets = (
+        ('Status Change Information', {
+            'fields': ('question', 'status', 'committee', 'changed_by', 'reason')
         }),
         ('Timestamps', {
             'fields': ('changed_at',),

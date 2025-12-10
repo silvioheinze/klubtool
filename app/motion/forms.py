@@ -611,6 +611,128 @@ class MotionStatusForm(forms.ModelForm):
         return instance
 
 
+class QuestionStatusForm(forms.ModelForm):
+    """Form for changing question status"""
+    
+    committee = forms.ModelChoiceField(
+        queryset=Committee.objects.filter(is_active=True),
+        required=False,
+        empty_label="Select a committee...",
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        help_text="Select the committee to refer this question to"
+    )
+    
+    class Meta:
+        model = QuestionStatus
+        fields = ['status', 'committee', 'reason']
+        widgets = {
+            'status': forms.Select(attrs={'class': 'form-select'}),
+            'committee': forms.Select(attrs={'class': 'form-select'}),
+            'reason': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Reason for the status change...'
+            }),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        self.question = kwargs.pop('question', None)
+        self.changed_by = kwargs.pop('changed_by', None)
+        super().__init__(*args, **kwargs)
+        
+        # Filter committees to only show those from the same council as the question's session
+        if self.question and self.question.session and self.question.session.council:
+            self.fields['committee'].queryset = Committee.objects.filter(
+                council=self.question.session.council,
+                is_active=True
+            )
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        status = cleaned_data.get('status')
+        committee = cleaned_data.get('committee')
+        
+        # If status is 'refer_to_committee', committee is required
+        if status == 'refer_to_committee' and not committee:
+            raise forms.ValidationError({
+                'committee': 'A committee must be selected when referring a question to committee.'
+            })
+        
+        return cleaned_data
+    
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        if self.question:
+            instance.question = self.question
+        if self.changed_by:
+            instance.changed_by = self.changed_by
+        
+        if commit:
+            instance.save()
+        return instance
+
+
+class QuestionStatusForm(forms.ModelForm):
+    """Form for changing question status"""
+    
+    committee = forms.ModelChoiceField(
+        queryset=Committee.objects.filter(is_active=True),
+        required=False,
+        empty_label="Select a committee...",
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        help_text="Select the committee to refer this question to"
+    )
+    
+    class Meta:
+        model = QuestionStatus
+        fields = ['status', 'committee', 'reason']
+        widgets = {
+            'status': forms.Select(attrs={'class': 'form-select'}),
+            'committee': forms.Select(attrs={'class': 'form-select'}),
+            'reason': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Reason for the status change...'
+            }),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        self.question = kwargs.pop('question', None)
+        self.changed_by = kwargs.pop('changed_by', None)
+        super().__init__(*args, **kwargs)
+        
+        # Filter committees to only show those from the same council as the question's session
+        if self.question and self.question.session and self.question.session.council:
+            self.fields['committee'].queryset = Committee.objects.filter(
+                council=self.question.session.council,
+                is_active=True
+            )
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        status = cleaned_data.get('status')
+        committee = cleaned_data.get('committee')
+        
+        # If status is 'refer_to_committee', committee is required
+        if status == 'refer_to_committee' and not committee:
+            raise forms.ValidationError({
+                'committee': 'A committee must be selected when referring a question to committee.'
+            })
+        
+        return cleaned_data
+    
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        if self.question:
+            instance.question = self.question
+        if self.changed_by:
+            instance.changed_by = self.changed_by
+        
+        if commit:
+            instance.save()
+        return instance
+
+
 class MotionGroupDecisionForm(forms.ModelForm):
     """Form for creating group decisions on motions"""
     

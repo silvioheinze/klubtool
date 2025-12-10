@@ -291,8 +291,12 @@ class Question(models.Model):
     STATUS_CHOICES = [
         ('draft', _('Draft')),
         ('submitted', _('Submitted')),
+        ('refer_to_committee', _('Refer to Committee')),
+        ('approved', _('Approved')),
+        ('rejected', _('Rejected')),
         ('answered', _('Answered')),
         ('withdrawn', _('Withdrawn')),
+        ('not_admitted', _('Nicht zugelassen')),
     ]
     
     # Basic Information
@@ -376,6 +380,44 @@ class Question(models.Model):
     def session_date(self):
         """Get the session date"""
         return self.session.scheduled_date if self.session else None
+    
+    def save(self, *args, **kwargs):
+        """Override save to track status changes"""
+        if self.pk:  # Only for existing instances
+            try:
+                old_instance = Question.objects.get(pk=self.pk)
+                if old_instance.status != self.status:
+                    # Status has changed, create a status history entry
+                    QuestionStatus.objects.create(
+                        question=self,
+                        status=self.status,
+                        committee=getattr(self, '_status_committee', None),
+                        changed_by=getattr(self, '_status_changed_by', None),
+                        reason=getattr(self, '_status_change_reason', '')
+                    )
+            except Question.DoesNotExist:
+                pass
+        
+        super().save(*args, **kwargs)
+
+
+class QuestionStatus(models.Model):
+    """Model representing status changes for questions"""
+    
+    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name='status_history')
+    status = models.CharField(max_length=20, choices=Question.STATUS_CHOICES)
+    committee = models.ForeignKey('local.Committee', on_delete=models.SET_NULL, null=True, blank=True, related_name='question_status_changes', help_text="Committee when status is 'refer_to_committee'")
+    changed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='question_status_changes')
+    changed_at = models.DateTimeField(auto_now_add=True)
+    reason = models.TextField(blank=True, help_text="Reason for the status change")
+    
+    class Meta:
+        ordering = ['-changed_at']
+        verbose_name = "Question Status"
+        verbose_name_plural = "Question Statuses"
+    
+    def __str__(self):
+        return f"{self.question.title} - {self.get_status_display()} ({self.changed_at.strftime('%d.%m.%Y %H:%M')})"
 
 
 class QuestionAttachment(models.Model):
@@ -414,4 +456,5 @@ auditlog.register(MotionAttachment)
 auditlog.register(MotionStatus)
 auditlog.register(MotionGroupDecision)
 auditlog.register(Question)
+auditlog.register(QuestionStatus)
 auditlog.register(QuestionAttachment)

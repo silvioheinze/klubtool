@@ -9,8 +9,8 @@ from django.db.models import Q, Count
 from django.core.paginator import Paginator
 from django.utils import timezone
 
-from .models import Motion, MotionVote, MotionComment, MotionAttachment, MotionStatus, MotionGroupDecision, Question, QuestionAttachment
-from .forms import MotionForm, MotionFilterForm, MotionVoteForm, MotionVoteFormSetFactory, MotionCommentForm, MotionAttachmentForm, MotionStatusForm, MotionGroupDecisionForm, QuestionForm, QuestionAttachmentForm
+from .models import Motion, MotionVote, MotionComment, MotionAttachment, MotionStatus, MotionGroupDecision, Question, QuestionStatus, QuestionAttachment
+from .forms import MotionForm, MotionFilterForm, MotionVoteForm, MotionVoteFormSetFactory, MotionCommentForm, MotionAttachmentForm, MotionStatusForm, MotionGroupDecisionForm, QuestionForm, QuestionStatusForm, QuestionAttachmentForm
 from user.models import CustomUser
 from local.models import Session, Party
 from group.models import Group
@@ -935,4 +935,59 @@ def question_attachment_view(request, pk):
     return render(request, 'motion/question_attachment.html', {
         'question': question,
         'form': form
+    })
+
+
+@login_required
+@user_passes_test(is_superuser_or_has_permission('motion.edit'))
+def question_status_change_view(request, pk):
+    """View for changing question status"""
+    question = get_object_or_404(Question, pk=pk)
+    
+    if request.method == 'POST':
+        form = QuestionStatusForm(request.POST, question=question, changed_by=request.user)
+        
+        if form.is_valid():
+            # Get the new status
+            new_status = form.cleaned_data['status']
+            reason = form.cleaned_data['reason']
+            committee = form.cleaned_data.get('committee')
+            
+            # Set attributes for the save method to use
+            question._status_changed_by = request.user
+            question._status_change_reason = reason
+            question._status_committee = committee
+            
+            # Update the question status
+            question.status = new_status
+            
+            # Save the question (this will trigger the save method which creates the status history entry)
+            question.save()
+            
+            messages.success(request, f"Question status changed to '{question.get_status_display()}'.")
+            return redirect('motion:question-detail', pk=pk)
+    else:
+        form = QuestionStatusForm(question=question, changed_by=request.user)
+    
+    return render(request, 'motion/question_status_change.html', {
+        'question': question,
+        'form': form
+    })
+
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def question_status_delete_view(request, question_pk, status_pk):
+    """View for deleting a question status entry (superuser only)"""
+    question = get_object_or_404(Question, pk=question_pk)
+    status_entry = get_object_or_404(QuestionStatus, pk=status_pk, question=question)
+    
+    if request.method == 'POST':
+        status_entry.delete()
+        messages.success(request, "Status entry deleted successfully.")
+        return redirect('motion:question-detail', pk=question_pk)
+    
+    return render(request, 'motion/question_status_confirm_delete.html', {
+        'question': question,
+        'status_entry': status_entry
     })

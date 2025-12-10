@@ -54,10 +54,18 @@
                                                     <span class="badge bg-secondary">{% trans "Draft" %}</span>
                                                 {% elif question.status == 'submitted' %}
                                                     <span class="badge bg-primary">{% trans "Submitted" %}</span>
+                                                {% elif question.status == 'refer_to_committee' %}
+                                                    <span class="badge bg-info">{% trans "Refer to Committee" %}</span>
+                                                {% elif question.status == 'approved' %}
+                                                    <span class="badge bg-success">{% trans "Approved" %}</span>
+                                                {% elif question.status == 'rejected' %}
+                                                    <span class="badge bg-danger">{% trans "Rejected" %}</span>
                                                 {% elif question.status == 'answered' %}
                                                     <span class="badge bg-success">{% trans "Answered" %}</span>
                                                 {% elif question.status == 'withdrawn' %}
                                                     <span class="badge bg-warning">{% trans "Withdrawn" %}</span>
+                                                {% elif question.status == 'not_admitted' %}
+                                                    <span class="badge bg-dark">{% trans "Nicht zugelassen" %}</span>
                                                 {% endif %}
                                             </td>
                                             <td>
