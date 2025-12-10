@@ -151,13 +151,11 @@
                                     {% for session in sessions %}
                                         <tr>
                                             <td>
-                                                <strong>
-                                                    <a href="{% url 'local:session-detail' session.pk %}">
-                                                        {{ session.title }}
-                                                    </a>
-                                                </strong>
+                                                <a href="{% url 'local:session-detail' session.pk %}" class="badge bg-primary text-decoration-none">
+                                                    {{ session.title }}
+                                                </a>
                                                 {% if session.location %}
-                                                    <br><small class="text-muted">
+                                                    <br><small class="text-muted mt-1 d-block">
                                                         <i class="bi bi-geo-alt"></i> {{ session.location }}
                                                     </small>
                                                 {% endif %}
@@ -243,13 +241,11 @@
                                     {% for committee in committees %}
                                         <tr>
                                             <td>
-                                                <strong>
-                                                    <a href="{% url 'local:committee-detail' committee.pk %}">
-                                                        {{ committee.name }}
-                                                    </a>
-                                                </strong>
+                                                <a href="{% url 'local:committee-detail' committee.pk %}" class="badge bg-primary text-decoration-none">
+                                                    {{ committee.name }}
+                                                </a>
                                                 {% if committee.description %}
-                                                    <br><small class="text-muted">{{ committee.description|truncatewords:10 }}</small>
+                                                    <br><small class="text-muted mt-1 d-block">{{ committee.description|truncatewords:10 }}</small>
                                                 {% endif %}
                                             </td>
                                             <td>
