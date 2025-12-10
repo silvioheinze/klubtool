@@ -192,6 +192,34 @@
                     {% endif %}
                 </div>
             </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Metadata -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">{% trans "Metadata" %}</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-5">{% trans "Submitted by" %}</dt>
+                        <dd class="col-sm-7">
+                            {% if question.submitted_by %}
+                                {{ question.submitted_by.get_full_name|default:question.submitted_by.username }}
+                            {% else %}
+                                <span class="text-muted">{% trans "Unknown" %}</span>
+                            {% endif %}
+                        </dd>
+                        
+                        <dt class="col-sm-5">{% trans "Submitted date" %}</dt>
+                        <dd class="col-sm-7">{{ question.submitted_date|date:"d.m.Y H:i" }}</dd>
+                        
+                        <dt class="col-sm-5">{% trans "Last modified" %}</dt>
+                        <dd class="col-sm-7">{{ question.last_modified|date:"d.m.Y H:i" }}</dd>
+                    </dl>
+                </div>
+            </div>
             
             <!-- Status History -->
             <div class="card mt-3">
@@ -278,34 +306,6 @@
                     {% else %}
                         <p class="text-muted text-center mb-0">{% trans "No status changes recorded yet." %}</p>
                     {% endif %}
-                </div>
-            </div>
-        </div>
-
-        <!-- Sidebar -->
-        <div class="col-lg-4">
-            <!-- Metadata -->
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">{% trans "Metadata" %}</h5>
-                </div>
-                <div class="card-body">
-                    <dl class="row mb-0">
-                        <dt class="col-sm-5">{% trans "Submitted by" %}</dt>
-                        <dd class="col-sm-7">
-                            {% if question.submitted_by %}
-                                {{ question.submitted_by.get_full_name|default:question.submitted_by.username }}
-                            {% else %}
-                                <span class="text-muted">{% trans "Unknown" %}</span>
-                            {% endif %}
-                        </dd>
-                        
-                        <dt class="col-sm-5">{% trans "Submitted date" %}</dt>
-                        <dd class="col-sm-7">{{ question.submitted_date|date:"d.m.Y H:i" }}</dd>
-                        
-                        <dt class="col-sm-5">{% trans "Last modified" %}</dt>
-                        <dd class="col-sm-7">{{ question.last_modified|date:"d.m.Y H:i" }}</dd>
-                    </dl>
                 </div>
             </div>
         </div>
