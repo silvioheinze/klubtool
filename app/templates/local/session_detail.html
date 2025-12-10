@@ -201,12 +201,18 @@
                                 </thead>
                                 <tbody id="questions-sortable">
                                     {% for question in questions %}
-                                        <tr data-question-id="{{ question.pk }}" style="cursor: move;">
+                                        <tr data-question-id="{{ question.pk }}" {% if question.status != 'not_admitted' %}style="cursor: move;"{% endif %} data-question-status="{{ question.status }}">
                                             <td class="text-muted">
-                                                <i class="bi bi-grip-vertical"></i>
+                                                {% if question.status != 'not_admitted' %}
+                                                    <i class="bi bi-grip-vertical"></i>
+                                                {% endif %}
                                             </td>
                                             <td class="text-center fw-bold">
-                                                <span class="question-number"></span>
+                                                {% if question.status != 'not_admitted' %}
+                                                    <span class="question-number"></span>
+                                                {% else %}
+                                                    -
+                                                {% endif %}
                                             </td>
                                             <td>
                                                 <a href="{% url 'motion:question-detail' question.pk %}">
@@ -454,13 +460,14 @@ document.addEventListener('DOMContentLoaded', function() {
     const saveQuestionMessage = document.getElementById('save-question-order-message');
     
     if (questionsTable) {
-        // Set initial numbers for questions
+        // Set initial numbers for non-not_admitted questions
         function updateQuestionNumbers() {
             const rows = questionsTable.querySelectorAll('tr[data-question-id]');
             let numberCounter = 1;
             rows.forEach((row) => {
+                const questionStatus = row.getAttribute('data-question-status');
                 const numberCell = row.querySelector('td:nth-child(2) .question-number');
-                if (numberCell) {
+                if (questionStatus !== 'not_admitted' && numberCell) {
                     numberCell.textContent = numberCounter;
                     numberCounter++;
                 }
@@ -470,24 +477,30 @@ document.addEventListener('DOMContentLoaded', function() {
         // Set initial numbers on page load
         updateQuestionNumbers();
         
-        // Initialize SortableJS for questions
+        // Initialize SortableJS - only allow dragging of non-not_admitted questions
         const questionSortable = Sortable.create(questionsTable, {
             handle: '.bi-grip-vertical',
             animation: 150,
             ghostClass: 'sortable-ghost',
+            filter: 'tr[data-question-status="not_admitted"]',
             onEnd: function(evt) {
-                // Get all question rows in their new order
+                // Get all question rows in their new order (excluding not_admitted)
                 const rows = questionsTable.querySelectorAll('tr[data-question-id]');
                 const questionOrders = [];
                 let rankCounter = 1;
                 
                 rows.forEach((row) => {
                     const questionId = row.getAttribute('data-question-id');
-                    questionOrders.push({
-                        question_id: parseInt(questionId),
-                        rank: rankCounter
-                    });
-                    rankCounter++;
+                    const questionStatus = row.getAttribute('data-question-status');
+                    
+                    // Only assign ranks to non-not_admitted questions
+                    if (questionStatus !== 'not_admitted') {
+                        questionOrders.push({
+                            question_id: parseInt(questionId),
+                            rank: rankCounter
+                        });
+                        rankCounter++;
+                    }
                 });
                 
                 // Send AJAX request to save the order
@@ -504,7 +517,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        // Update the numbers in the # column
+                        // Update the numbers in the # column (only for non-not_admitted questions)
                         updateQuestionNumbers();
                         
                         // Show success message
