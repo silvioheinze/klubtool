@@ -263,6 +263,7 @@ class Session(models.Model):
     SESSION_TYPE_CHOICES = [
         ('regular', 'Regular Session'),
         ('special', 'Special Session'),
+        ('inaugural', 'Inaugural Session'),
     ]
     
     STATUS_CHOICES = [
