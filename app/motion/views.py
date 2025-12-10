@@ -53,6 +53,38 @@ def is_leader_or_deputy_leader(user, motion):
         return False
 
 
+def can_change_question_status(user, question):
+    """Check if user can change question status (superuser, group admin, leader, or deputy leader)"""
+    if user.is_superuser:
+        return True
+    
+    if not question.group:
+        return False
+    
+    # Check if user is a group admin
+    if question.group.has_group_admin(user):
+        return True
+    
+    # Check if user is a leader or deputy leader
+    from group.models import GroupMember
+    from user.models import Role
+    
+    try:
+        leader_role = Role.objects.get(name='Leader')
+        deputy_leader_role = Role.objects.get(name='Deputy Leader')
+        
+        membership = GroupMember.objects.filter(
+            user=user,
+            group=question.group,
+            is_active=True,
+            roles__in=[leader_role, deputy_leader_role]
+        ).first()
+        
+        return membership is not None
+    except Role.DoesNotExist:
+        return False
+
+
 class MotionListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
     """View for listing all Motion objects"""
     model = Motion
@@ -792,8 +824,17 @@ class QuestionDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         # Add attachment form
         context['attachment_form'] = QuestionAttachmentForm(question=question, uploaded_by=self.request.user)
         
+        # Add status change form
+        context['status_form'] = QuestionStatusForm(question=question, changed_by=self.request.user)
+        
+        # Add permission check for status changes
+        context['can_change_status'] = can_change_question_status(self.request.user, question)
+        
         # Get attachments
         context['attachments'] = question.attachments.all().order_by('-uploaded_at')
+        
+        # Get status history
+        context['status_history'] = question.status_history.all()
         
         return context
 
@@ -939,10 +980,14 @@ def question_attachment_view(request, pk):
 
 
 @login_required
-@user_passes_test(is_superuser_or_has_permission('motion.edit'))
 def question_status_change_view(request, pk):
     """View for changing question status"""
     question = get_object_or_404(Question, pk=pk)
+    
+    # Check permissions
+    if not can_change_question_status(request.user, question):
+        messages.error(request, "You don't have permission to change the status of this question.")
+        return redirect('motion:question-detail', pk=pk)
     
     if request.method == 'POST':
         form = QuestionStatusForm(request.POST, question=question, changed_by=request.user)

@@ -197,9 +197,11 @@
             <div class="card mt-3">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">{% trans "Status History" %}</h5>
-                    <a href="{% url 'motion:question-status-change' question.pk %}" class="btn btn-sm btn-primary">
-                        <i class="bi bi-plus-circle"></i> {% trans "Change Status" %}
-                    </a>
+                    {% if can_change_status %}
+                        <a href="{% url 'motion:question-status-change' question.pk %}" class="btn btn-sm btn-primary">
+                            <i class="bi bi-plus-circle"></i> {% trans "Change Status" %}
+                        </a>
+                    {% endif %}
                 </div>
                 <div class="card-body">
                     {% if status_history %}
