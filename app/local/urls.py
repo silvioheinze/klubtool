@@ -9,7 +9,7 @@ from .views import (
     TermSeatDistributionListView, TermSeatDistributionDetailView, TermSeatDistributionCreateView,
     TermSeatDistributionUpdateView, TermSeatDistributionDeleteView, TermSeatDistributionView,
     PartyListView, PartyDetailView, PartyCreateView, PartyUpdateView, PartyDeleteView,
-    SessionListView, SessionDetailView, SessionCreateView, SessionUpdateView, SessionDeleteView, SessionExportPDFView, SessionAttachmentView, update_motion_order, update_question_order,
+    SessionListView, SessionDetailView, SessionCreateView, SessionUpdateView, SessionDeleteView, SessionExportPDFView, SessionAttachmentView, update_motion_order, update_question_order, update_session_presence,
     CommitteeListView, CommitteeDetailView, CommitteeCreateView, CommitteeUpdateView, CommitteeDeleteView,
     CommitteeMemberListView, CommitteeMemberDetailView, CommitteeMemberCreateView, CommitteeMemberUpdateView, CommitteeMemberDeleteView
 )
@@ -64,6 +64,7 @@ urlpatterns = [
     path('sessions/<int:session_pk>/attach/', SessionAttachmentView.as_view(), name='session-attach'),
     path('sessions/<int:session_pk>/update-motion-order/', update_motion_order, name='session-update-motion-order'),
     path('sessions/<int:session_pk>/update-question-order/', update_question_order, name='session-update-question-order'),
+    path('sessions/<int:session_pk>/presence/<int:party_pk>/update/', update_session_presence, name='session-update-presence'),
     
     # Committee URLs
     path('committees/', CommitteeListView.as_view(), name='committee-list'),

@@ -335,6 +335,25 @@ class SessionAttachment(models.Model):
         return reverse('local:session-attachment-detail', kwargs={'pk': self.pk})
 
 
+class SessionPresence(models.Model):
+    """Model representing presence tracking for parties in a session"""
+    session = models.ForeignKey(Session, on_delete=models.CASCADE, related_name='presence_records')
+    party = models.ForeignKey(Party, on_delete=models.CASCADE, related_name='session_presence')
+    present_count = models.PositiveIntegerField(default=0, help_text="Number of present members from this party")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    history = AuditlogHistoryField()
+
+    class Meta:
+        unique_together = ['session', 'party']
+        verbose_name = "Session Presence"
+        verbose_name_plural = "Session Presences"
+        ordering = ['party__name']
+
+    def __str__(self):
+        return f"{self.party.name} - {self.present_count} present in {self.session.title}"
+
+
 # Register models for audit logging
 auditlog.register(Local)
 auditlog.register(Council)
@@ -345,3 +364,4 @@ auditlog.register(Party)
 auditlog.register(TermSeatDistribution)
 auditlog.register(Session)
 auditlog.register(SessionAttachment)
+auditlog.register(SessionPresence)
