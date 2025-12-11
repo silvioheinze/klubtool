@@ -876,6 +876,7 @@ class SessionDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
                 presence_data = []
                 total_seats = 0
                 total_present = 0
+                gruene_present = 0
                 
                 for distribution in seat_distributions:
                     presence, created = SessionPresence.objects.get_or_create(
@@ -890,12 +891,19 @@ class SessionDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
                     })
                     total_seats += distribution.seats
                     total_present += presence.present_count
+                    
+                    # Check if this is GRÜNE party (check both name and short_name)
+                    party_name = distribution.party.name.upper()
+                    party_short = distribution.party.short_name.upper() if distribution.party.short_name else ""
+                    if 'GRÜNE' in party_name or 'GRÜNE' in party_short or 'GRUNE' in party_name or 'GRUNE' in party_short:
+                        gruene_present = presence.present_count
                 
                 context['presence_data'] = presence_data
                 context['total_seats'] = total_seats
                 context['total_present'] = total_present
-                context['majority_needed'] = (total_seats // 2) + 1 if total_seats > 0 else 0
-                context['has_majority'] = total_present >= context['majority_needed']
+                # Majority is GRÜNE >= half of total present
+                context['majority_needed'] = (total_present // 2) + 1 if total_present > 0 else 0
+                context['has_majority'] = gruene_present >= context['majority_needed'] if total_present > 0 else False
             else:
                 context['presence_data'] = []
                 context['total_seats'] = 0
@@ -1252,6 +1260,7 @@ def update_session_presence(request, session_pk, party_pk):
         # Calculate totals
         total_seats = 0
         total_present = 0
+        gruene_present = 0
         today = timezone.now().date()
         current_term = Term.objects.filter(
             start_date__lte=today,
@@ -1272,11 +1281,18 @@ def update_session_presence(request, session_pk, party_pk):
                     session=session,
                     party=dist.party
                 ).first()
-                if presence_record:
-                    total_present += presence_record.present_count
+                present_count = presence_record.present_count if presence_record else 0
+                total_present += present_count
+                
+                # Check if this is GRÜNE party (check both name and short_name)
+                party_name = dist.party.name.upper()
+                party_short = dist.party.short_name.upper() if dist.party.short_name else ""
+                if 'GRÜNE' in party_name or 'GRÜNE' in party_short or 'GRUNE' in party_name or 'GRUNE' in party_short:
+                    gruene_present = present_count
         
-        majority_needed = (total_seats // 2) + 1 if total_seats > 0 else 0
-        has_majority = total_present >= majority_needed
+        # Majority is GRÜNE >= half of total present
+        majority_needed = (total_present // 2) + 1 if total_present > 0 else 0
+        has_majority = gruene_present >= majority_needed if total_present > 0 else False
         
         return JsonResponse({
             'success': True,
