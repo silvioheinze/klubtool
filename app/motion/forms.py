@@ -405,8 +405,6 @@ class MotionVoteFormSet(BaseFormSet):
                     if party in parties:
                         raise forms.ValidationError(f"Duplicate party: {party.name}")
                     parties.append(party)
-        
-        return self.cleaned_data
 
 
 # Create the formset factory
