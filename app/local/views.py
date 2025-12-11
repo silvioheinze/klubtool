@@ -10,7 +10,7 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 import json
 
-from .models import Local, Term, Council, TermSeatDistribution, Party, Session, Committee, CommitteeMember, SessionAttachment
+from .models import Local, Term, Council, TermSeatDistribution, Party, Session, Committee, CommitteeMember, SessionAttachment, SessionPresence
 from .forms import LocalForm, LocalFilterForm, CouncilForm, CouncilFilterForm, TermForm, TermFilterForm, CouncilNameForm, TermSeatDistributionForm, PartyForm, PartyFilterForm, SessionForm, SessionFilterForm, CommitteeForm, CommitteeFilterForm, CommitteeMemberForm, CommitteeMemberFilterForm, SessionAttachmentForm
 
 
@@ -852,6 +852,63 @@ class SessionDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             is_active=True
         ).select_related('group', 'submitted_by').prefetch_related('parties', 'interventions').order_by('session_rank', '-submitted_date')
         context['total_questions'] = context['questions'].count()
+        
+        # Get presence tracking data
+        session = self.object
+        if session.council and session.council.local:
+            # Get current term and seat distributions
+            today = timezone.now().date()
+            current_term = Term.objects.filter(
+                start_date__lte=today,
+                end_date__gte=today,
+                is_active=True
+            ).first()
+            
+            if current_term:
+                # Get seat distributions for parties in this council's local
+                seat_distributions = TermSeatDistribution.objects.filter(
+                    term=current_term,
+                    party__local=session.council.local,
+                    party__is_active=True
+                ).select_related('party').order_by('-seats', 'party__name')
+                
+                # Get or create presence records for each party
+                presence_data = []
+                total_seats = 0
+                total_present = 0
+                
+                for distribution in seat_distributions:
+                    presence, created = SessionPresence.objects.get_or_create(
+                        session=session,
+                        party=distribution.party,
+                        defaults={'present_count': 0}
+                    )
+                    presence_data.append({
+                        'party': distribution.party,
+                        'seats': distribution.seats,
+                        'present_count': presence.present_count,
+                    })
+                    total_seats += distribution.seats
+                    total_present += presence.present_count
+                
+                context['presence_data'] = presence_data
+                context['total_seats'] = total_seats
+                context['total_present'] = total_present
+                context['majority_needed'] = (total_seats // 2) + 1 if total_seats > 0 else 0
+                context['has_majority'] = total_present >= context['majority_needed']
+            else:
+                context['presence_data'] = []
+                context['total_seats'] = 0
+                context['total_present'] = 0
+                context['majority_needed'] = 0
+                context['has_majority'] = False
+        else:
+            context['presence_data'] = []
+            context['total_seats'] = 0
+            context['total_present'] = 0
+            context['majority_needed'] = 0
+            context['has_majority'] = False
+        
         return context
 
 
@@ -1135,6 +1192,100 @@ def update_question_order(request, session_pk):
                     continue
         
         return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
+
+
+@login_required
+@require_http_methods(["POST"])
+def update_session_presence(request, session_pk, party_pk):
+    """AJAX view to update presence count for a party in a session"""
+    # Check permissions - user must be superuser or have session view permission
+    if not (request.user.is_superuser or request.user.has_role_permission('session.view')):
+        return JsonResponse({'error': 'Permission denied'}, status=403)
+    
+    try:
+        session = get_object_or_404(Session, pk=session_pk)
+        party = get_object_or_404(Party, pk=party_pk)
+        
+        # Verify party belongs to the session's council local
+        if not (session.council and session.council.local and party.local == session.council.local):
+            return JsonResponse({'error': 'Party does not belong to this session\'s local'}, status=400)
+        
+        data = json.loads(request.body)
+        action = data.get('action')  # 'increment' or 'decrement'
+        
+        # Get or create presence record
+        presence, created = SessionPresence.objects.get_or_create(
+            session=session,
+            party=party,
+            defaults={'present_count': 0}
+        )
+        
+        # Update count based on action
+        if action == 'increment':
+            # Get seat distribution to ensure we don't exceed total seats
+            today = timezone.now().date()
+            current_term = Term.objects.filter(
+                start_date__lte=today,
+                end_date__gte=today,
+                is_active=True
+            ).first()
+            
+            if current_term:
+                seat_dist = TermSeatDistribution.objects.filter(
+                    term=current_term,
+                    party=party
+                ).first()
+                max_seats = seat_dist.seats if seat_dist else 999
+                
+                if presence.present_count < max_seats:
+                    presence.present_count += 1
+                    presence.save(update_fields=['present_count'])
+        elif action == 'decrement':
+            if presence.present_count > 0:
+                presence.present_count -= 1
+                presence.save(update_fields=['present_count'])
+        else:
+            return JsonResponse({'error': 'Invalid action'}, status=400)
+        
+        # Calculate totals
+        total_seats = 0
+        total_present = 0
+        today = timezone.now().date()
+        current_term = Term.objects.filter(
+            start_date__lte=today,
+            end_date__gte=today,
+            is_active=True
+        ).first()
+        
+        if current_term and session.council and session.council.local:
+            seat_distributions = TermSeatDistribution.objects.filter(
+                term=current_term,
+                party__local=session.council.local,
+                party__is_active=True
+            )
+            
+            for dist in seat_distributions:
+                total_seats += dist.seats
+                presence_record = SessionPresence.objects.filter(
+                    session=session,
+                    party=dist.party
+                ).first()
+                if presence_record:
+                    total_present += presence_record.present_count
+        
+        majority_needed = (total_seats // 2) + 1 if total_seats > 0 else 0
+        has_majority = total_present >= majority_needed
+        
+        return JsonResponse({
+            'success': True,
+            'present_count': presence.present_count,
+            'total_present': total_present,
+            'total_seats': total_seats,
+            'majority_needed': majority_needed,
+            'has_majority': has_majority
+        })
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=400)
 

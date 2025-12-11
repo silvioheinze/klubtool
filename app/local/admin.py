@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Local, Council, Committee, CommitteeMember, Session, Term, Party, TermSeatDistribution
+from .models import Local, Council, Committee, CommitteeMember, Session, Term, Party, TermSeatDistribution, SessionPresence
 
 
 @admin.register(Local)
@@ -177,6 +177,25 @@ class SessionAdmin(admin.ModelAdmin):
         }),
         ('Content', {
             'fields': ('agenda', 'minutes', 'notes')
+        }),
+        ('Timestamps', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+
+
+@admin.register(SessionPresence)
+class SessionPresenceAdmin(admin.ModelAdmin):
+    list_display = ['session', 'party', 'present_count', 'updated_at']
+    list_filter = ['session', 'party', 'updated_at']
+    search_fields = ['session__title', 'party__name', 'party__short_name']
+    readonly_fields = ['created_at', 'updated_at']
+    ordering = ['-updated_at', 'party__name']
+    
+    fieldsets = (
+        ('Presence Information', {
+            'fields': ('session', 'party', 'present_count')
         }),
         ('Timestamps', {
             'fields': ('created_at', 'updated_at'),
