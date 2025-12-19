@@ -100,7 +100,7 @@ class MotionListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
         """Filter queryset based on search parameters"""
         queryset = Motion.objects.all().select_related(
             'session', 'group', 'submitted_by'
-        ).prefetch_related('parties').order_by('-submitted_date')
+        ).prefetch_related('parties', 'tags').order_by('-submitted_date')
         
         # Get filter form
         filter_form = MotionFilterForm(self.request.GET)
@@ -137,6 +137,11 @@ class MotionListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
             party = filter_form.cleaned_data.get('party')
             if party:
                 queryset = queryset.filter(parties=party)
+            
+            # Filter by tags
+            tags = filter_form.cleaned_data.get('tags')
+            if tags:
+                queryset = queryset.filter(tags__in=tags).distinct()
         
         return queryset
 
@@ -144,6 +149,27 @@ class MotionListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
         """Add filter form to context"""
         context = super().get_context_data(**kwargs)
         context['filter_form'] = MotionFilterForm(self.request.GET)
+        
+        # Get tag counts for word cloud (from all motions, not just filtered)
+        from .models import Tag
+        from django.db.models import Count
+        # Get all tags used in motions, with their counts
+        tag_counts = Tag.objects.filter(
+            motions__isnull=False,
+            is_active=True
+        ).annotate(
+            count=Count('motions', distinct=True)
+        ).order_by('-count', 'name')
+        context['tag_counts'] = tag_counts
+        
+        # Get currently selected tags from GET parameters
+        selected_tag_ids = []
+        if 'tags' in self.request.GET:
+            try:
+                selected_tag_ids = [int(tid) for tid in self.request.GET.getlist('tags')]
+            except (ValueError, TypeError):
+                pass
+        context['selected_tag_ids'] = selected_tag_ids
         
         # Add user to context for permission checks in template
         context['user'] = self.request.user

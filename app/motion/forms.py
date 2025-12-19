@@ -2,6 +2,7 @@ from django import forms
 from django.contrib.auth import get_user_model
 from django.forms import BaseFormSet, formset_factory
 from django.utils.text import slugify
+from django.utils.translation import gettext_lazy as _
 from .models import Motion, MotionVote, MotionComment, MotionAttachment, MotionStatus, MotionGroupDecision, Question, QuestionStatus, QuestionAttachment, Tag
 from local.models import Session, Party, Committee
 from group.models import Group, GroupMember
@@ -458,6 +459,13 @@ class MotionFilterForm(forms.Form):
         required=False,
         empty_label="All Parties",
         widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    
+    tags = forms.ModelMultipleChoiceField(
+        queryset=Tag.objects.filter(is_active=True),
+        required=False,
+        widget=forms.SelectMultiple(attrs={'class': 'form-select'}),
+        label=_('Tags')
     )
 
 
