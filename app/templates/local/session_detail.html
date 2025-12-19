@@ -14,9 +14,15 @@
             </h1>
         </div>
         <div>
-            <a href="{% url 'local:council-detail' session.council.pk %}" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left"></i> {% trans "Back to Council" %}
-            </a>
+            {% if session.committee %}
+                <a href="{% url 'local:committee-detail' session.committee.pk %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> {% trans "Back to Committee" %}
+                </a>
+            {% else %}
+                <a href="{% url 'local:council-detail' session.council.pk %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> {% trans "Back to Council" %}
+                </a>
+            {% endif %}
         </div>
     </div>
 
@@ -53,6 +59,15 @@
                                         <span class="badge bg-info">{% trans "Invited" %}</span>
                                     {% endif %}
                                 </dd>
+                                
+                                {% if session.committee %}
+                                    <dt class="col-sm-4">{% trans "Committee" %}</dt>
+                                    <dd class="col-sm-8">
+                                        <a href="{% url 'local:committee-detail' session.committee.pk %}">
+                                            <span class="badge bg-info">{{ session.committee.name }}</span>
+                                        </a>
+                                    </dd>
+                                {% endif %}
                                 
                             </dl>
                         </div>

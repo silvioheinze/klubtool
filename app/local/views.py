@@ -1590,6 +1590,9 @@ class CommitteeDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         # Get motions assigned to this committee
         context['motions'] = self.object.motions.filter(is_active=True).order_by('-submitted_date')[:5]
         context['total_motions'] = self.object.motions.count()
+        # Get sessions for this committee
+        context['sessions'] = self.object.sessions.filter(is_active=True).order_by('-scheduled_date')
+        context['total_sessions'] = self.object.sessions.count()
         return context
 
 

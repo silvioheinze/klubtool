@@ -276,6 +276,7 @@ class Session(models.Model):
     
     title = models.CharField(max_length=200, help_text="Title of the session")
     council = models.ForeignKey(Council, on_delete=models.CASCADE, related_name='sessions', help_text="Council this session belongs to")
+    committee = models.ForeignKey(Committee, on_delete=models.CASCADE, related_name='sessions', blank=True, null=True, help_text="Committee this session belongs to (optional, for committee meetings)")
     term = models.ForeignKey(Term, on_delete=models.CASCADE, related_name='sessions', blank=True, null=True, help_text="Term this session belongs to")
     session_type = models.CharField(max_length=20, choices=SESSION_TYPE_CHOICES, default='regular', help_text="Type of session")
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='scheduled', help_text="Current status of the session")
