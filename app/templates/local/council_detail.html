@@ -24,7 +24,7 @@
         <div class="col-md-12">
             <div class="card">
                 <div class="card-header">
-                    <h5 class="mb-0">{% trans "Local District" %} <a href="{% url 'local:local-detail' council.local.pk %}">{{ council.local.name }}</a></h5>
+                    <h5 class="mb-0">{% trans "Local District" %} <a class="badge bg-primary" href="{% url 'local:local-detail' council.local.pk %}">{{ council.local.name }}</a></h5>
                 </div>
                 <div class="card-body">
                     <!-- Current Term Seat Distribution -->
@@ -32,7 +32,7 @@
                         <h6 class="mb-3">
                             <i class="bi bi-bar-chart"></i> 
                             {% trans "Current Term Seat Distribution" %} 
-                            <span class="badge bg-primary">{{ current_term.name }}</span>
+                            <span class="text-muted">{{ current_term.name }}</span>
                         </h6>
                         
                         {% if current_term_seat_distributions %}
