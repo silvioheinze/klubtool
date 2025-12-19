@@ -162,15 +162,15 @@ class CommitteeMemberAdmin(admin.ModelAdmin):
 
 @admin.register(Session)
 class SessionAdmin(admin.ModelAdmin):
-    list_display = ['title', 'council', 'term', 'session_type', 'status', 'scheduled_date', 'is_active']
-    list_filter = ['session_type', 'status', 'is_active', 'council', 'term', 'scheduled_date']
-    search_fields = ['title', 'agenda', 'minutes', 'council__name', 'term__name']
+    list_display = ['title', 'council', 'committee', 'session_type', 'status', 'scheduled_date', 'is_active']
+    list_filter = ['session_type', 'status', 'is_active', 'council', 'committee', 'term', 'scheduled_date']
+    search_fields = ['title', 'agenda', 'minutes', 'council__name', 'committee__name', 'term__name']
     readonly_fields = ['created_at', 'updated_at']
     ordering = ['-scheduled_date']
     
     fieldsets = (
         ('Basic Information', {
-            'fields': ('title', 'council', 'term', 'session_type', 'status', 'is_active')
+            'fields': ('title', 'council', 'committee', 'term', 'session_type', 'status', 'is_active')
         }),
         ('Schedule', {
             'fields': ('scheduled_date', 'location')

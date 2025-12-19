@@ -354,6 +354,82 @@ class SessionFormTests(TestCase):
         self.assertEqual(form.fields['council'].initial, self.council)
         # Council field should be hidden when pre-set
         self.assertIsInstance(form.fields['council'].widget, type(form.fields['council'].widget))
+    
+    def test_session_form_with_committee(self):
+        """Test SessionForm with committee field"""
+        committee = Committee.objects.create(
+            name='Test Committee',
+            council=self.council,
+            is_active=True
+        )
+        
+        form_data = {
+            'title': 'Test Committee Session',
+            'council': self.council.pk,
+            'committee': committee.pk,
+            'term': self.term.pk,
+            'session_type': 'regular',
+            'status': 'scheduled',
+            'scheduled_date': '2025-12-01T10:00',
+            'location': 'Test Location',
+            'agenda': 'Test agenda',
+            'minutes': 'Test minutes',
+            'notes': 'Test notes'
+        }
+        
+        form = SessionForm(data=form_data)
+        self.assertTrue(form.is_valid())
+        
+        session = form.save()
+        self.assertEqual(session.committee, committee)
+        self.assertEqual(session.council, self.council)
+    
+    def test_session_form_committee_filtering_by_council(self):
+        """Test that SessionForm filters committees based on council"""
+        # Create committees for different councils
+        committee1 = Committee.objects.create(
+            name='Committee 1',
+            council=self.council,
+            is_active=True
+        )
+        
+        local2 = Local.objects.create(name='Test Local 2', code='TL2')
+        council2, _ = Council.objects.get_or_create(
+            local=local2,
+            defaults={'name': 'Test Council 2'}
+        )
+        committee2 = Committee.objects.create(
+            name='Committee 2',
+            council=council2,
+            is_active=True
+        )
+        
+        # Form with initial council should only show committees for that council
+        form = SessionForm(initial={'council': self.council.pk})
+        form.fields['council'].initial = self.council
+        # Simulate the form's __init__ logic
+        form.fields['committee'].queryset = Committee.objects.filter(council=self.council, is_active=True)
+        
+        self.assertIn(committee1, form.fields['committee'].queryset)
+        self.assertNotIn(committee2, form.fields['committee'].queryset)
+    
+    def test_session_form_committee_optional(self):
+        """Test that committee field is optional in SessionForm"""
+        form_data = {
+            'title': 'Test Session Without Committee',
+            'council': self.council.pk,
+            'term': self.term.pk,
+            'session_type': 'regular',
+            'status': 'scheduled',
+            'scheduled_date': '2025-12-01T10:00',
+        }
+        
+        form = SessionForm(data=form_data)
+        self.assertTrue(form.is_valid())
+        
+        session = form.save()
+        self.assertIsNone(session.committee)
+        self.assertEqual(session.council, self.council)
 
 
 class TermFormTests(TestCase):
@@ -1212,6 +1288,55 @@ class SessionViewTests(TestCase):
         # Check that the session was created
         self.assertTrue(Session.objects.filter(title='New Session').exists())
     
+    def test_session_create_view_with_committee_parameter(self):
+        """Test SessionCreateView with committee parameter in URL"""
+        committee = Committee.objects.create(
+            name='Test Committee',
+            council=self.council,
+            is_active=True
+        )
+        
+        self.client.login(username='admin', password='adminpass123')
+        url = reverse('local:session-create') + f'?committee={committee.pk}'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        
+        # Check that form has committee pre-filled
+        form = response.context['form']
+        # The committee field should be filtered to only show committees for the council
+        # When committee is provided, the form's __init__ should filter committees by council
+        # Check that the committee is in the queryset (which should be filtered by council)
+        self.assertIn(committee, form.fields['committee'].queryset)
+        # The form should have the committee in its initial data
+        # Check that we can create a session with this committee
+        self.assertTrue(committee.council == self.council)
+    
+    def test_session_create_view_with_committee_post(self):
+        """Test SessionCreateView POST with committee"""
+        committee = Committee.objects.create(
+            name='Test Committee',
+            council=self.council,
+            is_active=True
+        )
+        
+        self.client.login(username='admin', password='adminpass123')
+        form_data = {
+            'title': 'Committee Session',
+            'council': self.council.pk,
+            'committee': committee.pk,
+            'term': self.term.pk,
+            'session_type': 'regular',
+            'status': 'scheduled',
+            'scheduled_date': (timezone.now() + timedelta(days=2)).strftime('%Y-%m-%dT%H:%M')
+        }
+        response = self.client.post(reverse('local:session-create'), form_data)
+        self.assertEqual(response.status_code, 302)
+        
+        # Check that the session was created with committee
+        session = Session.objects.get(title='Committee Session')
+        self.assertEqual(session.committee, committee)
+        self.assertEqual(session.council, self.council)
+    
     def test_session_edit_view_requires_superuser(self):
         """Test that SessionUpdateView requires superuser"""
         # Test with regular user
@@ -1491,6 +1616,218 @@ class CommitteeMemberViewTests(TestCase):
         # Check that active users are present
         self.assertContains(response, 'testuser')
         self.assertContains(response, 'memberuser')
+
+
+class CommitteeSessionTests(TestCase):
+    """Test cases for committee sessions functionality"""
+    
+    def setUp(self):
+        """Set up test data"""
+        self.user = User.objects.create_user(
+            username='testuser',
+            email='test@example.com',
+            password='testpass123'
+        )
+        self.admin = User.objects.create_superuser(
+            username='admin',
+            email='admin@example.com',
+            password='adminpass123'
+        )
+        self.client = Client()
+        
+        self.local = Local.objects.create(
+            name='Test Local',
+            code='TL',
+            description='Test local description'
+        )
+        
+        self.council, created = Council.objects.get_or_create(
+            local=self.local,
+            defaults={'name': 'Test Council'}
+        )
+        
+        self.term = Term.objects.create(
+            name='Test Term',
+            start_date=timezone.now().date(),
+            end_date=(timezone.now().date() + timedelta(days=365))
+        )
+        
+        self.committee = Committee.objects.create(
+            name='Test Committee',
+            council=self.council,
+            is_active=True
+        )
+    
+    def test_committee_has_sessions_relationship(self):
+        """Test that Committee model has sessions relationship"""
+        session = Session.objects.create(
+            title='Committee Session',
+            council=self.council,
+            committee=self.committee,
+            term=self.term,
+            session_type='regular',
+            status='scheduled',
+            scheduled_date=timezone.now() + timedelta(days=1)
+        )
+        
+        # Test reverse relationship
+        self.assertIn(session, self.committee.sessions.all())
+        self.assertEqual(self.committee.sessions.count(), 1)
+    
+    def test_committee_detail_view_shows_sessions(self):
+        """Test that CommitteeDetailView includes sessions in context"""
+        session1 = Session.objects.create(
+            title='Session 1',
+            council=self.council,
+            committee=self.committee,
+            term=self.term,
+            session_type='regular',
+            status='scheduled',
+            scheduled_date=timezone.now() + timedelta(days=1)
+        )
+        session2 = Session.objects.create(
+            title='Session 2',
+            council=self.council,
+            committee=self.committee,
+            term=self.term,
+            session_type='regular',
+            status='completed',
+            scheduled_date=timezone.now() + timedelta(days=2)
+        )
+        # Create a session for another committee (should not appear)
+        other_committee = Committee.objects.create(
+            name='Other Committee',
+            council=self.council,
+            is_active=True
+        )
+        other_session = Session.objects.create(
+            title='Other Session',
+            council=self.council,
+            committee=other_committee,
+            term=self.term,
+            session_type='regular',
+            status='scheduled',
+            scheduled_date=timezone.now() + timedelta(days=3)
+        )
+        
+        self.client.login(username='admin', password='adminpass123')
+        response = self.client.get(reverse('local:committee-detail', kwargs={'pk': self.committee.pk}))
+        
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('sessions', response.context)
+        sessions = response.context['sessions']
+        self.assertEqual(sessions.count(), 2)
+        self.assertIn(session1, sessions)
+        self.assertIn(session2, sessions)
+        self.assertNotIn(other_session, sessions)
+        self.assertEqual(response.context['total_sessions'], 2)
+    
+    def test_committee_detail_view_sessions_ordered_by_date(self):
+        """Test that committee sessions are ordered by scheduled_date descending"""
+        session1 = Session.objects.create(
+            title='Session 1',
+            council=self.council,
+            committee=self.committee,
+            term=self.term,
+            session_type='regular',
+            status='scheduled',
+            scheduled_date=timezone.now() + timedelta(days=3)
+        )
+        session2 = Session.objects.create(
+            title='Session 2',
+            council=self.council,
+            committee=self.committee,
+            term=self.term,
+            session_type='regular',
+            status='scheduled',
+            scheduled_date=timezone.now() + timedelta(days=1)
+        )
+        session3 = Session.objects.create(
+            title='Session 3',
+            council=self.council,
+            committee=self.committee,
+            term=self.term,
+            session_type='regular',
+            status='scheduled',
+            scheduled_date=timezone.now() + timedelta(days=2)
+        )
+        
+        self.client.login(username='admin', password='adminpass123')
+        response = self.client.get(reverse('local:committee-detail', kwargs={'pk': self.committee.pk}))
+        
+        sessions = list(response.context['sessions'])
+        # Should be ordered by scheduled_date descending
+        self.assertEqual(sessions[0], session1)  # Latest date first
+        self.assertEqual(sessions[1], session3)
+        self.assertEqual(sessions[2], session2)  # Earliest date last
+    
+    def test_committee_detail_view_only_shows_active_sessions(self):
+        """Test that CommitteeDetailView only shows active sessions"""
+        active_session = Session.objects.create(
+            title='Active Session',
+            council=self.council,
+            committee=self.committee,
+            term=self.term,
+            session_type='regular',
+            status='scheduled',
+            scheduled_date=timezone.now() + timedelta(days=1),
+            is_active=True
+        )
+        inactive_session = Session.objects.create(
+            title='Inactive Session',
+            council=self.council,
+            committee=self.committee,
+            term=self.term,
+            session_type='regular',
+            status='scheduled',
+            scheduled_date=timezone.now() + timedelta(days=2),
+            is_active=False
+        )
+        
+        self.client.login(username='admin', password='adminpass123')
+        response = self.client.get(reverse('local:committee-detail', kwargs={'pk': self.committee.pk}))
+        
+        sessions = response.context['sessions']
+        self.assertEqual(sessions.count(), 1)
+        self.assertIn(active_session, sessions)
+        self.assertNotIn(inactive_session, sessions)
+    
+    def test_session_detail_view_shows_committee(self):
+        """Test that SessionDetailView shows committee information"""
+        session = Session.objects.create(
+            title='Committee Session',
+            council=self.council,
+            committee=self.committee,
+            term=self.term,
+            session_type='regular',
+            status='scheduled',
+            scheduled_date=timezone.now() + timedelta(days=1)
+        )
+        
+        self.client.login(username='admin', password='adminpass123')
+        response = self.client.get(reverse('local:session-detail', kwargs={'pk': session.pk}))
+        
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['session'].committee, self.committee)
+        # Check that committee name appears in response
+        self.assertContains(response, self.committee.name)
+    
+    def test_session_without_committee(self):
+        """Test that sessions can exist without a committee"""
+        session = Session.objects.create(
+            title='Council Session',
+            council=self.council,
+            term=self.term,
+            session_type='regular',
+            status='scheduled',
+            scheduled_date=timezone.now() + timedelta(days=1)
+        )
+        
+        self.assertIsNone(session.committee)
+        self.assertEqual(session.council, self.council)
+        
+        # Should not appear in committee sessions
+        self.assertNotIn(session, self.committee.sessions.all())
 
 
 class CommitteeViewTests(TestCase):

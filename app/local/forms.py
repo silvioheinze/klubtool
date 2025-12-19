@@ -197,15 +197,18 @@ class SessionForm(forms.ModelForm):
     
     class Meta:
         model = Session
-        fields = ['title', 'council', 'term', 'session_type', 'status', 'scheduled_date', 'location', 'notes']
+        fields = ['title', 'council', 'committee', 'term', 'session_type', 'status', 'scheduled_date', 'location', 'agenda', 'minutes', 'notes']
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control'}),
             'council': forms.Select(attrs={'class': 'form-select'}),
+            'committee': forms.Select(attrs={'class': 'form-select'}),
             'term': forms.Select(attrs={'class': 'form-select'}),
             'session_type': forms.Select(attrs={'class': 'form-select'}),
             'status': forms.Select(attrs={'class': 'form-select'}),
             'scheduled_date': forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}, format='%Y-%m-%dT%H:%M'),
             'location': forms.TextInput(attrs={'class': 'form-control'}),
+            'agenda': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
+            'minutes': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
     
@@ -213,6 +216,8 @@ class SessionForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         # Filter councils to only show active ones
         self.fields['council'].queryset = Council.objects.filter(is_active=True)
+        # Filter committees to only show active ones, initially empty
+        self.fields['committee'].queryset = Committee.objects.filter(is_active=True)
         # Filter terms to only show active ones
         self.fields['term'].queryset = Term.objects.filter(is_active=True)
         
@@ -222,10 +227,18 @@ class SessionForm(forms.ModelForm):
             try:
                 council = Council.objects.get(pk=council_id)
                 self.fields['council'].initial = council
+                # Filter committees by council
+                self.fields['committee'].queryset = Committee.objects.filter(council=council, is_active=True)
                 # Hide the council field when it's pre-set
                 self.fields['council'].widget = forms.HiddenInput()
             except Council.DoesNotExist:
                 pass
+        
+        # If instance exists and has a council, filter committees
+        if self.instance and self.instance.pk and self.instance.council:
+            self.fields['committee'].queryset = Committee.objects.filter(council=self.instance.council, is_active=True)
+        
+        # Add JavaScript to filter committees when council changes (will be handled in template)
 
 
 class SessionFilterForm(forms.Form):
