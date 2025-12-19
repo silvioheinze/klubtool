@@ -1185,10 +1185,25 @@ class CouncilCommitteesExportPDFView(LoginRequiredMixin, UserPassesTestMixin, De
                 'user__group_memberships__group__party'
             ).order_by('user__first_name', 'user__last_name')
             
+            # Combine members and substitute members into pairs for the table
+            combined_members = []
+            members_list = list(members)
+            substitute_list = list(substitute_members)
+            max_length = max(len(members_list), len(substitute_list))
+            
+            for i in range(max_length):
+                member = members_list[i] if i < len(members_list) else None
+                substitute = substitute_list[i] if i < len(substitute_list) else None
+                combined_members.append({
+                    'member': member,
+                    'substitute': substitute,
+                })
+            
             committees_list.append({
                 'committee': committee,
                 'members': members,
                 'substitute_members': substitute_members,
+                'combined_members': combined_members,
             })
         
         context['committees_data'] = committees_list
@@ -1276,14 +1291,13 @@ class CouncilCommitteesExportPDFView(LoginRequiredMixin, UserPassesTestMixin, De
                 background-color: #f2f2f2; 
                 font-weight: bold;
             }
+            .members-table th:first-child,
             .members-table td:first-child {
-                width: 20%;
+                width: 50%;
             }
+            .members-table th:nth-child(2),
             .members-table td:nth-child(2) {
-                width: 60%;
-            }
-            .members-table td:nth-child(3) {
-                width: 20%;
+                width: 50%;
             }
             .substitute-section {
                 margin-top: 10px;
