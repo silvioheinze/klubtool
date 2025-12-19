@@ -1267,7 +1267,6 @@ class CouncilCommitteesExportPDFView(LoginRequiredMixin, UserPassesTestMixin, De
                 margin-bottom: 10px;
                 padding: 8px;
                 background-color: #f2f2f2;
-                border-left: 4px solid #007bff;
             }
             .committee-info {
                 margin-bottom: 10px;
@@ -1282,13 +1281,13 @@ class CouncilCommitteesExportPDFView(LoginRequiredMixin, UserPassesTestMixin, De
                 font-size: 9pt;
             }
             .members-table th, .members-table td { 
-                border: 1px solid #333; 
+                border: none; 
                 padding: 6px; 
                 text-align: left;
                 vertical-align: top;
             }
             .members-table th { 
-                background-color: #f2f2f2; 
+                background-color: #fff; 
                 font-weight: bold;
             }
             .members-table th:first-child,
