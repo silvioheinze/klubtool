@@ -3,7 +3,7 @@ from .views import (
     LocalListView, LocalDetailView, LocalCreateView, 
     LocalUpdateView, LocalDeleteView,
     CouncilListView, CouncilDetailView, CouncilCreateView,
-    CouncilUpdateView, CouncilDeleteView, CouncilNameUpdateView,
+    CouncilUpdateView, CouncilDeleteView, CouncilNameUpdateView, CouncilCommitteesExportPDFView,
     TermListView, TermDetailView, TermCreateView,
     TermUpdateView, TermDeleteView,
     TermSeatDistributionListView, TermSeatDistributionDetailView, TermSeatDistributionCreateView,
@@ -31,6 +31,7 @@ urlpatterns = [
     path('councils/<int:pk>/edit/', CouncilUpdateView.as_view(), name='council-edit'),
     path('councils/<int:pk>/delete/', CouncilDeleteView.as_view(), name='council-delete'),
     path('councils/<int:pk>/edit-name/', CouncilNameUpdateView.as_view(), name='council-edit-name'),
+    path('councils/<int:pk>/committees-export-pdf/', CouncilCommitteesExportPDFView.as_view(), name='council-committees-export-pdf'),
     
     # Term URLs
     path('terms/', TermListView.as_view(), name='term-list'),

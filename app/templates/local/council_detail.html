@@ -154,20 +154,12 @@
                                                 <a href="{% url 'local:session-detail' session.pk %}" class="badge bg-primary text-decoration-none">
                                                     {{ session.title }}
                                                 </a>
-                                                {% if session.location %}
-                                                    <br><small class="text-muted mt-1 d-block">
-                                                        <i class="bi bi-geo-alt"></i> {{ session.location }}
-                                                    </small>
-                                                {% endif %}
                                             </td>
                                             <td>
-                                                <span class="badge bg-secondary">{{ session.get_session_type_display }}</span>
+                                                <span class="text-muted">{{ session.get_session_type_display }}</span>
                                             </td>
                                             <td>
-                                                <strong>{{ session.scheduled_date|date:"M d, Y" }}</strong>
-                                                {% if session.start_time %}
-                                                    <br><small class="text-muted">{{ session.start_time|time:"H:i" }}</small>
-                                                {% endif %}
+                                                <span class="text-muted">{{ session.scheduled_date|date:"d.m.Y H:i" }}</span>
                                             </td>
                                             <td>
                                                 {% if session.status == 'scheduled' %}
@@ -220,6 +212,11 @@
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="bi bi-people"></i> {% trans "Council Committees" %}</h5>
                     <div>
+                        {% if committees %}
+                            <a href="{% url 'local:council-committees-export-pdf' council.pk %}" class="btn btn-outline-primary btn-sm me-2">
+                                <i class="bi bi-file-pdf"></i> {% trans "Export PDF" %}
+                            </a>
+                        {% endif %}
                         <a href="{% url 'local:committee-create' %}?council={{ council.pk }}" class="btn btn-success btn-sm">
                             <i class="bi bi-plus-circle"></i> {% trans "Add" %}
                         </a>
@@ -249,7 +246,7 @@
                                                 {% endif %}
                                             </td>
                                             <td>
-                                                <span class="badge bg-secondary">{{ committee.get_committee_type_display }}</span>
+                                                <span class="text-muted">{{ committee.get_committee_type_display }}</span>
                                             </td>
                                             <td>
                                                 {% if committee.chairperson_name %}
@@ -259,7 +256,7 @@
                                                 {% endif %}
                                             </td>
                                             <td>
-                                                <span class="badge bg-info">{{ committee.member_count }}</span>
+                                                <span class="text-muted">{{ committee.member_count }}</span>
                                             </td>
                                         </tr>
                                     {% endfor %}

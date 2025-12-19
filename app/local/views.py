@@ -1138,6 +1138,212 @@ class SessionExportPDFView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         return response
 
 
+class CouncilCommitteesExportPDFView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
+    """View for exporting all committees of a council as PDF"""
+    model = Council
+    context_object_name = 'council'
+    template_name = 'local/council_committees_export_pdf.html'
+
+    def test_func(self):
+        """Check if user has permission to export Council committees"""
+        return self.request.user.is_superuser or self.request.user.has_role_permission('session.view')
+
+    def get_context_data(self, **kwargs):
+        """Add committees with members and substitute members to context"""
+        from django.db.models import Case, When, CharField, Value
+        
+        context = super().get_context_data(**kwargs)
+        # Get all active committees for this council with their members
+        committees = self.object.committees.filter(is_active=True).order_by('name')
+        
+        # Prefetch members with proper ordering
+        from django.db.models import Prefetch
+        committees_list = []
+        for committee in committees:
+            # Get members (excluding substitute members)
+            members = committee.members.filter(
+                is_active=True
+            ).exclude(
+                role='substitute_member'
+            ).select_related('user').prefetch_related(
+                'user__group_memberships__group__party'
+            ).annotate(
+                role_order=Case(
+                    When(role='chairperson', then=Value(1)),
+                    When(role='vice_chairperson', then=Value(2)),
+                    When(role='member', then=Value(3)),
+                    default=Value(4),
+                    output_field=CharField(),
+                )
+            ).order_by('role_order', 'user__first_name', 'user__last_name')
+            
+            # Get substitute members
+            substitute_members = committee.members.filter(
+                is_active=True,
+                role='substitute_member'
+            ).select_related('user').prefetch_related(
+                'user__group_memberships__group__party'
+            ).order_by('user__first_name', 'user__last_name')
+            
+            # Combine members and substitute members into pairs for the table
+            combined_members = []
+            members_list = list(members)
+            substitute_list = list(substitute_members)
+            max_length = max(len(members_list), len(substitute_list))
+            
+            for i in range(max_length):
+                member = members_list[i] if i < len(members_list) else None
+                substitute = substitute_list[i] if i < len(substitute_list) else None
+                combined_members.append({
+                    'member': member,
+                    'substitute': substitute,
+                })
+            
+            committees_list.append({
+                'committee': committee,
+                'members': members,
+                'substitute_members': substitute_members,
+                'combined_members': combined_members,
+            })
+        
+        context['committees_data'] = committees_list
+        context['total_committees'] = len(committees_list)
+        
+        # Get the user's political group name for the title
+        from group.models import GroupMember
+        user_group = GroupMember.objects.filter(
+            user=self.request.user,
+            is_active=True
+        ).select_related('group').first()
+        
+        if user_group:
+            context['group_name'] = user_group.group.name
+        else:
+            # Fallback to council name if user has no group
+            context['group_name'] = self.object.name
+        
+        return context
+
+    def render_to_response(self, context, **response_kwargs):
+        """Render PDF response"""
+        from django.template.loader import render_to_string
+        from django.http import HttpResponse
+        from weasyprint import HTML, CSS
+        
+        # Render the template to HTML
+        html_string = render_to_string(self.template_name, context)
+        
+        # Create PDF using WeasyPrint
+        html = HTML(string=html_string)
+        css = CSS(string='''
+            @page {
+                size: A4 portrait;
+                margin: 15mm;
+            }
+            body { 
+                font-family: Arial, sans-serif; 
+                margin: 0;
+                font-size: 10pt;
+            }
+            .header { 
+                text-align: center; 
+                margin-bottom: 20px; 
+            }
+            .header h1 {
+                font-size: 16pt;
+                margin: 0 0 5px 0;
+            }
+            .header p {
+                font-size: 10pt;
+                margin: 2px 0;
+            }
+            .committee-section {
+                margin-bottom: 25px;
+                page-break-inside: avoid;
+            }
+            .committee-title {
+                font-size: 12pt;
+                font-weight: bold;
+                margin-bottom: 10px;
+                padding: 8px;
+                background-color: #f2f2f2;
+            }
+            .committee-info {
+                margin-bottom: 10px;
+                font-size: 9pt;
+                color: #666;
+            }
+            .members-table { 
+                width: 100%; 
+                border-collapse: collapse; 
+                margin-top: 10px;
+                margin-bottom: 15px;
+                font-size: 9pt;
+            }
+            .members-table th, .members-table td { 
+                border: none; 
+                padding: 6px; 
+                text-align: left;
+                vertical-align: top;
+            }
+            .members-table th { 
+                background-color: #fff; 
+                font-weight: bold;
+            }
+            .members-table th:first-child,
+            .members-table td:first-child {
+                width: 50%;
+            }
+            .members-table th:nth-child(2),
+            .members-table td:nth-child(2) {
+                width: 50%;
+            }
+            .substitute-section {
+                margin-top: 10px;
+                margin-bottom: 10px;
+            }
+            .substitute-title {
+                font-size: 10pt;
+                font-weight: bold;
+                margin-bottom: 5px;
+            }
+            .footer {
+                margin-top: 30px;
+                padding-top: 15px;
+                border-top: 1px solid #ddd;
+                text-align: center;
+                color: #666;
+                font-size: 8pt;
+            }
+            .footer p {
+                margin: 2px 0;
+            }
+        ''')
+        
+        # Generate PDF
+        pdf = html.write_pdf(stylesheets=[css])
+        
+        # Create response
+        from django.utils import timezone
+        from datetime import datetime
+        
+        # Get group name from context (already set in get_context_data)
+        group_name = context.get('group_name', self.object.name)
+        
+        # Format date for filename
+        date_str = timezone.now().strftime('%Y-%m-%d')
+        
+        # Create filename: group_name_stand_date.pdf
+        # Replace spaces and special characters for filename safety
+        safe_group_name = group_name.replace(' ', '_').replace('/', '_').replace('\\', '_')
+        filename = f"{safe_group_name}_Stand_{date_str}.pdf"
+        
+        response = HttpResponse(pdf, content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        
+        return response
+
+
 @login_required
 @require_http_methods(["POST"])
 def update_motion_order(request, session_pk):
