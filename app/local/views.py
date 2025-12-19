@@ -1325,8 +1325,21 @@ class CouncilCommitteesExportPDFView(LoginRequiredMixin, UserPassesTestMixin, De
         pdf = html.write_pdf(stylesheets=[css])
         
         # Create response
+        from django.utils import timezone
+        from datetime import datetime
+        
+        # Get group name from context (already set in get_context_data)
+        group_name = context.get('group_name', self.object.name)
+        
+        # Format date for filename
+        date_str = timezone.now().strftime('%Y-%m-%d')
+        
+        # Create filename: group_name_stand_date.pdf
+        # Replace spaces and special characters for filename safety
+        safe_group_name = group_name.replace(' ', '_').replace('/', '_').replace('\\', '_')
+        filename = f"{safe_group_name}_Stand_{date_str}.pdf"
+        
         response = HttpResponse(pdf, content_type='application/pdf')
-        filename = f"council_{self.object.pk}_committees_{self.object.name.replace(' ', '_')}.pdf"
         response['Content-Disposition'] = f'attachment; filename="{filename}"'
         
         return response
