@@ -3,14 +3,14 @@
 {% load static %}
 {% load humanize %}
 
-{% block title %}{% trans "Question Management" %} ({% trans "Anfragen" %}){% endblock title %}
+{% block title %}{% trans "Questions" %}{% endblock title %}
 
 {% block content %}
 <div class="container mt-4">
     <div class="row">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1><i class="bi bi-question-circle"></i> {% trans "Question Management" %} ({% trans "Anfragen" %})</h1>
+                <h1><i class="bi bi-question-circle"></i> {% trans "Questions" %}</h1>
                 <div>
                     <a href="{% url 'motion:question-create' %}" class="btn btn-primary">
                         <i class="bi bi-plus-circle"></i> {% trans "Create Question" %}
@@ -20,12 +20,127 @@
         </div>
     </div>
 
-    <!-- Questions Table -->
-    <div class="row">
+    <!-- Search Field -->
+    <div class="row mb-4">
         <div class="col-12">
+            <form method="get" id="search-form" class="d-flex gap-2">
+                <!-- Preserve all filter parameters -->
+                {% if request.GET.status %}
+                    <input type="hidden" name="status" value="{{ request.GET.status }}">
+                {% endif %}
+                {% if request.GET.session %}
+                    <input type="hidden" name="session" value="{{ request.GET.session }}">
+                {% endif %}
+                {% if request.GET.party %}
+                    <input type="hidden" name="party" value="{{ request.GET.party }}">
+                {% endif %}
+                {% if request.GET.tags %}
+                    {% for tag in request.GET.tags %}
+                        <input type="hidden" name="tags" value="{{ tag }}">
+                    {% endfor %}
+                {% endif %}
+                <div class="flex-grow-1">
+                    {{ filter_form.search }}
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-search"></i> {% trans "Search" %}
+                    </button>
+                    <a href="{% url 'motion:question-list' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-clockwise"></i> {% trans "Clear" %}
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Sidebar with Filters -->
+        <div class="col-md-3 mb-4">
             <div class="card">
                 <div class="card-header">
-                    <h5 class="mb-0"><i class="bi bi-list"></i> {% trans "Questions" %} ({% trans "Anfragen" %})</h5>
+                    <h5 class="mb-0"><i class="bi bi-funnel"></i> {% trans "Filters" %}</h5>
+                </div>
+                <div class="card-body">
+                    <form method="get" id="filter-form">
+                        <!-- Preserve search parameter -->
+                        {% if request.GET.search %}
+                            <input type="hidden" name="search" value="{{ request.GET.search }}">
+                        {% endif %}
+                        
+                        <!-- Status -->
+                        <div class="mb-3">
+                            <label for="{{ filter_form.status.id_for_label }}" class="form-label">{% trans "Status" %}</label>
+                            {{ filter_form.status }}
+                        </div>
+                        
+                        <!-- Session -->
+                        <div class="mb-3">
+                            <label for="{{ filter_form.session.id_for_label }}" class="form-label">{% trans "Session" %}</label>
+                            {{ filter_form.session }}
+                        </div>
+                        
+                        <!-- Party -->
+                        <div class="mb-3">
+                            <label for="{{ filter_form.party.id_for_label }}" class="form-label">{% trans "Party" %}</label>
+                            {{ filter_form.party }}
+                        </div>
+                        
+                        <!-- Tags -->
+                        <div class="mb-3">
+                            <label class="form-label">{% trans "Tags" %} <small class="text-muted">({% trans "Click to filter" %})</small></label>
+                            <div id="tag-cloud" class="tag-cloud p-2 border rounded" style="min-height: 150px; max-height: 300px; overflow-y: auto; background-color: #f8f9fa; text-align: center;">
+                                {% if tag_counts %}
+                                    {% for tag in tag_counts %}
+                                        <span class="tag-cloud-item {% if tag.id in selected_tag_ids %}selected{% endif %}" 
+                                              data-tag-id="{{ tag.id }}"
+                                              data-tag-name="{{ tag.name }}"
+                                              data-tag-color="{{ tag.color }}"
+                                              style="font-size: {% if tag.count < 5 %}12{% elif tag.count < 10 %}16{% elif tag.count < 20 %}20{% else %}24{% endif %}px; 
+                                                     color: {{ tag.color }};
+                                                     cursor: pointer;
+                                                     margin: 3px;
+                                                     padding: 4px 8px;
+                                                     display: inline-block;
+                                                     border-radius: 12px;
+                                                     background-color: {% if tag.id in selected_tag_ids %}{{ tag.color }}20{% else %}rgba(255, 255, 255, 0.8){% endif %};
+                                                     transition: all 0.2s;
+                                                     border: 2px solid {% if tag.id in selected_tag_ids %}{{ tag.color }}{% else %}transparent{% endif %};
+                                                     font-weight: {% if tag.id in selected_tag_ids %}bold{% else %}normal{% endif %};">
+                                            {{ tag.name }}
+                                        </span>
+                                    {% endfor %}
+                                {% else %}
+                                    <p class="text-muted mb-0 small">{% trans "No tags available" %}</p>
+                                {% endif %}
+                            </div>
+                            <!-- Hidden inputs to store selected tags -->
+                            {% if request.GET.tags %}
+                                {% for tag_id in request.GET.tags %}
+                                    <input type="hidden" name="tags" value="{{ tag_id }}">
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Filter Buttons -->
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-search"></i> {% trans "Apply Filters" %}
+                            </button>
+                            <a href="{% url 'motion:question-list' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-clockwise"></i> {% trans "Clear All" %}
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Content Area -->
+        <div class="col-md-9">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-list"></i> {% trans "Questions" %}</h5>
                 </div>
                 <div class="card-body">
                     {% if questions %}
@@ -34,6 +149,7 @@
                                 <thead>
                                     <tr>
                                         <th>{% trans "Title" %}</th>
+                                        <th>{% trans "Parties" %}</th>
                                         <th>{% trans "Status" %}</th>
                                         <th>{% trans "Session" %}</th>
                                         <th>{% trans "Group" %}</th>
@@ -48,6 +164,15 @@
                                                         {{ question.title }}
                                                     </a>
                                                 </strong>
+                                            </td>
+                                            <td>
+                                                {% if question.parties.exists %}
+                                                    {% for party in question.parties.all %}
+                                                        <span class="badge me-1" style="background-color: {{ party.color }}; color: white;">{{ party.short_name|default:party.name }}</span>
+                                                    {% endfor %}
+                                                {% else %}
+                                                    <span class="text-muted">-</span>
+                                                {% endif %}
                                             </td>
                                             <td>
                                                 {% if question.status == 'draft' %}
@@ -146,5 +271,64 @@
         </div>
     </div>
 </div>
-{% endblock content %}
 
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const tagCloudItems = document.querySelectorAll('.tag-cloud-item');
+    const form = document.getElementById('filter-form');
+    
+    if (!form) return;
+    
+    tagCloudItems.forEach(item => {
+        item.addEventListener('click', function() {
+            const tagId = this.getAttribute('data-tag-id');
+            const tagColor = this.getAttribute('data-tag-color');
+            const isSelected = this.classList.contains('selected');
+            
+            // Toggle selection
+            if (isSelected) {
+                this.classList.remove('selected');
+                this.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
+                this.style.borderColor = 'transparent';
+                this.style.fontWeight = 'normal';
+                
+                // Remove hidden input for this tag
+                const hiddenInputs = form.querySelectorAll('input[name="tags"][value="' + tagId + '"]');
+                hiddenInputs.forEach(input => input.remove());
+            } else {
+                this.classList.add('selected');
+                this.style.backgroundColor = tagColor + '20';
+                this.style.borderColor = tagColor;
+                this.style.fontWeight = 'bold';
+                
+                // Add hidden input for this tag
+                const hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.name = 'tags';
+                hiddenInput.value = tagId;
+                form.appendChild(hiddenInput);
+            }
+            
+            // Submit form to apply filter
+            form.submit();
+        });
+        
+        // Hover effects
+        item.addEventListener('mouseenter', function() {
+            if (!this.classList.contains('selected')) {
+                this.style.transform = 'scale(1.1)';
+                this.style.borderColor = this.getAttribute('data-tag-color');
+            }
+        });
+        
+        item.addEventListener('mouseleave', function() {
+            if (!this.classList.contains('selected')) {
+                this.style.transform = 'scale(1)';
+                this.style.borderColor = 'transparent';
+            }
+        });
+    });
+});
+</script>
+
+{% endblock content %}

@@ -10,7 +10,7 @@ from django.core.paginator import Paginator
 from django.utils import timezone
 
 from .models import Motion, MotionVote, MotionComment, MotionAttachment, MotionStatus, MotionGroupDecision, Question, QuestionStatus, QuestionAttachment
-from .forms import MotionForm, MotionFilterForm, MotionVoteForm, MotionVoteFormSetFactory, MotionCommentForm, MotionAttachmentForm, MotionStatusForm, MotionGroupDecisionForm, QuestionForm, QuestionStatusForm, QuestionAttachmentForm
+from .forms import MotionForm, MotionFilterForm, MotionVoteForm, MotionVoteFormSetFactory, MotionCommentForm, MotionAttachmentForm, MotionStatusForm, MotionGroupDecisionForm, QuestionForm, QuestionFilterForm, QuestionStatusForm, QuestionAttachmentForm
 from user.models import CustomUser
 from local.models import Session, Party
 from group.models import Group
@@ -798,34 +798,72 @@ class QuestionListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
         return self.request.user.is_superuser or self.request.user.has_role_permission('motion.view')
 
     def get_queryset(self):
-        """Filter questions based on search and filter parameters"""
-        queryset = Question.objects.filter(is_active=True).select_related('session', 'group', 'submitted_by').prefetch_related('parties')
+        """Filter queryset based on search parameters"""
+        queryset = Question.objects.filter(is_active=True).select_related(
+            'session', 'group', 'submitted_by'
+        ).prefetch_related('parties', 'tags').order_by('-submitted_date')
         
-        # Get filter parameters
-        search = self.request.GET.get('search', '')
-        status = self.request.GET.get('status', '')
-        session_id = self.request.GET.get('session', '')
+        # Get filter form
+        filter_form = QuestionFilterForm(self.request.GET)
         
-        # Apply filters
-        if search:
-            queryset = queryset.filter(
-                Q(title__icontains=search) |
-                Q(text__icontains=search) |
-                Q(group__name__icontains=search)
-            )
+        if filter_form.is_valid():
+            # Filter by search query
+            search_query = filter_form.cleaned_data.get('search')
+            if search_query:
+                queryset = queryset.filter(
+                    Q(title__icontains=search_query) |
+                    Q(text__icontains=search_query) |
+                    Q(group__name__icontains=search_query)
+                )
+            
+            # Filter by status
+            status = filter_form.cleaned_data.get('status')
+            if status:
+                queryset = queryset.filter(status=status)
+            
+            # Filter by session
+            session = filter_form.cleaned_data.get('session')
+            if session:
+                queryset = queryset.filter(session=session)
+            
+            # Filter by party
+            party = filter_form.cleaned_data.get('party')
+            if party:
+                queryset = queryset.filter(parties=party)
+            
+            # Filter by tags
+            tags = filter_form.cleaned_data.get('tags')
+            if tags:
+                queryset = queryset.filter(tags__in=tags).distinct()
         
-        if status:
-            queryset = queryset.filter(status=status)
-        
-        if session_id:
-            queryset = queryset.filter(session_id=session_id)
-        
-        return queryset.order_by('-submitted_date')
+        return queryset
 
     def get_context_data(self, **kwargs):
-        """Add filter form and session list to context"""
+        """Add filter form to context"""
         context = super().get_context_data(**kwargs)
-        context['sessions'] = Session.objects.filter(is_active=True).order_by('-scheduled_date')
+        context['filter_form'] = QuestionFilterForm(self.request.GET)
+        
+        # Get tag counts for word cloud (from all questions, not just filtered)
+        from .models import Tag
+        from django.db.models import Count
+        # Get all tags used in questions, with their counts
+        tag_counts = Tag.objects.filter(
+            questions__isnull=False,
+            is_active=True
+        ).annotate(
+            count=Count('questions', distinct=True)
+        ).order_by('-count', 'name')
+        context['tag_counts'] = tag_counts
+        
+        # Get currently selected tags from GET parameters
+        selected_tag_ids = []
+        if 'tags' in self.request.GET:
+            try:
+                selected_tag_ids = [int(tag_id) for tag_id in self.request.GET.getlist('tags')]
+            except (ValueError, TypeError):
+                pass
+        context['selected_tag_ids'] = selected_tag_ids
+        
         return context
 
 

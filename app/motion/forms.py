@@ -469,6 +469,43 @@ class MotionFilterForm(forms.Form):
     )
 
 
+class QuestionFilterForm(forms.Form):
+    """Form for filtering questions in the question list view"""
+    search = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Search by title, text, or group'
+        })
+    )
+    status = forms.ChoiceField(
+        choices=[('', 'All Statuses')] + Question.STATUS_CHOICES,
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+
+    session = forms.ModelChoiceField(
+        queryset=Session.objects.filter(is_active=True),
+        required=False,
+        empty_label="All Sessions",
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    
+    party = forms.ModelChoiceField(
+        queryset=Party.objects.filter(is_active=True),
+        required=False,
+        empty_label="All Parties",
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    
+    tags = forms.ModelMultipleChoiceField(
+        queryset=Tag.objects.filter(is_active=True),
+        required=False,
+        widget=forms.SelectMultiple(attrs={'class': 'form-select'}),
+        label=_('Tags')
+    )
+
+
 class MotionVoteForm(forms.ModelForm):
     """Form for recording party votes on motions"""
     
