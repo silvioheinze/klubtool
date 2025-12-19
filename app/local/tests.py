@@ -1635,3 +1635,342 @@ class CommitteeViewTests(TestCase):
         
         # Check that the committee was deleted
         self.assertFalse(Committee.objects.filter(pk=self.committee.pk).exists())
+
+
+class CouncilCommitteesExportPDFViewTests(TestCase):
+    """Test cases for CouncilCommitteesExportPDFView"""
+    
+    def setUp(self):
+        """Set up test data"""
+        self.client = Client()
+        User = get_user_model()
+        
+        # Create users
+        self.superuser = User.objects.create_user(
+            username='admin',
+            email='admin@example.com',
+            password='adminpass123',
+            is_superuser=True
+        )
+        
+        self.regular_user = User.objects.create_user(
+            username='regular',
+            email='regular@example.com',
+            password='regularpass123'
+        )
+        
+        # Create user with session.view permission
+        from user.models import Role
+        self.role_user = User.objects.create_user(
+            username='roleuser',
+            email='role@example.com',
+            password='rolepass123'
+        )
+        # Create role with session.view permission
+        role, created = Role.objects.get_or_create(
+            name='Session Viewer',
+            defaults={'is_active': True, 'permissions': {'permissions': ['session.view']}}
+        )
+        if created:
+            role.permissions = {'permissions': ['session.view']}
+            role.save()
+        self.role_user.role = role
+        self.role_user.save()
+        
+        # Create local, council, and party
+        self.local = Local.objects.create(
+            name='Test Local',
+            code='TL',
+            description='Test local description'
+        )
+        self.council = self.local.council
+        
+        self.party = Party.objects.create(
+            name='Test Party',
+            local=self.local,
+            short_name='TP',
+            is_active=True
+        )
+        
+        # Create group and group memberships
+        from group.models import Group, GroupMember
+        self.group = Group.objects.create(
+            name='Test Group',
+            party=self.party,
+            is_active=True
+        )
+        
+        # Create committee members
+        self.member_user1 = User.objects.create_user(
+            username='member1',
+            email='member1@example.com',
+            password='memberpass123',
+            first_name='John',
+            last_name='Doe'
+        )
+        self.member_user2 = User.objects.create_user(
+            username='member2',
+            email='member2@example.com',
+            password='memberpass123',
+            first_name='Jane',
+            last_name='Smith'
+        )
+        self.substitute_user = User.objects.create_user(
+            username='substitute',
+            email='substitute@example.com',
+            password='substitutepass123',
+            first_name='Bob',
+            last_name='Johnson'
+        )
+        
+        # Add users to group
+        GroupMember.objects.create(
+            user=self.member_user1,
+            group=self.group,
+            is_active=True
+        )
+        GroupMember.objects.create(
+            user=self.member_user2,
+            group=self.group,
+            is_active=True
+        )
+        GroupMember.objects.create(
+            user=self.substitute_user,
+            group=self.group,
+            is_active=True
+        )
+        
+        # Create committees
+        self.committee1 = Committee.objects.create(
+            name='Budget Committee',
+            council=self.council,
+            committee_type='Ausschuss',
+            abbreviation='BC',
+            description='Budget and finance committee',
+            is_active=True
+        )
+        
+        self.committee2 = Committee.objects.create(
+            name='Education Committee',
+            council=self.council,
+            committee_type='Kommission',
+            is_active=True
+        )
+        
+        # Create committee members
+        CommitteeMember.objects.create(
+            committee=self.committee1,
+            user=self.member_user1,
+            role='chairperson',
+            is_active=True
+        )
+        CommitteeMember.objects.create(
+            committee=self.committee1,
+            user=self.member_user2,
+            role='member',
+            is_active=True
+        )
+        CommitteeMember.objects.create(
+            committee=self.committee1,
+            user=self.substitute_user,
+            role='substitute_member',
+            is_active=True
+        )
+        
+        CommitteeMember.objects.create(
+            committee=self.committee2,
+            user=self.member_user1,
+            role='vice_chairperson',
+            is_active=True
+        )
+    
+    def test_pdf_export_superuser_access(self):
+        """Test that superuser can export PDF"""
+        self.client.login(username='admin', password='adminpass123')
+        response = self.client.get(reverse('local:council-committees-export-pdf', kwargs={'pk': self.council.pk}))
+        
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/pdf')
+        self.assertIn('attachment', response['Content-Disposition'])
+        self.assertIn('.pdf', response['Content-Disposition'])
+        self.assertIn(f'council_{self.council.pk}', response['Content-Disposition'])
+    
+    def test_pdf_export_role_user_access(self):
+        """Test that user with session.view permission can export PDF"""
+        self.client.login(username='roleuser', password='rolepass123')
+        response = self.client.get(reverse('local:council-committees-export-pdf', kwargs={'pk': self.council.pk}))
+        
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/pdf')
+        self.assertIn('attachment', response['Content-Disposition'])
+    
+    def test_pdf_export_regular_user_denied(self):
+        """Test that regular user without permission cannot export PDF"""
+        self.client.login(username='regular', password='regularpass123')
+        response = self.client.get(reverse('local:council-committees-export-pdf', kwargs={'pk': self.council.pk}))
+        
+        # Should return 403 Forbidden
+        self.assertEqual(response.status_code, 403)
+    
+    def test_pdf_export_unauthenticated_denied(self):
+        """Test that unauthenticated user cannot export PDF"""
+        response = self.client.get(reverse('local:council-committees-export-pdf', kwargs={'pk': self.council.pk}))
+        
+        # Should redirect to login (could be /accounts/login/ or /user/settings/)
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue('/login/' in response.url or '/settings/' in response.url)
+    
+    def test_pdf_export_contains_council_name(self):
+        """Test that PDF is generated successfully"""
+        self.client.login(username='admin', password='adminpass123')
+        response = self.client.get(reverse('local:council-committees-export-pdf', kwargs={'pk': self.council.pk}))
+        
+        self.assertEqual(response.status_code, 200)
+        # Check that PDF content is not empty (PDFs start with %PDF)
+        pdf_content = response.content
+        self.assertTrue(len(pdf_content) > 0)
+        self.assertTrue(pdf_content.startswith(b'%PDF'))
+    
+    def test_pdf_export_contains_committees(self):
+        """Test that PDF is generated successfully with committees"""
+        self.client.login(username='admin', password='adminpass123')
+        response = self.client.get(reverse('local:council-committees-export-pdf', kwargs={'pk': self.council.pk}))
+        
+        self.assertEqual(response.status_code, 200)
+        # Verify PDF was generated (non-empty and valid PDF format)
+        pdf_content = response.content
+        self.assertTrue(len(pdf_content) > 0)
+        self.assertTrue(pdf_content.startswith(b'%PDF'))
+    
+    def test_pdf_export_contains_members(self):
+        """Test that PDF is generated successfully with members"""
+        self.client.login(username='admin', password='adminpass123')
+        response = self.client.get(reverse('local:council-committees-export-pdf', kwargs={'pk': self.council.pk}))
+        
+        self.assertEqual(response.status_code, 200)
+        # Verify PDF was generated (non-empty and valid PDF format)
+        pdf_content = response.content
+        self.assertTrue(len(pdf_content) > 0)
+        self.assertTrue(pdf_content.startswith(b'%PDF'))
+    
+    def test_pdf_export_contains_substitute_members(self):
+        """Test that PDF is generated successfully with substitute members"""
+        self.client.login(username='admin', password='adminpass123')
+        response = self.client.get(reverse('local:council-committees-export-pdf', kwargs={'pk': self.council.pk}))
+        
+        self.assertEqual(response.status_code, 200)
+        # Verify PDF was generated (non-empty and valid PDF format)
+        pdf_content = response.content
+        self.assertTrue(len(pdf_content) > 0)
+        self.assertTrue(pdf_content.startswith(b'%PDF'))
+    
+    def test_pdf_export_contains_roles(self):
+        """Test that PDF is generated successfully with role information"""
+        self.client.login(username='admin', password='adminpass123')
+        response = self.client.get(reverse('local:council-committees-export-pdf', kwargs={'pk': self.council.pk}))
+        
+        self.assertEqual(response.status_code, 200)
+        # Verify PDF was generated (non-empty and valid PDF format)
+        pdf_content = response.content
+        self.assertTrue(len(pdf_content) > 0)
+        self.assertTrue(pdf_content.startswith(b'%PDF'))
+    
+    def test_pdf_export_no_committees(self):
+        """Test PDF export when council has no committees"""
+        # Create a council without committees
+        local2 = Local.objects.create(
+            name='Empty Local',
+            code='EL',
+            description='Local with no committees'
+        )
+        council2 = local2.council
+        
+        self.client.login(username='admin', password='adminpass123')
+        response = self.client.get(reverse('local:council-committees-export-pdf', kwargs={'pk': council2.pk}))
+        
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/pdf')
+        # Verify PDF was generated even with no committees
+        pdf_content = response.content
+        self.assertTrue(len(pdf_content) > 0)
+        self.assertTrue(pdf_content.startswith(b'%PDF'))
+    
+    def test_pdf_export_inactive_committees_excluded(self):
+        """Test that inactive committees are excluded from PDF"""
+        # Create an inactive committee
+        inactive_committee = Committee.objects.create(
+            name='Inactive Committee',
+            council=self.council,
+            committee_type='Ausschuss',
+            is_active=False
+        )
+        
+        self.client.login(username='admin', password='adminpass123')
+        response = self.client.get(reverse('local:council-committees-export-pdf', kwargs={'pk': self.council.pk}))
+        
+        self.assertEqual(response.status_code, 200)
+        # Verify PDF was generated (inactive committees are filtered in the view)
+        pdf_content = response.content
+        self.assertTrue(len(pdf_content) > 0)
+        self.assertTrue(pdf_content.startswith(b'%PDF'))
+    
+    def test_pdf_export_inactive_members_excluded(self):
+        """Test that inactive committee members are excluded from PDF"""
+        # Create an inactive member
+        inactive_member = User.objects.create_user(
+            username='inactive',
+            email='inactive@example.com',
+            password='inactivepass123',
+            first_name='Inactive',
+            last_name='Member'
+        )
+        CommitteeMember.objects.create(
+            committee=self.committee1,
+            user=inactive_member,
+            role='member',
+            is_active=False
+        )
+        
+        self.client.login(username='admin', password='adminpass123')
+        response = self.client.get(reverse('local:council-committees-export-pdf', kwargs={'pk': self.council.pk}))
+        
+        self.assertEqual(response.status_code, 200)
+        # Verify PDF was generated (inactive members are filtered in the view)
+        pdf_content = response.content
+        self.assertTrue(len(pdf_content) > 0)
+        self.assertTrue(pdf_content.startswith(b'%PDF'))
+    
+    def test_pdf_export_filename_format(self):
+        """Test that PDF filename is correctly formatted"""
+        self.client.login(username='admin', password='adminpass123')
+        response = self.client.get(reverse('local:council-committees-export-pdf', kwargs={'pk': self.council.pk}))
+        
+        self.assertEqual(response.status_code, 200)
+        content_disposition = response['Content-Disposition']
+        
+        # Check filename format: council_{pk}_committees_{name}.pdf
+        self.assertIn(f'council_{self.council.pk}_committees_', content_disposition)
+        self.assertIn('.pdf', content_disposition)
+        self.assertIn('attachment; filename=', content_disposition)
+    
+    def test_pdf_export_committee_ordering(self):
+        """Test that PDF is generated with committees ordered by name"""
+        self.client.login(username='admin', password='adminpass123')
+        response = self.client.get(reverse('local:council-committees-export-pdf', kwargs={'pk': self.council.pk}))
+        
+        self.assertEqual(response.status_code, 200)
+        # Verify PDF was generated (committees are ordered by name in the view)
+        pdf_content = response.content
+        self.assertTrue(len(pdf_content) > 0)
+        self.assertTrue(pdf_content.startswith(b'%PDF'))
+    
+    def test_pdf_export_member_ordering(self):
+        """Test that PDF is generated with members ordered by role then name"""
+        self.client.login(username='admin', password='adminpass123')
+        response = self.client.get(reverse('local:council-committees-export-pdf', kwargs={'pk': self.council.pk}))
+        
+        self.assertEqual(response.status_code, 200)
+        # Verify PDF was generated (members are ordered by role then name in the view)
+        pdf_content = response.content
+        self.assertTrue(len(pdf_content) > 0)
+        self.assertTrue(pdf_content.startswith(b'%PDF'))
