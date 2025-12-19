@@ -146,6 +146,23 @@
                             </div>
                         </div>
 
+                        <div class="mb-3">
+                            <label for="{{ form.tags.id_for_label }}" class="form-label">
+                                {% trans "Tags" %}
+                            </label>
+                            {{ form.tags }}
+                            {% if form.tags.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.tags.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">
+                                {% trans "Select tags to categorize this question (optional)" %}
+                            </div>
+                        </div>
+
                         <!-- Form Actions -->
                         <div class="d-flex justify-content-between mt-4">
                             {% if object %}

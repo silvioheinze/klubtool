@@ -1,11 +1,74 @@
 from django import forms
 from django.contrib.auth import get_user_model
 from django.forms import BaseFormSet, formset_factory
-from .models import Motion, MotionVote, MotionComment, MotionAttachment, MotionStatus, MotionGroupDecision, Question, QuestionStatus, QuestionAttachment
+from django.utils.text import slugify
+from .models import Motion, MotionVote, MotionComment, MotionAttachment, MotionStatus, MotionGroupDecision, Question, QuestionStatus, QuestionAttachment, Tag
 from local.models import Session, Party, Committee
 from group.models import Group, GroupMember
 
 User = get_user_model()
+
+
+class TagsField(forms.CharField):
+    """Custom field for tags that accepts comma-separated text and creates new tags"""
+    
+    def __init__(self, *args, **kwargs):
+        # Remove ManyToManyField-specific kwargs that CharField doesn't accept
+        kwargs.pop('queryset', None)
+        kwargs.pop('limit_choices_to', None)
+        kwargs.pop('to_field_name', None)
+        
+        kwargs.setdefault('widget', forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Enter tags separated by commas (e.g., environment, budget, housing)'
+        }))
+        kwargs.setdefault('required', False)
+        super().__init__(*args, **kwargs)
+    
+    def to_python(self, value):
+        """Convert comma-separated string to list of tag names"""
+        if not value:
+            return []
+        # Split by comma, strip whitespace, and filter out empty strings
+        tag_names = [name.strip() for name in str(value).split(',') if name.strip()]
+        return tag_names
+    
+    def prepare_value(self, value):
+        """Convert list of tag objects to comma-separated string for display"""
+        if not value:
+            return ''
+        if isinstance(value, str):
+            return value
+        # If it's a queryset or list of Tag objects, get their names
+        if hasattr(value, 'all'):
+            # It's a queryset
+            return ', '.join([tag.name for tag in value.all()])
+        elif isinstance(value, list):
+            # It's a list - could be Tag objects or strings
+            if value and hasattr(value[0], 'name'):
+                return ', '.join([tag.name for tag in value])
+            else:
+                return ', '.join(value)
+        return ''
+    
+    def clean(self, value):
+        """Validate and return list of tag names"""
+        # First convert to list of tag names
+        tag_names = self.to_python(value)
+        if not tag_names:
+            return []
+        # Validate tag names (no special characters except spaces, hyphens, underscores)
+        import re
+        for tag_name in tag_names:
+            if not re.match(r'^[a-zA-Z0-9\s\-_äöüÄÖÜß]+$', tag_name):
+                raise forms.ValidationError(
+                    f'Tag "{tag_name}" contains invalid characters. Tags can only contain letters, numbers, spaces, hyphens, and underscores.'
+                )
+            if len(tag_name) > 50:
+                raise forms.ValidationError(
+                    f'Tag "{tag_name}" is too long. Maximum length is 50 characters.'
+                )
+        return tag_names
 
 
 class MotionForm(forms.ModelForm):
@@ -15,7 +78,7 @@ class MotionForm(forms.ModelForm):
         model = Motion
         fields = [
             'title', 'text', 'rationale', 'motion_type', 'status',
-            'session', 'committee', 'group', 'parties', 'interventions'
+            'session', 'committee', 'group', 'parties', 'interventions', 'tags'
         ]
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control'}),
@@ -29,6 +92,9 @@ class MotionForm(forms.ModelForm):
             'parties': forms.SelectMultiple(attrs={'class': 'form-select'}),
             'interventions': forms.SelectMultiple(attrs={'class': 'form-select'}),
         }
+        field_classes = {
+            'tags': TagsField,
+        }
     
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop('user', None)
@@ -40,6 +106,12 @@ class MotionForm(forms.ModelForm):
         self.fields['parties'].queryset = Party.objects.filter(is_active=True)
         # Filter committees to only show active ones
         self.fields['committee'].queryset = Committee.objects.filter(is_active=True)
+        # Replace tags field with custom TagsField
+        self.fields['tags'] = TagsField()
+        
+        # Set initial value if editing existing motion
+        if self.instance and self.instance.pk:
+            self.fields['tags'].initial = ', '.join([tag.name for tag in self.instance.tags.all()])
         
         # Set status to draft automatically
         self.fields['status'].initial = 'draft'
@@ -98,6 +170,27 @@ class MotionForm(forms.ModelForm):
             # No group set yet - show no users
             self.fields['interventions'].queryset = User.objects.none()
     
+    def clean_tags(self):
+        """Handle tag creation and return tag objects"""
+        tag_names = self.cleaned_data.get('tags', [])
+        if not tag_names:
+            return []
+        
+        tag_objects = []
+        for tag_name in tag_names:
+            # Try to get existing tag by name (case-insensitive)
+            tag = Tag.objects.filter(name__iexact=tag_name, is_active=True).first()
+            if not tag:
+                # Create new tag
+                tag = Tag.objects.create(
+                    name=tag_name,
+                    slug=slugify(tag_name),
+                    is_active=True
+                )
+            tag_objects.append(tag)
+        
+        return tag_objects
+    
     def clean(self):
         cleaned_data = super().clean()
         session = cleaned_data.get('session')
@@ -138,6 +231,25 @@ class MotionForm(forms.ModelForm):
                 )
         
         return cleaned_data
+    
+    def save(self, commit=True):
+        """Override save to handle tags after instance is saved"""
+        instance = super().save(commit=False)
+        if commit:
+            instance.save()
+            # Save many-to-many relationships
+            self.save_m2m()
+        
+        # Handle tags separately since they need to be created/retrieved
+        if 'tags' in self.cleaned_data:
+            tag_objects = self.cleaned_data['tags']
+            if commit:
+                instance.tags.set(tag_objects)
+            else:
+                # Store for later
+                instance._tags_to_set = tag_objects
+        
+        return instance
 
 
 class QuestionForm(forms.ModelForm):
@@ -147,7 +259,7 @@ class QuestionForm(forms.ModelForm):
         model = Question
         fields = [
             'title', 'text', 'answer', 'status',
-            'session', 'group', 'parties', 'interventions'
+            'session', 'group', 'parties', 'interventions', 'tags'
         ]
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control'}),
@@ -168,6 +280,12 @@ class QuestionForm(forms.ModelForm):
         self.fields['session'].queryset = Session.objects.filter(is_active=True)
         # Filter parties to only show active ones
         self.fields['parties'].queryset = Party.objects.filter(is_active=True)
+        # Replace tags field with custom TagsField
+        self.fields['tags'] = TagsField()
+        
+        # Set initial value if editing existing question
+        if self.instance and self.instance.pk:
+            self.fields['tags'].initial = ', '.join([tag.name for tag in self.instance.tags.all()])
         
         # Set status to draft automatically
         self.fields['status'].initial = 'draft'
@@ -226,6 +344,27 @@ class QuestionForm(forms.ModelForm):
             # No group set yet - show no users
             self.fields['interventions'].queryset = User.objects.none()
     
+    def clean_tags(self):
+        """Handle tag creation and return tag objects"""
+        tag_names = self.cleaned_data.get('tags', [])
+        if not tag_names:
+            return []
+        
+        tag_objects = []
+        for tag_name in tag_names:
+            # Try to get existing tag by name (case-insensitive)
+            tag = Tag.objects.filter(name__iexact=tag_name, is_active=True).first()
+            if not tag:
+                # Create new tag
+                tag = Tag.objects.create(
+                    name=tag_name,
+                    slug=slugify(tag_name),
+                    is_active=True
+                )
+            tag_objects.append(tag)
+        
+        return tag_objects
+    
     def clean(self):
         cleaned_data = super().clean()
         session = cleaned_data.get('session')
@@ -266,6 +405,25 @@ class QuestionForm(forms.ModelForm):
                 )
         
         return cleaned_data
+    
+    def save(self, commit=True):
+        """Override save to handle tags after instance is saved"""
+        instance = super().save(commit=False)
+        if commit:
+            instance.save()
+            # Save many-to-many relationships
+            self.save_m2m()
+        
+        # Handle tags separately since they need to be created/retrieved
+        if 'tags' in self.cleaned_data:
+            tag_objects = self.cleaned_data['tags']
+            if commit:
+                instance.tags.set(tag_objects)
+            else:
+                # Store for later
+                instance._tags_to_set = tag_objects
+        
+        return instance
 
 
 class MotionFilterForm(forms.Form):

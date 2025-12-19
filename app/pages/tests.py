@@ -153,9 +153,8 @@ class HomepageTests(TestCase):
         # Check that statistics section appears
         self.assertContains(response, 'Motion Statistics')
         self.assertContains(response, 'motionStatusChart')
-        self.assertContains(response, 'motionTypeChart')
+        self.assertContains(response, 'motionSessionChart')
         self.assertContains(response, 'Total Motions')
-        self.assertContains(response, 'Recent (30 days)')
     
     def test_homepage_motion_statistics_context(self):
         """Test that motion statistics are included in context"""
@@ -198,7 +197,9 @@ class HomepageTests(TestCase):
         self.assertIn('motion_status_stats', response.context)
         self.assertIn('motion_type_stats', response.context)
         self.assertIn('motion_status_chart_data', response.context)
-        self.assertIn('motion_type_chart_data', response.context)
+        self.assertIn('session_chart_labels', response.context)
+        self.assertIn('session_chart_datasets', response.context)
+        self.assertIn('motion_type_labels', response.context)
         
         # Verify counts
         self.assertEqual(response.context['total_motions'], 3)

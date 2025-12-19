@@ -48,6 +48,15 @@
                                 <dd class="col-sm-8">
                                     <span class="badge bg-secondary">{{ motion.get_motion_type_display }}</span>
                                 </dd>
+                                
+                                {% if motion.tags.exists %}
+                                    <dt class="col-sm-4">{% trans "Tags" %}</dt>
+                                    <dd class="col-sm-8">
+                                        {% for tag in motion.tags.all %}
+                                            <span class="badge" style="background-color: {{ tag.color }};">{{ tag.name }}</span>
+                                        {% endfor %}
+                                    </dd>
+                                {% endif %}
                             </dl>
                         </div>
                         <div class="col-md-6">
