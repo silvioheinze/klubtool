@@ -1,5 +1,28 @@
 from django.contrib import admin
-from .models import Motion, MotionVote, MotionComment, MotionAttachment, MotionStatus, Question, QuestionStatus, QuestionAttachment
+from .models import Tag, Motion, MotionVote, MotionComment, MotionAttachment, MotionStatus, Question, QuestionStatus, QuestionAttachment
+
+
+@admin.register(Tag)
+class TagAdmin(admin.ModelAdmin):
+    """Admin configuration for Tag model"""
+    list_display = ['name', 'slug', 'color', 'is_active', 'created_at']
+    list_filter = ['is_active', 'created_at']
+    search_fields = ['name', 'description']
+    readonly_fields = ['slug', 'created_at', 'updated_at']
+    prepopulated_fields = {'slug': ('name',)}
+    
+    fieldsets = (
+        ('Basic Information', {
+            'fields': ('name', 'slug', 'color', 'description')
+        }),
+        ('Status', {
+            'fields': ('is_active',)
+        }),
+        ('Timestamps', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
 
 
 @admin.register(Motion)
@@ -10,12 +33,12 @@ class MotionAdmin(admin.ModelAdmin):
         'submitted_by', 'submitted_date', 'supporting_parties_count'
     ]
     list_filter = [
-        'motion_type', 'status', 'group__party__local', 
+        'motion_type', 'status', 'tags', 'group__party__local', 
         'session__council', 'submitted_date', 'is_active'
     ]
     search_fields = ['title', 'description', 'group__name', 'submitted_by__username']
     readonly_fields = ['submitted_date', 'last_modified', 'created_at', 'updated_at']
-    filter_horizontal = ['parties']
+    filter_horizontal = ['parties', 'tags']
     date_hierarchy = 'submitted_date'
     
     fieldsets = (
@@ -23,7 +46,7 @@ class MotionAdmin(admin.ModelAdmin):
             'fields': ('title', 'description', 'motion_type', 'status')
         }),
         ('Relationships', {
-            'fields': ('session', 'group', 'parties')
+            'fields': ('session', 'group', 'parties', 'tags')
         }),
 
         ('Metadata', {
@@ -169,12 +192,12 @@ class QuestionAdmin(admin.ModelAdmin):
         'submitted_by', 'submitted_date', 'supporting_parties_count'
     ]
     list_filter = [
-        'status', 'group__party__local', 
+        'status', 'tags', 'group__party__local', 
         'session__council', 'submitted_date', 'is_active'
     ]
     search_fields = ['title', 'text', 'answer', 'group__name', 'submitted_by__username']
     readonly_fields = ['submitted_date', 'last_modified', 'created_at', 'updated_at']
-    filter_horizontal = ['parties', 'interventions']
+    filter_horizontal = ['parties', 'interventions', 'tags']
     date_hierarchy = 'submitted_date'
     
     fieldsets = (

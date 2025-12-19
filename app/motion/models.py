@@ -8,6 +8,32 @@ from group.models import Group
 User = get_user_model()
 
 
+class Tag(models.Model):
+    """Model representing a tag for categorizing motions and questions"""
+    name = models.CharField(max_length=50, unique=True, help_text="Name of the tag")
+    slug = models.SlugField(max_length=50, unique=True, help_text="URL-friendly version of the tag name")
+    color = models.CharField(max_length=7, default='#007bff', help_text="Color code for the tag (hex format)")
+    description = models.TextField(blank=True, help_text="Description of the tag")
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['name']
+        verbose_name = "Tag"
+        verbose_name_plural = "Tags"
+    
+    def __str__(self):
+        return self.name
+    
+    def save(self, *args, **kwargs):
+        """Auto-generate slug from name if not provided"""
+        from django.utils.text import slugify
+        if not self.slug:
+            self.slug = slugify(self.name)
+        super().save(*args, **kwargs)
+
+
 class Motion(models.Model):
     """Model representing a motion in a council session"""
     
@@ -41,6 +67,7 @@ class Motion(models.Model):
     group = models.ForeignKey(Group, on_delete=models.CASCADE, related_name='motions', help_text="Group proposing this motion")
     parties = models.ManyToManyField(Party, related_name='motions', blank=True, help_text="Parties supporting this motion")
     interventions = models.ManyToManyField(User, related_name='motion_interventions', blank=True, help_text=_("Wortmeldung: Users from the corresponding group who can speak in session"))
+    tags = models.ManyToManyField('Tag', related_name='motions', blank=True, help_text="Tags for categorizing this motion")
     
 
     
@@ -310,6 +337,7 @@ class Question(models.Model):
     group = models.ForeignKey(Group, on_delete=models.CASCADE, related_name='questions', help_text="Group asking this question")
     parties = models.ManyToManyField(Party, related_name='questions', blank=True, help_text="Parties supporting this question")
     interventions = models.ManyToManyField(User, related_name='question_interventions', blank=True, help_text=_("Wortmeldung: Users from the corresponding group who can speak in session"))
+    tags = models.ManyToManyField('Tag', related_name='questions', blank=True, help_text="Tags for categorizing this question")
     
     # Metadata
     submitted_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='submitted_questions')
@@ -449,6 +477,7 @@ class QuestionAttachment(models.Model):
 
 
 # Register models for audit logging
+auditlog.register(Tag)
 auditlog.register(Motion)
 auditlog.register(MotionVote)
 auditlog.register(MotionComment)
