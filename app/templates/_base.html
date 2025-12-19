@@ -110,16 +110,24 @@
                                     </a>
                                 </li>
                                 <li>
-                                    <a class="dropdown-item" href="{% url 'user-list' %}">{% trans "User Management" %}</a>
+                                    <a class="dropdown-item" href="{% url 'user-list' %}">
+                                        <i class="bi bi-person-gear me-2"></i>{% trans "User Management" %}
+                                    </a>
                                 </li>
                                 <li>
-                                    <a class="dropdown-item" href="{% url 'local:local-list' %}">{% trans "Local Management" %}</a>
+                                    <a class="dropdown-item" href="{% url 'local:local-list' %}">
+                                        <i class="bi bi-geo-alt me-2"></i>{% trans "Local Management" %}
+                                    </a>
                                 </li>
                                 <li>
-                                    <a class="dropdown-item" href="{% url 'local:council-list' %}">{% trans "Council Management" %}</a>
+                                    <a class="dropdown-item" href="{% url 'local:council-list' %}">
+                                        <i class="bi bi-building me-2"></i>{% trans "Council Management" %}
+                                    </a>
                                 </li>
                                 <li>
-                                    <a class="dropdown-item" href="{% url 'group:group-list' %}">{% trans "Group Management" %}</a>
+                                    <a class="dropdown-item" href="{% url 'group:group-list' %}">
+                                        <i class="bi bi-people me-2"></i>{% trans "Group Management" %}
+                                    </a>
                                 </li>
                                 {% endif %}
                                 <li><hr class="dropdown-divider"></li>
