@@ -16,7 +16,7 @@
             <p class="text-muted">{{ question.title }}</p>
         </div>
         <div>
-            <a href="{% url 'motion:question-detail' question.pk %}" class="btn btn-outline-secondary">
+            <a href="{% url 'question:question-detail' question.pk %}" class="btn btn-outline-secondary">
                 <i class="bi bi-arrow-left"></i> {% trans "Back to Question" %}
             </a>
         </div>
@@ -101,7 +101,7 @@
                         </div>
 
                         <div class="d-flex justify-content-between">
-                            <a href="{% url 'motion:question-detail' question.pk %}" class="btn btn-outline-secondary">
+                            <a href="{% url 'question:question-detail' question.pk %}" class="btn btn-outline-secondary">
                                 <i class="bi bi-x"></i> {% trans "Cancel" %}
                             </a>
                             <button type="submit" class="btn btn-primary">
@@ -182,7 +182,7 @@
                         </div>
                         {% if question.status_history.count > 5 %}
                             <div class="text-center mt-3">
-                                <a href="{% url 'motion:question-detail' question.pk %}" class="btn btn-sm btn-outline-primary">
+                                <a href="{% url 'question:question-detail' question.pk %}" class="btn btn-sm btn-outline-primary">
                                     {% trans "View all status history" %}
                                 </a>
                             </div>

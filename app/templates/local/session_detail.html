@@ -197,7 +197,7 @@
                     <h5 class="mb-0">
                         <i class="bi bi-question-circle"></i> {% trans "Session Questions" %}
                     </h5>
-                    <a href="{% url 'motion:question-create' %}?session={{ session.pk }}" class="btn btn-sm btn-primary">
+                    <a href="{% url 'question:question-create' %}?session={{ session.pk }}" class="btn btn-sm btn-primary">
                         <i class="bi bi-plus-circle"></i> {% trans "Add" %}
                     </a>
                 </div>
@@ -230,7 +230,7 @@
                                                 {% endif %}
                                             </td>
                                             <td>
-                                                <a href="{% url 'motion:question-detail' question.pk %}">
+                                                <a href="{% url 'question:question-detail' question.pk %}">
                                                     {{ question.title }}
                                                 </a>
                                                 {% if not question.is_active %}
@@ -279,7 +279,7 @@
                         <div class="text-center py-4">
                             <i class="bi bi-question-circle text-muted" style="font-size: 3rem;"></i>
                             <p class="text-muted mt-2">{% trans "No questions have been submitted for this session yet." %}</p>
-                            <a href="{% url 'motion:question-create' %}?session={{ session.pk }}" class="btn btn-primary">
+                            <a href="{% url 'question:question-create' %}?session={{ session.pk }}" class="btn btn-primary">
                                 <i class="bi bi-plus-circle"></i> {% trans "Create First Question" %}
                             </a>
                         </div>

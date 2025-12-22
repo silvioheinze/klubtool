@@ -11,7 +11,7 @@
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h1><i class="bi bi-exclamation-triangle"></i> {% trans "Delete Question" %}</h1>
                 <div>
-                    <a href="{% url 'motion:question-detail' object.pk %}" class="btn btn-secondary">
+                    <a href="{% url 'question:question-detail' object.pk %}" class="btn btn-secondary">
                         <i class="bi bi-arrow-left"></i> {% trans "Back to Question" %}
                     </a>
                 </div>
@@ -88,7 +88,7 @@
                     <form method="post" class="mt-4">
                         {% csrf_token %}
                         <div class="d-flex justify-content-between">
-                            <a href="{% url 'motion:question-detail' object.pk %}" class="btn btn-secondary">
+                            <a href="{% url 'question:question-detail' object.pk %}" class="btn btn-secondary">
                                 <i class="bi bi-x-circle"></i> {% trans "Cancel" %}
                             </a>
                             <button type="submit" class="btn btn-danger">
@@ -107,10 +107,10 @@
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
-                        <a href="{% url 'motion:question-detail' object.pk %}" class="btn btn-outline-info">
+                        <a href="{% url 'question:question-detail' object.pk %}" class="btn btn-outline-info">
                             <i class="bi bi-eye"></i> {% trans "View Question" %}
                         </a>
-                        <a href="{% url 'motion:question-edit' object.pk %}" class="btn btn-outline-primary">
+                        <a href="{% url 'question:question-edit' object.pk %}" class="btn btn-outline-primary">
                             <i class="bi bi-pencil"></i> {% trans "Edit Question" %}
                         </a>
                         {% if object.session %}

@@ -339,79 +339,79 @@ class QuestionAccessTests(AccessControlTestCase):
     def test_question_list_view_superuser_access(self):
         """Test that superuser can view question list"""
         self.client.login(username='admin', password='adminpass123')
-        response = self.client.get(reverse('motion:question-list'))
+        response = self.client.get(reverse('question:question-list'))
         self.assertEqual(response.status_code, 200)
     
     def test_question_list_view_regular_user_denied(self):
         """Test that regular user without permission cannot view question list"""
         self.client.login(username='regular', password='regularpass123')
-        response = self.client.get(reverse('motion:question-list'))
+        response = self.client.get(reverse('question:question-list'))
         self.assertEqual(response.status_code, 403)
     
     def test_question_list_view_role_user_with_permission_access(self):
         """Test that user with motion.view permission can view question list"""
         self.client.login(username='editor', password='editorpass123')
-        response = self.client.get(reverse('motion:question-list'))
+        response = self.client.get(reverse('question:question-list'))
         self.assertEqual(response.status_code, 200)
     
     def test_question_detail_view_superuser_access(self):
         """Test that superuser can view question detail"""
         self.client.login(username='admin', password='adminpass123')
-        response = self.client.get(reverse('motion:question-detail', kwargs={'pk': self.question.pk}))
+        response = self.client.get(reverse('question:question-detail', kwargs={'pk': self.question.pk}))
         self.assertEqual(response.status_code, 200)
     
     def test_question_detail_view_regular_user_denied(self):
         """Test that regular user without permission cannot view question detail"""
         self.client.login(username='regular', password='regularpass123')
-        response = self.client.get(reverse('motion:question-detail', kwargs={'pk': self.question.pk}))
+        response = self.client.get(reverse('question:question-detail', kwargs={'pk': self.question.pk}))
         self.assertEqual(response.status_code, 403)
     
     def test_question_detail_view_role_user_with_permission_access(self):
         """Test that user with motion.view permission can view question detail"""
         self.client.login(username='editor', password='editorpass123')
-        response = self.client.get(reverse('motion:question-detail', kwargs={'pk': self.question.pk}))
+        response = self.client.get(reverse('question:question-detail', kwargs={'pk': self.question.pk}))
         self.assertEqual(response.status_code, 200)
     
     def test_question_create_view_superuser_access(self):
         """Test that superuser can create questions"""
         self.client.login(username='admin', password='adminpass123')
-        response = self.client.get(reverse('motion:question-create'))
+        response = self.client.get(reverse('question:question-create'))
         self.assertEqual(response.status_code, 200)
     
     def test_question_create_view_regular_user_denied(self):
         """Test that regular user without permission cannot create questions"""
         self.client.login(username='regular', password='regularpass123')
-        response = self.client.get(reverse('motion:question-create'))
+        response = self.client.get(reverse('question:question-create'))
         self.assertEqual(response.status_code, 403)
     
     def test_question_create_view_role_user_with_permission_access(self):
         """Test that user with motion.create permission can create questions"""
         self.client.login(username='editor', password='editorpass123')
-        response = self.client.get(reverse('motion:question-create'))
+        response = self.client.get(reverse('question:question-create'))
         self.assertEqual(response.status_code, 200)
     
     def test_question_edit_view_superuser_access(self):
         """Test that superuser can edit questions"""
         self.client.login(username='admin', password='adminpass123')
-        response = self.client.get(reverse('motion:question-edit', kwargs={'pk': self.question.pk}))
+        response = self.client.get(reverse('question:question-edit', kwargs={'pk': self.question.pk}))
         self.assertEqual(response.status_code, 200)
     
     def test_question_edit_view_regular_user_denied(self):
         """Test that regular user without permission cannot edit questions"""
         self.client.login(username='regular', password='regularpass123')
-        response = self.client.get(reverse('motion:question-edit', kwargs={'pk': self.question.pk}))
+        response = self.client.get(reverse('question:question-edit', kwargs={'pk': self.question.pk}))
         self.assertEqual(response.status_code, 403)
     
     def test_question_edit_view_role_user_with_permission_access(self):
         """Test that user with motion.edit permission can edit questions"""
         self.client.login(username='editor', password='editorpass123')
-        response = self.client.get(reverse('motion:question-edit', kwargs={'pk': self.question.pk}))
+        response = self.client.get(reverse('question:question-edit', kwargs={'pk': self.question.pk}))
         self.assertEqual(response.status_code, 200)
     
     def test_question_delete_view_superuser_access(self):
         """Test that superuser can delete questions"""
         self.client.login(username='admin', password='adminpass123')
-        response = self.client.get(reverse('motion:question-delete', kwargs={'pk': self.question.pk}))
+        response = self.client.get(reverse('question:question-delete', kwargs={'pk': self.question.pk}))
         self.assertEqual(response.status_code, 200)
     
     def test_question_delete_view_regular_user_denied(self):
@@ -423,7 +423,7 @@ class QuestionAccessTests(AccessControlTestCase):
             password='otherpass123'
         )
         self.client.login(username='other', password='otherpass123')
-        response = self.client.get(reverse('motion:question-delete', kwargs={'pk': self.question.pk}))
+        response = self.client.get(reverse('question:question-delete', kwargs={'pk': self.question.pk}))
         self.assertEqual(response.status_code, 403)
 
 

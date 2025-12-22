@@ -18,12 +18,12 @@
         <div>
             <div class="btn-group" role="group">
                 {% if question.can_be_edited %}
-                    <a href="{% url 'motion:question-edit' question.pk %}" class="btn btn-primary">
+                    <a href="{% url 'question:question-edit' question.pk %}" class="btn btn-primary">
                         <i class="bi bi-pencil"></i> {% trans "Edit" %}
                     </a>
                 {% endif %}
                 {% if user.is_superuser or question.submitted_by == user %}
-                    <a href="{% url 'motion:question-delete' question.pk %}" class="btn btn-outline-danger">
+                    <a href="{% url 'question:question-delete' question.pk %}" class="btn btn-outline-danger">
                         <i class="bi bi-trash"></i> {% trans "Delete" %}
                     </a>
                 {% endif %}
@@ -32,7 +32,7 @@
                         <i class="bi bi-arrow-left"></i> {% trans "Back to Session" %}
                     </a>
                 {% else %}
-                    <a href="{% url 'motion:question-list' %}" class="btn btn-outline-secondary">
+                    <a href="{% url 'question:question-list' %}" class="btn btn-outline-secondary">
                         <i class="bi bi-arrow-left"></i> {% trans "Back to Questions" %}
                     </a>
                 {% endif %}
@@ -158,7 +158,7 @@
             <div class="card mt-3">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">{% trans "Files" %}</h5>
-                    <a href="{% url 'motion:question-attach' question.pk %}" class="btn btn-sm btn-primary">
+                    <a href="{% url 'question:question-attach' question.pk %}" class="btn btn-sm btn-primary">
                         <i class="bi bi-upload"></i> {% trans "Upload File" %}
                     </a>
                 </div>
@@ -235,7 +235,7 @@
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">{% trans "Status History" %}</h5>
                     {% if can_change_status %}
-                        <a href="{% url 'motion:question-status-change' question.pk %}" class="btn btn-sm btn-primary">
+                        <a href="{% url 'question:question-status-change' question.pk %}" class="btn btn-sm btn-primary">
                             <i class="bi bi-plus-circle"></i> {% trans "Change Status" %}
                         </a>
                     {% endif %}
@@ -287,7 +287,7 @@
                                                 <div class="d-flex align-items-center gap-2">
                                                     <small class="text-muted">{{ status_entry.changed_at|date:"d.m.Y H:i" }}</small>
                                                     {% if user.is_superuser %}
-                                                        <a href="{% url 'motion:question-status-delete' question.pk status_entry.pk %}" 
+                                                        <a href="{% url 'question:question-status-delete' question.pk status_entry.pk %}" 
                                                            class="btn btn-sm btn-outline-danger" 
                                                            title="{% trans 'Delete status entry' %}">
                                                             <i class="bi bi-x"></i>
