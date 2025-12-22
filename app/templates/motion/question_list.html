@@ -152,7 +152,6 @@
                                         <th>{% trans "Parties" %}</th>
                                         <th>{% trans "Status" %}</th>
                                         <th>{% trans "Session" %}</th>
-                                        <th>{% trans "Group" %}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -201,15 +200,6 @@
                                                     <br><small class="text-muted">{{ question.session.scheduled_date|date:"M d, Y" }}</small>
                                                 {% else %}
                                                     <span class="text-muted">{% trans "No session" %}</span>
-                                                {% endif %}
-                                            </td>
-                                            <td>
-                                                {% if question.group %}
-                                                    <a href="{% url 'group:group-detail' question.group.pk %}">
-                                                        {{ question.group.name }}
-                                                    </a>
-                                                {% else %}
-                                                    <span class="text-muted">{% trans "Not assigned" %}</span>
                                                 {% endif %}
                                             </td>
                                         </tr>
