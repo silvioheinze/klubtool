@@ -1,5 +1,6 @@
 {% extends "_base.html" %}
 {% load i18n %}
+{% load static %}
 
 {% block title %}Home - Klubtool{% endblock %}
 
@@ -189,7 +190,7 @@
 
 {% if user.is_authenticated and total_motions > 0 %}
     <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="{% static 'js/chart.umd.min.js' %}"></script>
     <script>
         // Motion Status Chart
         const statusCtx = document.getElementById('motionStatusChart');
