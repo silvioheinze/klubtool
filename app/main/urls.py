@@ -42,7 +42,8 @@ urlpatterns = [
     path('accounts/logout/', redirect_to_user_logout, name='account_logout_redirect'),
     path('local/', include('local.urls')),
     path('group/', include('group.urls')),
-    path('motion/', include('motion.urls')), # Added
+    path('motions/', include('motion.urls')),
+    path('questions/', include('motion.question_urls')),
 ]
 
 # Serve static and media files during development

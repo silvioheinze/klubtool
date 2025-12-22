@@ -20,14 +20,4 @@ urlpatterns = [
     path('<int:pk>/group-decision/', views.motion_group_decision_view, name='motion-group-decision'),
     path('<int:motion_pk>/group-decision/<int:decision_pk>/delete/', views.motion_group_decision_delete_view, name='motion-group-decision-delete'),
     path('<int:pk>/export-pdf/', views.MotionExportPDFView.as_view(), name='motion-export-pdf'),
-    
-    # Question CRUD URLs
-    path('questions/', views.QuestionListView.as_view(), name='question-list'),
-    path('questions/create/', views.QuestionCreateView.as_view(), name='question-create'),
-    path('questions/<int:pk>/', views.QuestionDetailView.as_view(), name='question-detail'),
-    path('questions/<int:pk>/edit/', views.QuestionUpdateView.as_view(), name='question-edit'),
-    path('questions/<int:pk>/delete/', views.QuestionDeleteView.as_view(), name='question-delete'),
-    path('questions/<int:pk>/attach/', views.question_attachment_view, name='question-attach'),
-    path('questions/<int:pk>/status-change/', views.question_status_change_view, name='question-status-change'),
-    path('questions/<int:question_pk>/status/<int:status_pk>/delete/', views.question_status_delete_view, name='question-status-delete'),
 ]

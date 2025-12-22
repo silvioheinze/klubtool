@@ -358,7 +358,7 @@ class Question(models.Model):
     
     def get_absolute_url(self):
         from django.urls import reverse
-        return reverse('motion:question-detail', args=[str(self.pk)])
+        return reverse('question:question-detail', args=[str(self.pk)])
     
     @property
     def supporting_parties_count(self):

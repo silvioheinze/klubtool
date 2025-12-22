@@ -168,14 +168,14 @@ class QuestionListViewTests(TestCase):
     def test_question_list_view_superuser_access(self):
         """Test that superuser can view question list"""
         self.client.login(username='admin', password='adminpass123')
-        response = self.client.get(reverse('motion:question-list'))
+        response = self.client.get(reverse('question:question-list'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Test Question')
     
     def test_question_list_view_template_used(self):
         """Test that question list view uses correct template"""
         self.client.login(username='admin', password='adminpass123')
-        response = self.client.get(reverse('motion:question-list'))
+        response = self.client.get(reverse('question:question-list'))
         self.assertTemplateUsed(response, 'motion/question_list.html')
     
     def test_question_list_view_filters_by_status(self):
@@ -191,7 +191,7 @@ class QuestionListViewTests(TestCase):
         )
         
         self.client.login(username='admin', password='adminpass123')
-        response = self.client.get(reverse('motion:question-list') + '?status=submitted')
+        response = self.client.get(reverse('question:question-list') + '?status=submitted')
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Test Question')
         self.assertNotContains(response, 'Draft Question')
@@ -217,7 +217,7 @@ class QuestionListViewTests(TestCase):
         )
         
         self.client.login(username='admin', password='adminpass123')
-        response = self.client.get(reverse('motion:question-list') + f'?session={self.session.pk}')
+        response = self.client.get(reverse('question:question-list') + f'?session={self.session.pk}')
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Test Question')
         self.assertNotContains(response, 'Question in Session 2')
@@ -286,7 +286,7 @@ class QuestionDetailViewTests(TestCase):
     def test_question_detail_view_superuser_access(self):
         """Test that superuser can view question detail"""
         self.client.login(username='admin', password='adminpass123')
-        response = self.client.get(reverse('motion:question-detail', kwargs={'pk': self.question.pk}))
+        response = self.client.get(reverse('question:question-detail', kwargs={'pk': self.question.pk}))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Test Question')
         self.assertContains(response, 'Test question text')
@@ -294,14 +294,14 @@ class QuestionDetailViewTests(TestCase):
     def test_question_detail_view_template_used(self):
         """Test that question detail view uses correct template"""
         self.client.login(username='admin', password='adminpass123')
-        response = self.client.get(reverse('motion:question-detail', kwargs={'pk': self.question.pk}))
+        response = self.client.get(reverse('question:question-detail', kwargs={'pk': self.question.pk}))
         self.assertTemplateUsed(response, 'motion/question_detail.html')
     
     def test_question_detail_view_displays_parties(self):
         """Test that question detail view displays supporting parties"""
         self.question.parties.add(self.party)
         self.client.login(username='admin', password='adminpass123')
-        response = self.client.get(reverse('motion:question-detail', kwargs={'pk': self.question.pk}))
+        response = self.client.get(reverse('question:question-detail', kwargs={'pk': self.question.pk}))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Test Party')
     
@@ -309,7 +309,7 @@ class QuestionDetailViewTests(TestCase):
         """Test that question detail view displays interventions"""
         self.question.interventions.add(self.superuser)
         self.client.login(username='admin', password='adminpass123')
-        response = self.client.get(reverse('motion:question-detail', kwargs={'pk': self.question.pk}))
+        response = self.client.get(reverse('question:question-detail', kwargs={'pk': self.question.pk}))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Wortmeldung')
 
@@ -381,7 +381,7 @@ class QuestionCreateViewTests(TestCase):
         }
         
         # Submit question creation form
-        response = self.client.post(reverse('motion:question-create'), question_data)
+        response = self.client.post(reverse('question:question-create'), question_data)
         
         # Should redirect to session detail page
         self.assertEqual(response.status_code, 302)
@@ -405,7 +405,7 @@ class QuestionCreateViewTests(TestCase):
         }
         
         # Submit question creation form with session parameter
-        response = self.client.post(f"{reverse('motion:question-create')}?session={self.session.pk}", question_data)
+        response = self.client.post(f"{reverse('question:question-create')}?session={self.session.pk}", question_data)
         
         # Should redirect to session detail page
         self.assertEqual(response.status_code, 302)
@@ -420,7 +420,7 @@ class QuestionCreateViewTests(TestCase):
         self.client.login(username='admin', password='adminpass123')
         
         # Get the form page with session parameter
-        response = self.client.get(f"{reverse('motion:question-create')}?session={self.session.pk}")
+        response = self.client.get(f"{reverse('question:question-create')}?session={self.session.pk}")
         
         self.assertEqual(response.status_code, 200)
         # Check that the form contains session information
@@ -434,7 +434,7 @@ class QuestionCreateViewTests(TestCase):
         self.client.login(username='admin', password='adminpass123')
         
         # Get the form page without session parameter
-        response = self.client.get(reverse('motion:question-create'))
+        response = self.client.get(reverse('question:question-create'))
         
         self.assertEqual(response.status_code, 200)
         # Check that the form contains session select field
@@ -443,7 +443,7 @@ class QuestionCreateViewTests(TestCase):
     def test_question_create_template_used(self):
         """Test that question create view uses correct template"""
         self.client.login(username='admin', password='adminpass123')
-        response = self.client.get(reverse('motion:question-create'))
+        response = self.client.get(reverse('question:question-create'))
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'motion/question_form.html')
     
@@ -460,7 +460,7 @@ class QuestionCreateViewTests(TestCase):
             'parties': []
         }
         
-        response = self.client.post(reverse('motion:question-create'), question_data)
+        response = self.client.post(reverse('question:question-create'), question_data)
         self.assertEqual(response.status_code, 302)
         
         question = Question.objects.get(title='Test Question')
@@ -530,7 +530,7 @@ class QuestionUpdateViewTests(TestCase):
     def test_question_update_view_superuser_access(self):
         """Test that superuser can access question update view"""
         self.client.login(username='admin', password='adminpass123')
-        response = self.client.get(reverse('motion:question-edit', kwargs={'pk': self.question.pk}))
+        response = self.client.get(reverse('question:question-edit', kwargs={'pk': self.question.pk}))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Test Question')
     
@@ -547,9 +547,9 @@ class QuestionUpdateViewTests(TestCase):
             'parties': []
         }
         
-        response = self.client.post(reverse('motion:question-edit', kwargs={'pk': self.question.pk}), question_data)
+        response = self.client.post(reverse('question:question-edit', kwargs={'pk': self.question.pk}), question_data)
         self.assertEqual(response.status_code, 302)
-        self.assertRedirects(response, reverse('motion:question-detail', kwargs={'pk': self.question.pk}))
+        self.assertRedirects(response, reverse('question:question-detail', kwargs={'pk': self.question.pk}))
         
         # Check that question was updated
         self.question.refresh_from_db()
@@ -558,7 +558,7 @@ class QuestionUpdateViewTests(TestCase):
     def test_question_update_template_used(self):
         """Test that question update view uses correct template"""
         self.client.login(username='admin', password='adminpass123')
-        response = self.client.get(reverse('motion:question-edit', kwargs={'pk': self.question.pk}))
+        response = self.client.get(reverse('question:question-edit', kwargs={'pk': self.question.pk}))
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'motion/question_form.html')
 
@@ -626,14 +626,14 @@ class QuestionDeleteViewTests(TestCase):
     def test_question_delete_view_superuser_access(self):
         """Test that superuser can access question delete view"""
         self.client.login(username='admin', password='adminpass123')
-        response = self.client.get(reverse('motion:question-delete', kwargs={'pk': self.question.pk}))
+        response = self.client.get(reverse('question:question-delete', kwargs={'pk': self.question.pk}))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Test Question')
     
     def test_question_delete_template_used(self):
         """Test that question delete view uses correct template"""
         self.client.login(username='admin', password='adminpass123')
-        response = self.client.get(reverse('motion:question-delete', kwargs={'pk': self.question.pk}))
+        response = self.client.get(reverse('question:question-delete', kwargs={'pk': self.question.pk}))
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'motion/question_confirm_delete.html')
     
@@ -642,7 +642,7 @@ class QuestionDeleteViewTests(TestCase):
         self.client.login(username='admin', password='adminpass123')
         
         question_pk = self.question.pk
-        response = self.client.post(reverse('motion:question-delete', kwargs={'pk': self.question.pk}))
+        response = self.client.post(reverse('question:question-delete', kwargs={'pk': self.question.pk}))
         
         self.assertEqual(response.status_code, 302)
         self.assertFalse(Question.objects.filter(pk=question_pk).exists())
@@ -650,7 +650,7 @@ class QuestionDeleteViewTests(TestCase):
     def test_question_delete_redirects_to_list(self):
         """Test that question delete redirects to question list"""
         self.client.login(username='admin', password='adminpass123')
-        response = self.client.post(reverse('motion:question-delete', kwargs={'pk': self.question.pk}))
+        response = self.client.post(reverse('question:question-delete', kwargs={'pk': self.question.pk}))
         self.assertEqual(response.status_code, 302)
-        self.assertRedirects(response, reverse('motion:question-list'))
+        self.assertRedirects(response, reverse('question:question-list'))
 

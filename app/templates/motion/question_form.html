@@ -167,7 +167,7 @@
                         <div class="d-flex justify-content-between mt-4">
                             {% if object %}
                                 {# When editing, link to question detail #}
-                                <a href="{% url 'motion:question-detail' object.pk %}" class="btn btn-secondary">
+                                <a href="{% url 'question:question-detail' object.pk %}" class="btn btn-secondary">
                                     <i class="bi bi-x-circle"></i> {% trans "Cancel" %}
                                 </a>
                             {% else %}
@@ -177,7 +177,7 @@
                                         <i class="bi bi-x-circle"></i> {% trans "Cancel" %}
                                     </a>
                                 {% else %}
-                            <a href="{% url 'motion:question-list' %}" class="btn btn-secondary">
+                            <a href="{% url 'question:question-list' %}" class="btn btn-secondary">
                                 <i class="bi bi-x-circle"></i> {% trans "Cancel" %}
                             </a>
                                 {% endif %}

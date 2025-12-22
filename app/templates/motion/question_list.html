@@ -12,7 +12,7 @@
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h1><i class="bi bi-question-circle"></i> {% trans "Questions" %}</h1>
                 <div>
-                    <a href="{% url 'motion:question-create' %}" class="btn btn-primary">
+                    <a href="{% url 'question:question-create' %}" class="btn btn-primary">
                         <i class="bi bi-plus-circle"></i> {% trans "Create Question" %}
                     </a>
                 </div>
@@ -46,7 +46,7 @@
                     <button type="submit" class="btn btn-primary">
                         <i class="bi bi-search"></i> {% trans "Search" %}
                     </button>
-                    <a href="{% url 'motion:question-list' %}" class="btn btn-outline-secondary">
+                    <a href="{% url 'question:question-list' %}" class="btn btn-outline-secondary">
                         <i class="bi bi-arrow-clockwise"></i> {% trans "Clear" %}
                     </a>
                 </div>
@@ -127,7 +127,7 @@
                             <button type="submit" class="btn btn-primary">
                                 <i class="bi bi-search"></i> {% trans "Apply Filters" %}
                             </button>
-                            <a href="{% url 'motion:question-list' %}" class="btn btn-outline-secondary">
+                            <a href="{% url 'question:question-list' %}" class="btn btn-outline-secondary">
                                 <i class="bi bi-arrow-clockwise"></i> {% trans "Clear All" %}
                             </a>
                         </div>
@@ -152,7 +152,6 @@
                                         <th>{% trans "Parties" %}</th>
                                         <th>{% trans "Status" %}</th>
                                         <th>{% trans "Session" %}</th>
-                                        <th>{% trans "Group" %}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -160,7 +159,7 @@
                                         <tr>
                                             <td>
                                                 <strong>
-                                                    <a href="{% url 'motion:question-detail' question.pk %}">
+                                                    <a href="{% url 'question:question-detail' question.pk %}">
                                                         {{ question.title }}
                                                     </a>
                                                 </strong>
@@ -201,15 +200,6 @@
                                                     <br><small class="text-muted">{{ question.session.scheduled_date|date:"M d, Y" }}</small>
                                                 {% else %}
                                                     <span class="text-muted">{% trans "No session" %}</span>
-                                                {% endif %}
-                                            </td>
-                                            <td>
-                                                {% if question.group %}
-                                                    <a href="{% url 'group:group-detail' question.group.pk %}">
-                                                        {{ question.group.name }}
-                                                    </a>
-                                                {% else %}
-                                                    <span class="text-muted">{% trans "Not assigned" %}</span>
                                                 {% endif %}
                                             </td>
                                         </tr>
@@ -261,7 +251,7 @@
                             <i class="bi bi-question-circle fs-1 text-muted"></i>
                             <h6 class="mt-3">{% trans "No questions found" %}</h6>
                             <p class="text-muted">{% trans "Create questions to manage council inquiries." %}</p>
-                            <a href="{% url 'motion:question-create' %}" class="btn btn-primary">
+                            <a href="{% url 'question:question-create' %}" class="btn btn-primary">
                                 <i class="bi bi-plus-circle"></i> {% trans "Create First Question" %}
                             </a>
                         </div>

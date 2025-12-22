@@ -908,7 +908,7 @@ class QuestionCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     model = Question
     form_class = QuestionForm
     template_name = 'motion/question_form.html'
-    success_url = reverse_lazy('motion:question-list')
+    success_url = reverse_lazy('question:question-list')
 
     def test_func(self):
         """Check if user has permission to create Question objects"""
@@ -951,7 +951,7 @@ class QuestionUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model = Question
     form_class = QuestionForm
     template_name = 'motion/question_form.html'
-    success_url = reverse_lazy('motion:question-list')
+    success_url = reverse_lazy('question:question-list')
 
     def test_func(self):
         """Check if user has permission to edit Question objects"""
@@ -965,7 +965,7 @@ class QuestionUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
 
     def get_success_url(self):
         """Redirect to question detail page after successful update"""
-        return reverse('motion:question-detail', kwargs={'pk': self.object.pk})
+        return reverse('question:question-detail', kwargs={'pk': self.object.pk})
 
     def form_valid(self, form):
         """Display success message on form validation"""
@@ -978,7 +978,7 @@ class QuestionDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
     """View for deleting a Question object"""
     model = Question
     template_name = 'motion/question_confirm_delete.html'
-    success_url = reverse_lazy('motion:question-list')
+    success_url = reverse_lazy('question:question-list')
 
     def test_func(self):
         """Check if user has permission to delete Question objects"""
@@ -1033,7 +1033,7 @@ def question_attachment_view(request, pk):
         if form.is_valid():
             form.save()
             messages.success(request, "Attachment uploaded successfully.")
-            return redirect('motion:question-detail', pk=pk)
+            return redirect('question:question-detail', pk=pk)
     else:
         form = QuestionAttachmentForm(question=question, uploaded_by=request.user)
     
@@ -1051,7 +1051,7 @@ def question_status_change_view(request, pk):
     # Check permissions
     if not can_change_question_status(request.user, question):
         messages.error(request, "You don't have permission to change the status of this question.")
-        return redirect('motion:question-detail', pk=pk)
+        return redirect('question:question-detail', pk=pk)
     
     if request.method == 'POST':
         form = QuestionStatusForm(request.POST, question=question, changed_by=request.user)
@@ -1074,7 +1074,7 @@ def question_status_change_view(request, pk):
             question.save()
             
             messages.success(request, f"Question status changed to '{question.get_status_display()}'.")
-            return redirect('motion:question-detail', pk=pk)
+            return redirect('question:question-detail', pk=pk)
     else:
         form = QuestionStatusForm(question=question, changed_by=request.user)
     
@@ -1094,7 +1094,7 @@ def question_status_delete_view(request, question_pk, status_pk):
     if request.method == 'POST':
         status_entry.delete()
         messages.success(request, "Status entry deleted successfully.")
-        return redirect('motion:question-detail', pk=question_pk)
+        return redirect('question:question-detail', pk=question_pk)
     
     return render(request, 'motion/question_status_confirm_delete.html', {
         'question': question,
