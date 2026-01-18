@@ -229,97 +229,156 @@
                             <h5 class="mb-0">
                                 <i class="bi bi-check2-square"></i> {% trans "Voting Results" %}
                             </h5>
-                            {% if vote_sessions %}
                                 <a href="{% url 'motion:motion-vote' motion.pk %}" class="btn btn-sm btn-primary">
-                                    <i class="bi bi-pencil"></i> {% trans "Edit Votes" %}
+                                <i class="bi bi-plus-circle"></i> {% trans "Record Vote" %}
                                 </a>
-                            {% endif %}
                         </div>
                         <div class="card-body">
-                                                        {% if vote_sessions %}
-                                <!-- Overall Vote Statistics -->
-                                <div class="row text-center mb-3">
-                                    <div class="col-4">
-                                        <div class="bg-success text-white rounded p-2">
-                                            <strong>{{ vote_stats.approve }}</strong>
-                                            <br><small>{% trans "Approve" %}</small>
+                            {% if vote_overview_list %}
+                                <!-- Vote Overview List -->
+                                <div class="table-responsive mb-4">
+                                    <table class="table table-hover table-sm">
+                                        <thead class="table-dark">
+                                            <tr>
+                                                <th style="width: 25%;">{% trans "Round" %}</th>
+                                                <th style="width: 20%;">{% trans "Session" %}</th>
+                                                <th style="width: 12%;">{% trans "Favor" %}</th>
+                                                <th style="width: 12%;">{% trans "Against" %}</th>
+                                                <th style="width: 15%;">{% trans "Outcome" %}</th>
+                                                <th style="width: 5%;">{% trans "Actions" %}</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for round_data in vote_overview_list %}
+                                                <tr data-round-key="{{ round_data.round_key }}" class="vote-round-row">
+                                                    <td>
+                                                        <strong>{% if round_data.vote_type == 'regular' %}{% trans "Regular Vote" %}{% elif round_data.vote_type == 'refer_to_committee' %}{% trans "Refer to Committee Vote" %}{% else %}{{ round_data.vote_type|title }}{% endif %}</strong>
+                                                        {% if round_data.vote_name %}
+                                                            <br><small class="text-muted">{{ round_data.vote_name }}</small>
+                                                        {% endif %}
+                                                        {% if forloop.first %}
+                                                            <span class="badge bg-info ms-1">{% trans "Latest" %}</span>
+                                                        {% endif %}
+                                                    </td>
+                                                    <td>
+                                                        {% if round_data.vote_session %}
+                                                            <small>{{ round_data.vote_session.title|truncatewords:3 }}</small>
+                                                        {% else %}
+                                                            <small class="text-muted">-</small>
+                                                        {% endif %}
+                                                    </td>
+                                                    <td class="text-center">
+                                                        <span class="badge bg-success">{{ round_data.total_approve }}</span>
+                                                    </td>
+                                                    <td class="text-center">
+                                                        <span class="badge bg-danger">{{ round_data.total_reject }}</span>
+                                                    </td>
+                                                    <td class="text-center">
+                                                        {% if round_data.outcome == 'adopted' or round_data.outcome == 'referred' %}
+                                                            <span class="badge bg-success">{{ round_data.outcome_text }}</span>
+                                                        {% elif round_data.outcome == 'rejected' or round_data.outcome == 'not_referred' %}
+                                                            <span class="badge bg-danger">{{ round_data.outcome_text }}</span>
+                                                        {% elif round_data.outcome == 'tie' %}
+                                                            <span class="badge bg-warning">{{ round_data.outcome_text }}</span>
+                                                        {% else %}
+                                                            <span class="badge bg-secondary">-</span>
+                                                        {% endif %}
+                                                    </td>
+                                                    <td class="text-center">
+                                                        <div class="btn-group" role="group">
+                                                            <button class="btn btn-sm btn-outline-primary" onclick="toggleRoundDetails('{{ round_data.round_key }}')" title="{% trans 'Show Details' %}">
+                                                                <i class="bi bi-chevron-down"></i>
+                                                            </button>
+                                                            {% if can_delete_votes %}
+                                                                <a href="{% url 'motion:motion-vote-delete' motion.pk round_data.vote_type round_data.vote_name|urlencode|default:'default' %}" class="btn btn-sm btn-outline-danger" title="{% trans 'Delete Vote Round' %}">
+                                                                    <i class="bi bi-trash"></i>
+                                                                </a>
+                                                            {% endif %}
                                         </div>
-                                    </div>
-                                    <div class="col-4">
-                                        <div class="bg-danger text-white rounded p-2">
-                                            <strong>{{ vote_stats.reject }}</strong>
-                                            <br><small>{% trans "Reject" %}</small>
-                                        </div>
-                                    </div>
+                                                    </td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
                                 </div>
                                 
-                                <small class="text-muted d-block text-center mb-3">
-                                    {% trans "Total votes cast" %}: {{ vote_stats.total_cast }} | 
-                                    {% trans "Parties voted" %}: {{ vote_stats.parties_voted }} |
-                                    {% trans "Voting sessions" %}: {{ vote_stats.sessions_count }}
-                                </small>
-                                
-                                <!-- Voting Sessions -->
-                                {% for session_key, session in vote_sessions.items %}
-                                    <div class="card mb-3">
+                                <!-- Detailed Vote Round Cards (initially hidden, expandable) -->
+                                {% for round_data in vote_overview_list %}
+                                    <div class="card mb-3 vote-round-details" id="round-details-{{ round_data.round_key }}" style="display: none;">
                                         <div class="card-header">
                                             <h6 class="mb-0">
-                                                {% if session.type == 'status' %}
-                                                    <i class="bi bi-arrow-repeat"></i> 
-                                                    {% trans "Voting Session" %} - 
-                                                    <span class="badge {% if session.status.status == 'approved' %}bg-success{% elif session.status.status == 'rejected' %}bg-danger{% else %}bg-warning{% endif %}">
-                                                        {{ session.status.get_status_display }}
-                                                    </span>
-                                                    {% if session.status.changed_by %}
-                                                        {% trans "by" %} {{ session.status.changed_by.get_full_name|default:session.status.changed_by.username }}
-                                                    {% endif %}
-                                                    <small class="text-muted">({{ session.status.changed_at|date:"d.m.Y H:i" }})</small>
+                                                {% if round_data.vote_type == 'regular' %}
+                                                    <i class="bi bi-check2-square"></i> 
+                                                    {% trans "Regular Vote" %}
+                                                {% elif round_data.vote_type == 'refer_to_committee' %}
+                                                    <i class="bi bi-arrow-right-circle"></i> 
+                                                    {% trans "Refer to Committee Vote" %}
                                                 {% else %}
                                                     <i class="bi bi-check2-square"></i> 
-                                                    {% trans "Standalone Voting Session" %}
+                                                    {% trans "Vote" %}
+                                                {% endif %}
+                                                {% if round_data.vote_name %}
+                                                    - {{ round_data.vote_name }}
+                                                {% endif %}
+                                                {% if round_data.vote_name %}
+                                                    <small class="text-muted">- {{ round_data.vote_name }}</small>
+                                                {% endif %}
+                                                {% if round_data.outcome %}
+                                                    <span class="badge ms-2 {% if round_data.outcome == 'adopted' or round_data.outcome == 'referred' %}bg-success{% elif round_data.outcome == 'rejected' or round_data.outcome == 'not_referred' %}bg-danger{% else %}bg-warning{% endif %}">
+                                                        {{ round_data.outcome_text }}
+                                                    </span>
                                                 {% endif %}
                                             </h6>
                                         </div>
                                         <div class="card-body">
-                                            <!-- Session Statistics -->
+                                            <!-- Round Statistics -->
                                             <div class="row text-center mb-3">
                                                 <div class="col-6">
                                                     <div class="bg-success text-white rounded p-2">
-                                                        <strong>{{ session.total_approve }}</strong>
-                                                        <br><small>{% trans "Approve" %}</small>
+                                                        <strong>{{ round_data.total_approve }}</strong>
+                                                        <br><small>{% trans "In Favor" %}</small>
                                                     </div>
                                                 </div>
                                                 <div class="col-6">
                                                     <div class="bg-danger text-white rounded p-2">
-                                                        <strong>{{ session.total_reject }}</strong>
-                                                        <br><small>{% trans "Reject" %}</small>
+                                                        <strong>{{ round_data.total_reject }}</strong>
+                                                        <br><small>{% trans "Against" %}</small>
                                                     </div>
                                                 </div>
                                             </div>
                                             
                                             <small class="text-muted d-block text-center mb-3">
-                                                {% trans "Session total" %}: {{ session.total_cast }} | 
-                                                {% trans "Parties" %}: {{ session.parties_count }}
+                                                {% trans "Parties voted" %}: {{ round_data.parties_count }}
+                                                {% if round_data.vote_session %}
+                                                    | {% trans "Session" %}: {{ round_data.vote_session.title }}
+                                                {% endif %}
+                                                {% if term %}
+                                                    | {% trans "Term" %}: {{ term.name }}
+                                                {% endif %}
                                             </small>
                                             
-                                            <!-- Session Votes Table -->
+                                            <!-- Round Votes Table -->
                                             <div class="table-responsive">
                                                 <table class="table table-bordered table-hover table-sm">
                                                     <thead class="table-dark">
                                                         <tr>
-                                                            <th style="width: 35%; text-align: center;">{% trans "Party" %}</th>
-                                                            <th style="width: 20%; text-align: center;">{% trans "Approve" %}</th>
-                                                            <th style="width: 20%; text-align: center;">{% trans "Reject" %}</th>
-                                                            <th style="width: 10%; text-align: center;">{% trans "Total" %}</th>
+                                                            <th style="width: 25%; text-align: center;">{% trans "Party" %}</th>
+                                                            <th style="width: 12%; text-align: center;">{% trans "Max Seats" %}</th>
+                                                            <th style="width: 18%; text-align: center;">{% trans "In Favor" %}</th>
+                                                            <th style="width: 18%; text-align: center;">{% trans "Against" %}</th>
+                                                            <th style="width: 12%; text-align: center;">{% trans "Total" %}</th>
                                                             <th style="width: 15%; text-align: center;">{% trans "Result" %}</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody>
-                                                        {% for vote in session.votes %}
+                                                        {% for vote in round_data.votes %}
                                                             <tr>
                                                                 <td class="align-middle">
-                                                                    <div class="fw-bold text-primary">{{ vote.party.name }}</div>
+                                                                    <div class="fw-bold" style="color: {{ vote.party.color }};">{{ vote.party.name }}</div>
                                                                     <small class="text-muted">{{ vote.voted_at|date:"d.m.Y H:i" }}</small>
+                                                                </td>
+                                                                <td class="text-center align-middle">
+                                                                    <span class="badge bg-secondary">{{ vote.max_seats|default:"-" }}</span>
                                                                 </td>
                                                                 <td class="text-center align-middle">
                                                                     <span class="badge bg-success">{{ vote.approve_votes }}</span>
@@ -332,13 +391,19 @@
                                                                 </td>
                                                                 <td class="text-center align-middle">
                                                                     <span class="badge {% if vote.approve_votes > vote.reject_votes %}bg-success{% elif vote.reject_votes > vote.approve_votes %}bg-danger{% else %}bg-warning{% endif %}">
-                                                                        {{ vote.get_vote_summary }}
+                                                                        {% if vote.approve_votes > vote.reject_votes %}
+                                                                            {% trans "Favor" %}
+                                                                        {% elif vote.reject_votes > vote.approve_votes %}
+                                                                            {% trans "Against" %}
+                                                                        {% else %}
+                                                                            {% trans "Tie" %}
+                                                                        {% endif %}
                                                                     </span>
                                                                 </td>
                                                             </tr>
                                                             {% if vote.notes %}
                                                                 <tr>
-                                                                    <td colspan="5" class="bg-light">
+                                                                    <td colspan="6" class="bg-light">
                                                                         <small class="text-muted">
                                                                             <i class="bi bi-chat-text"></i> {{ vote.notes }}
                                                                         </small>
@@ -352,6 +417,24 @@
                                         </div>
                                     </div>
                                 {% endfor %}
+                                
+                                <script>
+                                    function toggleRoundDetails(roundKey) {
+                                        const detailsDiv = document.getElementById('round-details-' + roundKey);
+                                        const button = event.target.closest('button');
+                                        const icon = button.querySelector('i');
+                                        
+                                        if (detailsDiv.style.display === 'none' || !detailsDiv.style.display) {
+                                            detailsDiv.style.display = 'block';
+                                            icon.classList.remove('bi-chevron-down');
+                                            icon.classList.add('bi-chevron-up');
+                                        } else {
+                                            detailsDiv.style.display = 'none';
+                                            icon.classList.remove('bi-chevron-up');
+                                            icon.classList.add('bi-chevron-down');
+                                        }
+                                    }
+                                </script>
                             {% else %}
                                 <div class="text-center py-4">
                                     <i class="bi bi-check2-square text-muted" style="font-size: 3rem;"></i>

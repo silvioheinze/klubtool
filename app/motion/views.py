@@ -222,50 +222,115 @@ class MotionDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['can_add_group_decision'] = self.request.user.is_superuser or is_leader_or_deputy_leader(self.request.user, motion)
         context['can_delete_group_decision'] = self.request.user.is_superuser or is_leader_or_deputy_leader(self.request.user, motion)
         
-        # Get party votes grouped by status/session
-        votes = motion.votes.all().select_related('party', 'status')
+        # Add permission check for vote deletion
+        context['can_delete_votes'] = self.request.user.is_superuser or self.request.user.has_role_permission('motion.vote')
         
-        # Group votes by status (or standalone)
-        vote_sessions = {}
+        # Get all votes for this motion
+        votes = motion.votes.all().select_related('party', 'status', 'vote_session').order_by('-voted_at', 'party__name')
+        
+        # Get term and seat distributions for displaying max seats
+        from local.models import Term, TermSeatDistribution
+        from django.utils.translation import gettext_lazy as _
+        session = motion.session
+        term = session.term
+        if not term and session.council and session.council.local:
+            today = timezone.now().date()
+            term = Term.objects.filter(
+                start_date__lte=today,
+                end_date__gte=today,
+                is_active=True
+            ).first()
+
+        party_seat_map = {}
+        if term:
+            seat_distributions = TermSeatDistribution.objects.filter(
+                term=term,
+                party__local=session.council.local,
+                party__is_active=True
+            ).select_related('party')
+            party_seat_map = {dist.party.pk: dist.seats for dist in seat_distributions}
+
+        context['term'] = term
+        context['party_seat_map'] = party_seat_map
+        
+        # Group votes by vote_type and vote_name
+        vote_rounds = {}
+        vote_overview_list = []
+        
         for vote in votes:
-            if vote.status:
-                session_key = f"status_{vote.status.id}"
-                if session_key not in vote_sessions:
-                    vote_sessions[session_key] = {
-                        'type': 'status',
-                        'status': vote.status,
-                        'votes': [],
-                        'total_approve': 0,
-                        'total_reject': 0,
-                        'total_cast': 0,
-                        'parties_count': 0
-                    }
-                vote_sessions[session_key]['votes'].append(vote)
-                vote_sessions[session_key]['total_approve'] += vote.approve_votes
-                vote_sessions[session_key]['total_reject'] += vote.reject_votes
-                vote_sessions[session_key]['total_cast'] += vote.total_votes_cast
-                vote_sessions[session_key]['parties_count'] += 1
+            # Create a key for grouping: vote_type and vote_name combination
+            round_key = f"{vote.vote_type}_{vote.vote_name or 'default'}"
+            
+            if round_key not in vote_rounds:
+                vote_rounds[round_key] = {
+                    'round_key': round_key,
+                    'vote_name': vote.vote_name or '',
+                    'vote_type': vote.vote_type,
+                    'vote_session': vote.vote_session,
+                    'voted_at': vote.voted_at,
+                    'votes': [],
+                    'total_approve': 0,
+                    'total_reject': 0,
+                    'total_cast': 0,
+                    'parties_count': 0,
+                    'parties': set(),
+                    'outcome': vote.outcome or '',
+                }
+            
+            # Add max seats to vote data for template
+            vote.max_seats = party_seat_map.get(vote.party.pk, 0)
+            vote_rounds[round_key]['votes'].append(vote)
+            vote_rounds[round_key]['total_approve'] += vote.approve_votes
+            vote_rounds[round_key]['total_reject'] += vote.reject_votes
+            vote_rounds[round_key]['total_cast'] += vote.total_votes_cast
+            vote_rounds[round_key]['parties'].add(vote.party)
+            vote_rounds[round_key]['parties_count'] = len(vote_rounds[round_key]['parties'])
+        
+        # Calculate outcome for each vote round and create overview list
+        for round_key, round_data in vote_rounds.items():
+            total_favor = round_data['total_approve']
+            total_against = round_data['total_reject']
+            
+            # Use stored outcome if available, otherwise calculate
+            if not round_data['outcome']:
+                if round_data['vote_type'] == 'regular':
+                    if total_favor > total_against:
+                        round_data['outcome'] = 'adopted'
+                        round_data['outcome_text'] = _('Motion adopted by majority')
+                    elif total_against > total_favor:
+                        round_data['outcome'] = 'rejected'
+                        round_data['outcome_text'] = _('Motion rejected by majority')
+                    else:
+                        round_data['outcome'] = 'tie'
+                        round_data['outcome_text'] = _('Tie - no majority')
+                elif round_data['vote_type'] == 'refer_to_committee':
+                    if total_favor > total_against:
+                        round_data['outcome'] = 'referred'
+                        round_data['outcome_text'] = _('Motion referred to committee by majority')
+                    else:
+                        round_data['outcome'] = 'not_referred'
+                        round_data['outcome_text'] = _('Motion not referred to committee')
             else:
-                # Standalone votes
-                if 'standalone' not in vote_sessions:
-                    vote_sessions['standalone'] = {
-                        'type': 'standalone',
-                        'status': None,
-                        'votes': [],
-                        'total_approve': 0,
-                        'total_reject': 0,
-                        'total_cast': 0,
-                        'parties_count': 0
-                    }
-                vote_sessions['standalone']['votes'].append(vote)
-                vote_sessions['standalone']['total_approve'] += vote.approve_votes
-                vote_sessions['standalone']['total_reject'] += vote.reject_votes
-                vote_sessions['standalone']['total_cast'] += vote.total_votes_cast
-                vote_sessions['standalone']['parties_count'] += 1
+                # Map outcome to text
+                outcome_map = {
+                    'adopted': _('Motion adopted by majority'),
+                    'rejected': _('Motion rejected by majority'),
+                    'tie': _('Tie - no majority'),
+                    'referred': _('Motion referred to committee by majority'),
+                    'not_referred': _('Motion not referred to committee'),
+                }
+                round_data['outcome_text'] = outcome_map.get(round_data['outcome'], '')
+            
+            # Add to overview list (sorted by voted_at, most recent first)
+            vote_overview_list.append(round_data)
         
-        context['vote_sessions'] = vote_sessions
+        # Sort overview list by voted_at (most recent first)
+        vote_overview_list.sort(key=lambda x: x['voted_at'], reverse=True)
         
-        # Overall vote statistics
+        context['vote_rounds'] = vote_rounds
+        context['vote_overview_list'] = vote_overview_list
+        
+        # Overall vote statistics (across all rounds)
         total_approve = sum(vote.approve_votes for vote in votes)
         total_reject = sum(vote.reject_votes for vote in votes)
         total_votes_cast = total_approve + total_reject
@@ -275,7 +340,7 @@ class MotionDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             'reject': total_reject,
             'total_cast': total_votes_cast,
             'parties_voted': len(set(vote.party for vote in votes)),
-            'sessions_count': len(vote_sessions)
+            'rounds_count': len(vote_rounds)
         }
         
         # Get comments (public only for non-authors)
@@ -628,6 +693,67 @@ def motion_group_decision_delete_view(request, motion_pk, decision_pk):
     return render(request, 'motion/motion_group_decision_confirm_delete.html', {
         'motion': motion,
         'decision_entry': decision_entry
+    })
+
+
+@login_required
+@user_passes_test(is_superuser_or_has_permission('motion.vote'))
+def motion_vote_delete_view(request, motion_pk, vote_type, vote_name_encoded):
+    """View for deleting a vote round (all votes with the same vote_type and vote_name)"""
+    from urllib.parse import unquote
+    from django.utils.translation import gettext_lazy as _
+    
+    motion = get_object_or_404(Motion, pk=motion_pk)
+    
+    # Decode vote_name from URL (or use 'default' if empty)
+    vote_name = unquote(vote_name_encoded) if vote_name_encoded != 'default' else ''
+    
+    if request.method == 'POST':
+        # Get all votes for this round
+        round_filter = {'motion': motion, 'vote_type': vote_type}
+        if vote_name:
+            round_filter['vote_name'] = vote_name
+        else:
+            round_filter['vote_name'] = ''
+        
+        votes_to_delete = MotionVote.objects.filter(**round_filter)
+        votes_count = votes_to_delete.count()
+        
+        if votes_count == 0:
+            messages.error(request, _("No votes found to delete."))
+            return redirect('motion:motion-detail', pk=motion_pk)
+        
+        # Delete all votes in this round
+        votes_to_delete.delete()
+        
+        messages.success(request, _("Vote round deleted successfully. %(count)d vote(s) removed.") % {'count': votes_count})
+        return redirect('motion:motion-detail', pk=motion_pk)
+    
+    # GET request - show confirmation page
+    round_filter = {'motion': motion, 'vote_type': vote_type}
+    if vote_name:
+        round_filter['vote_name'] = vote_name
+    else:
+        round_filter['vote_name'] = ''
+    
+    votes_in_round = MotionVote.objects.filter(**round_filter).select_related('party').order_by('party__name')
+    
+    if votes_in_round.count() == 0:
+        messages.error(request, _("No votes found for this round."))
+        return redirect('motion:motion-detail', pk=motion_pk)
+    
+    # Calculate round statistics
+    total_approve = sum(vote.approve_votes for vote in votes_in_round)
+    total_reject = sum(vote.reject_votes for vote in votes_in_round)
+    
+    return render(request, 'motion/motion_vote_confirm_delete.html', {
+        'motion': motion,
+        'vote_type': vote_type,
+        'vote_name': vote_name,
+        'votes': votes_in_round,
+        'votes_count': votes_in_round.count(),
+        'total_approve': total_approve,
+        'total_reject': total_reject,
     })
 
 

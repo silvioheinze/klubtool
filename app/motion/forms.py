@@ -513,46 +513,72 @@ class MotionVoteForm(forms.ModelForm):
         model = MotionVote
         fields = ['party', 'approve_votes', 'reject_votes', 'notes']
         widgets = {
-            'party': forms.Select(attrs={'class': 'form-select'}),
-            'approve_votes': forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'min': '0', 'style': 'width: 80px;'}),
-            'reject_votes': forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'min': '0', 'style': 'width: 80px;'}),
+            'party': forms.HiddenInput(),  # Party will be set automatically
+            'approve_votes': forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'min': '0', 'value': '0', 'style': 'width: 80px;'}),
+            'reject_votes': forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'min': '0', 'value': '0', 'style': 'width: 80px;'}),
             'notes': forms.TextInput(attrs={'class': 'form-control form-control-sm', 'placeholder': 'Notes...'}),
         }
     
     def __init__(self, *args, **kwargs):
         self.motion = kwargs.pop('motion', None)
+        self.max_seats = kwargs.pop('max_seats', None)
         super().__init__(*args, **kwargs)
         
-        # Filter parties to only show those in the motion's session council
-        if self.motion and self.motion.session and self.motion.session.council:
-            self.fields['party'].queryset = Party.objects.filter(
-                local=self.motion.session.council.local,
-                is_active=True
-            )
+        # Make vote fields not required
+        self.fields['approve_votes'].required = False
+        self.fields['reject_votes'].required = False
         
-        # Set initial party if provided in URL
-        party_id = self.initial.get('party') or self.data.get('party')
-        if party_id:
-            try:
-                party = Party.objects.get(pk=party_id)
-                self.fields['party'].initial = party.pk
-            except Party.DoesNotExist:
-                pass
+        # Set motion and party on instance if it exists (needed for template rendering)
+        if self.instance and self.instance.pk is None:
+            if self.motion:
+                self.instance.motion = self.motion
+            # Set party from initial data if available
+            if self.initial and self.initial.get('party'):
+                try:
+                    from local.models import Party
+                    party = Party.objects.get(pk=self.initial['party'])
+                    self.instance.party = party
+                except (Party.DoesNotExist, ValueError, TypeError):
+                    pass
+        
+        # Set default values to 0 if not already set
+        if not self.initial.get('approve_votes') and not self.data:
+            self.fields['approve_votes'].initial = 0
+        if not self.initial.get('reject_votes') and not self.data:
+            self.fields['reject_votes'].initial = 0
+        
+        # Set max value for vote inputs based on party's max seats
+        if self.max_seats is not None:
+            self.fields['approve_votes'].widget.attrs['max'] = self.max_seats
+            self.fields['reject_votes'].widget.attrs['max'] = self.max_seats
     
     def clean(self):
+        import logging
+        logger = logging.getLogger(__name__)
+        
         cleaned_data = super().clean()
-        approve_votes = cleaned_data.get('approve_votes', 0)
-        reject_votes = cleaned_data.get('reject_votes', 0)
+        approve_votes = cleaned_data.get('approve_votes', 0) or 0
+        reject_votes = cleaned_data.get('reject_votes', 0) or 0
+        total_votes = approve_votes + reject_votes
         
-        # Check if user has already recorded votes for this party on this motion
-        if self.motion and cleaned_data.get('party'):
-            existing_vote = MotionVote.objects.filter(
-                motion=self.motion, 
-                party=cleaned_data['party']
-            ).first()
-            if existing_vote and not self.instance.pk:
-                raise forms.ValidationError("Votes for this party on this motion have already been recorded.")
+        logger.debug(f"MotionVoteForm.clean() - approve_votes={approve_votes}, reject_votes={reject_votes}, total={total_votes}, max_seats={self.max_seats}")
         
+        # Only validate if votes have been entered (non-zero)
+        # This allows empty forms in the formset, but validates filled forms
+        if total_votes > 0:
+            # Validate that total votes don't exceed max seats
+            if self.max_seats is not None and total_votes > self.max_seats:
+                logger.debug(f"Validation error: total votes {total_votes} exceeds max_seats {self.max_seats}")
+                raise forms.ValidationError(
+                    _('Total votes (%(total)d) cannot exceed party\'s maximum seats (%(max)d) for this term.') % {
+                        'total': total_votes,
+                        'max': self.max_seats
+                    }
+                )
+        # Note: We don't require votes here - empty forms are allowed
+        # The formset will ensure at least one form has votes
+        
+        logger.debug(f"MotionVoteForm.clean() - validation passed")
         return cleaned_data
     
     def save(self, commit=True):
@@ -570,44 +596,166 @@ class MotionVoteFormSet(BaseFormSet):
     
     def __init__(self, *args, **kwargs):
         self.motion = kwargs.pop('motion', None)
-        super().__init__(*args, **kwargs)
+        self.vote_type = kwargs.pop('vote_type', 'regular')
+        self.party_seat_map = kwargs.pop('party_seat_map', {})
+        initial = kwargs.pop('initial', [])
         
-        # Set initial data for each party if motion is provided
-        if self.motion and self.motion.session and self.motion.session.council:
-            parties = Party.objects.filter(
-                local=self.motion.session.council.local,
-                is_active=True
-            )
+        # Remove any other unexpected kwargs that BaseFormSet doesn't accept
+        # BaseFormSet accepts: data, files, auto_id, prefix, initial, error_class, form_kwargs, error_messages
+        valid_kwargs = {}
+        valid_keys = ['data', 'files', 'auto_id', 'prefix', 'error_class', 'form_kwargs', 'error_messages']
+        for key in valid_keys:
+            if key in kwargs:
+                valid_kwargs[key] = kwargs.pop(key)
+        
+        # Set up form_kwargs to pass motion to each form
+        if 'form_kwargs' not in valid_kwargs:
+            valid_kwargs['form_kwargs'] = {}
+        valid_kwargs['form_kwargs']['motion'] = self.motion
+        
+        # If we have initial data but no POST data, we need to set up the management form
+        if not args and initial and 'data' not in valid_kwargs:
+            # Create management form data to tell Django how many forms to create
+            management_data = {
+                'form-TOTAL_FORMS': str(len(initial)),
+                'form-INITIAL_FORMS': str(len(initial)),
+                'form-MIN_NUM_FORMS': '0',
+                'form-MAX_NUM_FORMS': '1000',
+            }
+            valid_kwargs['data'] = management_data
+        
+        super().__init__(*args, initial=initial, **valid_kwargs)
+        
+        # Set max_seats for each form based on party
+        for i, form in enumerate(self.forms):
+            # Get party ID from initial data or form data
+            party_id = None
+            if form.initial and form.initial.get('party'):
+                party_id = form.initial.get('party')
+            elif form.data:
+                # Try to get from form data
+                prefix = form.prefix
+                party_id = form.data.get(f'{prefix}-party')
+                if party_id:
+                    try:
+                        party_id = int(party_id)
+                    except (ValueError, TypeError):
+                        party_id = None
             
-            # Initialize forms with party data
-            for i, party in enumerate(parties):
-                if i < len(self.forms):
-                    self.forms[i].fields['party'].initial = party.pk
-                    self.forms[i].fields['party'].widget = forms.HiddenInput()
-                    
-                    # Set existing vote data if available
-                    existing_vote = MotionVote.objects.filter(
-                        motion=self.motion,
-                        party=party
-                    ).first()
-                    if existing_vote:
-                        self.forms[i].fields['approve_votes'].initial = existing_vote.approve_votes
-                        self.forms[i].fields['reject_votes'].initial = existing_vote.reject_votes
-                        self.forms[i].fields['notes'].initial = existing_vote.notes
+            if party_id:
+                max_seats = self.party_seat_map.get(party_id, 0)
+                form.max_seats = max_seats
+                # Update widget max attributes
+                form.fields['approve_votes'].widget.attrs['max'] = max_seats
+                form.fields['reject_votes'].widget.attrs['max'] = max_seats
     
     def clean(self):
         """Validate the formset"""
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        logger.debug(f"MotionVoteFormSet.clean() - processing {len(self.forms)} forms")
         super().clean()
         
-        # Check for duplicate parties
+        # Check for duplicate parties and count total votes
         parties = []
-        for form in self.forms:
+        total_votes_cast = 0
+        for i, form in enumerate(self.forms):
+            logger.debug(f"Form {i}: has cleaned_data={form.cleaned_data is not None}, is_valid={form.is_valid()}")
             if form.cleaned_data and not form.cleaned_data.get('DELETE', False):
                 party = form.cleaned_data.get('party')
                 if party:
                     if party in parties:
+                        logger.debug(f"Duplicate party found: {party.name}")
                         raise forms.ValidationError(f"Duplicate party: {party.name}")
                     parties.append(party)
+                    
+                    # Count votes for this form
+                    approve_votes = form.cleaned_data.get('approve_votes', 0) or 0
+                    reject_votes = form.cleaned_data.get('reject_votes', 0) or 0
+                    total_votes_cast += approve_votes + reject_votes
+                    logger.debug(f"Form {i} party {party.name}: approve={approve_votes}, reject={reject_votes}, total={approve_votes + reject_votes}")
+        
+        logger.debug(f"Total votes cast across all forms: {total_votes_cast}")
+        
+        # Require that at least one vote is cast across all forms
+        if total_votes_cast == 0:
+            logger.debug("Validation error: no votes cast")
+            raise forms.ValidationError(_('At least one vote (in favor or against) must be cast across all parties. Abstaining is not allowed.'))
+        
+        logger.debug(f"MotionVoteFormSet.clean() - validation passed")
+        
+
+class MotionVoteTypeForm(forms.Form):
+    """Form for selecting vote type, round, session, and committee (if applicable)"""
+    
+    vote_type = forms.ChoiceField(
+        choices=MotionVote.VOTE_TYPE_CHOICES,
+        widget=forms.RadioSelect(attrs={'class': 'form-check-input'}),
+        label=_('Vote Type'),
+        initial='regular'
+    )
+    
+    vote_name = forms.CharField(
+        max_length=200,
+        required=False,
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': _('Custom name/description for this voting round')}),
+        label=_('Vote Name'),
+        help_text=_('Optional description for this voting round')
+    )
+    
+    vote_session = forms.ModelChoiceField(
+        queryset=None,
+        required=False,
+        empty_label=_("Use motion's session"),
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        label=_('Session'),
+        help_text=_('Session where this vote was cast (defaults to motion\'s session)')
+    )
+    
+    committee = forms.ModelChoiceField(
+        queryset=None,
+        required=False,
+        empty_label=_("Select Committee"),
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        label=_('Committee (if referring to committee)')
+    )
+    
+    def __init__(self, *args, **kwargs):
+        self.motion = kwargs.pop('motion', None)
+        super().__init__(*args, **kwargs)
+        
+        # Filter committees based on motion's council
+        if self.motion and self.motion.session and self.motion.session.council:
+            self.fields['committee'].queryset = Committee.objects.filter(
+                council=self.motion.session.council,
+                is_active=True
+            )
+            # Filter sessions for the same council
+            self.fields['vote_session'].queryset = Session.objects.filter(
+                council=self.motion.session.council,
+                is_active=True
+            ).order_by('-scheduled_date')
+        else:
+            self.fields['committee'].queryset = Committee.objects.none()
+            self.fields['vote_session'].queryset = Session.objects.none()
+        
+        # Set default session to motion's session
+        if self.motion and self.motion.session:
+            self.fields['vote_session'].initial = self.motion.session
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        vote_type = cleaned_data.get('vote_type')
+        committee = cleaned_data.get('committee')
+        
+        # If vote type is 'refer_to_committee', committee is required
+        if vote_type == 'refer_to_committee' and not committee:
+            raise forms.ValidationError({
+                'committee': _('Committee is required when vote type is "Refer to Committee".')
+            })
+        
+        return cleaned_data
 
 
 # Create the formset factory
