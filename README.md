@@ -14,7 +14,7 @@ A modern Django-based political group management system built with Docker, Postg
 
 ## 🛠️ Tech Stack
 
-- **Backend**: Django 5.2
+- **Backend**: Django 6.0
 - **Database**: PostgreSQL 15
 - **Web Server**: Nginx 1.25
 - **Containerization**: Docker & Docker Compose

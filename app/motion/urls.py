@@ -13,6 +13,7 @@ urlpatterns = [
     
     # Motion interaction URLs
     path('<int:pk>/vote/', views.motion_vote_view, name='motion-vote'),
+    path('<int:motion_pk>/vote/<str:vote_type>/<path:vote_name_encoded>/edit/', views.motion_vote_edit_view, name='motion-vote-edit'),
     path('<int:motion_pk>/vote/<str:vote_type>/<path:vote_name_encoded>/delete/', views.motion_vote_delete_view, name='motion-vote-delete'),
     path('<int:pk>/comment/', views.motion_comment_view, name='motion-comment'),
     path('<int:pk>/attach/', views.motion_attachment_view, name='motion-attach'),

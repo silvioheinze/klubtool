@@ -2,7 +2,7 @@
 {% load i18n %}
 
 {% block title %}
-    {% trans "Record Party Votes" %} - {{ motion.title }}
+    {% if is_edit %}{% trans "Edit Party Votes" %}{% else %}{% trans "Record Party Votes" %}{% endif %} - {{ motion.title }}
 {% endblock title %}
 
 {% block content %}
@@ -11,7 +11,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h1 class="h3 mb-0">
-                <i class="bi bi-check2-square"></i> {% trans "Record Party Votes" %}
+                <i class="bi bi-check2-square"></i> {% if is_edit %}{% trans "Edit Party Votes" %}{% else %}{% trans "Record Party Votes" %}{% endif %}
             </h1>
             <p class="text-muted">{{ motion.title }}</p>
             {% if term %}
@@ -197,7 +197,7 @@
                         
                         <div class="d-flex gap-2 mt-3">
                             <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-check-circle"></i> {% trans "Record All Votes" %}
+                                <i class="bi bi-check-circle"></i> {% if is_edit %}{% trans "Update All Votes" %}{% else %}{% trans "Record All Votes" %}{% endif %}
                             </button>
                             <a href="{% url 'motion:motion-detail' motion.pk %}" class="btn btn-outline-secondary">
                                 {% trans "Cancel" %}

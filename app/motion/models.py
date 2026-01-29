@@ -40,11 +40,16 @@ class Motion(models.Model):
     STATUS_CHOICES = [
         ('draft', _('Draft')),
         ('submitted', _('Submitted')),
+        ('tabled', _('Tabled')),
         ('refer_to_committee', _('Refer to Committee')),
+        ('refer_no_majority', _('Refer to Committee (no majority)')),
+        ('voted_in_committee', _('Voted upon in Committee')),
         ('approved', _('Approved')),
         ('rejected', _('Rejected')),
         ('withdrawn', _('Withdrawn')),
         ('not_admitted', _('Nicht zugelassen')),
+        ('answered', _('Answered')),
+        ('deleted', _('Deleted')),
     ]
     
     MOTION_TYPE_CHOICES = [
@@ -149,15 +154,21 @@ class Motion(models.Model):
         if self.pk:  # Only for existing instances
             try:
                 old_instance = Motion.objects.get(pk=self.pk)
-                if old_instance.status != self.status:
+                old_status = old_instance.status
+                if old_status != self.status:
                     # Status has changed, create a status history entry
                     MotionStatus.objects.create(
                         motion=self,
                         status=self.status,
                         committee=getattr(self, '_status_committee', None),
+                        session=getattr(self, '_status_session', None),
                         changed_by=getattr(self, '_status_changed_by', None),
                         reason=getattr(self, '_status_change_reason', '')
                     )
+                    # Log the status change
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.debug(f"Motion {self.pk} status changed from {old_status} to {self.status}")
             except Motion.DoesNotExist:
                 pass
         
@@ -227,7 +238,35 @@ class MotionVote(models.Model):
         verbose_name_plural = "Motion Votes"
     
     def __str__(self):
-        return f"{self.party.name} - {self.get_vote_summary()} on {self.motion.title}"
+        # Safely get party name without triggering RelatedObjectDoesNotExist
+        try:
+            if hasattr(self, 'party_id') and self.party_id:
+                # Use getattr with default to avoid RelatedObjectDoesNotExist
+                party = getattr(self, 'party', None)
+                if party:
+                    party_name = party.name
+                else:
+                    party_name = f"Party {self.party_id}"
+            else:
+                party_name = "Unknown Party"
+        except Exception:
+            party_name = "Unknown Party"
+        
+        # Safely get motion title
+        try:
+            if hasattr(self, 'motion_id') and self.motion_id:
+                # Use getattr with default to avoid RelatedObjectDoesNotExist
+                motion = getattr(self, 'motion', None)
+                if motion:
+                    motion_title = motion.title
+                else:
+                    motion_title = f"Motion {self.motion_id}"
+            else:
+                motion_title = "Unknown Motion"
+        except Exception:
+            motion_title = "Unknown Motion"
+        
+        return f"{party_name} - {self.get_vote_summary()} on {motion_title}"
     
     def get_vote_summary(self):
         """Get a summary of the voting results"""
@@ -274,11 +313,19 @@ class MotionVote(models.Model):
         from django.utils import timezone
         from local.models import Term, TermSeatDistribution
         
-        # Get the motion's session and term
-        if not self.motion or not self.motion.session:
+        # Get the motion's session and term (use motion_id to avoid RelatedObjectDoesNotExist)
+        if not self.motion_id:
             return
-        
-        session = self.motion.session
+        try:
+            motion = self.motion
+        except Motion.DoesNotExist:
+            return
+        if not motion or not getattr(motion, 'session_id', None):
+            return
+        try:
+            session = motion.session
+        except Exception:
+            return
         term = session.term
         
         # If session doesn't have a term, try to get current term from local
@@ -291,14 +338,17 @@ class MotionVote(models.Model):
             ).first()
         
         # Validate votes don't exceed party's max seats
-        if term and self.party:
+        # Use party_id to avoid RelatedObjectDoesNotExist when instance is unsaved
+        if term and self.party_id:
             try:
+                from local.models import Party
+                party = Party.objects.get(pk=self.party_id)
                 seat_distribution = TermSeatDistribution.objects.get(
                     term=term,
-                    party=self.party
+                    party=party
                 )
                 max_seats = seat_distribution.seats
-                total_votes = self.approve_votes + self.reject_votes
+                total_votes = (self.approve_votes or 0) + (self.reject_votes or 0)
                 
                 if total_votes > max_seats:
                     raise ValidationError(
@@ -307,6 +357,8 @@ class MotionVote(models.Model):
                             'max': max_seats
                         }
                     )
+            except Party.DoesNotExist:
+                pass
             except TermSeatDistribution.DoesNotExist:
                 # If no seat distribution exists, we can't validate
                 pass
@@ -402,10 +454,17 @@ class MotionStatus(models.Model):
     
     motion = models.ForeignKey(Motion, on_delete=models.CASCADE, related_name='status_history')
     status = models.CharField(max_length=20, choices=Motion.STATUS_CHOICES)
-    committee = models.ForeignKey('local.Committee', on_delete=models.SET_NULL, null=True, blank=True, related_name='motion_status_changes', help_text="Committee when status is 'refer_to_committee'")
+    committee = models.ForeignKey('local.Committee', on_delete=models.SET_NULL, null=True, blank=True, related_name='motion_status_changes', help_text="Committee when status is 'refer_to_committee' or 'voted_in_committee'")
+    session = models.ForeignKey(Session, on_delete=models.SET_NULL, null=True, blank=True, related_name='motion_status_changes', help_text="Session when status is 'tabled'")
     changed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='motion_status_changes')
     changed_at = models.DateTimeField(auto_now_add=True)
     reason = models.TextField(blank=True, help_text="Reason for the status change")
+    answer_pdf = models.FileField(
+        upload_to='motion_answers/%Y/%m/%d/',
+        null=True,
+        blank=True,
+        help_text=_("Written answer PDF (when status is 'answered')")
+    )
     
     class Meta:
         ordering = ['-changed_at']
