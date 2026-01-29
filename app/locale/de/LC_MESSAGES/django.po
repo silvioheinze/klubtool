@@ -179,7 +179,7 @@ msgstr "Zurückziehen"
 #: templates/motion/question_list.html:189
 #: templates/motion/question_status_change.html:46
 msgid "Answered"
-msgstr ""
+msgstr "Beantwortet"
 
 #: templates/_base.html:11 templates/_base.html:29
 msgid "Klubtool"
@@ -4636,6 +4636,36 @@ msgstr ""
 #: user/views.py:442
 msgid "Your email has been confirmed."
 msgstr ""
+
+#: motion/forms.py:1026 motion/models.py:466
+#: templates/motion/motion_detail.html:114 templates/motion/motion_detail.html:516
+#: templates/motion/motion_status_change.html:159
+msgid "Written answer (PDF)"
+msgstr "Schriftliche Antwort (PDF)"
+
+#: templates/motion/motion_status_change.html:170
+msgid "Upload the written answer as PDF (max. 20 MB). Required when marking as answered."
+msgstr "Laden Sie die schriftliche Antwort als PDF hoch (max. 20 MB). Erforderlich bei Markierung als beantwortet."
+
+#: motion/forms.py
+msgid "Upload the written answer PDF (required when marking as answered)"
+msgstr "Schriftliche Antwort als PDF hochladen (erforderlich bei Markierung als beantwortet)"
+
+#: motion/models.py:466
+msgid "Written answer PDF (when status is 'answered')"
+msgstr "Schriftliche Antwort als PDF (wenn Status „beantwortet“ ist)"
+
+#: motion/forms.py
+msgid "Please upload the written answer PDF when marking the motion as answered."
+msgstr "Bitte laden Sie die schriftliche Antwort als PDF hoch, wenn Sie den Antrag als beantwortet markieren."
+
+#: motion/forms.py
+msgid "Only PDF files are allowed for the written answer."
+msgstr "Für die schriftliche Antwort sind nur PDF-Dateien erlaubt."
+
+#: motion/forms.py
+msgid "The file must be smaller than 20 MB."
+msgstr "Die Datei darf maximal 20 MB groß sein."
 
 #, fuzzy
 #~| msgid "Add Member"

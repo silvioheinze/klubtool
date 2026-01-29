@@ -14,7 +14,7 @@ A modern Django-based political group management system built with Docker, Postg
 
 ## 🛠️ Tech Stack
 
-- **Backend**: Django 5.2
+- **Backend**: Django 6.0
 - **Database**: PostgreSQL 15
 - **Web Server**: Nginx 1.25
 - **Containerization**: Docker & Docker Compose
@@ -59,7 +59,15 @@ POSTGRES_PORT=5432
 # Django Configuration
 DJANGO_SECRET_KEY=your-secret-key-here-change-this-in-production
 DEBUG=False
-ALLOWED_HOSTS=localhost,127.0.0.1
+
+# ALLOWED_HOSTS: Comma-separated list of allowed host/domain names
+# For development, includes localhost, 127.0.0.1, and testserver (for Django test client)
+# For production, add your domain: ALLOWED_HOSTS=your-domain.com,www.your-domain.com
+ALLOWED_HOSTS=localhost,127.0.0.1,testserver
+
+# CSRF_TRUSTED_ORIGINS: Comma-separated list of trusted origins for CSRF protection
+# For production with HTTPS: CSRF_TRUSTED_ORIGINS=https://your-domain.com
+CSRF_TRUSTED_ORIGINS=http://localhost:8000,http://127.0.0.1:8000
 
 # Time Zone
 TIME_ZONE=Europe/Vienna

@@ -40,11 +40,16 @@ class Motion(models.Model):
     STATUS_CHOICES = [
         ('draft', _('Draft')),
         ('submitted', _('Submitted')),
+        ('tabled', _('Tabled')),
         ('refer_to_committee', _('Refer to Committee')),
+        ('refer_no_majority', _('Refer to Committee (no majority)')),
+        ('voted_in_committee', _('Voted upon in Committee')),
         ('approved', _('Approved')),
         ('rejected', _('Rejected')),
         ('withdrawn', _('Withdrawn')),
         ('not_admitted', _('Nicht zugelassen')),
+        ('answered', _('Answered')),
+        ('deleted', _('Deleted')),
     ]
     
     MOTION_TYPE_CHOICES = [
@@ -149,15 +154,21 @@ class Motion(models.Model):
         if self.pk:  # Only for existing instances
             try:
                 old_instance = Motion.objects.get(pk=self.pk)
-                if old_instance.status != self.status:
+                old_status = old_instance.status
+                if old_status != self.status:
                     # Status has changed, create a status history entry
                     MotionStatus.objects.create(
                         motion=self,
                         status=self.status,
                         committee=getattr(self, '_status_committee', None),
+                        session=getattr(self, '_status_session', None),
                         changed_by=getattr(self, '_status_changed_by', None),
                         reason=getattr(self, '_status_change_reason', '')
                     )
+                    # Log the status change
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.debug(f"Motion {self.pk} status changed from {old_status} to {self.status}")
             except Motion.DoesNotExist:
                 pass
         
@@ -167,6 +178,11 @@ class Motion(models.Model):
 class MotionVote(models.Model):
     """Model representing votes on motions by parties"""
     
+    VOTE_TYPE_CHOICES = [
+        ('regular', _('Regular Vote')),
+        ('refer_to_committee', _('Refer to Committee')),
+    ]
+    
     VOTE_CHOICES = [
         ('approve', _('Approve')),
         ('reject', _('Reject')),
@@ -174,11 +190,47 @@ class MotionVote(models.Model):
     
     motion = models.ForeignKey(Motion, on_delete=models.CASCADE, related_name='votes')
     party = models.ForeignKey(Party, on_delete=models.CASCADE, related_name='motion_votes', help_text="Party casting the vote")
+    vote_type = models.CharField(max_length=20, choices=VOTE_TYPE_CHOICES, default='regular', help_text="Type of vote: regular or refer to committee")
     status = models.ForeignKey('MotionStatus', on_delete=models.CASCADE, related_name='votes', null=True, blank=True, help_text="Status change this vote is connected to")
-    approve_votes = models.PositiveIntegerField(default=0, help_text="Number of approve votes from this party")
-    reject_votes = models.PositiveIntegerField(default=0, help_text="Number of reject votes from this party")
+    approve_votes = models.PositiveIntegerField(default=0, help_text="Number of votes in favor from this party")
+    reject_votes = models.PositiveIntegerField(default=0, help_text="Number of votes against from this party")
     notes = models.TextField(blank=True, help_text="Additional notes about the voting")
     voted_at = models.DateTimeField(auto_now_add=True)
+    
+    # New fields for multiple votes support
+    vote_session = models.ForeignKey(
+        'local.Session',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='motion_votes',
+        help_text="Session where this vote was cast"
+    )
+    vote_name = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text="Custom name/description for this voting round"
+    )
+    outcome = models.CharField(
+        max_length=20,
+        choices=[
+            ('adopted', 'Adopted'),
+            ('rejected', 'Rejected'),
+            ('tie', 'Tie'),
+            ('referred', 'Referred to Committee'),
+            ('not_referred', 'Not Referred'),
+        ],
+        blank=True,
+        help_text="Calculated outcome based on majority"
+    )
+    total_favor = models.PositiveIntegerField(
+        default=0,
+        help_text="Total votes in favor across all parties (calculated)"
+    )
+    total_against = models.PositiveIntegerField(
+        default=0,
+        help_text="Total votes against across all parties (calculated)"
+    )
     
     class Meta:
         ordering = ['-voted_at']
@@ -186,7 +238,35 @@ class MotionVote(models.Model):
         verbose_name_plural = "Motion Votes"
     
     def __str__(self):
-        return f"{self.party.name} - {self.get_vote_summary()} on {self.motion.title}"
+        # Safely get party name without triggering RelatedObjectDoesNotExist
+        try:
+            if hasattr(self, 'party_id') and self.party_id:
+                # Use getattr with default to avoid RelatedObjectDoesNotExist
+                party = getattr(self, 'party', None)
+                if party:
+                    party_name = party.name
+                else:
+                    party_name = f"Party {self.party_id}"
+            else:
+                party_name = "Unknown Party"
+        except Exception:
+            party_name = "Unknown Party"
+        
+        # Safely get motion title
+        try:
+            if hasattr(self, 'motion_id') and self.motion_id:
+                # Use getattr with default to avoid RelatedObjectDoesNotExist
+                motion = getattr(self, 'motion', None)
+                if motion:
+                    motion_title = motion.title
+                else:
+                    motion_title = f"Motion {self.motion_id}"
+            else:
+                motion_title = "Unknown Motion"
+        except Exception:
+            motion_title = "Unknown Motion"
+        
+        return f"{party_name} - {self.get_vote_summary()} on {motion_title}"
     
     def get_vote_summary(self):
         """Get a summary of the voting results"""
@@ -211,11 +291,115 @@ class MotionVote(models.Model):
         """Percentage of party members who voted - simplified without total_members"""
         return 100  # Since we removed total_members, assume 100% participation
     
+    def calculate_outcome(self):
+        """Calculate and return the outcome based on vote totals"""
+        if self.vote_type == 'regular':
+            if self.total_favor > self.total_against:
+                return 'adopted'
+            elif self.total_against > self.total_favor:
+                return 'rejected'
+            else:
+                return 'tie'
+        elif self.vote_type == 'refer_to_committee':
+            if self.total_favor > self.total_against:
+                return 'referred'
+            else:
+                return 'not_referred'
+        return ''
+    
     def clean(self):
         """Validate the vote data"""
         from django.core.exceptions import ValidationError
-        # No validation needed since we removed total_members constraint
-        pass
+        from django.utils import timezone
+        from local.models import Term, TermSeatDistribution
+        
+        # Get the motion's session and term (use motion_id to avoid RelatedObjectDoesNotExist)
+        if not self.motion_id:
+            return
+        try:
+            motion = self.motion
+        except Motion.DoesNotExist:
+            return
+        if not motion or not getattr(motion, 'session_id', None):
+            return
+        try:
+            session = motion.session
+        except Exception:
+            return
+        term = session.term
+        
+        # If session doesn't have a term, try to get current term from local
+        if not term and session.council and session.council.local:
+            today = timezone.now().date()
+            term = Term.objects.filter(
+                start_date__lte=today,
+                end_date__gte=today,
+                is_active=True
+            ).first()
+        
+        # Validate votes don't exceed party's max seats
+        # Use party_id to avoid RelatedObjectDoesNotExist when instance is unsaved
+        if term and self.party_id:
+            try:
+                from local.models import Party
+                party = Party.objects.get(pk=self.party_id)
+                seat_distribution = TermSeatDistribution.objects.get(
+                    term=term,
+                    party=party
+                )
+                max_seats = seat_distribution.seats
+                total_votes = (self.approve_votes or 0) + (self.reject_votes or 0)
+                
+                if total_votes > max_seats:
+                    raise ValidationError(
+                        _('Total votes (%(total)d) cannot exceed party\'s maximum seats (%(max)d) for this term.') % {
+                            'total': total_votes,
+                            'max': max_seats
+                        }
+                    )
+            except Party.DoesNotExist:
+                pass
+            except TermSeatDistribution.DoesNotExist:
+                # If no seat distribution exists, we can't validate
+                pass
+    
+    def save(self, *args, **kwargs):
+        """Override save to calculate outcome and totals"""
+        # Save first to get pk
+        super().save(*args, **kwargs)
+        
+        # After saving, recalculate totals for all votes in this round
+        if self.motion and self.vote_type:
+            all_votes = MotionVote.objects.filter(
+                motion=self.motion,
+                vote_type=self.vote_type,
+                vote_name=self.vote_name or ''
+            )
+            total_favor = sum(v.approve_votes for v in all_votes)
+            total_against = sum(v.reject_votes for v in all_votes)
+            
+            # Calculate outcome based on vote type
+            if self.vote_type == 'regular':
+                if total_favor > total_against:
+                    outcome = 'adopted'
+                elif total_against > total_favor:
+                    outcome = 'rejected'
+                else:
+                    outcome = 'tie'
+            elif self.vote_type == 'refer_to_committee':
+                if total_favor > total_against:
+                    outcome = 'referred'
+                else:
+                    outcome = 'not_referred'
+            else:
+                outcome = ''
+            
+            # Update all votes in this round with the same totals and outcome
+            all_votes.update(
+                total_favor=total_favor,
+                total_against=total_against,
+                outcome=outcome
+            )
 
 
 class MotionComment(models.Model):
@@ -270,10 +454,17 @@ class MotionStatus(models.Model):
     
     motion = models.ForeignKey(Motion, on_delete=models.CASCADE, related_name='status_history')
     status = models.CharField(max_length=20, choices=Motion.STATUS_CHOICES)
-    committee = models.ForeignKey('local.Committee', on_delete=models.SET_NULL, null=True, blank=True, related_name='motion_status_changes', help_text="Committee when status is 'refer_to_committee'")
+    committee = models.ForeignKey('local.Committee', on_delete=models.SET_NULL, null=True, blank=True, related_name='motion_status_changes', help_text="Committee when status is 'refer_to_committee' or 'voted_in_committee'")
+    session = models.ForeignKey(Session, on_delete=models.SET_NULL, null=True, blank=True, related_name='motion_status_changes', help_text="Session when status is 'tabled'")
     changed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='motion_status_changes')
     changed_at = models.DateTimeField(auto_now_add=True)
     reason = models.TextField(blank=True, help_text="Reason for the status change")
+    answer_pdf = models.FileField(
+        upload_to='motion_answers/%Y/%m/%d/',
+        null=True,
+        blank=True,
+        help_text=_("Written answer PDF (when status is 'answered')")
+    )
     
     class Meta:
         ordering = ['-changed_at']

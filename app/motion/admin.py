@@ -68,6 +68,10 @@ class MotionAdmin(admin.ModelAdmin):
 @admin.register(MotionVote)
 class MotionVoteAdmin(admin.ModelAdmin):
     """Admin configuration for MotionVote model"""
+    list_display = ['motion', 'party', 'vote_type', 'vote_name', 'outcome', 'total_favor', 'total_against', 'voted_at']
+    list_filter = ['vote_type', 'outcome', 'vote_session']
+    search_fields = ['motion__title', 'party__name', 'vote_name']
+    readonly_fields = ['total_favor', 'total_against', 'outcome', 'voted_at']
     list_display = ['motion', 'party', 'status', 'get_vote_summary', 'total_votes_cast', 'participation_rate', 'voted_at']
     list_filter = ['voted_at', 'motion__status', 'party__local', 'status__status']
     search_fields = ['motion__title', 'party__name', 'notes']

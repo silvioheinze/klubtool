@@ -7,6 +7,16 @@
 
 {% block content %}
 <div class="container-fluid">
+    <!-- Messages -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+    
     <!-- Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
@@ -58,14 +68,49 @@
                     <h5 class="mb-0">{% trans "Change Status" %}</h5>
                 </div>
                 <div class="card-body">
-                    <form method="post">
+                    {% if form.errors or form.non_field_errors or vote_formset.non_form_errors %}
+                        <div class="alert alert-danger">
+                            <h6>{% trans "Please correct the errors below:" %}</h6>
+                            {% if form.non_field_errors %}
+                                <ul class="mb-0">
+                                    {% for error in form.non_field_errors %}
+                                        <li>{{ error }}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% endif %}
+                            {% if form.errors %}
+                                <ul class="mb-0">
+                                    {% for field, errors in form.errors.items %}
+                                        {% for error in errors %}
+                                            <li><strong>{{ field }}</strong>: {{ error }}</li>
+                                        {% endfor %}
+                                    {% endfor %}
+                                </ul>
+                            {% endif %}
+                            {% if vote_formset.non_form_errors %}
+                                <ul class="mb-0">
+                                    {% for error in vote_formset.non_form_errors %}
+                                        <li><strong>{% trans "Votes" %}</strong>: {{ error }}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                    
+                    <form method="post" enctype="multipart/form-data">
                         {% csrf_token %}
                         
                         <div class="mb-3">
-                            <label for="{{ form.status.id_for_label }}" class="form-label">
+                            <label class="form-label">
                                 <strong>{% trans "New Status" %}</strong>
                             </label>
-                            {{ form.status }}
+                            {% if form.locked_status %}
+                                {# Status is locked from query parameter - show as read-only #}
+                                <input type="text" class="form-control" value="{{ status_display }}" readonly>
+                                {{ form.status }} {# Hidden field for form submission #}
+                            {% else %}
+                                {{ form.status }}
+                            {% endif %}
                             {% if form.status.errors %}
                                 <div class="text-danger">
                                     {% for error in form.status.errors %}
@@ -89,6 +134,40 @@
                             {% endif %}
                             <div class="form-text">
                                 {% trans "Select the committee to refer this motion to." %}
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3" id="session-field" style="display: none;">
+                            <label for="{{ form.session.id_for_label }}" class="form-label">
+                                <strong>{% trans "Session" %}</strong>
+                            </label>
+                            {{ form.session }}
+                            {% if form.session.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.session.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">
+                                {% trans "Select the session where this motion will be tabled." %}
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3" id="answer-pdf-field" style="display: none;">
+                            <label for="{{ form.answer_pdf.id_for_label }}" class="form-label">
+                                <strong>{% trans "Written answer (PDF)" %}</strong>
+                            </label>
+                            {{ form.answer_pdf }}
+                            {% if form.answer_pdf.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.answer_pdf.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">
+                                {% trans "Upload the written answer as PDF (max. 20 MB). Required when marking as answered." %}
                             </div>
                         </div>
                         
@@ -136,7 +215,6 @@
                                                     <th style="width: 25%; text-align: center;">{% trans "Party" %}</th>
                                                     <th style="width: 15%; text-align: center;">{% trans "Approve" %}</th>
                                                     <th style="width: 15%; text-align: center;">{% trans "Reject" %}</th>
-                                                    <th style="width: 15%; text-align: center;">{% trans "Abstain" %}</th>
                                                     <th style="width: 10%; text-align: center;">{% trans "Total" %}</th>
                                                     <th style="width: 20%; text-align: center;">{% trans "Notes" %}</th>
                                                 </tr>
@@ -147,9 +225,21 @@
                                                         <td class="align-middle">
                                                             {{ form.party }}
                                                             <div class="fw-bold text-primary">
-                                                                {% if form.party.value %}
+                                                                {% if form.initial.party %}
+                                                                    {% for party in form.party.field.queryset %}
+                                                                        {% if party.pk == form.initial.party %}
+                                                                            {{ party.name }}
+                                                                        {% endif %}
+                                                                    {% endfor %}
+                                                                {% elif form.party.value %}
                                                                     {% for party in form.party.field.queryset %}
                                                                         {% if party.pk == form.party.value %}
+                                                                            {{ party.name }}
+                                                                        {% endif %}
+                                                                    {% endfor %}
+                                                                {% elif form.instance and form.instance.party_id %}
+                                                                    {% for party in form.party.field.queryset %}
+                                                                        {% if party.pk == form.instance.party_id %}
                                                                             {{ party.name }}
                                                                         {% endif %}
                                                                     {% endfor %}
@@ -157,6 +247,9 @@
                                                                     {% trans "Party" %}
                                                                 {% endif %}
                                                             </div>
+                                                            {% if form.max_seats %}
+                                                                <small class="text-muted d-block">{% trans "Max seats" %}: {{ form.max_seats }}</small>
+                                                            {% endif %}
                                                         </td>
                                                         <td class="text-center">
                                                             {{ form.approve_votes }}
@@ -167,22 +260,19 @@
                                                                     {% endfor %}
                                                                 </div>
                                                             {% endif %}
-                                                        </td>
-                                                        <td class="text-center">
-                                                            {{ form.reject_votes }}
-                                                            {% if form.reject_votes.errors %}
+                                                            {% if form.non_field_errors %}
                                                                 <div class="text-danger">
-                                                                    {% for error in form.reject_votes.errors %}
+                                                                    {% for error in form.non_field_errors %}
                                                                         <small>{{ error }}</small>
                                                                     {% endfor %}
                                                                 </div>
                                                             {% endif %}
                                                         </td>
                                                         <td class="text-center">
-                                                            {{ form.abstain_votes }}
-                                                            {% if form.abstain_votes.errors %}
+                                                            {{ form.reject_votes }}
+                                                            {% if form.reject_votes.errors %}
                                                                 <div class="text-danger">
-                                                                    {% for error in form.abstain_votes.errors %}
+                                                                    {% for error in form.reject_votes.errors %}
                                                                         <small>{{ error }}</small>
                                                                     {% endfor %}
                                                                 </div>
@@ -301,59 +391,135 @@
 document.addEventListener('DOMContentLoaded', function() {
     const statusSelect = document.getElementById('{{ form.status.id_for_label }}');
     const committeeField = document.getElementById('committee-field');
+    const sessionField = document.getElementById('session-field');
+    const answerPdfField = document.getElementById('answer-pdf-field');
     const voteSection = document.getElementById('vote-section');
     
+    // Get the locked status from the hidden input if status is locked
+    let selectedStatus = '{{ form.locked_status|default:"" }}';
+    if (!selectedStatus && statusSelect) {
+        selectedStatus = statusSelect.value;
+    }
+    
     function toggleFields() {
-        const selectedStatus = statusSelect.value;
+        if (!selectedStatus) return;
         
         // Toggle committee field
-        if (selectedStatus === 'refer_to_committee') {
-            committeeField.style.display = 'block';
-        } else {
-            committeeField.style.display = 'none';
+        if (committeeField) {
+            if (selectedStatus === 'refer_to_committee' || selectedStatus === 'voted_in_committee') {
+                committeeField.style.display = 'block';
+            } else {
+                committeeField.style.display = 'none';
+            }
+        }
+        
+        // Toggle session field
+        if (sessionField) {
+            if (selectedStatus === 'tabled') {
+                sessionField.style.display = 'block';
+            } else {
+                sessionField.style.display = 'none';
+            }
+        }
+        
+        // Toggle written answer PDF field
+        if (answerPdfField) {
+            if (selectedStatus === 'answered') {
+                answerPdfField.style.display = 'block';
+            } else {
+                answerPdfField.style.display = 'none';
+            }
         }
         
         // Toggle vote section
-        if (selectedStatus === 'approved' || selectedStatus === 'rejected' || selectedStatus === 'refer_to_committee') {
-            voteSection.style.display = 'block';
-        } else {
-            voteSection.style.display = 'none';
+        if (voteSection) {
+            if (selectedStatus === 'approved' || selectedStatus === 'rejected' || selectedStatus === 'refer_to_committee' || selectedStatus === 'voted_in_committee') {
+                voteSection.style.display = 'block';
+            } else {
+                voteSection.style.display = 'none';
+            }
         }
     }
     
     // Initial state
     toggleFields();
     
-    // Listen for changes
-    statusSelect.addEventListener('change', toggleFields);
+    // Listen for changes (only if status select exists and is not hidden)
+    if (statusSelect) {
+        statusSelect.addEventListener('change', function() {
+            selectedStatus = statusSelect.value;
+            toggleFields();
+        });
+    }
     
     // Calculate totals for vote formset
     const approveInputs = document.querySelectorAll('input[name*="approve_votes"]');
     const rejectInputs = document.querySelectorAll('input[name*="reject_votes"]');
-    const abstainInputs = document.querySelectorAll('input[name*="abstain_votes"]');
     
     function updateTotal(index) {
-        const approve = parseInt(approveInputs[index].value) || 0;
-        const reject = parseInt(rejectInputs[index].value) || 0;
-        const abstain = parseInt(abstainInputs[index].value) || 0;
-        const total = approve + reject + abstain;
-        document.getElementById('total-' + index).textContent = total;
+        // Safely get values, defaulting to 0 if element doesn't exist
+        const approve = (approveInputs[index] && approveInputs[index].value) ? parseInt(approveInputs[index].value) || 0 : 0;
+        const reject = (rejectInputs[index] && rejectInputs[index].value) ? parseInt(rejectInputs[index].value) || 0 : 0;
+        const total = approve + reject;
+        
+        const totalElement = document.getElementById('total-' + index);
+        if (totalElement) {
+            totalElement.textContent = total;
+            
+            // Check if total exceeds max seats and highlight if so
+            const approveInput = approveInputs[index];
+            const maxSeats = approveInput ? parseInt(approveInput.getAttribute('max')) || 0 : 0;
+            if (maxSeats > 0 && total > maxSeats) {
+                totalElement.classList.add('text-danger', 'fw-bold');
+                totalElement.title = '{% trans "Total exceeds maximum seats" %}';
+            } else {
+                totalElement.classList.remove('text-danger', 'fw-bold');
+                totalElement.title = '';
+            }
+        }
     }
     
-    approveInputs.forEach(function(input, index) {
-        input.addEventListener('input', function() { updateTotal(index); });
-        updateTotal(index);
-    });
-    
-    rejectInputs.forEach(function(input, index) {
-        input.addEventListener('input', function() { updateTotal(index); });
-        updateTotal(index);
-    });
-    
-    abstainInputs.forEach(function(input, index) {
-        input.addEventListener('input', function() { updateTotal(index); });
-        updateTotal(index);
-    });
+    // Only process if we have matching inputs
+    const maxLength = Math.max(approveInputs.length, rejectInputs.length);
+    for (let index = 0; index < maxLength; index++) {
+        if (approveInputs[index]) {
+            // Ensure the input has a numeric value (for proper spinner behavior)
+            if (approveInputs[index].value === '' || approveInputs[index].value === null || isNaN(parseInt(approveInputs[index].value))) {
+                approveInputs[index].value = '0';
+            }
+            // Listen to both 'input' and 'change' events for number inputs
+            // 'change' is triggered by spinner arrows, 'input' by typing
+            approveInputs[index].addEventListener('input', function() { 
+                updateTotal(index); 
+            }, false);
+            approveInputs[index].addEventListener('change', function() { 
+                // Normalize empty values to 0 after change
+                if (this.value === '' || this.value === null) {
+                    this.value = '0';
+                }
+                updateTotal(index); 
+            }, false);
+            updateTotal(index);
+        }
+        if (rejectInputs[index]) {
+            // Ensure the input has a numeric value (for proper spinner behavior)
+            if (rejectInputs[index].value === '' || rejectInputs[index].value === null || isNaN(parseInt(rejectInputs[index].value))) {
+                rejectInputs[index].value = '0';
+            }
+            // Listen to both 'input' and 'change' events for number inputs
+            rejectInputs[index].addEventListener('input', function() { 
+                updateTotal(index); 
+            }, false);
+            rejectInputs[index].addEventListener('change', function() { 
+                // Normalize empty values to 0 after change
+                if (this.value === '' || this.value === null) {
+                    this.value = '0';
+                }
+                updateTotal(index); 
+            }, false);
+            updateTotal(index);
+        }
+    }
 });
 </script>
 {% endblock content %}
