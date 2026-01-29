@@ -381,8 +381,9 @@
                 </div>
             </div>
             
-            <!-- Presence Tracker -->
-            {% if presence_data %}
+            <!-- Presence Tracker (only on day of session) -->
+            {% now "Y-m-d" as today %}
+            {% if presence_data and session.scheduled_date|date:"Y-m-d" == today %}
             <div class="card mt-3">
                 <div class="card-header">
                     <h5 class="mb-0">
