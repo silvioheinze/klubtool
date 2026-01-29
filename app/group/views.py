@@ -13,7 +13,7 @@ from django.utils.translation import gettext_lazy as _
 from django.http import HttpResponse
 from django.utils import timezone
 from .models import Group, GroupMember, GroupMeeting, AgendaItem
-from .forms import GroupForm, GroupFilterForm, GroupMemberForm, GroupMemberFilterForm, GroupMeetingForm, AgendaItemForm
+from .forms import GroupForm, GroupFilterForm, GroupMemberForm, GroupMemberFilterForm, GroupMeetingForm, AgendaItemForm, GroupInviteForm
 
 User = get_user_model()
 
@@ -913,6 +913,56 @@ class AgendaItemUpdateOrderAjaxView(LoginRequiredMixin, UserPassesTestMixin, Vie
                 'success': False,
                 'error': str(e)
             })
+
+
+@login_required
+def invite_member(request, pk):
+    """Show form to invite a new member by email; send email with create-account link."""
+    group = get_object_or_404(Group, pk=pk)
+    if not (request.user.is_superuser or group.can_user_manage_group(request.user)):
+        messages.error(request, _("You don't have permission to invite members to this group."))
+        return redirect('group:group-detail', pk=group.pk)
+
+    if request.method == 'POST':
+        form = GroupInviteForm(request.POST)
+        if form.is_valid():
+            email = form.cleaned_data['email'].strip().lower()
+            # If user already exists, don't send duplicate invite; suggest adding as member instead
+            existing_user = User.objects.filter(email__iexact=email).first()
+            if existing_user:
+                if group.members.filter(user=existing_user, is_active=True).exists():
+                    messages.warning(request, _("A member with this email is already in the group."))
+                else:
+                    messages.info(request, _("A user with this email already has an account. You can add them as a member from 'Add Member'."))
+                return render(request, 'group/member_invite.html', {'form': form, 'group': group})
+
+            from urllib.parse import quote
+            signup_url = request.build_absolute_uri(reverse('user-signup')) + '?email=' + quote(email)
+            from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@klubtool.local')
+            subject = _("Invitation to join {group_name}").format(group_name=group.name)
+            context = {'group': group, 'signup_url': signup_url, 'email': email}
+            try:
+                plain_message = render_to_string('group/email/member_invite.txt', context)
+                html_message = render_to_string('group/email/member_invite.html', context)
+            except Exception:
+                html_message = None
+                plain_message = _("You have been invited to join the group \"{group_name}\". Create your account by visiting: {url}").format(
+                    group_name=group.name, url=signup_url
+                )
+            send_mail(
+                subject,
+                plain_message,
+                from_email,
+                [email],
+                html_message=html_message,
+                fail_silently=False,
+            )
+            messages.success(request, _("Invitation email sent to {email}.").format(email=email))
+            return redirect('group:group-detail', pk=group.pk)
+    else:
+        form = GroupInviteForm()
+
+    return render(request, 'group/member_invite.html', {'form': form, 'group': group})
 
 
 @login_required

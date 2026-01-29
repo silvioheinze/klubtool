@@ -504,7 +504,7 @@ msgstr ""
 #: templates/user/email/welcome_email.html:92
 #: templates/user/email/welcome_email.txt:17
 msgid "Best regards"
-msgstr ""
+msgstr "Mit freundlichen Grüßen"
 
 #: templates/group/email/meeting_invite.txt:8
 msgid "Meeting Title"
@@ -4666,6 +4666,87 @@ msgstr "Für die schriftliche Antwort sind nur PDF-Dateien erlaubt."
 #: motion/forms.py
 msgid "The file must be smaller than 20 MB."
 msgstr "Die Datei darf maximal 20 MB groß sein."
+
+#: group/forms.py group/views.py
+#: templates/group/member_invite.html templates/group/group_detail.html
+msgid "Invite member"
+msgstr "Mitglied einladen"
+
+#: group/forms.py templates/group/member_invite.html
+msgid "Email address"
+msgstr "E-Mail-Adresse"
+
+#: group/forms.py
+msgid "Enter email address"
+msgstr "E-Mail-Adresse eingeben"
+
+#: group/forms.py
+msgid "The person will receive an email with a link to create an account."
+msgstr "Die Person erhält eine E-Mail mit einem Link zur Kontoerstellung."
+
+#: templates/group/member_invite.html
+msgid "Send an email with a link to create an account. After the person has signed up, you can add them as a member from 'Add Member'."
+msgstr "Eine E-Mail mit Link zur Kontoerstellung senden. Nach der Registrierung können Sie die Person unter „Mitglied hinzufügen“ zur Gruppe hinzufügen."
+
+#: templates/group/member_invite.html
+msgid "Send invitation"
+msgstr "Einladung senden"
+
+#: group/views.py
+msgid "You don't have permission to invite members to this group."
+msgstr "Sie haben keine Berechtigung, Mitglieder in diese Gruppe einzuladen."
+
+#: group/views.py
+msgid "A member with this email is already in the group."
+msgstr "Ein Mitglied mit dieser E-Mail-Adresse ist bereits in der Gruppe."
+
+#: group/views.py
+msgid "A user with this email already has an account. You can add them as a member from 'Add Member'."
+msgstr "Ein Nutzer mit dieser E-Mail-Adresse hat bereits ein Konto. Sie können die Person unter „Mitglied hinzufügen“ hinzufügen."
+
+#: group/views.py
+#, python-brace-format
+msgid "Invitation to join {group_name}"
+msgstr "Einladung zur Gruppe {group_name}"
+
+#: group/views.py
+#, python-brace-format
+msgid "Invitation email sent to {email}."
+msgstr "Einladungs-E-Mail wurde an {email} gesendet."
+
+#: group/views.py
+#, python-brace-format
+msgid "You have been invited to join the group \"{group_name}\". Create your account by visiting: {url}"
+msgstr "Sie wurden eingeladen, der Gruppe „{group_name}“ beizutreten. Erstellen Sie Ihr Konto unter: {url}"
+
+#: templates/group/email/member_invite.txt templates/group/email/member_invite.html
+msgid "Group invitation"
+msgstr "Gruppeneinladung"
+
+#: templates/group/email/member_invite.txt templates/group/email/member_invite.html
+#, python-format
+msgid "You have been invited to join the group \"%(group_name)s\"."
+msgstr "Sie wurden eingeladen, der Gruppe „%(group_name)s“ beizutreten."
+
+#: templates/group/email/member_invite.txt
+msgid "Create your account by clicking the link below (or copy it into your browser):"
+msgstr "Erstellen Sie Ihr Konto, indem Sie auf den folgenden Link klicken (oder ihn in Ihren Browser kopieren):"
+
+#: templates/group/email/member_invite.txt templates/group/email/member_invite.html
+msgid "After creating your account, a group administrator can add you to the group."
+msgstr "Nach der Kontoerstellung kann ein Gruppenadministrator Sie zur Gruppe hinzufügen."
+
+#: templates/group/email/member_invite.html
+msgid "Click the button below to create your account:"
+msgstr "Klicken Sie auf die Schaltfläche unten, um Ihr Konto zu erstellen:"
+
+#: templates/group/email/member_invite.html
+msgid "Create account"
+msgstr "Konto erstellen"
+
+#: templates/group/email/member_invite.html
+msgid "Or copy this link into your browser:"
+msgstr "Oder kopieren Sie diesen Link in Ihren Browser:"
 
 #, fuzzy
 #~| msgid "Add Member"

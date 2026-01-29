@@ -54,6 +54,13 @@ class SignupPageView(CreateView):
     success_url = reverse_lazy("home")
     template_name = "user/signup.html"
 
+    def get_initial(self):
+        initial = super().get_initial()
+        email = self.request.GET.get('email', '').strip()
+        if email:
+            initial['email'] = email
+        return initial
+
     def form_valid(self, form):
         user = form.instance
         return super().form_valid(form)
