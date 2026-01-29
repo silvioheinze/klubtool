@@ -120,64 +120,53 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
                 </div>
+            </div>
             {% endif %}
             
-            <!-- Motion Statistics -->
-            {% if user.is_authenticated and total_motions > 0 %}
+            <!-- Personal Calendar -->
+            {% if user.is_authenticated and personal_calendar_events %}
                 <div class="row mt-4">
                     <div class="col-12">
                         <div class="card">
                             <div class="card-header">
-                                <h5 class="mb-0"><i class="bi bi-bar-chart"></i> {% trans "Motion Statistics" %}</h5>
+                                <h5 class="mb-0"><i class="bi bi-calendar-event"></i> {% trans "Personal calendar" %}</h5>
+                                <small class="text-muted">{% trans "Council and committee sessions plus group meetings (next 60 days)" %}</small>
                             </div>
                             <div class="card-body">
-                                <div class="row">
-                                    <!-- Summary Cards -->
-                                    <div class="col-md-4 mb-3">
-                                        <div class="card bg-primary text-white">
-                                            <div class="card-body">
-                                                <h6 class="card-title">{% trans "Total Motions" %}</h6>
-                                                <h2 class="mb-0">{{ total_motions }}</h2>
+                                <div class="list-group list-group-flush">
+                                    {% for event in personal_calendar_events %}
+                                        <a href="{{ event.url }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-start">
+                                            <div class="ms-2 me-auto">
+                                                <div class="d-flex align-items-center gap-2 flex-wrap">
+                                                    <span class="fw-bold">{{ event.title }}</span>
+                                                    {% if event.type == 'council_session' %}
+                                                        <span class="badge bg-primary">{% trans "Council" %}</span>
+                                                    {% elif event.type == 'committee_session' %}
+                                                        <span class="badge bg-info">{% trans "Committee" %}</span>
+                                                    {% elif event.type == 'group_meeting' %}
+                                                        <span class="badge bg-success">{% trans "Group meeting" %}</span>
+                                                    {% endif %}
+                                                </div>
+                                                <small class="text-muted">{{ event.subtitle }}{% if event.location %} · {{ event.location }}{% endif %}</small>
                                             </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4 mb-3">
-                                        <div class="card bg-success text-white">
-                                            <div class="card-body">
-                                                <h6 class="card-title">{% trans "Approved" %}</h6>
-                                                <h2 class="mb-0">{{ motion_status_stats.approved|default:0 }}</h2>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4 mb-3">
-                                        <div class="card bg-warning text-white">
-                                            <div class="card-body">
-                                                <h6 class="card-title">{% trans "Draft" %}</h6>
-                                                <h2 class="mb-0">{{ motion_status_stats.draft|default:0 }}</h2>
-                                            </div>
-                                        </div>
-                                    </div>
+                                            <small class="text-nowrap">{{ event.date|date:"d.m.Y H:i" }}</small>
+                                        </a>
+                                    {% endfor %}
                                 </div>
-                                
-                                <div class="row mt-4">
-                                    <!-- Status Chart -->
-                                    <div class="col-md-6 mb-4">
-                                        <h6>{% trans "Motions by Status" %}</h6>
-                                        <div style="max-height: 400px; overflow-y: auto;">
-                                            <canvas id="motionStatusChart" height="250"></canvas>
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- Session Chart -->
-                                    <div class="col-md-6 mb-4">
-                                        <h6>{% trans "Motions by Session" %}</h6>
-                                        <div style="max-height: 400px; overflow-y: auto;">
-                                            <canvas id="motionSessionChart" height="250"></canvas>
-                                        </div>
-                                    </div>
-                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% elif user.is_authenticated %}
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0"><i class="bi bi-calendar-event"></i> {% trans "Personal calendar" %}</h5>
+                            </div>
+                            <div class="card-body">
+                                <p class="text-muted mb-0">{% trans "No upcoming sessions or group meetings. Sessions from your councils and committees, and meetings from your groups, will appear here." %}</p>
                             </div>
                         </div>
                     </div>
@@ -188,128 +177,4 @@
     </div>
 </div>
 
-{% if user.is_authenticated and total_motions > 0 %}
-    <!-- Chart.js -->
-    <script src="{% static 'js/chart.umd.min.js' %}"></script>
-    <script>
-        // Motion Status Chart
-        const statusCtx = document.getElementById('motionStatusChart');
-        if (statusCtx) {
-            const statusLabels = [
-                {% for item in motion_status_chart_data %}
-                    '{{ item.label }}'{% if not forloop.last %},{% endif %}
-                {% endfor %}
-            ];
-            const statusCounts = [
-                {% for item in motion_status_chart_data %}
-                    {{ item.count }}{% if not forloop.last %},{% endif %}
-                {% endfor %}
-            ];
-            
-            const statusData = {
-                labels: statusLabels,
-                datasets: [{
-                    label: '{% trans "Motions" %}',
-                    data: statusCounts,
-                    backgroundColor: [
-                        'rgba(108, 117, 125, 0.8)',  // Draft - gray
-                        'rgba(0, 123, 255, 0.8)',     // Submitted - blue
-                        'rgba(255, 193, 7, 0.8)',    // Refer to Committee - yellow
-                        'rgba(40, 167, 69, 0.8)',    // Approved - green
-                        'rgba(220, 53, 69, 0.8)',    // Rejected - red
-                        'rgba(23, 162, 184, 0.8)',   // Withdrawn - cyan
-                        'rgba(128, 128, 128, 0.8)',  // Not admitted - dark gray
-                    ],
-                    borderColor: [
-                        'rgba(108, 117, 125, 1)',
-                        'rgba(0, 123, 255, 1)',
-                        'rgba(255, 193, 7, 1)',
-                        'rgba(40, 167, 69, 1)',
-                        'rgba(220, 53, 69, 1)',
-                        'rgba(23, 162, 184, 1)',
-                        'rgba(128, 128, 128, 1)',
-                    ],
-                    borderWidth: 1
-                }]
-            };
-            
-            new Chart(statusCtx, {
-                type: 'doughnut',
-                data: statusData,
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    aspectRatio: 1.5,
-                    plugins: {
-                        legend: {
-                            position: 'bottom'
-                        }
-                    }
-                }
-            });
-        }
-        
-        // Motion Session Stacked Bar Chart
-        const sessionCtx = document.getElementById('motionSessionChart');
-        if (sessionCtx) {
-            const sessionLabels = [
-                {% for label in session_chart_labels %}
-                    '{{ label }}'{% if not forloop.last %},{% endif %}
-                {% endfor %}
-            ];
-            
-            const datasets = [
-                {% for dataset in session_chart_datasets %}
-                {
-                    label: '{{ dataset.label }}',
-                    data: [
-                        {% for count in dataset.data %}
-                            {{ count }}{% if not forloop.last %},{% endif %}
-                        {% endfor %}
-                    ],
-                    backgroundColor: '{% if dataset.mtype == "resolution" %}rgba(0, 123, 255, 0.8){% else %}rgba(40, 167, 69, 0.8){% endif %}',
-                    borderColor: '{% if dataset.mtype == "resolution" %}rgba(0, 123, 255, 1){% else %}rgba(40, 167, 69, 1){% endif %}',
-                    borderWidth: 1
-                }{% if not forloop.last %},{% endif %}
-                {% endfor %}
-            ];
-            
-            const sessionData = {
-                labels: sessionLabels,
-                datasets: datasets
-            };
-            
-            new Chart(sessionCtx, {
-                type: 'bar',
-                data: sessionData,
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    aspectRatio: 1.5,
-                    plugins: {
-                        legend: {
-                            position: 'bottom'
-                        },
-                        tooltip: {
-                            mode: 'index',
-                            intersect: false
-                        }
-                    },
-                    scales: {
-                        x: {
-                            stacked: true
-                        },
-                        y: {
-                            stacked: true,
-                            beginAtZero: true,
-                            ticks: {
-                                stepSize: 1
-                            }
-                        }
-                    }
-                }
-            });
-        }
-    </script>
-{% endif %}
 {% endblock %}

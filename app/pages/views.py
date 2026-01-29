@@ -4,7 +4,6 @@ import json
 
 from django.views.generic import TemplateView
 from django.conf import settings
-from django.utils.translation import gettext_lazy as _
 
 logger = logging.getLogger(__name__)
 
@@ -82,121 +81,88 @@ class HomePageView(TemplateView):
             context['locals_from_memberships'] = []
             context['councils_from_memberships'] = []
         
-        # Add motion statistics for authenticated users
+        # Personal calendar: sessions (council + committee) and group meetings (always when authenticated)
         if self.request.user.is_authenticated:
             try:
-                from motion.models import Motion
-                from django.db.models import Count, Q
                 from django.utils import timezone
                 from datetime import timedelta
+                from local.models import Session, CommitteeMember
+                from group.models import GroupMeeting
                 
-                # Get all motions the user can see (based on their groups/councils)
-                user_groups = [m.group for m in context.get('group_memberships', [])]
                 user_councils = context.get('councils_from_memberships', [])
+                user_council_ids = [c.pk for c in user_councils]
+                user_committee_ids = list(
+                    CommitteeMember.objects.filter(
+                        user=self.request.user,
+                        is_active=True
+                    ).values_list('committee_id', flat=True)
+                )
+                user_group_ids = [m.group_id for m in context.get('group_memberships', [])]
                 
-                motions_queryset = Motion.objects.filter(is_active=True)
+                now = timezone.now()
+                range_start = now - timedelta(days=7)
+                range_end = now + timedelta(days=60)
                 
-                # Filter by user's groups if they have any
-                if user_groups:
-                    motions_queryset = motions_queryset.filter(group__in=user_groups)
-                # Or filter by user's councils if they have any
-                elif user_councils:
-                    motions_queryset = motions_queryset.filter(session__council__in=user_councils)
+                calendar_events = []
                 
-                # If user is superuser, show all motions
-                if self.request.user.is_superuser:
-                    motions_queryset = Motion.objects.filter(is_active=True)
+                if user_council_ids:
+                    council_sessions = Session.objects.filter(
+                        council_id__in=user_council_ids,
+                        committee__isnull=True,
+                        is_active=True,
+                        scheduled_date__gte=range_start,
+                        scheduled_date__lte=range_end
+                    ).select_related('council', 'council__local').order_by('scheduled_date')
+                    for s in council_sessions:
+                        calendar_events.append({
+                            'date': s.scheduled_date,
+                            'title': s.title,
+                            'url': s.get_absolute_url(),
+                            'type': 'council_session',
+                            'subtitle': s.council.name,
+                            'location': getattr(s, 'location', '') or '',
+                        })
                 
-                # Statistics by status - prepare data for charts
-                status_counts = motions_queryset.values('status').annotate(count=Count('id')).order_by('status')
-                context['motion_status_stats'] = {item['status']: item['count'] for item in status_counts}
+                if user_committee_ids:
+                    committee_sessions = Session.objects.filter(
+                        committee_id__in=user_committee_ids,
+                        is_active=True,
+                        scheduled_date__gte=range_start,
+                        scheduled_date__lte=range_end
+                    ).select_related('committee', 'council').order_by('scheduled_date')
+                    for s in committee_sessions:
+                        calendar_events.append({
+                            'date': s.scheduled_date,
+                            'title': s.title,
+                            'url': s.get_absolute_url(),
+                            'type': 'committee_session',
+                            'subtitle': s.committee.name if s.committee else s.council.name,
+                            'location': getattr(s, 'location', '') or '',
+                        })
                 
-                # Prepare status data for chart (ordered list)
-                status_labels = {
-                    'draft': _('Draft'),
-                    'submitted': _('Submitted'),
-                    'refer_to_committee': _('Refer to Committee'),
-                    'approved': _('Approved'),
-                    'rejected': _('Rejected'),
-                    'withdrawn': _('Withdrawn'),
-                    'not_admitted': _('Nicht zugelassen'),
-                }
-                context['motion_status_chart_data'] = [
-                    {'label': status_labels.get(status, status), 'count': context['motion_status_stats'].get(status, 0)}
-                    for status in status_labels.keys()
-                ]
+                if user_group_ids:
+                    group_meetings = GroupMeeting.objects.filter(
+                        group_id__in=user_group_ids,
+                        is_active=True,
+                        scheduled_date__gte=range_start,
+                        scheduled_date__lte=range_end
+                    ).select_related('group').order_by('scheduled_date')
+                    for m in group_meetings:
+                        calendar_events.append({
+                            'date': m.scheduled_date,
+                            'title': m.title,
+                            'url': m.get_absolute_url(),
+                            'type': 'group_meeting',
+                            'subtitle': m.group.name,
+                            'location': getattr(m, 'location', '') or '',
+                        })
                 
-                # Statistics by type
-                type_counts = motions_queryset.values('motion_type').annotate(count=Count('id')).order_by('motion_type')
-                context['motion_type_stats'] = {item['motion_type']: item['count'] for item in type_counts}
-                
-                # Prepare session data for stacked bar chart
-                from local.models import Session
-                
-                # Get sessions that have motions (from the filtered motions queryset)
-                sessions_with_motions = Session.objects.filter(
-                    motions__in=motions_queryset,
-                    is_active=True
-                ).distinct().order_by('-scheduled_date')[:10]  # Get last 10 sessions
-                
-                # Prepare session chart data with motion counts by type
-                type_labels = {
-                    'resolution': _('Resolutionsantrag'),
-                    'general': _('General motion'),
-                }
-                
-                # Prepare datasets for each type
-                type_keys = list(type_labels.keys())
-                session_labels = []
-                datasets_data = {mtype: [] for mtype in type_keys}
-                
-                for session in sessions_with_motions:
-                    session_motions = motions_queryset.filter(session=session)
-                    session_labels.append(session.scheduled_date.strftime('%d.%m.%Y'))
-                    
-                    for mtype in type_keys:
-                        count = session_motions.filter(motion_type=mtype).count()
-                        datasets_data[mtype].append(count)
-                
-                # Prepare chart data structure
-                session_chart_datasets = []
-                for mtype in type_keys:
-                    session_chart_datasets.append({
-                        'label': type_labels[mtype],
-                        'mtype': mtype,
-                        'data': datasets_data[mtype],
-                    })
-                
-                context['session_chart_labels'] = session_labels
-                context['session_chart_datasets'] = session_chart_datasets
-                context['motion_type_labels'] = type_labels
-                
-                # Total motions
-                context['total_motions'] = motions_queryset.count()
-                
-                # Recent motions (last 30 days)
-                thirty_days_ago = timezone.now() - timedelta(days=30)
-                context['recent_motions_count'] = motions_queryset.filter(submitted_date__gte=thirty_days_ago).count()
-                
-                
-            except ImportError:
-                # If motion models are not available, set empty stats
-                context['motion_status_stats'] = {}
-                context['motion_type_stats'] = {}
-                context['total_motions'] = 0
-                context['recent_motions_count'] = 0
-                context['motion_status_chart_data'] = []
-                context['session_chart_labels'] = []
-                context['session_chart_datasets'] = []
-                context['motion_type_labels'] = {}
+                calendar_events.sort(key=lambda e: e['date'])
+                context['personal_calendar_events'] = calendar_events
+            except (ImportError, AttributeError):
+                context['personal_calendar_events'] = []
         else:
-            context['motion_status_stats'] = {}
-            context['motion_type_stats'] = {}
-            context['total_motions'] = 0
-            context['recent_motions_count'] = 0
-            context['motion_status_chart_data'] = []
-            context['session_chart_data'] = []
-            context['motion_type_labels'] = {}
+            context['personal_calendar_events'] = []
         
         return context
     
