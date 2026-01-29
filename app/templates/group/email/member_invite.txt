@@ -1,0 +1,15 @@
+{% load i18n %}
+{% trans "Group invitation" %}
+
+{% trans "Hello" %},
+
+{% blocktrans with group_name=group.name %}You have been invited to join the group "{{ group_name }}".{% endblocktrans %}
+
+{% trans "Create your account by clicking the link below (or copy it into your browser):" %}
+
+{{ signup_url }}
+
+{% trans "After creating your account, a group administrator can add you to the group." %}
+
+{% trans "Best regards" %},
+{{ group.name }}

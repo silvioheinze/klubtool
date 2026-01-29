@@ -1,6 +1,7 @@
 from django import forms
 from django.db import models
 from django.contrib.auth import get_user_model
+from django.utils.translation import gettext_lazy as _
 from .models import Group, GroupMember, GroupMeeting, AgendaItem
 from local.models import Party
 from user.models import Role
@@ -52,6 +53,15 @@ class GroupMemberForm(forms.ModelForm):
         self.fields['group'].queryset = self.fields['group'].queryset.filter(is_active=True)
         # Filter to only show active roles
         self.fields['roles'].queryset = Role.objects.filter(is_active=True)
+
+class GroupInviteForm(forms.Form):
+    """Form for inviting a new member by email (sends signup link)"""
+    email = forms.EmailField(
+        label=_("Email address"),
+        widget=forms.EmailInput(attrs={'class': 'form-control', 'placeholder': _('Enter email address')}),
+        help_text=_("The person will receive an email with a link to create an account.")
+    )
+
 
 class GroupMemberFilterForm(forms.Form):
     """Form for filtering group members"""

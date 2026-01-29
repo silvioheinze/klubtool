@@ -5,7 +5,8 @@ from .views import (
     GroupMeetingListView, GroupMeetingDetailView, GroupMeetingCreateView, GroupMeetingUpdateView, GroupMeetingDeleteView,
     AgendaItemCreateView, AgendaItemDetailView, AgendaItemUpdateView, AgendaItemDeleteView,
     AgendaItemCreateAjaxView, AgendaItemUpdateAjaxView, AgendaItemUpdateOrderAjaxView,
-    set_group_admin, remove_group_admin, update_member_roles, send_meeting_invites, meeting_export_ics
+    set_group_admin, remove_group_admin, update_member_roles, send_meeting_invites, meeting_export_ics,
+    invite_member,
 )
 
 app_name = 'group'
@@ -17,6 +18,7 @@ urlpatterns = [
     path('<int:pk>/', GroupDetailView.as_view(), name='group-detail'),
     path('<int:pk>/edit/', GroupUpdateView.as_view(), name='group-edit'),
     path('<int:pk>/delete/', GroupDeleteView.as_view(), name='group-delete'),
+    path('<int:pk>/invite-member/', invite_member, name='group-invite-member'),
     
     # Group Member URLs
     path('members/', GroupMemberListView.as_view(), name='member-list'),

@@ -88,9 +88,14 @@
             <div class="card mt-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="bi bi-person-lines-fill"></i> {% trans "Members" %}</h5>
-                    <a href="{% url 'group:member-create' %}?group={{ group.pk }}" class="btn btn-sm btn-primary">
-                        <i class="bi bi-plus-circle"></i> {% trans "Add Member" %}
-                    </a>
+                    <div class="d-flex gap-1">
+                        <a href="{% url 'group:group-invite-member' group.pk %}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-envelope-plus"></i> {% trans "Invite member" %}
+                        </a>
+                        <a href="{% url 'group:member-create' %}?group={{ group.pk }}" class="btn btn-sm btn-primary">
+                            <i class="bi bi-plus-circle"></i> {% trans "Add Member" %}
+                        </a>
+                    </div>
                 </div>
                 <div class="card-body">
                     {% if members %}
@@ -169,9 +174,14 @@
                             <i class="bi bi-person-lines-fill fs-1 text-muted"></i>
                             <h6 class="mt-3">{% trans "No Members found" %}</h6>
                             <p class="text-muted">{% trans "Add members to this group to get started." %}</p>
-                            <a href="{% url 'group:member-create' %}?group={{ group.pk }}" class="btn btn-primary">
-                                <i class="bi bi-plus-circle"></i> {% trans "Add Member" %}
-                            </a>
+                            <div class="d-flex gap-2 justify-content-center flex-wrap">
+                                <a href="{% url 'group:group-invite-member' group.pk %}" class="btn btn-outline-primary">
+                                    <i class="bi bi-envelope-plus"></i> {% trans "Invite member" %}
+                                </a>
+                                <a href="{% url 'group:member-create' %}?group={{ group.pk }}" class="btn btn-primary">
+                                    <i class="bi bi-plus-circle"></i> {% trans "Add Member" %}
+                                </a>
+                            </div>
                         </div>
                     {% endif %}
                 </div>
@@ -274,6 +284,9 @@
                     <div class="d-grid gap-2">
                         <a href="{% url 'group:group-edit' group.pk %}" class="btn btn-primary">
                             <i class="bi bi-pencil"></i> {% trans "Edit Group" %}
+                        </a>
+                        <a href="{% url 'group:group-invite-member' group.pk %}" class="btn btn-outline-success">
+                            <i class="bi bi-envelope-plus"></i> {% trans "Invite member" %}
                         </a>
                         <a href="{% url 'group:member-create' %}?group={{ group.pk }}" class="btn btn-success">
                             <i class="bi bi-person-plus"></i> {% trans "Add Member" %}
