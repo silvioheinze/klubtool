@@ -4,9 +4,9 @@ from django.urls import reverse, resolve
 from django.utils import timezone
 from datetime import timedelta
 
-from .views import HomePageView
+from .views import HomePageView, personal_calendar_export_ics
 from local.models import Local, Council, Session, Term, Party
-from group.models import Group, GroupMember
+from group.models import Group, GroupMember, GroupMeeting
 from motion.models import Motion
 
 User = get_user_model()
@@ -286,3 +286,146 @@ class HomepageTests(TestCase):
         
         # Should only see motion from user's group
         self.assertEqual(response.context['total_motions'], 1)
+
+
+class PersonalCalendarExportIcsTests(TestCase):
+    """Unit tests for personal calendar ICS export."""
+
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(
+            username='calendaruser',
+            email='calendar@example.com',
+            password='testpass123',
+        )
+        self.local = Local.objects.create(
+            name='Test Local',
+            code='TL',
+            description='Test local',
+            is_active=True,
+        )
+        self.council, _ = Council.objects.get_or_create(
+            local=self.local,
+            defaults={'name': 'Test Council', 'is_active': True},
+        )
+        self.term = Term.objects.create(
+            name='Test Term',
+            start_date=timezone.now().date(),
+            end_date=timezone.now().date() + timedelta(days=365),
+            is_active=True,
+        )
+        self.party = Party.objects.create(
+            name='Test Party',
+            local=self.local,
+            is_active=True,
+        )
+        self.group = Group.objects.create(
+            name='Test Group',
+            party=self.party,
+            is_active=True,
+        )
+        GroupMember.objects.create(
+            user=self.user,
+            group=self.group,
+            is_active=True,
+        )
+        self.session = Session.objects.create(
+            title='Council Session',
+            council=self.council,
+            term=self.term,
+            committee=None,
+            scheduled_date=timezone.now() + timedelta(days=5),
+            is_active=True,
+        )
+        self.group_meeting = GroupMeeting.objects.create(
+            group=self.group,
+            title='Group Meeting',
+            scheduled_date=timezone.now() + timedelta(days=10),
+            is_active=True,
+        )
+
+    def test_ics_export_unauthenticated_redirects(self):
+        """Unauthenticated request redirects to login (app uses /user/settings for login)."""
+        response = self.client.get(reverse('personal-calendar-export-ics'))
+        self.assertEqual(response.status_code, 302)
+        # Login redirect may go to /login or /user/settings/?next=...
+        self.assertTrue(
+            '/login' in response.url or 'user/settings' in response.url,
+            f"Expected login redirect, got {response.url}",
+        )
+
+    def test_ics_export_authenticated_returns_200(self):
+        """Authenticated user receives 200 and calendar response."""
+        self.client.login(username='calendaruser', password='testpass123')
+        response = self.client.get(reverse('personal-calendar-export-ics'))
+        self.assertEqual(response.status_code, 200)
+
+    def test_ics_export_content_type(self):
+        """Response has correct calendar content type."""
+        self.client.login(username='calendaruser', password='testpass123')
+        response = self.client.get(reverse('personal-calendar-export-ics'))
+        self.assertEqual(
+            response.get('Content-Type'),
+            'text/calendar; charset=utf-8',
+        )
+
+    def test_ics_export_content_disposition(self):
+        """Response suggests attachment with .ics filename."""
+        self.client.login(username='calendaruser', password='testpass123')
+        response = self.client.get(reverse('personal-calendar-export-ics'))
+        cd = response.get('Content-Disposition', '')
+        self.assertIn('attachment', cd)
+        self.assertIn('personal-calendar.ics', cd)
+
+    def test_ics_export_content_format(self):
+        """ICS body has valid VCALENDAR structure."""
+        self.client.login(username='calendaruser', password='testpass123')
+        response = self.client.get(reverse('personal-calendar-export-ics'))
+        content = response.content.decode('utf-8')
+        self.assertIn('BEGIN:VCALENDAR', content)
+        self.assertIn('VERSION:2.0', content)
+        self.assertIn('END:VCALENDAR', content)
+        self.assertIn('PRODID:', content)
+        self.assertIn('CALSCALE:GREGORIAN', content)
+
+    def test_ics_export_contains_vevents_when_events_exist(self):
+        """ICS contains VEVENTs when user has sessions and group meetings."""
+        self.client.login(username='calendaruser', password='testpass123')
+        response = self.client.get(reverse('personal-calendar-export-ics'))
+        content = response.content.decode('utf-8')
+        self.assertIn('BEGIN:VEVENT', content)
+        self.assertIn('END:VEVENT', content)
+        self.assertIn('Council Session', content)
+        self.assertIn('Group Meeting', content)
+        self.assertIn('SUMMARY:', content)
+        self.assertIn('DTSTART:', content)
+        self.assertIn('DTEND:', content)
+        self.assertIn('UID:', content)
+
+    def test_ics_export_vevent_uid_format(self):
+        """Each VEVENT has a unique UID referencing session or meeting."""
+        self.client.login(username='calendaruser', password='testpass123')
+        response = self.client.get(reverse('personal-calendar-export-ics'))
+        content = response.content.decode('utf-8')
+        self.assertIn(f'session-{self.session.pk}@', content)
+        self.assertIn(f'groupmeeting-{self.group_meeting.pk}@', content)
+
+    def test_ics_export_empty_calendar_valid_ics(self):
+        """User with no councils/groups still gets valid ICS (no VEVENTs)."""
+        user_no_groups = User.objects.create_user(
+            username='nogroups',
+            email='nogroups@example.com',
+            password='testpass123',
+        )
+        self.client.login(username='nogroups', password='testpass123')
+        response = self.client.get(reverse('personal-calendar-export-ics'))
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode('utf-8')
+        self.assertIn('BEGIN:VCALENDAR', content)
+        self.assertIn('END:VCALENDAR', content)
+        self.assertNotIn('BEGIN:VEVENT', content)
+
+    def test_ics_export_url_resolves(self):
+        """Calendar export URL resolves to personal_calendar_export_ics view."""
+        match = resolve('/calendar/export.ics')
+        self.assertEqual(match.func, personal_calendar_export_ics)

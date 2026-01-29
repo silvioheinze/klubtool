@@ -6,7 +6,7 @@ from django.urls import reverse_lazy, reverse
 from django.db.models import Q, Prefetch
 from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.views.decorators.http import require_http_methods
 import json
 
@@ -1136,6 +1136,74 @@ class SessionExportPDFView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         response['Content-Disposition'] = f'attachment; filename="session_{self.object.pk}_{self.object.title.replace(" ", "_")}.pdf"'
         
         return response
+
+
+@login_required
+def session_export_ics(request, pk):
+    """Export a single session as an ICS calendar file."""
+    session = get_object_or_404(Session, pk=pk)
+    # Allow: superuser, session.view permission, or session is in user's councils/committees (personal calendar)
+    can_export = (
+        request.user.is_superuser
+        or request.user.has_role_permission('session.view')
+    )
+    if not can_export:
+        from group.models import GroupMember
+        user_council_ids = set()
+        for m in GroupMember.objects.filter(user=request.user, is_active=True).select_related('group__party__local'):
+            if getattr(m.group.party, 'local', None) and getattr(m.group.party.local, 'council', None):
+                user_council_ids.add(m.group.party.local.council_id)
+        if session.council_id in user_council_ids:
+            can_export = True
+        if not can_export and session.committee_id:
+            from .models import CommitteeMember
+            can_export = CommitteeMember.objects.filter(
+                user=request.user, committee_id=session.committee_id, is_active=True
+            ).exists()
+    if not can_export:
+        messages.error(request, "You don't have permission to export this session.")
+        return redirect('local:session-detail', pk=pk)
+
+    dtstart = session.scheduled_date
+    if not timezone.is_aware(dtstart):
+        dtstart = timezone.make_aware(dtstart)
+    dtstart_utc = dtstart.astimezone(timezone.UTC)
+    dtend_utc = dtstart_utc + timezone.timedelta(hours=1)
+    dtstart_str = dtstart_utc.strftime('%Y%m%dT%H%M%SZ')
+    dtend_str = dtend_utc.strftime('%Y%m%dT%H%M%SZ')
+    uid = f"session-{session.pk}@{request.get_host()}"
+
+    def escape_ics(text):
+        if not text:
+            return ""
+        text = str(text).replace('\\', '\\\\').replace(',', '\\,').replace(';', '\\;').replace('\n', '\\n')
+        return text
+
+    lines = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "PRODID:-//Klubtool//Session//EN",
+        "CALSCALE:GREGORIAN",
+        "METHOD:PUBLISH",
+        "BEGIN:VEVENT",
+        f"UID:{uid}",
+        f"DTSTART:{dtstart_str}",
+        f"DTEND:{dtend_str}",
+        f"SUMMARY:{escape_ics(session.title)}",
+    ]
+    if session.location:
+        lines.append(f"LOCATION:{escape_ics(session.location)}")
+    if session.agenda:
+        lines.append(f"DESCRIPTION:{escape_ics(session.agenda)}")
+    session_url = request.build_absolute_uri(reverse('local:session-detail', args=[session.pk]))
+    lines.append(f"URL:{session_url}")
+    lines.append(f"DTSTAMP:{timezone.now().astimezone(timezone.UTC).strftime('%Y%m%dT%H%M%SZ')}")
+    lines.extend(["STATUS:CONFIRMED", "END:VEVENT", "END:VCALENDAR"])
+    ics_file = "\r\n".join(lines)
+    response = HttpResponse(ics_file, content_type='text/calendar; charset=utf-8')
+    filename = f"session_{session.pk}_{session.title.replace(' ', '_')}.ics"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return response
 
 
 class CouncilCommitteesExportPDFView(LoginRequiredMixin, UserPassesTestMixin, DetailView):

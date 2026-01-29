@@ -417,9 +417,11 @@ class GroupMeetingDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView
 def meeting_export_ics(request, pk):
     """View to export a group meeting as an ICS calendar file"""
     meeting = get_object_or_404(GroupMeeting, pk=pk)
-    
-    # Check permissions
-    if not (request.user.is_superuser or meeting.group.can_user_manage_group(request.user)):
+    # Allow: superuser, group admin/leader, or any active member of the group (e.g. from personal calendar)
+    is_member = GroupMember.objects.filter(
+        user=request.user, group=meeting.group, is_active=True
+    ).exists()
+    if not (request.user.is_superuser or meeting.group.can_user_manage_group(request.user) or is_member):
         messages.error(request, "You don't have permission to access this page.")
         return redirect('group:meeting-detail', pk=pk)
     
