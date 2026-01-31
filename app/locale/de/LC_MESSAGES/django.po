@@ -495,7 +495,7 @@ msgstr "Nächste Sitzung"
 #: templates/_base.html:76
 #| msgid "Group Details"
 msgid "Next Group Meeting"
-msgstr "Gruppendetails"
+msgstr "Nächste Klubsitzung"
 
 #: templates/_base.html:94 templates/user/settings.html:6
 #: templates/user/settings.html:9
@@ -903,7 +903,7 @@ msgstr "Diese Aktion kann nicht rückgängig gemacht werden."
 #: templates/group/group_confirm_delete.html:39
 #: templates/group/group_detail.html:6
 msgid "Group Details"
-msgstr "Gruppendetails"
+msgstr "Klubdetails"
 
 #: templates/group/group_confirm_delete.html:43
 #: templates/group/group_detail.html:33 templates/group/group_form.html:146
@@ -1226,7 +1226,7 @@ msgstr ""
 #: templates/group/meeting_list.html:12
 #| msgid "Group Details"
 msgid "Group Meetings"
-msgstr "Gruppendetails"
+msgstr "Klubsitzungen"
 
 #: templates/group/group_detail.html:196 templates/group/group_detail.html:270
 #: templates/group/group_detail.html:295 templates/group/meeting_form.html:9
@@ -1980,7 +1980,7 @@ msgstr "Kommission"
 #: templates/home.html:153
 #| msgid "Group Details"
 msgid "Group meeting"
-msgstr "Gruppendetails"
+msgstr "Klubsitzung"
 
 #: templates/home.html:159
 #| msgid "Exports"
