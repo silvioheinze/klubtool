@@ -31,9 +31,15 @@
             </p>
         </div>
         <div>
-            <a href="{% url 'local:session-list' %}" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left"></i> {% trans "Back to Sessions" %}
-            </a>
+            {% if form.instance.pk and form.instance.council %}
+                <a href="{% url 'local:council-detail' form.instance.council.pk %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> {% trans "Back to Council" %}
+                </a>
+            {% else %}
+                <a href="{% url 'local:session-list' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> {% trans "Back to Sessions" %}
+                </a>
+            {% endif %}
         </div>
     </div>
 
@@ -54,10 +60,11 @@
                     <form method="post" novalidate>
                         {% csrf_token %}
                         
-                        <!-- Title -->
+                        {% if 'title' in form.fields %}
+                        <!-- Title (edit only; on create set to council name + date) -->
                         <div class="mb-3">
                             <label for="{{ form.title.id_for_label }}" class="form-label">
-                                {{ form.title.label }} <span class="text-danger">*</span>
+                                {{ form.title.label }}
                             </label>
                             {{ form.title }}
                             {% if form.title.errors %}
@@ -71,8 +78,10 @@
                                 <div class="form-text">{{ form.title.help_text }}</div>
                             {% endif %}
                         </div>
+                        {% endif %}
 
-                        <!-- Council -->
+                        <!-- Council (hidden on create, auto-set from URL or first council) -->
+                        {% if form.council.field.widget.input_type != 'hidden' %}
                         <div class="mb-3">
                             <label for="{{ form.council.id_for_label }}" class="form-label">
                                 {{ form.council.label }} <span class="text-danger">*</span>
@@ -89,8 +98,19 @@
                                 <div class="form-text">{{ form.council.help_text }}</div>
                             {% endif %}
                         </div>
+                        {% else %}
+                            {{ form.council }}
+                            {% if form.council.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.council.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        {% endif %}
 
-                        <!-- Term -->
+                        <!-- Term (hidden on create, auto-set to latest term) -->
+                        {% if form.term.field.widget.input_type != 'hidden' %}
                         <div class="mb-3">
                             <label for="{{ form.term.id_for_label }}" class="form-label">
                                 {{ form.term.label }} <span class="text-danger">*</span>
@@ -107,6 +127,16 @@
                                 <div class="form-text">{{ form.term.help_text }}</div>
                             {% endif %}
                         </div>
+                        {% else %}
+                            {{ form.term }}
+                            {% if form.term.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.term.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        {% endif %}
 
                         <!-- Session Type -->
                         <div class="mb-3">
@@ -164,7 +194,8 @@
                             {% endif %}
                         </div>
 
-                        <!-- Status -->
+                        <!-- Status (hidden on create, auto-set to scheduled) -->
+                        {% if form.status.field.widget.input_type != 'hidden' %}
                         <div class="mb-3">
                             <label for="{{ form.status.id_for_label }}" class="form-label">
                                 {{ form.status.label }} <span class="text-danger">*</span>
@@ -181,6 +212,16 @@
                                 <div class="form-text">{{ form.status.help_text }}</div>
                             {% endif %}
                         </div>
+                        {% else %}
+                            {{ form.status }}
+                            {% if form.status.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.status.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        {% endif %}
 
                         <!-- Notes -->
                         <div class="mb-3">

@@ -944,6 +944,12 @@ class SessionCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
                 pass
         return initial
 
+    def get_success_url(self):
+        """Redirect to the council detail page after successful creation"""
+        if hasattr(self.object, 'council') and self.object.council:
+            return reverse('local:council-detail', kwargs={'pk': self.object.council.pk})
+        return str(self.success_url)
+
     def form_valid(self, form):
         """Display success message on form validation"""
         messages.success(self.request, f"Session '{form.instance.title}' created successfully.")

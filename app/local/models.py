@@ -365,7 +365,7 @@ class Session(models.Model):
         ('invited', 'Invited'),
     ]
     
-    title = models.CharField(max_length=200, help_text="Title of the session")
+    title = models.CharField(max_length=200, blank=True, default='', help_text="Title of the session (set automatically on create: Bezirksvertretungssitzung + date)")
     council = models.ForeignKey(Council, on_delete=models.CASCADE, related_name='sessions', help_text="Council this session belongs to")
     committee = models.ForeignKey(Committee, on_delete=models.CASCADE, related_name='sessions', blank=True, null=True, help_text="Committee this session belongs to (optional, for committee meetings)")
     term = models.ForeignKey(Term, on_delete=models.CASCADE, related_name='sessions', blank=True, null=True, help_text="Term this session belongs to")
