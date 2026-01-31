@@ -180,16 +180,6 @@
                             </table>
                         </div>
                         
-                        {% if total_sessions > 10 %}
-                            <div class="text-center mt-3">
-                                <p class="text-muted">
-                                    {% trans "Showing" %} {{ sessions|length }} {% trans "of" %} {{ total_sessions }} {% trans "sessions" %}
-                                </p>
-                                <a href="{% url 'local:session-list' %}?council={{ council.pk }}" class="btn btn-outline-primary">
-                                    <i class="bi bi-list"></i> {% trans "View All Sessions" %}
-                                </a>
-                            </div>
-                        {% endif %}
                     {% else %}
                         <div class="text-center py-4">
                             <i class="bi bi-calendar-event fs-1 text-muted"></i>

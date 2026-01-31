@@ -1304,24 +1304,6 @@ class SessionViewTests(TestCase):
             scheduled_date=timezone.now() + timedelta(days=1)
         )
     
-    def test_session_list_view_requires_superuser(self):
-        """Test that SessionListView requires superuser"""
-        # Test with regular user
-        self.client.login(username='testuser', password='testpass123')
-        response = self.client.get(reverse('local:session-list'))
-        self.assertEqual(response.status_code, 403)
-        
-        # Test with superuser
-        self.client.login(username='admin', password='adminpass123')
-        response = self.client.get(reverse('local:session-list'))
-        self.assertEqual(response.status_code, 200)
-    
-    def test_session_list_view_contains_sessions(self):
-        """Test that SessionListView contains session objects"""
-        self.client.login(username='admin', password='adminpass123')
-        response = self.client.get(reverse('local:session-list'))
-        self.assertContains(response, self.session.title)
-    
     def test_session_detail_view_requires_superuser(self):
         """Test that SessionDetailView requires superuser"""
         # Test with regular user

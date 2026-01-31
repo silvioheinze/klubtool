@@ -766,58 +766,6 @@ class PartyDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
 
 
 # Session Views
-class SessionListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
-    """View for listing Session objects"""
-    model = Session
-    context_object_name = 'sessions'
-    template_name = 'local/session_list.html'
-    paginate_by = 20
-
-    def test_func(self):
-        """Check if user has permission to view Session objects"""
-        return self.request.user.is_superuser
-
-    def get_queryset(self):
-        """Filter sessions based on search and filter parameters"""
-        queryset = Session.objects.select_related('council', 'council__local', 'term').all()
-        
-        # Search by title
-        search_query = self.request.GET.get('search', '')
-        if search_query:
-            queryset = queryset.filter(
-                Q(title__icontains=search_query) |
-                Q(council__name__icontains=search_query) |
-                Q(council__local__name__icontains=search_query)
-            )
-        
-        # Filter by council
-        council_filter = self.request.GET.get('council', '')
-        if council_filter:
-            queryset = queryset.filter(council_id=council_filter)
-        
-        # Filter by status
-        status_filter = self.request.GET.get('status', '')
-        if status_filter:
-            queryset = queryset.filter(status=status_filter)
-        
-        # Filter by session type
-        session_type_filter = self.request.GET.get('session_type', '')
-        if session_type_filter:
-            queryset = queryset.filter(session_type=session_type_filter)
-        
-        return queryset
-
-    def get_context_data(self, **kwargs):
-        """Add filter form to context"""
-        context = super().get_context_data(**kwargs)
-        context['search_query'] = self.request.GET.get('search', '')
-        context['council_filter'] = self.request.GET.get('council', '')
-        context['status_filter'] = self.request.GET.get('status', '')
-        context['session_type_filter'] = self.request.GET.get('session_type', '')
-        context['councils'] = Council.objects.filter(is_active=True)
-        return context
-
-
 class SessionDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
     """View for displaying a single Session object"""
     model = Session
@@ -926,7 +874,7 @@ class SessionCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     model = Session
     form_class = SessionForm
     template_name = 'local/session_form.html'
-    success_url = reverse_lazy('local:session-list')
+    success_url = reverse_lazy('local:council-list')
 
     def test_func(self):
         """Check if user has permission to create Session objects"""
@@ -961,7 +909,7 @@ class SessionUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model = Session
     form_class = SessionForm
     template_name = 'local/session_form.html'
-    success_url = reverse_lazy('local:session-list')
+    success_url = reverse_lazy('local:council-list')
 
     def test_func(self):
         """Check if user has permission to edit Session objects"""
@@ -981,11 +929,18 @@ class SessionDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
     """View for deleting a Session object"""
     model = Session
     template_name = 'local/session_confirm_delete.html'
-    success_url = reverse_lazy('local:session-list')
+    success_url = reverse_lazy('local:council-list')
 
     def test_func(self):
         """Check if user has permission to delete Session objects"""
         return self.request.user.is_superuser
+
+    def get_success_url(self):
+        """Redirect to council detail page after deletion"""
+        council_pk = self.object.council_id if hasattr(self.object, 'council_id') and self.object.council_id else None
+        if council_pk:
+            return reverse('local:council-detail', kwargs={'pk': council_pk})
+        return str(self.success_url)
 
     def delete(self, request, *args, **kwargs):
         """Display success message on deletion"""
