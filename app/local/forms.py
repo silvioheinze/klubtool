@@ -348,16 +348,19 @@ class CommitteeMemberForm(forms.ModelForm):
     
     class Meta:
         model = CommitteeMember
-        fields = ['committee', 'user', 'role', 'notes']
+        fields = ['committee', 'user', 'role', 'joined_date', 'notes']
         widgets = {
             'committee': forms.Select(attrs={'class': 'form-select'}),
             'user': forms.Select(attrs={'class': 'form-select'}),
             'role': forms.Select(attrs={'class': 'form-select'}),
+            'joined_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        # Ensure joined_date displays and parses as YYYY-MM-DD for HTML5 date input
+        self.fields['joined_date'].input_formats = ['%Y-%m-%d']
         # Filter committees to only show active ones
         self.fields['committee'].queryset = Committee.objects.filter(is_active=True)
         

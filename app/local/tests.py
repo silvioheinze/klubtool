@@ -252,10 +252,12 @@ class CommitteeMemberFormTests(TestCase):
     
     def test_committee_member_form_valid_data(self):
         """Test CommitteeMemberForm with valid data"""
+        from datetime import date
         form_data = {
             'user': self.user.pk,
             'committee': self.committee.pk,
             'role': 'member',
+            'joined_date': date.today().isoformat(),
             'notes': ''
         }
         
@@ -1763,11 +1765,13 @@ class CommitteeMemberViewTests(TestCase):
     
     def test_committee_member_create_view_post_valid_data(self):
         """Test CommitteeMemberCreateView with valid POST data"""
+        from datetime import date
         self.client.login(username='admin', password='adminpass123')
         form_data = {
             'user': self.member_user.pk,
             'committee': self.committee.pk,
             'role': 'member',
+            'joined_date': date.today().isoformat(),
             'notes': 'Test member notes'
         }
         response = self.client.post(reverse('local:committee-member-create'), form_data)
@@ -1797,11 +1801,13 @@ class CommitteeMemberViewTests(TestCase):
     
     def test_committee_member_create_view_redirect_to_committee_detail(self):
         """Test that CommitteeMemberCreateView redirects to committee detail after creation"""
+        from datetime import date
         self.client.login(username='admin', password='adminpass123')
         form_data = {
             'user': self.member_user.pk,
             'committee': self.committee.pk,
-            'role': 'member'
+            'role': 'member',
+            'joined_date': date.today().isoformat(),
         }
         response = self.client.post(reverse('local:committee-member-create'), form_data)
         self.assertEqual(response.status_code, 302)
@@ -1819,11 +1825,13 @@ class CommitteeMemberViewTests(TestCase):
             role='member'
         )
         
+        from datetime import date
         self.client.login(username='admin', password='adminpass123')
         form_data = {
             'user': self.member_user.pk,
             'committee': self.committee.pk,
-            'role': 'member'
+            'role': 'member',
+            'joined_date': date.today().isoformat(),
         }
         response = self.client.post(reverse('local:committee-member-create'), form_data)
         self.assertEqual(response.status_code, 200)  # Form errors, stays on page
@@ -1835,11 +1843,13 @@ class CommitteeMemberViewTests(TestCase):
     
     def test_committee_member_create_view_success_message(self):
         """Test that success message is displayed after creation"""
+        from datetime import date
         self.client.login(username='admin', password='adminpass123')
         form_data = {
             'user': self.member_user.pk,
             'committee': self.committee.pk,
-            'role': 'member'
+            'role': 'member',
+            'joined_date': date.today().isoformat(),
         }
         response = self.client.post(reverse('local:committee-member-create'), form_data)
         

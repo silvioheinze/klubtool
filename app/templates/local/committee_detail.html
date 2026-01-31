@@ -13,10 +13,10 @@
                 <h1><i class="bi bi-people"></i> {{ committee.name }}</h1>
                 <div class="d-flex gap-2">
                     <a href="{% url 'local:council-detail' committee.council.pk %}" class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-left"></i> {% trans "Back to Council" %}
+                        <i class="bi bi-arrow-left"></i> {% trans "Back" %}
                     </a>
                     <a href="{% url 'local:committee-edit' committee.pk %}" class="btn btn-primary">
-                        <i class="bi bi-pencil"></i> {% trans "Edit Committee" %}
+                        <i class="bi bi-pencil"></i> {% trans "Edit" %}
                     </a>
                 </div>
             </div>
@@ -27,7 +27,9 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-header">
-                    <h5 class="mb-0">{% trans "Committee Information" %}</h5>
+                    {% with committee_type_label=committee.get_committee_type_display %}
+                    <h5 class="mb-0">{% trans "Committee Information" context committee_type_label %}</h5>
+                    {% endwith %}
                 </div>
                 <div class="card-body">
                     <div class="row">
@@ -94,10 +96,12 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0"><i class="bi bi-person-lines-fill"></i> {% trans "Committee Members" %}</h5>
+                    {% with committee_type_label=committee.get_committee_type_display %}
+                    <h5 class="mb-0"><i class="bi bi-person-lines-fill"></i> {% trans "Committee Members" context committee_type_label %}</h5>
+                    {% endwith %}
                     <div>
                         {% if user.is_superuser or user_leader_groups %}
-                            <a href="{% url 'local:committee-member-create' %}?committee={{ committee.pk }}" class="btn btn-success btn-sm">
+                            <a href="{% url 'local:committee-member-create' %}?committee={{ committee.pk }}" class="btn btn-sm btn-primary">
                                 <i class="bi bi-person-plus"></i> {% trans "Add" %}
                             </a>
                         {% endif %}
@@ -112,7 +116,6 @@
                                         <th>{% trans "Member" %}</th>
                                         <th>{% trans "Role" %}</th>
                                         <th>{% trans "Joined" %}</th>
-                                        <th>{% trans "Status" %}</th>
                                         <th>{% trans "Actions" %}</th>
                                     </tr>
                                 </thead>
@@ -130,22 +133,9 @@
                                                 {{ member.joined_date|date:"M d, Y" }}
                                             </td>
                                             <td>
-                                                {% if member.is_active %}
-                                                    <span class="badge bg-success">{% trans "Active" %}</span>
-                                                {% else %}
-                                                    <span class="badge bg-danger">{% trans "Inactive" %}</span>
-                                                {% endif %}
-                                            </td>
-                                            <td>
                                                 <div class="btn-group" role="group">
-                                                    <a href="{% url 'local:committee-member-detail' member.pk %}" class="btn btn-sm btn-outline-info" title="{% trans 'View Details' %}">
-                                                        <i class="bi bi-eye"></i>
-                                                    </a>
                                                     <a href="{% url 'local:committee-member-edit' member.pk %}" class="btn btn-sm btn-outline-primary" title="{% trans 'Edit Member' %}">
-                                                        <i class="bi bi-pencil"></i>
-                                                    </a>
-                                                    <a href="{% url 'local:committee-member-delete' member.pk %}" class="btn btn-sm btn-outline-danger" title="{% trans 'Remove Member' %}">
-                                                        <i class="bi bi-person-x"></i>
+                                                        <i class="bi bi-pencil"></i> {% trans 'Edit' %}
                                                     </a>
                                                 </div>
                                             </td>
@@ -175,10 +165,12 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0"><i class="bi bi-calendar-event"></i> {% trans "Committee Meetings" %}</h5>
+                    {% with committee_type_label=committee.get_committee_type_display %}
+                    <h5 class="mb-0"><i class="bi bi-calendar-event"></i> {% trans "Committee Meetings" context committee_type_label %}</h5>
+                    {% endwith %}
                     <div>
                         <a href="{% url 'local:committee-meeting-create' committee.pk %}" class="btn btn-sm btn-primary">
-                            <i class="bi bi-plus-circle"></i> {% trans "Create Meeting" %}
+                            <i class="bi bi-plus-circle"></i> {% trans "Add" %}
                         </a>
                     </div>
                 </div>
@@ -253,7 +245,9 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0"><i class="bi bi-file-text"></i> {% trans "Committee Motions" %}</h5>
+                    {% with committee_type_label=committee.get_committee_type_display %}
+                    <h5 class="mb-0"><i class="bi bi-file-text"></i> {% trans "Committee Motions" context committee_type_label %}</h5>
+                    {% endwith %}
                     <div>
                     </div>
                 </div>
@@ -265,7 +259,6 @@
                                     <tr>
                                         <th>{% trans "Title" %}</th>
                                         <th>{% trans "Type" %}</th>
-                                        <th>{% trans "Status" %}</th>
                                         <th>{% trans "Group" %}</th>
                                         <th>{% trans "Submitted" %}</th>
                                         <th>{% trans "Actions" %}</th>
@@ -283,21 +276,6 @@
                                             </td>
                                             <td>
                                                 <span class="badge bg-secondary">{{ motion.get_motion_type_display }}</span>
-                                            </td>
-                                            <td>
-                                                {% if motion.status == 'draft' %}
-                                                    <span class="badge bg-secondary">{% trans "Draft" %}</span>
-                                                {% elif motion.status == 'submitted' %}
-                                                    <span class="badge bg-primary">{% trans "Submitted" %}</span>
-                                                {% elif motion.status == 'approved' %}
-                                                    <span class="badge bg-success">{% trans "Approved" %}</span>
-                                                {% elif motion.status == 'rejected' %}
-                                                    <span class="badge bg-danger">{% trans "Rejected" %}</span>
-                                                {% elif motion.status == 'withdrawn' %}
-                                                    <span class="badge bg-warning">{% trans "Withdrawn" %}</span>
-                                                {% elif motion.status == 'not_admitted' %}
-                                                    <span class="badge bg-dark">{% trans "Nicht zugelassen" %}</span>
-                                                {% endif %}
                                             </td>
                                             <td>
                                                 <a href="{% url 'group:group-detail' motion.group.pk %}">

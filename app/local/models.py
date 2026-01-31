@@ -1,4 +1,7 @@
+from datetime import date
+
 from django.db import models
+from django.utils.translation import gettext_lazy as _
 from auditlog.registry import auditlog
 from auditlog.models import AuditlogHistoryField
 
@@ -193,12 +196,12 @@ class CommitteeMember(models.Model):
         ('substitute_member', 'Substitute Member'),
     ]
 
-    committee = models.ForeignKey(Committee, on_delete=models.CASCADE, related_name='members', help_text="Committee the user belongs to")
-    user = models.ForeignKey('user.CustomUser', on_delete=models.CASCADE, related_name='committee_memberships', help_text="User who is a member")
-    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='member', help_text="Role of the user in the committee")
-    joined_date = models.DateField(auto_now_add=True, help_text="Date when the user joined the committee")
-    is_active = models.BooleanField(default=True, help_text="Whether the membership is currently active")
-    notes = models.TextField(blank=True, help_text="Additional notes about the membership")
+    committee = models.ForeignKey(Committee, on_delete=models.CASCADE, related_name='members', help_text=_("Committee the user belongs to"))
+    user = models.ForeignKey('user.CustomUser', on_delete=models.CASCADE, related_name='committee_memberships', help_text=_("User who is a member"))
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='member', help_text=_("Role of the user in the committee"))
+    joined_date = models.DateField(default=date.today, help_text=_("Date when the user joined the committee"))
+    is_active = models.BooleanField(default=True, help_text=_("Whether the membership is currently active"))
+    notes = models.TextField(blank=True, help_text=_("Additional notes about the membership"))
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     history = models.JSONField(default=dict, blank=True)
@@ -214,7 +217,7 @@ class CommitteeMember(models.Model):
 
     def get_absolute_url(self):
         from django.urls import reverse
-        return reverse('local:committee-member-detail', args=[str(self.pk)])
+        return reverse('local:committee-detail', kwargs={'pk': self.committee.pk})
 
 
 class Term(models.Model):

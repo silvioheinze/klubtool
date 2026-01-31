@@ -1980,17 +1980,6 @@ class CommitteeMemberListView(LoginRequiredMixin, UserPassesTestMixin, ListView)
         return context
 
 
-class CommitteeMemberDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
-    """View for displaying a single CommitteeMember object"""
-    model = CommitteeMember
-    context_object_name = 'member'
-    template_name = 'local/committee_member_detail.html'
-
-    def test_func(self):
-        """Check if user has permission to view CommitteeMember objects"""
-        return self.request.user.is_superuser
-
-
 class CommitteeMemberCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     """View for creating a new CommitteeMember object"""
     model = CommitteeMember

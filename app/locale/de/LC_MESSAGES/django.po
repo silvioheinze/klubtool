@@ -3,7 +3,6 @@
 # This file is distributed under the same license as the PACKAGE package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
 #
-#, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
@@ -89,7 +88,6 @@ msgid "Failed to send invites to {count} member(s): {emails}"
 msgstr ""
 
 #: local/views.py:1224
-#, fuzzy
 #| msgid "You don't have permission to invite members to this group."
 msgid "You don't have permission to export this meeting."
 msgstr "Sie haben keine Berechtigung, Mitglieder in diese Gruppe einzuladen."
@@ -151,7 +149,6 @@ msgstr ""
 
 #: motion/forms.py:799 templates/motion/motion_vote.html:41
 #: templates/motion/motion_vote_confirm_delete.html:41
-#, fuzzy
 #| msgid "Motion Type"
 msgid "Vote Type"
 msgstr "Antragstyp"
@@ -161,7 +158,6 @@ msgid "Custom name/description for this voting round"
 msgstr ""
 
 #: motion/forms.py:807 templates/motion/motion_vote_confirm_delete.html:51
-#, fuzzy
 #| msgid "Short Name"
 msgid "Vote Name"
 msgstr "Kurzname"
@@ -171,7 +167,6 @@ msgid "Optional description for this voting round"
 msgstr ""
 
 #: motion/forms.py:814
-#, fuzzy
 #| msgid "Voting sessions"
 msgid "Use motion's session"
 msgstr "Abstimmungssitzungen"
@@ -195,7 +190,6 @@ msgid "Session where this vote was cast (defaults to motion's session)"
 msgstr ""
 
 #: motion/forms.py:823
-#, fuzzy
 #| msgid "Refer to Committee"
 msgid "Select Committee"
 msgstr "An Ausschuss verweisen"
@@ -269,13 +263,11 @@ msgid "Refer to Committee"
 msgstr "An Ausschuss verweisen"
 
 #: motion/models.py:45 templates/motion/motion_detail.html:98
-#, fuzzy
 #| msgid "Refer to Committee"
 msgid "Refer to Committee (no majority)"
 msgstr "An Ausschuss verweisen"
 
 #: motion/models.py:46 templates/motion/motion_detail.html:100
-#, fuzzy
 #| msgid "Council Committees"
 msgid "Voted upon in Committee"
 msgstr "Kommissionen und Ausschüsse"
@@ -338,13 +330,11 @@ msgid "Answered"
 msgstr "Beantwortet"
 
 #: motion/models.py:52 templates/motion/motion_detail.html:119
-#, fuzzy
 #| msgid "Delete"
 msgid "Deleted"
 msgstr "Löschen"
 
 #: motion/models.py:56
-#, fuzzy
 #| msgid "Resolution"
 msgid "Resolutionsantrag"
 msgstr "Resolution"
@@ -359,7 +349,6 @@ msgid ""
 msgstr ""
 
 #: motion/models.py:182 templates/motion/motion_vote_confirm_delete.html:43
-#, fuzzy
 #| msgid "Record First Votes"
 msgid "Regular Vote"
 msgstr "Erste Stimmen aufzeichnen"
@@ -409,7 +398,6 @@ msgid "Motion referred to committee by majority"
 msgstr ""
 
 #: motion/views.py:320 motion/views.py:328
-#, fuzzy
 #| msgid "Refer to Committee"
 msgid "Motion not referred to committee"
 msgstr "An Ausschuss verweisen"
@@ -432,7 +420,6 @@ msgid ""
 msgstr ""
 
 #: motion/views.py:1012
-#, fuzzy
 #| msgid "No votes recorded yet."
 msgid "No votes found to delete."
 msgstr "Noch keine Stimmen aufgezeichnet."
@@ -443,7 +430,6 @@ msgid "Vote round deleted successfully. %(count)d vote(s) removed."
 msgstr ""
 
 #: motion/views.py:1031 motion/views.py:1075
-#, fuzzy
 #| msgid "No committees found for this council."
 msgid "No votes found for this round."
 msgstr "Keine Ausschüsse oder Kommissionen gefunden."
@@ -507,7 +493,6 @@ msgid "Next Session"
 msgstr "Nächste Sitzung"
 
 #: templates/_base.html:76
-#, fuzzy
 #| msgid "Group Details"
 msgid "Next Group Meeting"
 msgstr "Gruppendetails"
@@ -519,7 +504,6 @@ msgstr "Einstellungen"
 
 #: templates/_base.html:114 templates/user/admin_settings.html:5
 #: templates/user/admin_settings.html:8
-#, fuzzy
 #| msgid "Account Settings"
 msgid "Admin Settings"
 msgstr "Kontoeinstellungen"
@@ -683,7 +667,6 @@ msgstr ""
 
 #: templates/group/email/meeting_invite.html:91
 #: templates/group/email/meeting_invite.txt:2
-#, fuzzy
 #| msgid "Motion Information"
 msgid "Meeting Invitation"
 msgstr "Antragsinformation"
@@ -860,6 +843,10 @@ msgstr "Gruppe löschen"
 #: templates/local/term_seat_distribution_form.html:28
 msgid "Back to List"
 msgstr "Zurück zur Liste"
+
+#: templates/local/committee_detail.html:16
+msgid "Back"
+msgstr "Zurück"
 
 #: templates/group/group_confirm_delete.html:26
 #: templates/local/committee_confirm_delete.html:27
@@ -1137,7 +1124,6 @@ msgid "Group Information"
 msgstr "Klubinformation"
 
 #: templates/group/group_detail.html:68
-#, fuzzy
 #| msgid "Group Decisions"
 msgid "Group Admins"
 msgstr "Klubentscheidungen"
@@ -1186,7 +1172,6 @@ msgstr "Beigetreten"
 
 #: templates/group/group_detail.html:123 templates/group/group_detail.html:339
 #: templates/group/member_detail.html:71 templates/user/list.html:67
-#, fuzzy
 #| msgid "Group Information"
 msgid "Group Admin"
 msgstr "Klubinformation"
@@ -1222,7 +1207,7 @@ msgstr ""
 #: templates/group/group_detail.html:162 templates/group/member_detail.html:132
 #: templates/group/member_list.html:107
 msgid "Are you sure you want to remove this member?"
-msgstr ""
+msgstr "Möchten Sie dieses Mitglied wirklich entfernen?"
 
 #: templates/group/group_detail.html:175 templates/group/member_list.html:120
 #: templates/local/committee_detail.html:181
@@ -1235,7 +1220,6 @@ msgstr ""
 
 #: templates/group/group_detail.html:193 templates/group/meeting_list.html:5
 #: templates/group/meeting_list.html:12
-#, fuzzy
 #| msgid "Group Details"
 msgid "Group Meetings"
 msgstr "Gruppendetails"
@@ -1243,7 +1227,6 @@ msgstr "Gruppendetails"
 #: templates/group/group_detail.html:196 templates/group/group_detail.html:270
 #: templates/group/group_detail.html:295 templates/group/meeting_form.html:9
 #: templates/group/meeting_form.html:23 templates/group/meeting_list.html:15
-#, fuzzy
 #| msgid "Add Motion"
 msgid "Add Meeting"
 msgstr "Antrag hinzufügen"
@@ -1299,23 +1282,19 @@ msgid "of"
 msgstr ""
 
 #: templates/group/group_detail.html:257
-#, fuzzy
 #| msgid "Settings"
 msgid "meetings"
 msgstr "Einstellungen"
 
 #: templates/group/group_detail.html:260
-#, fuzzy
 #| msgid "View All Motions"
 msgid "View All Meetings"
 msgstr "Alle Anträge anzeigen"
 
 #: templates/group/group_detail.html:267
 #: templates/local/committee_detail.html:259
-#, fuzzy
-#| msgid "No Motions found"
 msgid "No Meetings found"
-msgstr "Keine Anträge gefunden"
+msgstr "Keine Sitzungen gefunden"
 
 #: templates/group/group_detail.html:268
 msgid "Add meetings to this group to get started."
@@ -1509,7 +1488,6 @@ msgstr ""
 
 #: templates/group/meeting_detail.html:18 templates/group/meeting_form.html:33
 #: templates/group/member_form.html:29 templates/group/member_invite.html:15
-#, fuzzy
 #| msgid "Back to Motion"
 msgid "Back to Group"
 msgstr "Zurück zum Klub"
@@ -1546,7 +1524,6 @@ msgid "Add agenda items to organize the meeting topics."
 msgstr ""
 
 #: templates/group/meeting_detail.html:138
-#, fuzzy
 #| msgid "Download"
 msgid "Download Calendar"
 msgstr "Herunterladen"
@@ -1593,7 +1570,6 @@ msgid "Order of the agenda item (1, 2, 3, etc.)"
 msgstr "Reihenfolge des Tagesordnungspunkts (1, 2, 3, etc.)"
 
 #: templates/group/meeting_detail.html:200
-#, fuzzy
 #| msgid "Add Member"
 msgid "Add Item"
 msgstr "Tagesordnungpunkt hinzufügen"
@@ -1603,26 +1579,22 @@ msgid "Edit Agenda Item"
 msgstr ""
 
 #: templates/group/meeting_detail.html:241
-#, fuzzy
 #| msgid "Update Motion"
 msgid "Update Item"
 msgstr "Tagesordnungpunkt aktualisieren"
 
 #: templates/group/meeting_detail.html:471
-#, fuzzy
 #| msgid "Are you sure you want to delete this status entry?"
 msgid "Are you sure you want to delete this agenda item?"
 msgstr "Sind Sie sicher, dass Sie diesen Status-Eintrag löschen möchten?"
 
 #: templates/group/meeting_form.html:29
 #: templates/local/committee_meeting_form.html:29
-#, fuzzy
 #| msgid "Back to Motion"
 msgid "Back to Meeting"
 msgstr "Zurück zur Sitzung"
 
 #: templates/group/meeting_form.html:53
-#, fuzzy
 #| msgid "Add Motion"
 msgid "Add New Meeting"
 msgstr "Sitzung hinzufügen"
@@ -1635,10 +1607,9 @@ msgstr "Sitzung aktualisieren"
 #: templates/group/meeting_form.html:217
 #: templates/local/committee_detail.html:201
 #: templates/local/committee_meeting_form.html:137
-#, fuzzy
 #| msgid "Create Motion"
 msgid "Create Meeting"
-msgstr "Sitzung erstellen"
+msgstr "Erstelle Sitzung"
 
 #: templates/group/meeting_form.html:234
 msgid ""
@@ -1687,7 +1658,6 @@ msgid "Search meetings..."
 msgstr ""
 
 #: templates/group/meeting_list.html:34
-#, fuzzy
 #| msgid "Motion Type"
 msgid "Meeting Type"
 msgstr "Antragstyp"
@@ -1698,13 +1668,11 @@ msgid "All Types"
 msgstr ""
 
 #: templates/group/meeting_list.html:47
-#, fuzzy
 #| msgid "View All Groups"
 msgid "All Groups"
 msgstr "Alle Klubs anzeigen"
 
 #: templates/group/meeting_list.html:134
-#, fuzzy
 #| msgid "Motion Information"
 msgid "Meeting pagination"
 msgstr "Antragsinformation"
@@ -1737,7 +1705,6 @@ msgid "Last"
 msgstr ""
 
 #: templates/group/meeting_list.html:173
-#, fuzzy
 #| msgid "No Motions found"
 msgid "No meetings found"
 msgstr "Keine Anträge gefunden"
@@ -1747,7 +1714,6 @@ msgid "No group meetings match your search criteria."
 msgstr ""
 
 #: templates/group/meeting_list.html:176
-#, fuzzy
 #| msgid "Create First Motion"
 msgid "Add First Meeting"
 msgstr "Erstelle den ersten Antrag"
@@ -1758,7 +1724,7 @@ msgstr "Erstelle den ersten Antrag"
 #: templates/group/member_detail.html:133
 #: templates/local/committee_detail.html:167
 msgid "Remove Member"
-msgstr ""
+msgstr "Mitglied entfernen"
 
 #: templates/group/member_confirm_delete.html:26
 msgid "Confirm Removal"
@@ -1822,7 +1788,7 @@ msgstr ""
 #: templates/group/member_form.html:185
 #: templates/local/committee_member_form.html:164
 msgid "Update Member"
-msgstr ""
+msgstr "Mitglied aktualisieren"
 
 #: templates/group/member_form.html:202
 msgid "Group Membership Information"
@@ -1946,13 +1912,11 @@ msgid "Your Councils"
 msgstr ""
 
 #: templates/home.html:98
-#, fuzzy
 #| msgid "View All Groups"
 msgid "Your Groups"
 msgstr "Alle Klubs anzeigen"
 
 #: templates/home.html:134 templates/home.html:176
-#, fuzzy
 #| msgid "Download"
 msgid "Personal calendar"
 msgstr "Herunterladen"
@@ -1962,7 +1926,6 @@ msgid "Council and committee sessions plus group meetings (next 60 days)"
 msgstr ""
 
 #: templates/home.html:138 templates/home.html:178
-#, fuzzy
 #| msgid "Exports"
 msgid "Export (ICS)"
 msgstr "Exporte"
@@ -2003,13 +1966,11 @@ msgid "Committee"
 msgstr "Kommission"
 
 #: templates/home.html:153
-#, fuzzy
 #| msgid "Group Details"
 msgid "Group meeting"
 msgstr "Gruppendetails"
 
 #: templates/home.html:159
-#, fuzzy
 #| msgid "Exports"
 msgid "Export ICS"
 msgstr "Exporte"
@@ -2053,7 +2014,15 @@ msgstr ""
 #: templates/local/committee_detail.html:27
 #: templates/local/committee_form.html:53
 msgid "Committee Information"
-msgstr ""
+msgstr "Ausschussinformation"
+
+msgctxt "Ausschuss"
+msgid "Committee Information"
+msgstr "Ausschussinformation"
+
+msgctxt "Kommission"
+msgid "Committee Information"
+msgstr "Kommissionsinformation"
 
 #: templates/local/committee_confirm_delete.html:46
 #: templates/local/committee_detail.html:51
@@ -2061,7 +2030,7 @@ msgstr ""
 #: templates/local/committee_member_form.html:183
 #: templates/local/council_detail.html:233
 msgid "Chairperson"
-msgstr ""
+msgstr "Vorsitzende/r"
 
 #: templates/local/committee_confirm_delete.html:51
 #: templates/local/committee_detail.html:56
@@ -2126,7 +2095,6 @@ msgstr ""
 
 #: templates/local/committee_detail.html:16
 #: templates/local/session_detail.html:23
-#, fuzzy
 #| msgid "Back to Motion"
 msgid "Back to Council"
 msgstr "Zurück zum Antrag"
@@ -2134,7 +2102,7 @@ msgstr "Zurück zum Antrag"
 #: templates/local/committee_detail.html:60
 #: templates/local/committee_member_form.html:184
 msgid "Vice Chairperson"
-msgstr ""
+msgstr "Stellv. Vorsitzende/r"
 
 #: templates/local/committee_detail.html:99
 msgid "Are you sure you want to delete this Committee?"
@@ -2142,7 +2110,15 @@ msgstr ""
 
 #: templates/local/committee_detail.html:117
 msgid "Committee Members"
-msgstr ""
+msgstr "Ausschussmitglieder"
+
+msgctxt "Ausschuss"
+msgid "Committee Members"
+msgstr "Ausschussmitglieder"
+
+msgctxt "Kommission"
+msgid "Committee Members"
+msgstr "Kommissionsmitglieder"
 
 #: templates/local/committee_detail.html:161
 #: templates/local/committee_detail.html:243
@@ -2154,37 +2130,48 @@ msgstr ""
 
 #: templates/local/committee_detail.html:182
 msgid "Add committee members to start organizing the committee work."
-msgstr ""
+msgstr "Fügen Sie Mitglieder hinzu, um die Gremiumsarbeit zu organisieren."
 
 #: templates/local/committee_detail.html:184
 msgid "Add First Member"
-msgstr ""
+msgstr "Erstes Mitglied hinzufügen"
 
 #: templates/local/committee_detail.html:198
-#, fuzzy
-#| msgid "Council Sessions"
 msgid "Committee Meetings"
-msgstr "Sitzungen"
+msgstr "Ausschusssitzungen"
+
+msgctxt "Ausschuss"
+msgid "Committee Meetings"
+msgstr "Ausschusssitzungen"
+
+msgctxt "Kommission"
+msgid "Committee Meetings"
+msgstr "Kommissionssitzungen"
 
 #: templates/local/committee_detail.html:212
-#, fuzzy
 #| msgid "Scheduled"
 msgid "Scheduled Date"
 msgstr "Geplant"
 
 #: templates/local/committee_detail.html:260
 msgid "Create committee meetings to organize sessions."
-msgstr ""
+msgstr "Erstellen Sie Gremiumssitzungen, um Sitzungen zu organisieren."
 
 #: templates/local/committee_detail.html:262
-#, fuzzy
-#| msgid "Create First Motion"
 msgid "Create First Meeting"
-msgstr "Erstelle den ersten Antrag"
+msgstr "Erstelle erste Sitzung"
 
 #: templates/local/committee_detail.html:276
 msgid "Committee Motions"
-msgstr ""
+msgstr "Ausschusanträge"
+
+msgctxt "Ausschuss"
+msgid "Committee Motions"
+msgstr "Ausschusanträge"
+
+msgctxt "Kommission"
+msgid "Committee Motions"
+msgstr "Kommissionsanträge"
 
 #: templates/local/committee_detail.html:335
 #: templates/motion/motion_confirm_delete.html:117
@@ -2262,7 +2249,7 @@ msgstr ""
 #: templates/local/committee_member_form.html:190
 #: templates/local/session_form.html:257
 msgid "Tips"
-msgstr ""
+msgstr "Tipps"
 
 #: templates/local/committee_form.html:222
 msgid "Choose a descriptive name for the committee"
@@ -2355,59 +2342,78 @@ msgstr "Kommissionssitzung hinzufügen"
 #: templates/local/committee_member_form.html:7
 #: templates/local/committee_member_form.html:21
 msgid "Edit Committee Member"
-msgstr ""
+msgstr "Gremiumsmitglied bearbeiten"
 
 #: templates/local/committee_member_form.html:9
 #: templates/local/committee_member_form.html:23
-#, fuzzy
 #| msgid "Add Member"
 msgid "Add Committee Member"
-msgstr "Mitglied hinzufügen"
+msgstr "Gremiumsmitglied hinzufügen"
 
 #: templates/local/committee_member_form.html:47
-#, fuzzy
 #| msgid "Group Information"
 msgid "Edit Member Information"
-msgstr "Klubinformation"
+msgstr "Mitgliedsinformation bearbeiten"
 
 #: templates/local/committee_member_form.html:49
-#, fuzzy
 #| msgid "Group Information"
 msgid "Member Information"
-msgstr "Klubinformation"
+msgstr "Mitgliedsinformation"
 
 #: templates/local/committee_member_form.html:181
-#, fuzzy
 #| msgid "Members"
 msgid "Member Roles"
-msgstr "Mitglieder"
+msgstr "Mitgliedsrollen"
 
 #: templates/local/committee_member_form.html:183
 msgid "Leader of the committee with full authority"
-msgstr ""
+msgstr "Leitung des Gremiums mit voller Befugnis"
 
 #: templates/local/committee_member_form.html:184
 msgid "Deputy leader who can act in the chairperson's absence"
-msgstr ""
+msgstr "Stellvertretung, die bei Abwesenheit des Vorsitzenden handeln kann"
 
 #: templates/local/committee_member_form.html:185
 msgid "Regular committee member with voting rights"
-msgstr ""
+msgstr "Ordentliches Gremiumsmitglied mit Stimmrecht"
 
 #: templates/local/committee_member_form.html:192
 msgid "Only active users can be added to committees"
-msgstr ""
+msgstr "Nur aktive Benutzer können Gremien hinzugefügt werden"
 
 #: templates/local/committee_member_form.html:193
 msgid "Each user can only be a member of a committee once"
-msgstr ""
+msgstr "Jeder Benutzer kann nur einmal Mitglied eines Gremiums sein"
 
 #: templates/local/committee_member_form.html:194
 msgid "Use notes to record special responsibilities or conditions"
-msgstr ""
+msgstr "Nutzen Sie Notizen für besondere Aufgaben oder Bedingungen"
+
+#: local/models.py (CommitteeMember help_text)
+msgid "Committee the user belongs to"
+msgstr "Gremium, dem der Benutzer angehört"
+
+#: local/models.py (CommitteeMember help_text)
+msgid "User who is a member"
+msgstr "Benutzer, der Mitglied ist"
+
+#: local/models.py (CommitteeMember help_text)
+msgid "Role of the user in the committee"
+msgstr "Rolle des Benutzers im Gremium"
+
+#: local/models.py (CommitteeMember help_text)
+msgid "Date when the user joined the committee"
+msgstr "Datum des Eintritts in das Gremium"
+
+#: local/models.py (CommitteeMember help_text)
+msgid "Whether the membership is currently active"
+msgstr "Ob die Mitgliedschaft derzeit aktiv ist"
+
+#: local/models.py (CommitteeMember help_text)
+msgid "Additional notes about the membership"
+msgstr "Zusätzliche Notizen zur Mitgliedschaft"
 
 #: templates/local/council_committees_export_pdf.html:12
-#, fuzzy
 #| msgid "Standalone"
 msgid "Stand"
 msgstr "Eigenständig"
@@ -2542,7 +2548,6 @@ msgid "Council Committees"
 msgstr "Kommissionen und Ausschüsse"
 
 #: templates/local/council_detail.html:217
-#, fuzzy
 #| msgid "Exports"
 msgid "Export PDF"
 msgstr "Exporte"
@@ -2773,7 +2778,6 @@ msgid "Code:"
 msgstr ""
 
 #: templates/local/local_form.html:51
-#, fuzzy
 #| msgid "Description"
 msgid "Description:"
 msgstr "Beschreibung"
@@ -2951,7 +2955,6 @@ msgstr ""
 #: templates/local/session_attachment_form.html:14
 #: templates/motion/question_attachment.html:6
 #: templates/motion/question_attachment.html:16
-#, fuzzy
 #| msgid "Attachments"
 msgid "Upload Attachment"
 msgstr "Anhänge"
@@ -2974,7 +2977,6 @@ msgstr "Datei hochladen"
 #: templates/local/session_attachment_form.html:39
 #: templates/motion/question_attachment.html:30
 #: templates/motion/question_attachment.html:93
-#, fuzzy
 #| msgid "Files"
 msgid "File"
 msgstr "Dateien"
@@ -2988,7 +2990,6 @@ msgstr ""
 #: templates/local/session_attachment_form.html:57
 #: templates/motion/question_attachment.html:47
 #: templates/motion/question_attachment.html:94
-#, fuzzy
 #| msgid "Motion Type"
 msgid "File Type"
 msgstr "Antragstyp"
@@ -3073,20 +3074,17 @@ msgid "Create First Motion"
 msgstr "Erstelle den ersten Antrag"
 
 #: templates/local/session_detail.html:198
-#, fuzzy
 #| msgid "Session Motions"
 msgid "Session Questions"
 msgstr "Anfragen"
 
 #: templates/local/session_detail.html:281
-#, fuzzy
 #| msgid "No attachments uploaded for this session yet."
 msgid "No questions have been submitted for this session yet."
 msgstr "Noch keine Anhänge für diese Sitzung hochgeladen."
 
 #: templates/local/session_detail.html:283
 #: templates/motion/question_list.html:255
-#, fuzzy
 #| msgid "Create First Motion"
 msgid "Create First Question"
 msgstr "Erstelle den ersten Antrag"
@@ -3133,7 +3131,6 @@ msgid "Presence Tracker"
 msgstr ""
 
 #: templates/local/session_detail.html:396
-#, fuzzy
 #| msgid "Total votes cast"
 msgid "Total Present"
 msgstr "Gesamte abgegebene Stimmen"
@@ -3196,7 +3193,6 @@ msgid "Inaugural"
 msgstr ""
 
 #: templates/local/session_form.html:245
-#, fuzzy
 #| msgid "Voting sessions"
 msgid "Inaugural session"
 msgstr "Abstimmungssitzungen"
@@ -3586,7 +3582,6 @@ msgid "Back to Motion"
 msgstr "Zurück zum Antrag"
 
 #: templates/motion/motion_confirm_delete.html:32
-#, fuzzy
 #| msgid "Are you sure you want to delete the Group"
 msgid "Are you sure you want to delete the Motion"
 msgstr "Sind Sie sicher, dass Sie die Gruppe löschen möchten"
@@ -3604,14 +3599,12 @@ msgstr "Antragstyp"
 
 #: templates/motion/motion_confirm_delete.html:69
 #: templates/motion/question_confirm_delete.html:66
-#, fuzzy
 #| msgid "Submitted"
 msgid "Submitted By"
 msgstr "Eingereicht"
 
 #: templates/motion/motion_confirm_delete.html:73
 #: templates/motion/question_confirm_delete.html:70
-#, fuzzy
 #| msgid "Submitted"
 msgid "Submitted Date"
 msgstr "Eingereicht"
@@ -3629,7 +3622,6 @@ msgid "Rationale"
 msgstr "Begründung"
 
 #: templates/motion/motion_confirm_delete.html:114
-#, fuzzy
 #| msgid "View All Motions"
 msgid "View Motion"
 msgstr "Alle Anträge anzeigen"
@@ -3650,7 +3642,6 @@ msgid "Written answer (PDF)"
 msgstr "Schriftliche Antwort (PDF)"
 
 #: templates/motion/motion_detail.html:132
-#, fuzzy
 #| msgid "Submitted"
 msgid "Submit"
 msgstr "Eingereicht"
@@ -3665,13 +3656,11 @@ msgid "Not Admitted"
 msgstr ""
 
 #: templates/motion/motion_detail.html:159
-#, fuzzy
 #| msgid "Refer to Committee"
 msgid "Voted in Committee"
 msgstr "An Ausschuss verweisen"
 
 #: templates/motion/motion_detail.html:176
-#, fuzzy
 #| msgid "Answered"
 msgid "Mark as Answered"
 msgstr "Beantwortet"
@@ -3699,7 +3688,6 @@ msgstr "Klubentscheidungen"
 #: templates/motion/motion_group_decision.html:5
 #: templates/motion/motion_group_decision.html:14
 #: templates/motion/motion_group_decision.html:98
-#, fuzzy
 #| msgid "Group Decisions"
 msgid "Add Group Decision"
 msgstr "Klubentscheidungen"
@@ -3779,7 +3767,6 @@ msgid "Referral rejected – no majority"
 msgstr ""
 
 #: templates/motion/motion_detail.html:477
-#, fuzzy
 #| msgid "Voting Results"
 msgid "Show voting results"
 msgstr "Abstimmungsergebnisse"
@@ -3817,7 +3804,6 @@ msgstr "Keine Statusänderungen aufgezeichnet."
 
 #: templates/motion/motion_detail.html:575
 #: templates/motion/motion_detail.html:597
-#, fuzzy
 #| msgid "Voting Results"
 msgid "Voting results"
 msgstr "Abstimmungsergebnisse"
@@ -3837,7 +3823,6 @@ msgid ""
 msgstr ""
 
 #: templates/motion/motion_form.html:180
-#, fuzzy
 #| msgid "Select the committee to refer this motion to."
 msgid "Select tags to categorize this motion (optional)"
 msgstr ""
@@ -3873,14 +3858,12 @@ msgstr ""
 
 #: templates/motion/motion_group_decision.html:29
 #: templates/motion/motion_group_decision_confirm_delete.html:39
-#, fuzzy
 #| msgid "Group Decisions"
 msgid "Group Decision Details"
 msgstr "Klubentscheidungen"
 
 #: templates/motion/motion_group_decision.html:39
 #: templates/motion/motion_group_decision_confirm_delete.html:41
-#, fuzzy
 #| msgid "Group Decisions"
 msgid "Decision"
 msgstr "Klubentscheidungen"
@@ -3902,13 +3885,11 @@ msgid "Delete Group Decision"
 msgstr "Klubentscheidung löschen"
 
 #: templates/motion/motion_group_decision_confirm_delete.html:42
-#, fuzzy
 #| msgid "Session Type"
 msgid "Decision Time"
 msgstr "Sitzungstyp"
 
 #: templates/motion/motion_group_decision_confirm_delete.html:44
-#, fuzzy
 #| msgid "Created"
 msgid "Created By"
 msgstr "Erstellt"
@@ -3928,14 +3909,12 @@ msgstr ""
 
 #: templates/motion/motion_list.html:138
 #: templates/motion/question_list.html:128
-#, fuzzy
 #| msgid "Filter"
 msgid "Apply Filters"
 msgstr "Filter"
 
 #: templates/motion/motion_list.html:141
 #: templates/motion/question_list.html:131
-#, fuzzy
 #| msgid "Clear"
 msgid "Clear All"
 msgstr "Löschen"
@@ -3992,7 +3971,6 @@ msgid "Please correct the errors below:"
 msgstr ""
 
 #: templates/motion/motion_status_change.html:93
-#, fuzzy
 #| msgid "Notes"
 msgid "Votes"
 msgstr "Notizen"
@@ -4003,7 +3981,6 @@ msgid "New Status"
 msgstr "Neuer Status"
 
 #: templates/motion/motion_status_change.html:153
-#, fuzzy
 #| msgid "Select the committee to refer this motion to."
 msgid "Select the session where this motion will be tabled."
 msgstr ""
@@ -4031,7 +4008,6 @@ msgstr ""
 
 #: templates/motion/motion_status_change.html:197
 #: templates/motion/motion_vote.html:5 templates/motion/motion_vote.html:14
-#, fuzzy
 #| msgid "Record First Votes"
 msgid "Record Party Votes"
 msgstr "Erste Stimmen aufzeichnen"
@@ -4055,19 +4031,16 @@ msgid "Delete Status Entry"
 msgstr "Status-Eintrag löschen"
 
 #: templates/motion/motion_status_confirm_delete.html:38
-#, fuzzy
 #| msgid "Session Details"
 msgid "Status Entry Details"
 msgstr "Sitzungsdetails"
 
 #: templates/motion/motion_status_confirm_delete.html:44
-#, fuzzy
 #| msgid "Change Status"
 msgid "Changed At"
 msgstr "Status ändern"
 
 #: templates/motion/motion_status_confirm_delete.html:50
-#, fuzzy
 #| msgid "Change Status"
 msgid "Changed By"
 msgstr "Status ändern"
@@ -4078,13 +4051,11 @@ msgid "Reason"
 msgstr ""
 
 #: templates/motion/motion_vote.html:5 templates/motion/motion_vote.html:14
-#, fuzzy
 #| msgid "Edit Votes"
 msgid "Edit Party Votes"
 msgstr "Stimmen bearbeiten"
 
 #: templates/motion/motion_vote.html:32
-#, fuzzy
 #| msgid "Voting Results"
 msgid "Party Voting Results"
 msgstr "Abstimmungsergebnisse"
@@ -4101,7 +4072,6 @@ msgid "In Favor"
 msgstr ""
 
 #: templates/motion/motion_vote.html:200
-#, fuzzy
 #| msgid "Record All Votes"
 msgid "Update All Votes"
 msgstr "Alle Stimmen aufzeichnen"
@@ -4113,13 +4083,11 @@ msgstr "Alle Stimmen aufzeichnen"
 #: templates/motion/motion_vote_confirm_delete.html:5
 #: templates/motion/motion_vote_confirm_delete.html:14
 #: templates/motion/motion_vote_confirm_delete.html:100
-#, fuzzy
 #| msgid "Delete Motion"
 msgid "Delete Vote Round"
 msgstr "Antrag löschen"
 
 #: templates/motion/motion_vote_confirm_delete.html:38
-#, fuzzy
 #| msgid "Motion Details"
 msgid "Vote Round Details"
 msgstr "Antragsdetails"
@@ -4129,7 +4097,6 @@ msgid "(none)"
 msgstr ""
 
 #: templates/motion/motion_vote_confirm_delete.html:61
-#, fuzzy
 #| msgid "Motions"
 msgid "Total Votes"
 msgstr "Anträge"
@@ -4139,7 +4106,6 @@ msgid "Total In Favor"
 msgstr ""
 
 #: templates/motion/motion_vote_confirm_delete.html:65
-#, fuzzy
 #| msgid "Motions"
 msgid "Total Against"
 msgstr "Anträge"
@@ -4165,7 +4131,6 @@ msgid "Optionally provide a description for the attachment."
 msgstr ""
 
 #: templates/motion/question_attachment.html:96
-#, fuzzy
 #| msgid "Motion Type"
 msgid "Allowed Types"
 msgstr "Anfragetyp"
@@ -4182,14 +4147,12 @@ msgid "Back to Question"
 msgstr "Zurück zur Anfrage"
 
 #: templates/motion/question_confirm_delete.html:32
-#, fuzzy
 #| msgid "Are you sure you want to delete the Group"
 msgid "Are you sure you want to delete the Question"
 msgstr "Sind Sie sicher, dass Sie die Gruppe löschen möchten"
 
 #: templates/motion/question_confirm_delete.html:39
 #: templates/motion/question_detail.html:6
-#, fuzzy
 #| msgid "Session Details"
 msgid "Question Details"
 msgstr "Anfragedetails"
@@ -4198,7 +4161,6 @@ msgstr "Anfragedetails"
 #: templates/motion/question_detail.html:117
 #: templates/motion/question_form.html:48
 #: templates/motion/question_form.html:207
-#, fuzzy
 #| msgid "Motion Text"
 msgid "Question Text"
 msgstr "Anfragetext"
@@ -4211,32 +4173,27 @@ msgid "Answer"
 msgstr ""
 
 #: templates/motion/question_confirm_delete.html:111
-#, fuzzy
 #| msgid "View Session"
 msgid "View Question"
 msgstr "Sitzung anzeigen"
 
 #: templates/motion/question_confirm_delete.html:114
 #: templates/motion/question_form.html:7 templates/motion/question_form.html:22
-#, fuzzy
 #| msgid "Edit Session"
 msgid "Edit Question"
 msgstr "Sitzung bearbeiten"
 
 #: templates/motion/question_detail.html:36
-#, fuzzy
 #| msgid "Back to Session"
 msgid "Back to Questions"
 msgstr "Zurück zur Sitzung"
 
 #: templates/motion/question_detail.html:48
-#, fuzzy
 #| msgid "Session Information"
 msgid "Question Information"
 msgstr "Sitzungsinformation"
 
 #: templates/motion/question_detail.html:200
-#, fuzzy
 #| msgid "No attachments uploaded."
 msgid "No attachments uploaded yet."
 msgstr "Keine Anhänge hochgeladen."
@@ -4246,7 +4203,6 @@ msgid "Metadata"
 msgstr ""
 
 #: templates/motion/question_detail.html:215
-#, fuzzy
 #| msgid "Submitted"
 msgid "Submitted by"
 msgstr "Eingereicht"
@@ -4256,7 +4212,6 @@ msgid "Unknown"
 msgstr ""
 
 #: templates/motion/question_detail.html:224
-#, fuzzy
 #| msgid "Submitted"
 msgid "Submitted date"
 msgstr "Eingereicht"
@@ -4266,7 +4221,6 @@ msgid "Last modified"
 msgstr ""
 
 #: templates/motion/question_detail.html:316
-#, fuzzy
 #| msgid "No status changes recorded."
 msgid "No status changes recorded yet."
 msgstr "Keine Statusänderungen aufgezeichnet."
@@ -4274,7 +4228,6 @@ msgstr "Keine Statusänderungen aufgezeichnet."
 #: templates/motion/question_form.html:9 templates/motion/question_form.html:24
 #: templates/motion/question_form.html:190
 #: templates/motion/question_list.html:16
-#, fuzzy
 #| msgid "Create Session"
 msgid "Create Question"
 msgstr "Sitzung erstellen"
@@ -4293,7 +4246,6 @@ msgid "Select tags to categorize this question (optional)"
 msgstr ""
 
 #: templates/motion/question_form.html:188
-#, fuzzy
 #| msgid "Update Session"
 msgid "Update Question"
 msgstr "Sitzung aktualisieren"
@@ -4319,13 +4271,11 @@ msgid "Select parties that support this question (optional)."
 msgstr ""
 
 #: templates/motion/question_list.html:213
-#, fuzzy
 #| msgid "Session Information"
 msgid "Question pagination"
 msgstr "Sitzungsinformation"
 
 #: templates/motion/question_list.html:252
-#, fuzzy
 #| msgid "No Motions found"
 msgid "No questions found"
 msgstr "Keine Anträge gefunden"
@@ -4335,19 +4285,16 @@ msgid "Create questions to manage council inquiries."
 msgstr ""
 
 #: templates/motion/question_status_change.html:14
-#, fuzzy
 #| msgid "Change Motion Status"
 msgid "Change Question Status"
 msgstr "Antragsstatus ändern"
 
 #: templates/motion/question_status_change.html:60
-#, fuzzy
 #| msgid "Status History"
 msgid "No status history"
 msgstr "Statusverlauf"
 
 #: templates/motion/question_status_change.html:186
-#, fuzzy
 #| msgid "View All History"
 msgid "View all status history"
 msgstr "Alle Historie anzeigen"
@@ -4377,7 +4324,6 @@ msgid ""
 msgstr ""
 
 #: templates/user/admin_settings.html:39
-#, fuzzy
 #| msgid "Settings"
 msgid "settings"
 msgstr "Einstellungen"
@@ -4402,13 +4348,11 @@ msgstr ""
 
 #: templates/user/admin_user_form.html:4
 #: templates/user/admin_user_form.html:158
-#, fuzzy
 #| msgid "Create Group"
 msgid "Create User"
 msgstr "Gruppe erstellen"
 
 #: templates/user/admin_user_form.html:13
-#, fuzzy
 #| msgid "Create New Group"
 msgid "Create New User"
 msgstr "Neuen Klub erstellen"
@@ -4420,7 +4364,6 @@ msgid ""
 msgstr ""
 
 #: templates/user/admin_user_form.html:150
-#, fuzzy
 #| msgid "Notes"
 msgid "Note"
 msgstr "Notizen"
@@ -4440,13 +4383,11 @@ msgid "Delete Your Account"
 msgstr ""
 
 #: templates/user/confirm_delete.html:22
-#, fuzzy
 #| msgid "This action cannot be undone."
 msgid "Warning: This Action Cannot Be Undone"
 msgstr "Diese Aktion kann nicht rückgängig gemacht werden."
 
 #: templates/user/confirm_delete.html:25
-#, fuzzy
 #| msgid "This action cannot be undone."
 msgid ""
 "Are you sure you want to delete your account? This action cannot be undone "
@@ -4571,7 +4512,6 @@ msgstr ""
 
 #: templates/user/email/welcome_email.html:72
 #: templates/user/email/welcome_email.txt:8
-#, fuzzy
 #| msgid "Council Information"
 msgid "Account Information"
 msgstr "Informationen"
@@ -4630,7 +4570,6 @@ msgid ""
 msgstr ""
 
 #: templates/user/email_confirm.html:38
-#, fuzzy
 #| msgid "Email Address"
 msgid "Confirm Email Address"
 msgstr "E-Mail-Adresse"
@@ -4657,7 +4596,6 @@ msgid "Users"
 msgstr "Benutzer"
 
 #: templates/user/list.html:20
-#, fuzzy
 #| msgid "Add Member"
 msgid "Add User"
 msgstr "Mitglied hinzufügen"
@@ -4667,7 +4605,6 @@ msgid "ID"
 msgstr ""
 
 #: templates/user/list.html:38
-#, fuzzy
 #| msgid "My Locals"
 msgid "Local"
 msgstr "Meine Bezirke"
@@ -4956,7 +4893,6 @@ msgid "Delete Account"
 msgstr ""
 
 #: templates/user/settings.html:97
-#, fuzzy
 #| msgid "This action cannot be undone."
 msgid "You can safely delete your account. This action cannot be undone."
 msgstr "Diese Aktion kann nicht rückgängig gemacht werden."
@@ -4966,31 +4902,26 @@ msgid "Register"
 msgstr ""
 
 #: templates/user/signup.html:13
-#, fuzzy
 #| msgid "Create Group"
 msgid "Create Your Account"
 msgstr "Gruppe erstellen"
 
 #: templates/user/signup.html:42
-#, fuzzy
 #| msgid "Session Information"
 msgid "Personal Information"
 msgstr "Sitzungsinformation"
 
 #: templates/user/signup.html:51 user/forms.py:222
-#, fuzzy
 #| msgid "Short Name"
 msgid "First Name"
 msgstr "Kurzname"
 
 #: templates/user/signup.html:66 user/forms.py:223
-#, fuzzy
 #| msgid "Last changed"
 msgid "Last Name"
 msgstr "Zuletzt geändert"
 
 #: templates/user/signup.html:83
-#, fuzzy
 #| msgid "Council Information"
 msgid "Contact Information"
 msgstr "Informationen"
@@ -5008,13 +4939,11 @@ msgid "Confirm Password"
 msgstr ""
 
 #: templates/user/signup.html:153
-#, fuzzy
 #| msgid "Create Group"
 msgid "Create Account"
 msgstr "Gruppe erstellen"
 
 #: templates/user/signup.html:164
-#, fuzzy
 #| msgid "Sign Up"
 msgid "Sign In"
 msgstr "Registrieren"
@@ -5045,7 +4974,6 @@ msgid "This email address is already in use."
 msgstr "Diese E-Mail-Adresse wird bereits verwendet."
 
 #: user/forms.py:224
-#, fuzzy
 #| msgid "Active"
 msgid "Active User"
 msgstr "Aktiv"
@@ -5059,7 +4987,6 @@ msgid "Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only."
 msgstr ""
 
 #: user/forms.py:230
-#, fuzzy
 #| msgid "Your email address for account notifications and password resets"
 msgid "Required. Used for account notifications and password resets."
 msgstr ""
@@ -5148,17 +5075,14 @@ msgstr ""
 #~ msgid "Sign Up"
 #~ msgstr "Registrieren"
 
-#, fuzzy
 #~| msgid "Motion Details"
 #~ msgid "Motion Statistics"
 #~ msgstr "Antragsdetails"
 
-#, fuzzy
 #~| msgid "Change Motion Status"
 #~ msgid "Motions by Status"
 #~ msgstr "Antragsstatus ändern"
 
-#, fuzzy
 #~| msgid "Voting Session"
 #~ msgid "Motions by Session"
 #~ msgstr "Abstimmungssitzung"
@@ -5187,22 +5111,18 @@ msgstr ""
 #~ msgid "Add Status"
 #~ msgstr "Status hinzufügen"
 
-#, fuzzy
 #~| msgid "Add Member"
 #~ msgid "Committees Overview"
 #~ msgstr "Übersicht Kommissionen und Ausschüsse"
 
-#, fuzzy
 #~| msgid "Motion Management"
 #~ msgid "Question Management"
 #~ msgstr "Antragsverwaltung"
 
-#, fuzzy
 #~| msgid "Created"
 #~ msgid "Created by"
 #~ msgstr "Erstellt"
 
-#, fuzzy
 #~| msgid "Last changed"
 #~ msgid "Last updated"
 #~ msgstr "Zuletzt geändert"
@@ -5216,12 +5136,10 @@ msgstr ""
 #~ msgid "Postponed"
 #~ msgstr "Verschoben"
 
-#, fuzzy
 #~| msgid "Settings"
 #~ msgid "Language Settings"
 #~ msgstr "Einstellungen"
 
-#, fuzzy
 #~| msgid "Change Status"
 #~ msgid "Change Language"
 #~ msgstr "Status ändern"

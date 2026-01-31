@@ -12,7 +12,7 @@ from .views import (
     SessionListView, SessionDetailView, SessionCreateView, SessionUpdateView, SessionDeleteView, SessionExportPDFView, SessionAttachmentView, update_motion_order, update_question_order, update_session_presence, session_export_ics,
     CommitteeListView, CommitteeDetailView, CommitteeCreateView, CommitteeUpdateView, CommitteeDeleteView,
     CommitteeMeetingCreateView, CommitteeMeetingDetailView, CommitteeMeetingUpdateView, CommitteeMeetingDeleteView, committee_meeting_export_ics,
-    CommitteeMemberListView, CommitteeMemberDetailView, CommitteeMemberCreateView, CommitteeMemberUpdateView, CommitteeMemberDeleteView
+    CommitteeMemberListView, CommitteeMemberCreateView, CommitteeMemberUpdateView, CommitteeMemberDeleteView
 )
 
 app_name = 'local'
@@ -84,7 +84,6 @@ urlpatterns = [
     # Committee Member URLs
     path('committee-members/', CommitteeMemberListView.as_view(), name='committee-member-list'),
     path('committee-members/create/', CommitteeMemberCreateView.as_view(), name='committee-member-create'),
-    path('committee-members/<int:pk>/', CommitteeMemberDetailView.as_view(), name='committee-member-detail'),
     path('committee-members/<int:pk>/edit/', CommitteeMemberUpdateView.as_view(), name='committee-member-edit'),
     path('committee-members/<int:pk>/delete/', CommitteeMemberDeleteView.as_view(), name='committee-member-delete'),
 ]
