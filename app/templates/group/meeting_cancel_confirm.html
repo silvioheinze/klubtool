@@ -1,0 +1,74 @@
+{% extends "_base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Cancel Meeting" %} - {{ meeting.title }}{% endblock title %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="bi bi-x-circle text-warning"></i> {% trans "Cancel Meeting" %}
+            </h1>
+            <p class="text-muted">{% trans "Confirm cancellation of this meeting." %}</p>
+        </div>
+        <div>
+            <a href="{% url 'group:meeting-detail' meeting.pk %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> {% trans "Back to Meeting" %}
+            </a>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card border-warning">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="bi bi-exclamation-triangle"></i> {% trans "Cancel this meeting?" %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <h6 class="alert-heading">{% trans "Are you sure you want to cancel this meeting?" %}</h6>
+                        <p class="mb-0">
+                            {% trans "The meeting status will be set to Cancelled. You can still edit the meeting later if needed." %}
+                        </p>
+                    </div>
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <h6 class="mb-0">{% trans "Meeting" %}</h6>
+                        </div>
+                        <div class="card-body">
+                            <dl class="row mb-0">
+                                <dt class="col-sm-3">{% trans "Title" %}</dt>
+                                <dd class="col-sm-9"><strong>{{ meeting.title }}</strong></dd>
+                                <dt class="col-sm-3">{% trans "Date" %}</dt>
+                                <dd class="col-sm-9">{{ meeting.scheduled_date|date:"l, F d, Y" }} {{ meeting.scheduled_date|time:"H:i" }}</dd>
+                                <dt class="col-sm-3">{% trans "Status" %}</dt>
+                                <dd class="col-sm-9">
+                                    {% if meeting.status == 'scheduled' %}
+                                        <span class="badge bg-primary">{% trans "Scheduled" %}</span>
+                                    {% elif meeting.status == 'invited' %}
+                                        <span class="badge bg-info">{% trans "Invited" %}</span>
+                                    {% endif %}
+                                </dd>
+                            </dl>
+                        </div>
+                    </div>
+                    <form method="post" class="mt-3">
+                        {% csrf_token %}
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'group:meeting-detail' meeting.pk %}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> {% trans "Back to Meeting" %}
+                            </a>
+                            <button type="submit" class="btn btn-warning">
+                                <i class="bi bi-x-circle"></i> {% trans "Cancel Meeting" %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

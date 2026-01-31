@@ -1538,7 +1538,7 @@ msgstr ""
 #: templates/group/meeting_detail.html:138
 #| msgid "Download"
 msgid "Download Calendar"
-msgstr "Herunterladen"
+msgstr "Kalendereintrag herunterladen"
 
 #: templates/group/meeting_detail.html:143
 msgid "Send meeting invites to all group members?"
@@ -1546,7 +1546,7 @@ msgstr ""
 
 #: templates/group/meeting_detail.html:144
 msgid "Send Invites"
-msgstr ""
+msgstr "Einladung versenden"
 
 #: templates/group/meeting_detail.html:149 templates/group/meeting_form.html:7
 #: templates/group/meeting_form.html:21 templates/group/meeting_form.html:51

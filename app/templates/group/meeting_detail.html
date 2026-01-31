@@ -62,16 +62,41 @@
                                 
                                 <dt class="col-sm-4">{% trans "Status" %}</dt>
                                 <dd class="col-sm-8">
-                                    {% if meeting.is_past %}
-                                        <span class="badge bg-secondary">{% trans "Past" %}</span>
-                                    {% else %}
-                                        <span class="badge bg-success">{% trans "Upcoming" %}</span>
+                                    {% if meeting.status == 'scheduled' %}
+                                        <span class="badge bg-primary">{% trans "Scheduled" %}</span>
+                                    {% elif meeting.status == 'invited' %}
+                                        <span class="badge bg-info">{% trans "Invited" %}</span>
+                                    {% elif meeting.status == 'cancelled' %}
+                                        <span class="badge bg-danger">{% trans "Cancelled" %}</span>
+                                    {% endif %}
+                                    {% if meeting.is_past and meeting.status != 'cancelled' %}
+                                        <span class="badge bg-secondary ms-1">{% trans "Past" %}</span>
+                                    {% elif not meeting.is_past and meeting.status != 'cancelled' %}
+                                        <span class="badge bg-success ms-1">{% trans "Upcoming" %}</span>
                                     {% endif %}
                                 </dd>
                             </dl>
                         </div>
                     </div>
-                    
+                    {% if meeting.status != 'cancelled' %}
+                        <div class="mt-3 pt-3 border-top">
+                            <div class="d-flex flex-wrap gap-2">
+                                {% if meeting.status == 'scheduled' and can_send_invites and not meeting.is_past %}
+                                    <form method="post" action="{% url 'group:meeting-send-invites' meeting.pk %}" style="margin: 0;" class="d-inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-warning btn-sm" onclick="return confirm('{% trans "Send meeting invites to all group members?" %}');">
+                                            <i class="bi bi-envelope"></i> {% trans "Send Invites" %}
+                                        </button>
+                                    </form>
+                                {% endif %}
+                                {% if meeting.status == 'invited' %}
+                                    <a href="{% url 'group:meeting-cancel' meeting.pk %}" class="btn btn-warning btn-sm">
+                                        <i class="bi bi-x-circle"></i> {% trans "Cancel meeting" %}
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endif %}
                     {% if meeting.description %}
                         <hr>
                         <h6>{% trans "Description" %}</h6>
@@ -84,11 +109,13 @@
             <div class="card mt-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="bi bi-list-ul"></i> {% trans "Agenda" %}</h5>
+                    {% if meeting.status == 'scheduled' %}
                     <div>
                         <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#addAgendaItemModal">
                             <i class="bi bi-plus-circle"></i> {% trans "Add" %}
                         </button>
                     </div>
+                    {% endif %}
                 </div>
                 <div class="card-body">
                     <div id="agenda-list" class="sortable-list">
@@ -128,7 +155,7 @@
                 </div>
             </div>
         </div>
-        
+
         <div class="col-md-4">
             <div class="card">
                 <div class="card-header">
@@ -139,19 +166,9 @@
                         <a href="{% url 'group:meeting-export-ics' meeting.pk %}" class="btn btn-outline-primary">
                             <i class="bi bi-calendar-plus"></i> {% trans "Download Calendar" %}
                         </a>
-                        {% if can_send_invites %}
-                        <form method="post" action="{% url 'group:meeting-send-invites' meeting.pk %}" style="margin: 0;">
-                            {% csrf_token %}
-                            <button type="submit" class="btn btn-success w-100" onclick="return confirm('{% trans 'Send meeting invites to all group members?' %}')">
-                                <i class="bi bi-envelope"></i> {% trans "Send Invites" %}
-                            </button>
-                        </form>
-                        {% endif %}
                     </div>
                 </div>
             </div>
-            
-
         </div>
     </div>
 </div>

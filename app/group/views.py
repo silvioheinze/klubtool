@@ -616,6 +616,33 @@ class GroupMeetingDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView
         return super().delete(request, *args, **kwargs)
 
 
+class GroupMeetingCancelView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
+    """View to confirm and cancel a meeting (set status to cancelled)."""
+    model = GroupMeeting
+    context_object_name = 'meeting'
+    template_name = 'group/meeting_cancel_confirm.html'
+
+    def test_func(self):
+        if self.request.user.is_superuser:
+            return True
+        meeting = self.get_object()
+        return meeting.group.can_user_manage_group(self.request.user)
+
+    def dispatch(self, request, *args, **kwargs):
+        meeting = self.get_object()
+        if meeting.status not in ('scheduled', 'invited'):
+            messages.error(request, _("Only scheduled or invited meetings can be cancelled."))
+            return redirect('group:meeting-detail', pk=meeting.pk)
+        return super().dispatch(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        meeting = self.get_object()
+        meeting.status = 'cancelled'
+        meeting.save(update_fields=['status'])
+        messages.success(request, _("Meeting has been cancelled."))
+        return redirect('group:meeting-detail', pk=meeting.pk)
+
+
 # Agenda Item Views
 class AgendaItemDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
     """View for displaying a single AgendaItem object"""
@@ -990,6 +1017,10 @@ def send_meeting_invites(request, pk):
         messages.error(request, _("You don't have permission to send meeting invites."))
         return redirect('group:meeting-detail', pk=meeting.pk)
     
+    if meeting.status != 'scheduled':
+        messages.error(request, _("Invites can only be sent when the meeting is scheduled."))
+        return redirect('group:meeting-detail', pk=meeting.pk)
+    
     # Get all active group members with email addresses
     members = GroupMember.objects.filter(
         group=meeting_group,
@@ -1051,12 +1082,14 @@ def send_meeting_invites(request, pk):
             logger = logging.getLogger(__name__)
             logger.error(f"Failed to send meeting invite to {member.user.email}: {str(e)}")
     
-    # Show success/error messages
+    # Show success/error messages and update meeting status
     if success_count > 0:
         messages.success(
             request, 
             _("Meeting invites sent successfully to {count} member(s).").format(count=success_count)
         )
+        meeting.status = 'invited'
+        meeting.save(update_fields=['status'])
     if failed_count > 0:
         messages.error(
             request,

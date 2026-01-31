@@ -2,7 +2,7 @@ from django.urls import path
 from .views import (
     GroupListView, GroupDetailView, GroupCreateView, GroupUpdateView, GroupDeleteView,
     GroupMemberListView, GroupMemberDetailView, GroupMemberCreateView, GroupMemberUpdateView, GroupMemberDeleteView,
-    GroupMeetingListView, GroupMeetingDetailView, GroupMeetingCreateView, GroupMeetingUpdateView, GroupMeetingDeleteView,
+    GroupMeetingListView, GroupMeetingDetailView, GroupMeetingCreateView, GroupMeetingUpdateView, GroupMeetingDeleteView, GroupMeetingCancelView,
     AgendaItemCreateView, AgendaItemDetailView, AgendaItemUpdateView, AgendaItemDeleteView,
     AgendaItemCreateAjaxView, AgendaItemUpdateAjaxView, AgendaItemUpdateOrderAjaxView,
     set_group_admin, remove_group_admin, update_member_roles, send_meeting_invites, meeting_export_ics,
@@ -33,6 +33,7 @@ urlpatterns = [
     path('meetings/<int:pk>/', GroupMeetingDetailView.as_view(), name='meeting-detail'),
     path('meetings/<int:pk>/edit/', GroupMeetingUpdateView.as_view(), name='meeting-edit'),
     path('meetings/<int:pk>/delete/', GroupMeetingDeleteView.as_view(), name='meeting-delete'),
+    path('meetings/<int:pk>/cancel/', GroupMeetingCancelView.as_view(), name='meeting-cancel'),
     path('meetings/<int:pk>/send-invites/', send_meeting_invites, name='meeting-send-invites'),
     path('meetings/<int:pk>/export-ics/', meeting_export_ics, name='meeting-export-ics'),
     
