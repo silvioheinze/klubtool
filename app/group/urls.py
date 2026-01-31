@@ -1,7 +1,7 @@
 from django.urls import path
 from .views import (
     GroupListView, GroupDetailView, GroupCreateView, GroupUpdateView, GroupDeleteView,
-    GroupMemberListView, GroupMemberDetailView, GroupMemberCreateView, GroupMemberUpdateView, GroupMemberDeleteView,
+    GroupMemberDetailView, GroupMemberCreateView, GroupMemberUpdateView, GroupMemberDeleteView,
     GroupMeetingListView, GroupMeetingDetailView, GroupMeetingCreateView, GroupMeetingUpdateView, GroupMeetingDeleteView, GroupMeetingCancelView,
     AgendaItemCreateView, AgendaItemDetailView, AgendaItemUpdateView, AgendaItemDeleteView,
     AgendaItemCreateAjaxView, AgendaItemUpdateAjaxView, AgendaItemUpdateOrderAjaxView,
@@ -21,7 +21,6 @@ urlpatterns = [
     path('<int:pk>/invite-member/', invite_member, name='group-invite-member'),
     
     # Group Member URLs
-    path('members/', GroupMemberListView.as_view(), name='member-list'),
     path('members/create/', GroupMemberCreateView.as_view(), name='member-create'),
     path('members/<int:pk>/', GroupMemberDetailView.as_view(), name='member-detail'),
     path('members/<int:pk>/edit/', GroupMemberUpdateView.as_view(), name='member-edit'),

@@ -15,8 +15,8 @@
                     <a href="{% url 'group:member-edit' member.pk %}" class="btn btn-primary">
                         <i class="bi bi-pencil"></i> {% trans "Edit" %}
                     </a>
-                    <a href="{% url 'group:member-list' %}" class="btn btn-secondary">
-                        <i class="bi bi-arrow-left"></i> {% trans "Back to List" %}
+                    <a href="{% url 'group:group-detail' member.group.pk %}" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left"></i> {% trans "Back to Group" %}
                     </a>
                 </div>
             </div>
@@ -131,9 +131,6 @@
                         <a href="{% url 'group:member-delete' member.pk %}" class="btn btn-danger"
                            onclick="return confirm('{% trans 'Are you sure you want to remove this member?' %}')">
                             <i class="bi bi-trash"></i> {% trans "Remove Member" %}
-                        </a>
-                        <a href="{% url 'group:member-list' %}" class="btn btn-outline-secondary">
-                            <i class="bi bi-list"></i> {% trans "View All Members" %}
                         </a>
                         <a href="{% url 'group:group-detail' member.group.pk %}" class="btn btn-outline-info">
                             <i class="bi bi-people"></i> {% trans "View Group" %}

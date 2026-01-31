@@ -29,7 +29,7 @@
                             <i class="bi bi-arrow-left"></i> {% trans "Back to Group" %}
                         </a>
                     {% else %}
-                        <a href="{% url 'group:member-list' %}" class="btn btn-secondary">
+                        <a href="{% url 'group:group-list' %}" class="btn btn-secondary">
                             <i class="bi bi-arrow-left"></i> {% trans "Back to List" %}
                         </a>
                     {% endif %}
@@ -169,16 +169,26 @@
                             {% endif %}
                         </div>
 
-                        <div class="d-flex justify-content-between">
-                            {% if form.group.value %}
-                                <a href="{% url 'group:group-detail' form.group.value %}" class="btn btn-secondary">
-                                    <i class="bi bi-x-circle"></i> {% trans "Cancel" %}
-                                </a>
-                            {% else %}
-                                <a href="{% url 'group:member-list' %}" class="btn btn-secondary">
-                                    <i class="bi bi-x-circle"></i> {% trans "Cancel" %}
-                                </a>
-                            {% endif %}
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex gap-2">
+                                {% if object %}
+                                    <a href="{% url 'group:group-detail' object.group.pk %}" class="btn btn-secondary">
+                                        <i class="bi bi-x-circle"></i> {% trans "Cancel" %}
+                                    </a>
+                                    <a href="{% url 'group:member-delete' object.pk %}" class="btn btn-danger"
+                                       onclick="return confirm('{% trans "Are you sure you want to remove this member?" %}');">
+                                        <i class="bi bi-trash"></i> {% trans "Remove Member" %}
+                                    </a>
+                                {% elif form.group.value %}
+                                    <a href="{% url 'group:group-detail' form.group.value %}" class="btn btn-secondary">
+                                        <i class="bi bi-x-circle"></i> {% trans "Cancel" %}
+                                    </a>
+                                {% else %}
+                                    <a href="{% url 'group:group-list' %}" class="btn btn-secondary">
+                                        <i class="bi bi-x-circle"></i> {% trans "Cancel" %}
+                                    </a>
+                                {% endif %}
+                            </div>
                             <button type="submit" class="btn btn-primary">
                                 <i class="bi bi-check-circle"></i>
                                 {% if object %}

@@ -524,7 +524,7 @@ msgstr "Vertretungsverwaltung"
 
 #: templates/_base.html:134
 msgid "Group Management"
-msgstr "Gruppenverwaltung"
+msgstr "Verwaltung der Klubs"
 
 #: templates/_base.html:141
 msgid "Log Out"
@@ -905,6 +905,10 @@ msgstr "Diese Aktion kann nicht rückgängig gemacht werden."
 msgid "Group Details"
 msgstr "Klubdetails"
 
+#: templates/group/group_detail.html:60
+msgid "Group members"
+msgstr "Klubmitglieder"
+
 #: templates/group/group_confirm_delete.html:43
 #: templates/group/group_detail.html:33 templates/group/group_form.html:146
 #: templates/group/group_list.html:54
@@ -1130,7 +1134,7 @@ msgstr "Klubinformation"
 #: templates/group/group_detail.html:68
 #| msgid "Group Decisions"
 msgid "Group Admins"
-msgstr "Klubentscheidungen"
+msgstr "Klubleitung"
 
 #: templates/group/group_detail.html:74
 msgid "Admin"

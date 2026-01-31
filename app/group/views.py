@@ -13,7 +13,7 @@ from django.utils.translation import gettext_lazy as _
 from django.http import HttpResponse
 from django.utils import timezone
 from .models import Group, GroupMember, GroupMeeting, AgendaItem
-from .forms import GroupForm, GroupFilterForm, GroupMemberForm, GroupMemberFilterForm, GroupMeetingForm, AgendaItemForm, GroupInviteForm
+from .forms import GroupForm, GroupFilterForm, GroupMemberForm, GroupMeetingForm, AgendaItemForm, GroupInviteForm
 
 User = get_user_model()
 
@@ -131,37 +131,6 @@ class GroupDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
         return super().delete(request, *args, **kwargs)
 
 # Group Member Views
-class GroupMemberListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
-    model = GroupMember
-    template_name = 'group/member_list.html'
-    context_object_name = 'members'
-    paginate_by = 20
-
-    def test_func(self):
-        return self.request.user.is_superuser or self.request.user.has_role_permission('group.view')
-
-    def get_queryset(self):
-        queryset = GroupMember.objects.select_related('user', 'group', 'group__party').all()
-        
-        # Apply filters
-        form = GroupMemberFilterForm(self.request.GET)
-        if form.is_valid():
-            if form.cleaned_data.get('user'):
-                queryset = queryset.filter(user=form.cleaned_data['user'])
-            if form.cleaned_data.get('group'):
-                queryset = queryset.filter(group=form.cleaned_data['group'])
-            if form.cleaned_data.get('role'):
-                queryset = queryset.filter(roles=form.cleaned_data['role'])
-            if form.cleaned_data.get('is_active') in ['True', 'False']:
-                queryset = queryset.filter(is_active=form.cleaned_data['is_active'] == 'True')
-        
-        return queryset
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['filter_form'] = GroupMemberFilterForm(self.request.GET)
-        return context
-
 class GroupMemberDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
     model = GroupMember
     template_name = 'group/member_detail.html'
@@ -202,7 +171,7 @@ class GroupMemberCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView)
         """Redirect to the group detail page after successful creation"""
         if hasattr(self.object, 'group') and self.object.group:
             return reverse('group:group-detail', kwargs={'pk': self.object.group.pk})
-        return reverse('group:member-list')
+        return reverse('group:group-list')
 
     def form_valid(self, form):
         messages.success(self.request, f"Member '{form.instance.user.username}' added to group '{form.instance.group.name}' successfully.")
@@ -212,7 +181,6 @@ class GroupMemberUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView)
     model = GroupMember
     form_class = GroupMemberForm
     template_name = 'group/member_form.html'
-    success_url = reverse_lazy('group:member-list')
 
     def test_func(self):
         # Allow superusers, users with group.edit permission, or group admins
@@ -226,7 +194,7 @@ class GroupMemberUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView)
         """Redirect to the group detail page after successful update"""
         if hasattr(self.object, 'group') and self.object.group:
             return reverse('group:group-detail', kwargs={'pk': self.object.group.pk})
-        return reverse('group:member-list')
+        return reverse('group:group-list')
 
     def form_valid(self, form):
         messages.success(self.request, f"Membership updated successfully.")
@@ -235,13 +203,19 @@ class GroupMemberUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView)
 class GroupMemberDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
     model = GroupMember
     template_name = 'group/member_confirm_delete.html'
-    success_url = reverse_lazy('group:member-list')
 
     def test_func(self):
         return self.request.user.is_superuser or self.request.user.has_role_permission('group.delete')
 
+    def get_success_url(self):
+        """Redirect to the group detail page after deletion"""
+        if hasattr(self, '_deleted_member_group_pk'):
+            return reverse('group:group-detail', kwargs={'pk': self._deleted_member_group_pk})
+        return reverse('group:group-list')
+
     def delete(self, request, *args, **kwargs):
         member = self.get_object()
+        self._deleted_member_group_pk = member.group.pk
         messages.success(request, f"Member '{member.user.username}' removed from group '{member.group.name}' successfully.")
         return super().delete(request, *args, **kwargs)
 
