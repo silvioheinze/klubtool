@@ -381,7 +381,7 @@ class CommitteeMemberForm(forms.ModelForm):
 
 
 class CommitteeMeetingForm(forms.ModelForm):
-    """Form for creating and editing CommitteeMeeting objects."""
+    """Form for creating and editing CommitteeMeeting objects. On create, title and is_active are hidden; title is set to committee name + meeting date."""
 
     class Meta:
         model = CommitteeMeeting
@@ -404,6 +404,14 @@ class CommitteeMeetingForm(forms.ModelForm):
             self.fields['committee'].initial = committee
             if not self.instance.pk:
                 self.initial['committee'] = committee.pk
+        # On create: hide title and is_active; they are set in save()
+        if not self.instance.pk:
+            del self.fields['title']
+            del self.fields['is_active']
+        else:
+            # On edit: hide labels for title and is_active
+            self.fields['title'].label = ''
+            self.fields['is_active'].label = ''
 
     def clean_scheduled_date(self):
         """Ensure scheduled_date is timezone-aware to avoid DateTimeField warnings."""
@@ -411,6 +419,15 @@ class CommitteeMeetingForm(forms.ModelForm):
         if value and timezone.is_naive(value):
             return timezone.make_aware(value, timezone.get_current_timezone())
         return value
+
+    def save(self, commit=True):
+        if not self.instance.pk:
+            committee = self.cleaned_data.get('committee')
+            scheduled_date = self.cleaned_data.get('scheduled_date')
+            if committee and scheduled_date:
+                self.instance.title = f"{committee.name} {scheduled_date.strftime('%d.%m.%Y %H:%M')}"
+            self.instance.is_active = True
+        return super().save(commit=commit)
 
 
 class CommitteeMemberFilterForm(forms.Form):

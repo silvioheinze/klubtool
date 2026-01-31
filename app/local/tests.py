@@ -303,28 +303,28 @@ class CommitteeMeetingFormTests(TestCase):
         )
 
     def test_committee_meeting_form_valid_data(self):
-        """Test CommitteeMeetingForm with valid data"""
+        """Test CommitteeMeetingForm (create) with valid data; title and is_active are set in save()"""
+        scheduled = timezone.now() + timedelta(days=1)
         form_data = {
             'committee': self.committee.pk,
-            'title': 'Test Committee Meeting',
-            'scheduled_date': (timezone.now() + timedelta(days=1)).strftime('%Y-%m-%dT%H:%M'),
+            'scheduled_date': scheduled.strftime('%Y-%m-%dT%H:%M'),
             'location': 'Room 101',
             'description': 'Agenda items',
-            'is_active': True,
         }
         form = CommitteeMeetingForm(data=form_data)
         self.assertTrue(form.is_valid(), form.errors)
+        meeting = form.save()
+        self.assertEqual(meeting.title, f"{self.committee.name} {scheduled.strftime('%d.%m.%Y %H:%M')}")
+        self.assertTrue(meeting.is_active)
 
     def test_committee_meeting_form_required_fields(self):
-        """Test CommitteeMeetingForm with missing required fields"""
+        """Test CommitteeMeetingForm (create) with missing required fields (scheduled_date)"""
         form_data = {
             'committee': self.committee.pk,
-            'title': '',
-            'scheduled_date': (timezone.now() + timedelta(days=1)).strftime('%Y-%m-%dT%H:%M'),
         }
         form = CommitteeMeetingForm(data=form_data)
         self.assertFalse(form.is_valid())
-        self.assertIn('title', form.errors)
+        self.assertIn('scheduled_date', form.errors)
 
     def test_committee_meeting_form_committee_filtering(self):
         """Test that CommitteeMeetingForm filters committees correctly"""
@@ -336,6 +336,18 @@ class CommitteeMeetingFormTests(TestCase):
         form = CommitteeMeetingForm(committee=self.committee)
         self.assertEqual(form.fields['committee'].queryset.count(), 1)
         self.assertEqual(form.fields['committee'].queryset.get(), self.committee)
+
+    def test_committee_meeting_form_edit_has_title_and_is_active(self):
+        """Test CommitteeMeetingForm for edit (existing instance) shows title and is_active"""
+        meeting = CommitteeMeeting.objects.create(
+            committee=self.committee,
+            title='Existing Meeting',
+            scheduled_date=timezone.now() + timedelta(days=1),
+            is_active=True,
+        )
+        form = CommitteeMeetingForm(instance=meeting)
+        self.assertIn('title', form.fields)
+        self.assertIn('is_active', form.fields)
 
 
 class SessionFormTests(TestCase):
@@ -1503,31 +1515,29 @@ class CommitteeMeetingViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
 
     def test_committee_meeting_create_view_post_valid_data(self):
-        """Test CommitteeMeetingCreateView with valid POST data"""
+        """Test CommitteeMeetingCreateView with valid POST data; title is set to committee name + date"""
         self.client.login(username='admin', password='adminpass123')
+        scheduled = timezone.now() + timedelta(days=2)
         form_data = {
             'committee': self.committee.pk,
-            'title': 'New Committee Meeting',
-            'scheduled_date': (timezone.now() + timedelta(days=2)).strftime('%Y-%m-%dT%H:%M'),
+            'scheduled_date': scheduled.strftime('%Y-%m-%dT%H:%M'),
             'location': 'Hall A',
             'description': 'Agenda',
-            'is_active': True,
         }
         response = self.client.post(
             reverse('local:committee-meeting-create', kwargs={'committee_pk': self.committee.pk}),
             form_data
         )
         self.assertEqual(response.status_code, 302)
-        self.assertTrue(CommitteeMeeting.objects.filter(title='New Committee Meeting').exists())
+        expected_title = f"{self.committee.name} {scheduled.strftime('%d.%m.%Y %H:%M')}"
+        self.assertTrue(CommitteeMeeting.objects.filter(title=expected_title).exists())
 
     def test_committee_meeting_create_view_redirects_to_committee_detail(self):
         """Test that create redirects to committee detail after success"""
         self.client.login(username='admin', password='adminpass123')
         form_data = {
             'committee': self.committee.pk,
-            'title': 'Another Meeting',
             'scheduled_date': (timezone.now() + timedelta(days=3)).strftime('%Y-%m-%dT%H:%M'),
-            'is_active': True,
         }
         response = self.client.post(
             reverse('local:committee-meeting-create', kwargs={'committee_pk': self.committee.pk}),

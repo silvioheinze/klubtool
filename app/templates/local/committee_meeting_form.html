@@ -79,6 +79,7 @@
                             </div>
                         {% endif %}
 
+                        {% if 'title' in form.fields %}
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
@@ -89,6 +90,10 @@
                                     {% endif %}
                                 </div>
                             </div>
+                        </div>
+                        {% endif %}
+
+                        <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label for="{{ form.scheduled_date.id_for_label }}" class="form-label">{% trans "Date & Time" %} <span class="text-danger">*</span></label>
@@ -98,14 +103,15 @@
                                     {% endif %}
                                 </div>
                             </div>
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="{{ form.location.id_for_label }}" class="form-label">{% trans "Location" %}</label>
-                            {{ form.location }}
-                            {% if form.location.errors %}
-                                <div class="invalid-feedback d-block">{% for error in form.location.errors %}{{ error }}{% endfor %}</div>
-                            {% endif %}
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.location.id_for_label }}" class="form-label">{% trans "Location" %}</label>
+                                    {{ form.location }}
+                                    {% if form.location.errors %}
+                                        <div class="invalid-feedback d-block">{% for error in form.location.errors %}{{ error }}{% endfor %}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
                         </div>
 
                         <div class="mb-3">
@@ -116,6 +122,7 @@
                             {% endif %}
                         </div>
 
+                        {% if 'is_active' in form.fields %}
                         <div class="mb-3 form-check">
                             {{ form.is_active }}
                             <label for="{{ form.is_active.id_for_label }}" class="form-check-label">{% trans "Active" %}</label>
@@ -123,6 +130,7 @@
                                 <div class="invalid-feedback d-block">{% for error in form.is_active.errors %}{{ error }}{% endfor %}</div>
                             {% endif %}
                         </div>
+                        {% endif %}
 
                         <div class="d-flex justify-content-between">
                             {% if meeting %}

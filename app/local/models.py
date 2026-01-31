@@ -143,7 +143,12 @@ class CommitteeMeeting(models.Model):
         Committee, on_delete=models.CASCADE, related_name='meetings',
         help_text="Committee holding the meeting"
     )
-    title = models.CharField(max_length=200, help_text="Title or name of the meeting")
+    title = models.CharField(
+        max_length=200,
+        blank=True,
+        default='',
+        help_text="Title or name of the meeting (set automatically on create: committee name + date)"
+    )
     scheduled_date = models.DateTimeField(help_text="Date and time when the meeting is scheduled")
     location = models.CharField(max_length=300, blank=True, help_text="Location where the meeting will be held")
     description = models.TextField(blank=True, help_text="Description or agenda of the meeting")
