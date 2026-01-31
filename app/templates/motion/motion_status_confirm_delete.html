@@ -54,7 +54,7 @@
                         {% if status_entry.committee %}
                             <div class="row mt-2">
                                 <div class="col-md-6">
-                                    <strong>{% trans "Committee" %}:</strong> {{ status_entry.committee.name }}
+                                    {% with committee_type_label=status_entry.committee.get_committee_type_display %}<strong>{% trans "Committee" context committee_type_label %}:</strong>{% endwith %} {{ status_entry.committee.name }}
                                 </div>
                             </div>
                         {% endif %}

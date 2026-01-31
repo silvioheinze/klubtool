@@ -6,7 +6,13 @@
     {% if meeting %}
         {% trans "Edit Committee Meeting" %} - {{ meeting.title }}
     {% else %}
-        {% trans "Add Committee Meeting" %}
+        {% if committee %}
+            {% with committee_type_label=committee.get_committee_type_display %}
+            {% trans "Add Committee Meeting" context committee_type_label %}
+            {% endwith %}
+        {% else %}
+            {% trans "Add Committee Meeting" %}
+        {% endif %}
     {% endif %}
 {% endblock title %}
 
@@ -20,7 +26,13 @@
                     {% if meeting %}
                         {% trans "Edit Committee Meeting" %}
                     {% else %}
-                        {% trans "Add Committee Meeting" %}
+                        {% if committee %}
+                            {% with committee_type_label=committee.get_committee_type_display %}
+                            {% trans "Add Committee Meeting" context committee_type_label %}
+                            {% endwith %}
+                        {% else %}
+                            {% trans "Add Committee Meeting" %}
+                        {% endif %}
                     {% endif %}
                 </h1>
                 <div>
@@ -30,7 +42,9 @@
                         </a>
                     {% elif committee %}
                         <a href="{% url 'local:committee-detail' committee.pk %}" class="btn btn-secondary">
-                            <i class="bi bi-arrow-left"></i> {% trans "Back to Committee" %}
+                            {% with committee_type_label=committee.get_committee_type_display %}
+                            <i class="bi bi-arrow-left"></i> {% trans "Back to Committee" context committee_type_label %}
+                            {% endwith %}
                         </a>
                     {% else %}
                         <a href="{% url 'local:committee-list' %}" class="btn btn-secondary">
@@ -65,7 +79,9 @@
 
                         {% if committee and not meeting %}
                             <div class="mb-3">
-                                <label class="form-label">{% trans "Committee" %}</label>
+                                {% with committee_type_label=committee.get_committee_type_display %}
+                                <label class="form-label">{% trans "Committee" context committee_type_label %}</label>
+                                {% endwith %}
                                 <div class="form-control-plaintext"><strong>{{ committee.name }}</strong></div>
                                 <input type="hidden" name="committee" value="{{ committee.pk }}">
                             </div>

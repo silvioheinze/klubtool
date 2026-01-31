@@ -66,7 +66,7 @@
                         {% if form.committee.field.widget.input_type != 'hidden' %}
                             <div class="mb-3">
                                 <label for="{{ form.committee.id_for_label }}" class="form-label">
-                                    {% trans "Committee" %} <span class="text-danger">*</span>
+                                    {% if committeemember %}{% with committee_type_label=committeemember.committee.get_committee_type_display %}{% trans "Committee" context committee_type_label %}{% endwith %}{% elif committee %}{% with committee_type_label=committee.get_committee_type_display %}{% trans "Committee" context committee_type_label %}{% endwith %}{% else %}{% trans "Committee" %}{% endif %} <span class="text-danger">*</span>
                                 </label>
                                 {{ form.committee }}
                                 {% if form.committee.errors %}

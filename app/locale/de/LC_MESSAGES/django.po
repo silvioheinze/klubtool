@@ -1993,6 +1993,15 @@ msgstr "Vertretung"
 msgid "Committee"
 msgstr "Ausschuss"
 
+# Context: committee type – use type as translation (Ausschuss/Kommission)
+msgctxt "Ausschuss"
+msgid "Committee"
+msgstr "Ausschuss"
+
+msgctxt "Kommission"
+msgid "Committee"
+msgstr "Kommission"
+
 #: templates/home.html:153
 #, fuzzy
 #| msgid "Group Details"
@@ -2026,6 +2035,14 @@ msgstr ""
 #: templates/local/session_detail.html:19
 msgid "Back to Committee"
 msgstr "Zurück zum Ausschuss"
+
+msgctxt "Ausschuss"
+msgid "Back to Committee"
+msgstr "Zurück zum Ausschuss"
+
+msgctxt "Kommission"
+msgid "Back to Committee"
+msgstr "Zurück zur Kommission"
 
 #: templates/local/committee_confirm_delete.html:32
 msgid ""
@@ -2326,6 +2343,14 @@ msgstr "Ausschusssitzung bearbeiten"
 #: templates/local/committee_meeting_form.html:23
 msgid "Add Committee Meeting"
 msgstr "Ausschusssitzung hinzufügen"
+
+msgctxt "Ausschuss"
+msgid "Add Committee Meeting"
+msgstr "Ausschusssitzung hinzufügen"
+
+msgctxt "Kommission"
+msgid "Add Committee Meeting"
+msgstr "Kommissionssitzung hinzufügen"
 
 #: templates/local/committee_member_form.html:7
 #: templates/local/committee_member_form.html:21

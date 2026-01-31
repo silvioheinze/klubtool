@@ -44,7 +44,7 @@
                             <li><strong>{% trans "Created By" %}:</strong> {{ decision_entry.created_by.get_full_name|default:decision_entry.created_by.username }}</li>
                         {% endif %}
                         {% if decision_entry.committee %}
-                            <li><strong>{% trans "Committee" %}:</strong> {{ decision_entry.committee.name }}</li>
+                            {% with committee_type_label=decision_entry.committee.get_committee_type_display %}<li><strong>{% trans "Committee" context committee_type_label %}:</strong> {{ decision_entry.committee.name }}</li>{% endwith %}
                         {% endif %}
                         {% if decision_entry.description %}
                             <li><strong>{% trans "Description" %}:</strong> {{ decision_entry.description }}</li>

@@ -33,7 +33,9 @@
                             <dl class="row">
                                 <dt class="col-sm-4">{% trans "Title" %}</dt>
                                 <dd class="col-sm-8">{{ meeting.title }}</dd>
-                                <dt class="col-sm-4">{% trans "Committee" %}</dt>
+                                {% with committee_type_label=meeting.committee.get_committee_type_display %}
+                                <dt class="col-sm-4">{% trans "Committee" context committee_type_label %}</dt>
+                                {% endwith %}
                                 <dd class="col-sm-8">
                                     <a href="{% url 'local:committee-detail' meeting.committee.pk %}">{{ meeting.committee.name }}</a>
                                 </dd>
