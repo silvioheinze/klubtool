@@ -3055,7 +3055,7 @@ msgstr ""
 #: templates/local/session_confirm_delete.html:121
 #: templates/local/session_form.html:36 templates/local/session_form.html:40
 msgid "Back to Council"
-msgstr "Zurück zum Antrag"
+msgstr "Zurück zur Bezirksvertretung"
 
 #: templates/local/session_detail.html:5 templates/local/session_detail.html:31
 #: templates/local/session_form.html:57

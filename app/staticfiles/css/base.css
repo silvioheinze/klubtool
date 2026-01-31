@@ -78,6 +78,28 @@ html {
     color: white;
 }
 
+/* Use set primary color for outline primary button (Bootstrap default is blue) */
+.btn-outline-primary {
+    color: #5e833c;
+    border-color: #5e833c;
+    background-color: transparent;
+}
+.btn-outline-primary:hover {
+    color: #fff;
+    background-color: #5e833c;
+    border-color: #5e833c;
+}
+.btn-outline-primary:focus,
+.btn-outline-primary.focus {
+    box-shadow: 0 0 0 0.2rem rgba(94, 131, 60, 0.25);
+}
+.btn-outline-primary:active,
+.btn-outline-primary.active {
+    color: #fff;
+    background-color: #5e833c;
+    border-color: #5e833c;
+}
+
 .color-demo-success {
     background-color: #7da130;
     color: white;
