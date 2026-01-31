@@ -566,18 +566,6 @@ class LocalAccessTests(AccessControlTestCase):
         response = self.client.get(reverse('local:local-list'))
         self.assertEqual(response.status_code, 403)
     
-    def test_session_list_view_superuser_access(self):
-        """Test that superuser can view session list"""
-        self.client.login(username='admin', password='adminpass123')
-        response = self.client.get(reverse('local:session-list'))
-        self.assertEqual(response.status_code, 200)
-    
-    def test_session_list_view_regular_user_denied(self):
-        """Test that regular user cannot view session list"""
-        self.client.login(username='regular', password='regularpass123')
-        response = self.client.get(reverse('local:session-list'))
-        self.assertEqual(response.status_code, 403)
-    
     def test_session_detail_view_superuser_access(self):
         """Test that superuser can view session detail"""
         self.client.login(username='admin', password='adminpass123')

@@ -375,9 +375,8 @@ class SessionFormTests(TestCase):
         )
     
     def test_session_form_valid_data(self):
-        """Test SessionForm with valid data"""
+        """Test SessionForm with valid data (create: no title field; title set in save())"""
         form_data = {
-            'title': 'Test Session',
             'council': self.council.pk,
             'term': self.term.pk,
             'session_type': 'regular',
@@ -390,7 +389,10 @@ class SessionFormTests(TestCase):
         }
         
         form = SessionForm(data=form_data)
-        self.assertTrue(form.is_valid())
+        self.assertTrue(form.is_valid(), form.errors)
+        obj = form.save()
+        self.assertIn('Bezirksvertretungssitzung', obj.title)
+        self.assertIn('01.12.2025', obj.title)
     
     def test_session_form_required_fields(self):
         """Test SessionForm with missing required fields"""
@@ -1302,24 +1304,6 @@ class SessionViewTests(TestCase):
             scheduled_date=timezone.now() + timedelta(days=1)
         )
     
-    def test_session_list_view_requires_superuser(self):
-        """Test that SessionListView requires superuser"""
-        # Test with regular user
-        self.client.login(username='testuser', password='testpass123')
-        response = self.client.get(reverse('local:session-list'))
-        self.assertEqual(response.status_code, 403)
-        
-        # Test with superuser
-        self.client.login(username='admin', password='adminpass123')
-        response = self.client.get(reverse('local:session-list'))
-        self.assertEqual(response.status_code, 200)
-    
-    def test_session_list_view_contains_sessions(self):
-        """Test that SessionListView contains session objects"""
-        self.client.login(username='admin', password='adminpass123')
-        response = self.client.get(reverse('local:session-list'))
-        self.assertContains(response, self.session.title)
-    
     def test_session_detail_view_requires_superuser(self):
         """Test that SessionDetailView requires superuser"""
         # Test with regular user
@@ -1352,21 +1336,24 @@ class SessionViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
     
     def test_session_create_view_post_valid_data(self):
-        """Test SessionCreateView with valid POST data"""
+        """Test SessionCreateView with valid POST data (title auto-set to Bezirksvertretungssitzung + date)"""
         self.client.login(username='admin', password='adminpass123')
+        scheduled = timezone.now() + timedelta(days=2)
         form_data = {
-            'title': 'New Session',
             'council': self.council.pk,
             'term': self.term.pk,
             'session_type': 'regular',
             'status': 'scheduled',
-            'scheduled_date': (timezone.now() + timedelta(days=2)).strftime('%Y-%m-%dT%H:%M')
+            'scheduled_date': scheduled.strftime('%Y-%m-%dT%H:%M')
         }
         response = self.client.post(reverse('local:session-create'), form_data)
         self.assertEqual(response.status_code, 302)  # Redirect after successful creation
         
-        # Check that the session was created
-        self.assertTrue(Session.objects.filter(title='New Session').exists())
+        # Check that the session was created with auto-generated title (Bezirksvertretungssitzung + date)
+        session = Session.objects.filter(council=self.council).order_by('-created_at').first()
+        self.assertIsNotNone(session)
+        self.assertIn('Bezirksvertretungssitzung', session.title)
+        self.assertIn(scheduled.strftime('%d.%m.%Y'), session.title)
     
     def test_session_create_view_with_committee_parameter(self):
         """Test SessionCreateView with committee parameter in URL"""
@@ -1392,7 +1379,7 @@ class SessionViewTests(TestCase):
         self.assertTrue(committee.council == self.council)
     
     def test_session_create_view_with_committee_post(self):
-        """Test SessionCreateView POST with committee"""
+        """Test SessionCreateView POST with committee (title auto-set to Bezirksvertretungssitzung + date)"""
         committee = Committee.objects.create(
             name='Test Committee',
             council=self.council,
@@ -1401,7 +1388,6 @@ class SessionViewTests(TestCase):
         
         self.client.login(username='admin', password='adminpass123')
         form_data = {
-            'title': 'Committee Session',
             'council': self.council.pk,
             'committee': committee.pk,
             'term': self.term.pk,
@@ -1412,10 +1398,12 @@ class SessionViewTests(TestCase):
         response = self.client.post(reverse('local:session-create'), form_data)
         self.assertEqual(response.status_code, 302)
         
-        # Check that the session was created with committee
-        session = Session.objects.get(title='Committee Session')
+        # Check that the session was created with committee and auto-generated title
+        session = Session.objects.filter(committee=committee, council=self.council).order_by('-created_at').first()
+        self.assertIsNotNone(session)
         self.assertEqual(session.committee, committee)
         self.assertEqual(session.council, self.council)
+        self.assertIn('Bezirksvertretungssitzung', session.title)
     
     def test_session_edit_view_requires_superuser(self):
         """Test that SessionUpdateView requires superuser"""

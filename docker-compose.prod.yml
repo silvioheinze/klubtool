@@ -1,6 +1,6 @@
 services:  
   app:
-    image: ghcr.io/silvioheinze/antragstool
+    image: ghcr.io/silvioheinze/klubtool:latest
     command: uvicorn main.asgi:application --host 0.0.0.0 --port 8000
     env_file:
       - .env
@@ -20,9 +20,8 @@ services:
       - internal
   
   db:
-    image: postgres:15
+    image: postgres:17
     volumes:
-#      - ./db_backup/read:/docker-entrypoint-initdb.d/:ro
       - postgres_data:/var/lib/postgresql/data/
     env_file:
       - .env

@@ -3067,6 +3067,24 @@ msgstr ""
 msgid "Session Details"
 msgstr "Sitzungsdetails"
 
+#: templates/local/session_detail.html:86
+msgid "Add invitation"
+msgstr "Einladung hinzufügen"
+
+#: templates/local/session_detail.html:91
+msgid "Cancel session"
+msgstr "Sitzung absagen"
+
+#: templates/local/session_detail.html:96
+msgid "Add minutes"
+msgstr "Protokoll hinzufügen"
+
+#: templates/local/session_cancel_confirm.html:4
+#: templates/local/session_cancel_confirm.html:12
+#: templates/local/session_cancel_confirm.html:66
+msgid "Cancel Session"
+msgstr "Sitzung absagen"
+
 #: templates/local/session_detail.html:106
 msgid "Session Motions"
 msgstr "Anträge"

@@ -215,31 +215,46 @@ class SessionForm(forms.ModelForm):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Filter councils to only show active ones
+        # Filter councils and terms
         self.fields['council'].queryset = Council.objects.filter(is_active=True)
-        # Filter committees to only show active ones, initially empty
         self.fields['committee'].queryset = Committee.objects.filter(is_active=True)
-        # Filter terms to only show active ones
-        self.fields['term'].queryset = Term.objects.filter(is_active=True)
+        self.fields['term'].queryset = Term.objects.filter(is_active=True).order_by('-start_date')
         
-        # Set initial council if provided in URL
-        council_id = self.initial.get('council') or self.data.get('council')
-        if council_id:
-            try:
-                council = Council.objects.get(pk=council_id)
+        if not self.instance.pk:
+            # On create: hide title (set in save()); hide council and term (auto-set)
+            if 'title' in self.fields:
+                del self.fields['title']
+            # Council: from URL/initial if provided, else first active council
+            council_id = self.initial.get('council') or (self.data.get('council') if self.data else None)
+            if council_id:
+                try:
+                    council = Council.objects.get(pk=council_id)
+                    self.fields['council'].initial = council
+                    self.fields['committee'].queryset = Committee.objects.filter(council=council, is_active=True)
+                except Council.DoesNotExist:
+                    council = Council.objects.filter(is_active=True).first()
+                    self.fields['council'].initial = council
+            else:
+                council = Council.objects.filter(is_active=True).first()
                 self.fields['council'].initial = council
-                # Filter committees by council
+            if council:
                 self.fields['committee'].queryset = Committee.objects.filter(council=council, is_active=True)
-                # Hide the council field when it's pre-set
-                self.fields['council'].widget = forms.HiddenInput()
-            except Council.DoesNotExist:
-                pass
-        
-        # If instance exists and has a council, filter committees
-        if self.instance and self.instance.pk and self.instance.council:
-            self.fields['committee'].queryset = Committee.objects.filter(council=self.instance.council, is_active=True)
-        
-        # Add JavaScript to filter committees when council changes (will be handled in template)
+            # Term: latest (most recent) active term
+            latest_term = Term.objects.filter(is_active=True).order_by('-start_date').first()
+            if latest_term:
+                self.fields['term'].initial = latest_term
+            # Status: set to 'scheduled' on create and hide
+            self.fields['status'].initial = 'scheduled'
+            self.fields['status'].widget = forms.HiddenInput()
+            # Hide council and term on create
+            self.fields['council'].widget = forms.HiddenInput()
+            self.fields['term'].widget = forms.HiddenInput()
+        else:
+            # On edit: if instance has council, filter committees
+            if self.instance.council:
+                self.fields['committee'].queryset = Committee.objects.filter(
+                    council=self.instance.council, is_active=True
+                )
 
     def clean_scheduled_date(self):
         """Ensure scheduled_date is timezone-aware to avoid DateTimeField warnings."""
@@ -247,6 +262,14 @@ class SessionForm(forms.ModelForm):
         if value and timezone.is_naive(value):
             return timezone.make_aware(value, timezone.get_current_timezone())
         return value
+
+    def save(self, commit=True):
+        if not self.instance.pk:
+            council = self.cleaned_data.get('council')
+            scheduled_date = self.cleaned_data.get('scheduled_date')
+            if council and scheduled_date:
+                self.instance.title = f"Bezirksvertretungssitzung {scheduled_date.strftime('%d.%m.%Y')}"
+        return super().save(commit=commit)
 
 
 class SessionFilterForm(forms.Form):
@@ -517,6 +540,37 @@ class SessionAttachmentForm(forms.ModelForm):
         if commit:
             instance.save()
         return instance
+
+
+class SessionInvitationForm(forms.Form):
+    """Form for uploading invitation PDF and setting session status to invited"""
+    file = forms.FileField(
+        widget=forms.FileInput(attrs={'class': 'form-control', 'accept': '.pdf'}),
+        help_text="PDF file only"
+    )
+    description = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 2})
+    )
+
+    def clean_file(self):
+        import os
+        file = self.cleaned_data.get('file')
+        if file:
+            if file.size > 10 * 1024 * 1024:
+                raise forms.ValidationError("File size must be under 10MB.")
+            ext = os.path.splitext(file.name)[1].lower()
+            if ext != '.pdf':
+                raise forms.ValidationError("Only PDF files are allowed for the invitation.")
+        return file
+
+
+class SessionMinutesForm(forms.Form):
+    """Form for adding or editing session minutes"""
+    minutes = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 8})
+    )
 
 
 class CommitteeMeetingAttachmentForm(forms.ModelForm):

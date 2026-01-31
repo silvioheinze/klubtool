@@ -116,9 +116,11 @@
                                 <a href="{% url 'local:session-detail' session.pk %}" class="btn btn-secondary">
                                     <i class="bi bi-x-circle"></i> {% trans "Cancel" %}
                                 </a>
-                                <a href="{% url 'local:session-list' %}" class="btn btn-outline-secondary">
-                                    <i class="bi bi-arrow-left"></i> {% trans "Back to Sessions" %}
+                                {% if session.council %}
+                                <a href="{% url 'local:council-detail' session.council.pk %}" class="btn btn-outline-secondary">
+                                    <i class="bi bi-arrow-left"></i> {% trans "Back to Council" %}
                                 </a>
+                                {% endif %}
                             </div>
                             <div>
                                 <button type="submit" class="btn btn-danger">

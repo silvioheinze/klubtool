@@ -1,4 +1,4 @@
-from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView
+from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView, FormView
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -12,7 +12,7 @@ from django.utils.translation import gettext_lazy as _
 import json
 
 from .models import Local, Term, Council, TermSeatDistribution, Party, Session, Committee, CommitteeMeeting, CommitteeMeetingAttachment, CommitteeMember, SessionAttachment, SessionPresence
-from .forms import LocalForm, LocalFilterForm, CouncilForm, CouncilFilterForm, TermForm, TermFilterForm, CouncilNameForm, TermSeatDistributionForm, PartyForm, PartyFilterForm, SessionForm, SessionFilterForm, CommitteeForm, CommitteeFilterForm, CommitteeMeetingForm, CommitteeMemberForm, CommitteeMemberFilterForm, SessionAttachmentForm, CommitteeMeetingAttachmentForm
+from .forms import LocalForm, LocalFilterForm, CouncilForm, CouncilFilterForm, TermForm, TermFilterForm, CouncilNameForm, TermSeatDistributionForm, PartyForm, PartyFilterForm, SessionForm, SessionFilterForm, CommitteeForm, CommitteeFilterForm, CommitteeMeetingForm, CommitteeMemberForm, CommitteeMemberFilterForm, SessionAttachmentForm, CommitteeMeetingAttachmentForm, SessionInvitationForm, SessionMinutesForm
 
 
 class LocalListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
@@ -766,58 +766,6 @@ class PartyDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
 
 
 # Session Views
-class SessionListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
-    """View for listing Session objects"""
-    model = Session
-    context_object_name = 'sessions'
-    template_name = 'local/session_list.html'
-    paginate_by = 20
-
-    def test_func(self):
-        """Check if user has permission to view Session objects"""
-        return self.request.user.is_superuser
-
-    def get_queryset(self):
-        """Filter sessions based on search and filter parameters"""
-        queryset = Session.objects.select_related('council', 'council__local', 'term').all()
-        
-        # Search by title
-        search_query = self.request.GET.get('search', '')
-        if search_query:
-            queryset = queryset.filter(
-                Q(title__icontains=search_query) |
-                Q(council__name__icontains=search_query) |
-                Q(council__local__name__icontains=search_query)
-            )
-        
-        # Filter by council
-        council_filter = self.request.GET.get('council', '')
-        if council_filter:
-            queryset = queryset.filter(council_id=council_filter)
-        
-        # Filter by status
-        status_filter = self.request.GET.get('status', '')
-        if status_filter:
-            queryset = queryset.filter(status=status_filter)
-        
-        # Filter by session type
-        session_type_filter = self.request.GET.get('session_type', '')
-        if session_type_filter:
-            queryset = queryset.filter(session_type=session_type_filter)
-        
-        return queryset
-
-    def get_context_data(self, **kwargs):
-        """Add filter form to context"""
-        context = super().get_context_data(**kwargs)
-        context['search_query'] = self.request.GET.get('search', '')
-        context['council_filter'] = self.request.GET.get('council', '')
-        context['status_filter'] = self.request.GET.get('status', '')
-        context['session_type_filter'] = self.request.GET.get('session_type', '')
-        context['councils'] = Council.objects.filter(is_active=True)
-        return context
-
-
 class SessionDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
     """View for displaying a single Session object"""
     model = Session
@@ -926,7 +874,7 @@ class SessionCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     model = Session
     form_class = SessionForm
     template_name = 'local/session_form.html'
-    success_url = reverse_lazy('local:session-list')
+    success_url = reverse_lazy('local:council-list')
 
     def test_func(self):
         """Check if user has permission to create Session objects"""
@@ -944,6 +892,12 @@ class SessionCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
                 pass
         return initial
 
+    def get_success_url(self):
+        """Redirect to the council detail page after successful creation"""
+        if hasattr(self.object, 'council') and self.object.council:
+            return reverse('local:council-detail', kwargs={'pk': self.object.council.pk})
+        return str(self.success_url)
+
     def form_valid(self, form):
         """Display success message on form validation"""
         messages.success(self.request, f"Session '{form.instance.title}' created successfully.")
@@ -955,7 +909,7 @@ class SessionUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model = Session
     form_class = SessionForm
     template_name = 'local/session_form.html'
-    success_url = reverse_lazy('local:session-list')
+    success_url = reverse_lazy('local:council-list')
 
     def test_func(self):
         """Check if user has permission to edit Session objects"""
@@ -975,11 +929,18 @@ class SessionDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
     """View for deleting a Session object"""
     model = Session
     template_name = 'local/session_confirm_delete.html'
-    success_url = reverse_lazy('local:session-list')
+    success_url = reverse_lazy('local:council-list')
 
     def test_func(self):
         """Check if user has permission to delete Session objects"""
         return self.request.user.is_superuser
+
+    def get_success_url(self):
+        """Redirect to council detail page after deletion"""
+        council_pk = self.object.council_id if hasattr(self.object, 'council_id') and self.object.council_id else None
+        if council_pk:
+            return reverse('local:council-detail', kwargs={'pk': council_pk})
+        return str(self.success_url)
 
     def delete(self, request, *args, **kwargs):
         """Display success message on deletion"""
@@ -2097,6 +2058,113 @@ class SessionAttachmentView(LoginRequiredMixin, UserPassesTestMixin, CreateView)
         """Display success message on form validation"""
         messages.success(self.request, f"Attachment '{form.instance.filename}' uploaded successfully.")
         return super().form_valid(form)
+
+
+class SessionInvitationUploadView(LoginRequiredMixin, UserPassesTestMixin, FormView):
+    """View for uploading invitation PDF and setting session status to invited."""
+    form_class = SessionInvitationForm
+    template_name = 'local/session_invitation_form.html'
+
+    def test_func(self):
+        return self.request.user.is_superuser
+
+    def get_session(self):
+        return get_object_or_404(Session, pk=self.kwargs['session_pk'])
+
+    def dispatch(self, request, *args, **kwargs):
+        session = self.get_session()
+        if session.status != 'scheduled':
+            messages.error(request, _("Invitation can only be added when the session is scheduled."))
+            return redirect('local:session-detail', pk=session.pk)
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_success_url(self):
+        return reverse('local:session-detail', kwargs={'pk': self.get_session().pk})
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['session'] = self.get_session()
+        return context
+
+    def form_valid(self, form):
+        import os
+        session = self.get_session()
+        file = form.cleaned_data['file']
+        description = form.cleaned_data.get('description') or ''
+        attachment = SessionAttachment(
+            session=session,
+            file=file,
+            file_type='invitation',
+            filename=os.path.basename(file.name),
+            description=description,
+            uploaded_by=self.request.user,
+        )
+        attachment.save()
+        session.status = 'invited'
+        session.save(update_fields=['status'])
+        messages.success(self.request, _("Invitation uploaded and session status set to Invited."))
+        return redirect(self.get_success_url())
+
+
+class SessionCancelView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
+    """View to confirm and cancel a session (set status to cancelled)."""
+    model = Session
+    context_object_name = 'session'
+    template_name = 'local/session_cancel_confirm.html'
+
+    def test_func(self):
+        return self.request.user.is_superuser
+
+    def dispatch(self, request, *args, **kwargs):
+        session = self.get_object()
+        if session.status not in ('scheduled', 'invited'):
+            messages.error(request, _("Only scheduled or invited sessions can be cancelled."))
+            return redirect('local:session-detail', pk=session.pk)
+        return super().dispatch(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        session = self.get_object()
+        session.status = 'cancelled'
+        session.save(update_fields=['status'])
+        messages.success(request, _("Session has been cancelled."))
+        return redirect('local:session-detail', pk=session.pk)
+
+
+class SessionMinutesUpdateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
+    """View for adding or editing session minutes (when status is completed)."""
+    form_class = SessionMinutesForm
+    template_name = 'local/session_minutes_form.html'
+
+    def test_func(self):
+        return self.request.user.is_superuser
+
+    def get_session(self):
+        return get_object_or_404(Session, pk=self.kwargs['session_pk'])
+
+    def dispatch(self, request, *args, **kwargs):
+        session = self.get_session()
+        if session.status != 'completed':
+            messages.error(request, _("Minutes can only be added for completed sessions."))
+            return redirect('local:session-detail', pk=session.pk)
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_initial(self):
+        return {'minutes': self.get_session().minutes}
+
+    def get_success_url(self):
+        return reverse('local:session-detail', kwargs={'pk': self.get_session().pk})
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['session'] = self.get_session()
+        return context
+
+    def form_valid(self, form):
+        session = self.get_session()
+        session.minutes = form.cleaned_data.get('minutes') or ''
+        session.save(update_fields=['minutes'])
+        messages.success(self.request, _("Minutes saved successfully."))
+        return redirect(self.get_success_url())
 
 
 class CommitteeMeetingAttachmentView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
