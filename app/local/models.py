@@ -187,6 +187,47 @@ class CommitteeMeeting(models.Model):
         return self.scheduled_date < timezone.now()
 
 
+class CommitteeMeetingAttachment(models.Model):
+    """Model representing file attachments for committee meetings"""
+
+    ATTACHMENT_TYPE_CHOICES = [
+        ('agenda', 'Agenda'),
+        ('budget', 'Budget'),
+        ('invitation', 'Invitation'),
+        ('other', 'Other'),
+    ]
+
+    committee_meeting = models.ForeignKey(
+        CommitteeMeeting, on_delete=models.CASCADE, related_name='attachments'
+    )
+    file = models.FileField(upload_to='committee_meeting_attachments/%Y/%m/%d/')
+    filename = models.CharField(max_length=255)
+    file_type = models.CharField(
+        max_length=20, choices=ATTACHMENT_TYPE_CHOICES, default='other'
+    )
+    description = models.TextField(blank=True)
+    uploaded_by = models.ForeignKey(
+        'user.CustomUser', on_delete=models.CASCADE,
+        related_name='committee_meeting_attachments'
+    )
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-uploaded_at']
+        verbose_name = "Committee Meeting Attachment"
+        verbose_name_plural = "Committee Meeting Attachments"
+
+    def __str__(self):
+        return f"{self.filename} - {self.committee_meeting.title}"
+
+    def get_absolute_url(self):
+        from django.urls import reverse
+        return reverse(
+            'local:committee-meeting-detail',
+            kwargs={'pk': self.committee_meeting.pk}
+        )
+
+
 class CommitteeMember(models.Model):
     """Model representing membership in a committee"""
     ROLE_CHOICES = [
@@ -410,6 +451,7 @@ auditlog.register(Local)
 auditlog.register(Council)
 auditlog.register(Committee)
 auditlog.register(CommitteeMeeting)
+auditlog.register(CommitteeMeetingAttachment)
 auditlog.register(CommitteeMember)
 auditlog.register(Term)
 auditlog.register(Party)

@@ -1,6 +1,6 @@
 from django import forms
 from django.utils import timezone
-from .models import Local, Council, Committee, CommitteeMeeting, CommitteeMember, Session, Term, Party, TermSeatDistribution, SessionAttachment
+from .models import Local, Council, Committee, CommitteeMeeting, CommitteeMeetingAttachment, CommitteeMember, Session, Term, Party, TermSeatDistribution, SessionAttachment
 
 
 class LocalForm(forms.ModelForm):
@@ -514,6 +514,49 @@ class SessionAttachmentForm(forms.ModelForm):
             import os
             instance.filename = os.path.basename(instance.file.name)
         
+        if commit:
+            instance.save()
+        return instance
+
+
+class CommitteeMeetingAttachmentForm(forms.ModelForm):
+    """Form for uploading attachments to committee meetings"""
+
+    class Meta:
+        model = CommitteeMeetingAttachment
+        fields = ['file', 'file_type', 'description']
+        widgets = {
+            'file': forms.FileInput(attrs={'class': 'form-control'}),
+            'file_type': forms.Select(attrs={'class': 'form-select'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.committee_meeting = kwargs.pop('committee_meeting', None)
+        self.uploaded_by = kwargs.pop('uploaded_by', None)
+        super().__init__(*args, **kwargs)
+
+    def clean_file(self):
+        file = self.cleaned_data.get('file')
+        if file:
+            if file.size > 10 * 1024 * 1024:
+                raise forms.ValidationError("File size must be under 10MB.")
+            import os
+            allowed_extensions = ['.pdf', '.doc', '.docx', '.txt', '.jpg', '.jpeg', '.png', '.gif', '.xls', '.xlsx', '.ppt', '.pptx']
+            ext = os.path.splitext(file.name)[1].lower()
+            if ext not in allowed_extensions:
+                raise forms.ValidationError(f"File type not allowed. Allowed types: {', '.join(allowed_extensions)}")
+        return file
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        if self.committee_meeting:
+            instance.committee_meeting = self.committee_meeting
+        if self.uploaded_by:
+            instance.uploaded_by = self.uploaded_by
+        if instance.file:
+            import os
+            instance.filename = os.path.basename(instance.file.name)
         if commit:
             instance.save()
         return instance

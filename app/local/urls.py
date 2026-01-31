@@ -11,7 +11,7 @@ from .views import (
     PartyListView, PartyDetailView, PartyCreateView, PartyUpdateView, PartyDeleteView,
     SessionListView, SessionDetailView, SessionCreateView, SessionUpdateView, SessionDeleteView, SessionExportPDFView, SessionAttachmentView, update_motion_order, update_question_order, update_session_presence, session_export_ics,
     CommitteeListView, CommitteeDetailView, CommitteeCreateView, CommitteeUpdateView, CommitteeDeleteView,
-    CommitteeMeetingCreateView, CommitteeMeetingDetailView, CommitteeMeetingUpdateView, CommitteeMeetingDeleteView, committee_meeting_export_ics,
+    CommitteeMeetingCreateView, CommitteeMeetingDetailView, CommitteeMeetingUpdateView, CommitteeMeetingDeleteView, committee_meeting_export_ics, CommitteeMeetingAttachmentView,
     CommitteeMemberListView, CommitteeMemberCreateView, CommitteeMemberUpdateView, CommitteeMemberDeleteView
 )
 
@@ -80,7 +80,8 @@ urlpatterns = [
     path('committee-meetings/<int:pk>/edit/', CommitteeMeetingUpdateView.as_view(), name='committee-meeting-edit'),
     path('committee-meetings/<int:pk>/delete/', CommitteeMeetingDeleteView.as_view(), name='committee-meeting-delete'),
     path('committee-meetings/<int:pk>/export-ics/', committee_meeting_export_ics, name='committee-meeting-export-ics'),
-    
+    path('committee-meetings/<int:committee_meeting_pk>/attach/', CommitteeMeetingAttachmentView.as_view(), name='committee-meeting-attach'),
+
     # Committee Member URLs
     path('committee-members/', CommitteeMemberListView.as_view(), name='committee-member-list'),
     path('committee-members/create/', CommitteeMemberCreateView.as_view(), name='committee-member-create'),

@@ -38,13 +38,6 @@
                                 <dt class="col-sm-4">{% trans "Name" %}</dt>
                                 <dd class="col-sm-8">{{ committee.name }}</dd>
                                 
-                                <dt class="col-sm-4">{% trans "Council" %}</dt>
-                                <dd class="col-sm-8">
-                                    <a href="{% url 'local:council-detail' committee.council.pk %}">
-                                        {{ committee.council.name }}
-                                    </a>
-                                </dd>
-                                
                                 <dt class="col-sm-4">{% trans "Type" %}</dt>
                                 <dd class="col-sm-8">
                                     <span class="badge bg-secondary">{{ committee.get_committee_type_display }}</span>
@@ -69,11 +62,6 @@
                                     {% else %}
                                         <span class="text-muted">{% trans "Not assigned" %}</span>
                                     {% endif %}
-                                </dd>
-                                
-                                <dt class="col-sm-4">{% trans "Members" %}</dt>
-                                <dd class="col-sm-8">
-                                    <span class="badge bg-info">{{ committee.member_count }}</span>
                                 </dd>
                             </dl>
                         </div>

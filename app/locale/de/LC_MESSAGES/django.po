@@ -1498,6 +1498,14 @@ msgstr "Zurück zum Klub"
 msgid "Meeting Information"
 msgstr "Sitzungsinformation"
 
+#: templates/local/committee_meeting_detail.html:76
+msgid "Meeting Attachments"
+msgstr "Sitzungsanhänge"
+
+#: templates/local/committee_meeting_detail.html:120
+msgid "No attachments uploaded for this meeting yet."
+msgstr "Noch keine Anhänge für diese Sitzung hochgeladen."
+
 #: templates/group/meeting_detail.html:50
 msgid "In"
 msgstr ""

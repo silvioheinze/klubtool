@@ -11,8 +11,8 @@ from django.views.decorators.http import require_http_methods
 from django.utils.translation import gettext_lazy as _
 import json
 
-from .models import Local, Term, Council, TermSeatDistribution, Party, Session, Committee, CommitteeMeeting, CommitteeMember, SessionAttachment, SessionPresence
-from .forms import LocalForm, LocalFilterForm, CouncilForm, CouncilFilterForm, TermForm, TermFilterForm, CouncilNameForm, TermSeatDistributionForm, PartyForm, PartyFilterForm, SessionForm, SessionFilterForm, CommitteeForm, CommitteeFilterForm, CommitteeMeetingForm, CommitteeMemberForm, CommitteeMemberFilterForm, SessionAttachmentForm
+from .models import Local, Term, Council, TermSeatDistribution, Party, Session, Committee, CommitteeMeeting, CommitteeMeetingAttachment, CommitteeMember, SessionAttachment, SessionPresence
+from .forms import LocalForm, LocalFilterForm, CouncilForm, CouncilFilterForm, TermForm, TermFilterForm, CouncilNameForm, TermSeatDistributionForm, PartyForm, PartyFilterForm, SessionForm, SessionFilterForm, CommitteeForm, CommitteeFilterForm, CommitteeMeetingForm, CommitteeMemberForm, CommitteeMemberFilterForm, SessionAttachmentForm, CommitteeMeetingAttachmentForm
 
 
 class LocalListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
@@ -2096,4 +2096,48 @@ class SessionAttachmentView(LoginRequiredMixin, UserPassesTestMixin, CreateView)
     def form_valid(self, form):
         """Display success message on form validation"""
         messages.success(self.request, f"Attachment '{form.instance.filename}' uploaded successfully.")
+        return super().form_valid(form)
+
+
+class CommitteeMeetingAttachmentView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
+    """View for uploading attachments to committee meetings"""
+    model = CommitteeMeetingAttachment
+    form_class = CommitteeMeetingAttachmentForm
+    template_name = 'local/committee_meeting_attachment_form.html'
+
+    def test_func(self):
+        """Check if user has permission to upload committee meeting attachments"""
+        return self.request.user.is_superuser
+
+    def get_committee_meeting(self):
+        """Get the committee meeting from URL parameter"""
+        from django.shortcuts import get_object_or_404
+        return get_object_or_404(CommitteeMeeting, pk=self.kwargs['committee_meeting_pk'])
+
+    def get_form_kwargs(self):
+        """Pass committee_meeting and user to form"""
+        kwargs = super().get_form_kwargs()
+        kwargs['committee_meeting'] = self.get_committee_meeting()
+        kwargs['uploaded_by'] = self.request.user
+        return kwargs
+
+    def get_success_url(self):
+        """Redirect to committee meeting detail page"""
+        return reverse_lazy(
+            'local:committee-meeting-detail',
+            kwargs={'pk': self.get_committee_meeting().pk}
+        )
+
+    def get_context_data(self, **kwargs):
+        """Add meeting to context"""
+        context = super().get_context_data(**kwargs)
+        context['meeting'] = self.get_committee_meeting()
+        return context
+
+    def form_valid(self, form):
+        """Display success message on form validation"""
+        messages.success(
+            self.request,
+            f"Attachment '{form.instance.filename}' uploaded successfully."
+        )
         return super().form_valid(form)
