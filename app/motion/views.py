@@ -472,49 +472,124 @@ class MotionDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
 @user_passes_test(is_superuser_or_has_permission('motion.vote'))
 def motion_vote_view(request, pk):
     """View for recording party votes on a motion"""
+    from local.models import Term, TermSeatDistribution
+
     motion = get_object_or_404(Motion, pk=pk)
-    
+
     # Get parties for this motion's session council
     parties = Party.objects.filter(
         local=motion.session.council.local,
         is_active=True
     )
-    
+
+    # Get term and seat distributions for formset validation
+    session = motion.session
+    term = session.term
+    if not term and session.council and session.council.local:
+        today = timezone.now().date()
+        term = Term.objects.filter(
+            start_date__lte=today,
+            end_date__gte=today,
+            is_active=True
+        ).first()
+    party_seat_map = {}
+    if term:
+        seat_distributions = TermSeatDistribution.objects.filter(
+            term=term,
+            party__local=session.council.local,
+            party__is_active=True
+        ).select_related('party')
+        party_seat_map = {dist.party.pk: dist.seats for dist in seat_distributions}
+    parties_with_seats = [p for p in parties if p.pk in party_seat_map] if party_seat_map else list(parties)
+
     if request.method == 'POST':
+        vote_type_form = MotionVoteTypeForm(request.POST, motion=motion)
         formset = MotionVoteFormSetFactory(
             request.POST,
             motion=motion,
-            initial=[{'party': party.pk} for party in parties]
+            initial=[{'party': p.pk} for p in parties_with_seats],
+            party_seat_map=party_seat_map
         )
-        if formset.is_valid():
-            # Process each form in the formset
+        if vote_type_form.is_valid() and formset.is_valid():
+            new_vote_type = vote_type_form.cleaned_data['vote_type']
+            new_vote_name = (vote_type_form.cleaned_data.get('vote_name') or '').strip()
+            new_vote_session = vote_type_form.cleaned_data.get('vote_session') or motion.session
+            new_committee = vote_type_form.cleaned_data.get('committee')
+
+            total_favor = 0
+            total_against = 0
             for form in formset:
                 if form.cleaned_data and not form.cleaned_data.get('DELETE', False):
                     party = form.cleaned_data['party']
-                    approve_votes = form.cleaned_data.get('approve_votes', 0)
-                    reject_votes = form.cleaned_data.get('reject_votes', 0)
+                    approve_votes = form.cleaned_data.get('approve_votes', 0) or 0
+                    reject_votes = form.cleaned_data.get('reject_votes', 0) or 0
                     notes = form.cleaned_data.get('notes', '')
-                    
-                    # Create new vote (always create new vote for standalone vote recording)
+                    total_favor += approve_votes
+                    total_against += reject_votes
                     MotionVote.objects.create(
                         motion=motion,
                         party=party,
+                        vote_type=new_vote_type,
+                        vote_name=new_vote_name,
+                        vote_session=new_vote_session,
                         approve_votes=approve_votes,
                         reject_votes=reject_votes,
                         notes=notes
                     )
-            
-            messages.success(request, "All party votes have been recorded successfully.")
+
+            # Update motion status based on outcome
+            if new_vote_type == 'regular':
+                if total_favor > total_against:
+                    motion.status = 'approved'
+                elif total_against > total_favor:
+                    motion.status = 'rejected'
+                motion.save(update_fields=['status'])
+            elif new_vote_type == 'refer_to_committee' and total_favor > total_against and new_committee:
+                motion.status = 'refer_to_committee'
+                motion.committee = new_committee
+                motion.save(update_fields=['status', 'committee'])
+
+            messages.success(request, _("All party votes have been recorded successfully."))
             return redirect('motion:motion-detail', pk=pk)
+        else:
+            formset = MotionVoteFormSetFactory(
+                request.POST,
+                motion=motion,
+                initial=[{'party': p.pk} for p in parties_with_seats],
+                party_seat_map=party_seat_map
+            )
     else:
+        vote_type_form = MotionVoteTypeForm(motion=motion, initial={
+            'vote_type': 'regular',
+            'vote_session': motion.session,
+        })
         formset = MotionVoteFormSetFactory(
             motion=motion,
-            initial=[{'party': party.pk} for party in parties]
+            initial=[{'party': p.pk} for p in parties_with_seats],
+            party_seat_map=party_seat_map
         )
-    
+
+    # Build forms_with_data for template (party_info: party, max_seats)
+    party_data = []
+    for party in parties_with_seats:
+        party_data.append({
+            'party': party,
+            'max_seats': party_seat_map.get(party.pk, 0),
+        })
+    forms_with_data = []
+    for i, form in enumerate(formset):
+        forms_with_data.append({
+            'form': form,
+            'party_info': party_data[i] if i < len(party_data) else None,
+        })
+
     return render(request, 'motion/motion_vote.html', {
         'motion': motion,
-        'formset': formset
+        'vote_type_form': vote_type_form,
+        'formset': formset,
+        'forms_with_data': forms_with_data,
+        'term': term,
+        'party_seat_map': party_seat_map,
     })
 
 

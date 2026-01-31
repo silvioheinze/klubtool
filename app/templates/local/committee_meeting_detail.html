@@ -1,0 +1,151 @@
+{% extends "_base.html" %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}{{ meeting.title }} - {% trans "Committee Meeting" %}{% endblock title %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="mb-0"><i class="bi bi-calendar-event"></i> {{ meeting.title }}</h1>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="{% url 'local:committee-detail' meeting.committee.pk %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> {% trans "Back to Committee" %}
+                    </a>
+                    <a href="{% url 'local:committee-meeting-edit' meeting.pk %}" class="btn btn-primary">
+                        <i class="bi bi-pencil"></i> {% trans "Edit Meeting" %}
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">{% trans "Meeting Information" %}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">{% trans "Title" %}</dt>
+                                <dd class="col-sm-8">{{ meeting.title }}</dd>
+                                {% with committee_type_label=meeting.committee.get_committee_type_display %}
+                                <dt class="col-sm-4">{% trans "Committee" context committee_type_label %}</dt>
+                                {% endwith %}
+                                <dd class="col-sm-8">
+                                    <a href="{% url 'local:committee-detail' meeting.committee.pk %}">{{ meeting.committee.name }}</a>
+                                </dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">{% trans "Date & Time" %}</dt>
+                                <dd class="col-sm-8">{{ meeting.scheduled_date|date:"M d, Y H:i" }}</dd>
+                                {% if meeting.location %}
+                                <dt class="col-sm-4">{% trans "Location" %}</dt>
+                                <dd class="col-sm-8">{{ meeting.location }}</dd>
+                                {% endif %}
+                                <dt class="col-sm-4">{% trans "Status" %}</dt>
+                                <dd class="col-sm-8">
+                                    {% if meeting.is_past %}
+                                        <span class="badge bg-secondary">{% trans "Past" %}</span>
+                                    {% else %}
+                                        <span class="badge bg-success">{% trans "Upcoming" %}</span>
+                                    {% endif %}
+                                </dd>
+                            </dl>
+                        </div>
+                    </div>
+                    <hr>
+                    <h6>{% trans "Agenda" %}</h6>
+                    {% if meeting.description %}
+                        <p class="mb-0">{{ meeting.description|linebreaks }}</p>
+                    {% else %}
+                        <p class="text-muted mb-0">{% trans "No agenda available." %}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Committee Meeting Attachments -->
+            <div class="card mt-3">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-paperclip"></i> {% trans "Meeting Attachments" %}
+                    </h5>
+                    {% if user.is_superuser %}
+                    <a href="{% url 'local:committee-meeting-attach' meeting.pk %}" class="btn btn-sm btn-primary">
+                        <i class="bi bi-upload"></i> {% trans "Upload File" %}
+                    </a>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    {% if meeting.attachments.all %}
+                        <div class="row">
+                            {% for attachment in meeting.attachments.all %}
+                                <div class="col-md-6 col-lg-4 mb-3">
+                                    <div class="card h-100">
+                                        <div class="card-body">
+                                            <div class="d-flex align-items-center mb-2">
+                                                <i class="bi bi-file-earmark me-2"></i>
+                                                <strong class="text-truncate">{{ attachment.filename }}</strong>
+                                            </div>
+                                            <small class="text-muted d-block">
+                                                {{ attachment.get_file_type_display }}
+                                            </small>
+                                            <small class="text-muted d-block">
+                                                {% trans "Uploaded by" %} {{ attachment.uploaded_by.get_full_name|default:attachment.uploaded_by.username }}
+                                            </small>
+                                            <small class="text-muted d-block">
+                                                {{ attachment.uploaded_at|date:"d.m.Y H:i" }}
+                                            </small>
+                                            {% if attachment.description %}
+                                                <p class="mt-2 mb-0 small">{{ attachment.description }}</p>
+                                            {% endif %}
+                                            <div class="mt-2">
+                                                <a href="{{ attachment.file.url }}" class="btn btn-sm btn-outline-primary" target="_blank">
+                                                    <i class="bi bi-download"></i> {% trans "Download" %}
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="bi bi-paperclip text-muted" style="font-size: 3rem;"></i>
+                            <p class="text-muted mt-2">{% trans "No attachments uploaded for this meeting yet." %}</p>
+                            {% if user.is_superuser %}
+                            <a href="{% url 'local:committee-meeting-attach' meeting.pk %}" class="btn btn-primary">
+                                <i class="bi bi-upload"></i> {% trans "Upload First File" %}
+                            </a>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">{% trans "Actions" %}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'local:committee-meeting-export-ics' meeting.pk %}" class="btn btn-outline-primary">
+                            <i class="bi bi-calendar-plus"></i> {% trans "Download Calendar (ICS)" %}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

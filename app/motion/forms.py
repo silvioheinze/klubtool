@@ -613,8 +613,14 @@ class MotionVoteForm(forms.ModelForm):
         party = cleaned_data.get('party')
         logger.debug(f"MotionVoteForm.clean() - approve_votes={approve_votes}, reject_votes={reject_votes}, total={total_votes}, max_seats={self.max_seats}, party={party}")
         
-        # Only validate if votes have been entered (non-zero)
-        # This allows empty forms in the formset, but validates filled forms
+        # Require at least one vote when party is selected (no abstaining)
+        if party and total_votes == 0:
+            logger.debug("Validation error: party selected but no votes (abstaining not allowed)")
+            raise forms.ValidationError({
+                '__all__': _('At least one vote (in favor or against) must be cast. Abstaining is not allowed.')
+            })
+        
+        # Only validate further if votes have been entered (non-zero)
         if total_votes > 0:
             # If votes are entered, party is required
             if not party:
@@ -632,8 +638,7 @@ class MotionVoteForm(forms.ModelForm):
                         'max': self.max_seats
                     }
                 )
-        # Note: We don't require votes here - empty forms are allowed
-        # The formset will ensure at least one form has votes
+        # Empty forms (no party) are allowed in the formset; formset will ensure at least one form has votes
         
         logger.debug(f"MotionVoteForm.clean() - validation passed")
         return cleaned_data

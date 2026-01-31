@@ -1,4 +1,7 @@
+from datetime import date
+
 from django.db import models
+from django.utils.translation import gettext_lazy as _
 from auditlog.registry import auditlog
 from auditlog.models import AuditlogHistoryField
 
@@ -73,6 +76,14 @@ class Committee(models.Model):
     name = models.CharField(max_length=200, help_text="Name of the committee")
     abbreviation = models.CharField(max_length=20, blank=True, help_text="Abbreviation for the committee (e.g., 'BA' for Budgetausschuss)")
     council = models.ForeignKey(Council, on_delete=models.CASCADE, related_name='committees', help_text="Council this committee belongs to")
+    term = models.ForeignKey(
+        'Term',
+        on_delete=models.SET_NULL,
+        related_name='committees',
+        null=True,
+        blank=True,
+        help_text="Term this committee belongs to"
+    )
     committee_type = models.CharField(max_length=20, choices=COMMITTEE_TYPE_CHOICES, default='standing', help_text="Type of committee")
     description = models.TextField(blank=True, help_text="Description of the committee's purpose and responsibilities")
     chairperson = models.CharField(max_length=100, blank=True, help_text="Name of the committee chairperson")
@@ -137,6 +148,86 @@ class Committee(models.Model):
         return None
 
 
+class CommitteeMeeting(models.Model):
+    """Model representing a meeting of a committee (replaces committee sessions)."""
+    committee = models.ForeignKey(
+        Committee, on_delete=models.CASCADE, related_name='meetings',
+        help_text="Committee holding the meeting"
+    )
+    title = models.CharField(
+        max_length=200,
+        blank=True,
+        default='',
+        help_text="Title or name of the meeting (set automatically on create: committee name + date)"
+    )
+    scheduled_date = models.DateTimeField(help_text="Date and time when the meeting is scheduled")
+    location = models.CharField(max_length=300, blank=True, help_text="Location where the meeting will be held")
+    description = models.TextField(blank=True, help_text="Description or agenda of the meeting")
+    is_active = models.BooleanField(default=True, help_text="Whether the meeting is currently active")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    history = AuditlogHistoryField()
+
+    class Meta:
+        ordering = ['-scheduled_date']
+        verbose_name = "Committee Meeting"
+        verbose_name_plural = "Committee Meetings"
+
+    def __str__(self):
+        return f"{self.title} - {self.committee.name} ({self.scheduled_date.strftime('%Y-%m-%d %H:%M')})"
+
+    def get_absolute_url(self):
+        from django.urls import reverse
+        return reverse('local:committee-meeting-detail', kwargs={'pk': self.pk})
+
+    @property
+    def is_past(self):
+        """Check if the meeting is in the past"""
+        from django.utils import timezone
+        return self.scheduled_date < timezone.now()
+
+
+class CommitteeMeetingAttachment(models.Model):
+    """Model representing file attachments for committee meetings"""
+
+    ATTACHMENT_TYPE_CHOICES = [
+        ('agenda', 'Agenda'),
+        ('budget', 'Budget'),
+        ('invitation', 'Invitation'),
+        ('other', 'Other'),
+    ]
+
+    committee_meeting = models.ForeignKey(
+        CommitteeMeeting, on_delete=models.CASCADE, related_name='attachments'
+    )
+    file = models.FileField(upload_to='committee_meeting_attachments/%Y/%m/%d/')
+    filename = models.CharField(max_length=255)
+    file_type = models.CharField(
+        max_length=20, choices=ATTACHMENT_TYPE_CHOICES, default='other'
+    )
+    description = models.TextField(blank=True)
+    uploaded_by = models.ForeignKey(
+        'user.CustomUser', on_delete=models.CASCADE,
+        related_name='committee_meeting_attachments'
+    )
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-uploaded_at']
+        verbose_name = "Committee Meeting Attachment"
+        verbose_name_plural = "Committee Meeting Attachments"
+
+    def __str__(self):
+        return f"{self.filename} - {self.committee_meeting.title}"
+
+    def get_absolute_url(self):
+        from django.urls import reverse
+        return reverse(
+            'local:committee-meeting-detail',
+            kwargs={'pk': self.committee_meeting.pk}
+        )
+
+
 class CommitteeMember(models.Model):
     """Model representing membership in a committee"""
     ROLE_CHOICES = [
@@ -146,12 +237,12 @@ class CommitteeMember(models.Model):
         ('substitute_member', 'Substitute Member'),
     ]
 
-    committee = models.ForeignKey(Committee, on_delete=models.CASCADE, related_name='members', help_text="Committee the user belongs to")
-    user = models.ForeignKey('user.CustomUser', on_delete=models.CASCADE, related_name='committee_memberships', help_text="User who is a member")
-    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='member', help_text="Role of the user in the committee")
-    joined_date = models.DateField(auto_now_add=True, help_text="Date when the user joined the committee")
-    is_active = models.BooleanField(default=True, help_text="Whether the membership is currently active")
-    notes = models.TextField(blank=True, help_text="Additional notes about the membership")
+    committee = models.ForeignKey(Committee, on_delete=models.CASCADE, related_name='members', help_text=_("Committee the user belongs to"))
+    user = models.ForeignKey('user.CustomUser', on_delete=models.CASCADE, related_name='committee_memberships', help_text=_("User who is a member"))
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='member', help_text=_("Role of the user in the committee"))
+    joined_date = models.DateField(default=date.today, help_text=_("Date when the user joined the committee"))
+    is_active = models.BooleanField(default=True, help_text=_("Whether the membership is currently active"))
+    notes = models.TextField(blank=True, help_text=_("Additional notes about the membership"))
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     history = models.JSONField(default=dict, blank=True)
@@ -167,7 +258,7 @@ class CommitteeMember(models.Model):
 
     def get_absolute_url(self):
         from django.urls import reverse
-        return reverse('local:committee-member-detail', args=[str(self.pk)])
+        return reverse('local:committee-detail', kwargs={'pk': self.committee.pk})
 
 
 class Term(models.Model):
@@ -359,6 +450,8 @@ class SessionPresence(models.Model):
 auditlog.register(Local)
 auditlog.register(Council)
 auditlog.register(Committee)
+auditlog.register(CommitteeMeeting)
+auditlog.register(CommitteeMeetingAttachment)
 auditlog.register(CommitteeMember)
 auditlog.register(Term)
 auditlog.register(Party)

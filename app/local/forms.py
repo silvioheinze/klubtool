@@ -1,5 +1,6 @@
 from django import forms
-from .models import Local, Council, Committee, CommitteeMember, Session, Term, Party, TermSeatDistribution, SessionAttachment
+from django.utils import timezone
+from .models import Local, Council, Committee, CommitteeMeeting, CommitteeMeetingAttachment, CommitteeMember, Session, Term, Party, TermSeatDistribution, SessionAttachment
 
 
 class LocalForm(forms.ModelForm):
@@ -240,6 +241,13 @@ class SessionForm(forms.ModelForm):
         
         # Add JavaScript to filter committees when council changes (will be handled in template)
 
+    def clean_scheduled_date(self):
+        """Ensure scheduled_date is timezone-aware to avoid DateTimeField warnings."""
+        value = self.cleaned_data.get('scheduled_date')
+        if value and timezone.is_naive(value):
+            return timezone.make_aware(value, timezone.get_current_timezone())
+        return value
+
 
 class SessionFilterForm(forms.Form):
     """Form for filtering sessions in the session list view"""
@@ -273,19 +281,33 @@ class CommitteeForm(forms.ModelForm):
     
     class Meta:
         model = Committee
-        fields = ['name', 'abbreviation', 'council', 'committee_type', 'description']
+        fields = ['name', 'abbreviation', 'council', 'term', 'committee_type', 'description']
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control'}),
             'abbreviation': forms.TextInput(attrs={'class': 'form-control', 'maxlength': '20'}),
             'council': forms.Select(attrs={'class': 'form-select'}),
+            'term': forms.Select(attrs={'class': 'form-select'}),
             'committee_type': forms.Select(attrs={'class': 'form-select'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
     
     def __init__(self, *args, **kwargs):
+        # On create: auto-select the last (most recent) term before super() so initial is used
+        instance = kwargs.get('instance')
+        if instance is None or getattr(instance, 'pk', None) is None:
+            initial = kwargs.get('initial') or {}
+            if 'term' not in initial and not (kwargs.get('data') and 'term' in kwargs.get('data')):
+                last_term = Term.objects.filter(is_active=True).order_by('-start_date').first()
+                if last_term:
+                    initial = dict(initial)
+                    initial['term'] = last_term
+                    kwargs['initial'] = initial
         super().__init__(*args, **kwargs)
         # Filter councils to only show active ones
         self.fields['council'].queryset = Council.objects.filter(is_active=True)
+        # Filter terms to show active ones, ordered by start_date descending (most recent first)
+        self.fields['term'].queryset = Term.objects.filter(is_active=True).order_by('-start_date')
+        self.fields['term'].required = False
         
         # Set initial council if provided in URL
         council_id = self.initial.get('council') or self.data.get('council')
@@ -326,16 +348,19 @@ class CommitteeMemberForm(forms.ModelForm):
     
     class Meta:
         model = CommitteeMember
-        fields = ['committee', 'user', 'role', 'notes']
+        fields = ['committee', 'user', 'role', 'joined_date', 'notes']
         widgets = {
             'committee': forms.Select(attrs={'class': 'form-select'}),
             'user': forms.Select(attrs={'class': 'form-select'}),
             'role': forms.Select(attrs={'class': 'form-select'}),
+            'joined_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        # Ensure joined_date displays and parses as YYYY-MM-DD for HTML5 date input
+        self.fields['joined_date'].input_formats = ['%Y-%m-%d']
         # Filter committees to only show active ones
         self.fields['committee'].queryset = Committee.objects.filter(is_active=True)
         
@@ -370,6 +395,56 @@ class CommitteeMemberForm(forms.ModelForm):
         else:
             # If no committee specified, show all active users
             self.fields['user'].queryset = User.objects.filter(is_active=True)
+
+
+class CommitteeMeetingForm(forms.ModelForm):
+    """Form for creating and editing CommitteeMeeting objects. On create, title and is_active are hidden; title is set to committee name + meeting date."""
+
+    class Meta:
+        model = CommitteeMeeting
+        fields = ['committee', 'title', 'scheduled_date', 'location', 'description', 'is_active']
+        widgets = {
+            'committee': forms.Select(attrs={'class': 'form-select'}),
+            'title': forms.TextInput(attrs={'class': 'form-control'}),
+            'scheduled_date': forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}, format='%Y-%m-%dT%H:%M'),
+            'location': forms.TextInput(attrs={'class': 'form-control'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
+            'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        committee = kwargs.pop('committee', None)
+        super().__init__(*args, **kwargs)
+        self.fields['committee'].queryset = Committee.objects.filter(is_active=True)
+        if committee:
+            self.fields['committee'].queryset = Committee.objects.filter(pk=committee.pk)
+            self.fields['committee'].initial = committee
+            if not self.instance.pk:
+                self.initial['committee'] = committee.pk
+        # On create: hide title and is_active; they are set in save()
+        if not self.instance.pk:
+            del self.fields['title']
+            del self.fields['is_active']
+        else:
+            # On edit: hide labels for title and is_active
+            self.fields['title'].label = ''
+            self.fields['is_active'].label = ''
+
+    def clean_scheduled_date(self):
+        """Ensure scheduled_date is timezone-aware to avoid DateTimeField warnings."""
+        value = self.cleaned_data.get('scheduled_date')
+        if value and timezone.is_naive(value):
+            return timezone.make_aware(value, timezone.get_current_timezone())
+        return value
+
+    def save(self, commit=True):
+        if not self.instance.pk:
+            committee = self.cleaned_data.get('committee')
+            scheduled_date = self.cleaned_data.get('scheduled_date')
+            if committee and scheduled_date:
+                self.instance.title = f"{committee.name} {scheduled_date.strftime('%d.%m.%Y %H:%M')}"
+            self.instance.is_active = True
+        return super().save(commit=commit)
 
 
 class CommitteeMemberFilterForm(forms.Form):
@@ -439,6 +514,49 @@ class SessionAttachmentForm(forms.ModelForm):
             import os
             instance.filename = os.path.basename(instance.file.name)
         
+        if commit:
+            instance.save()
+        return instance
+
+
+class CommitteeMeetingAttachmentForm(forms.ModelForm):
+    """Form for uploading attachments to committee meetings"""
+
+    class Meta:
+        model = CommitteeMeetingAttachment
+        fields = ['file', 'file_type', 'description']
+        widgets = {
+            'file': forms.FileInput(attrs={'class': 'form-control'}),
+            'file_type': forms.Select(attrs={'class': 'form-select'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.committee_meeting = kwargs.pop('committee_meeting', None)
+        self.uploaded_by = kwargs.pop('uploaded_by', None)
+        super().__init__(*args, **kwargs)
+
+    def clean_file(self):
+        file = self.cleaned_data.get('file')
+        if file:
+            if file.size > 10 * 1024 * 1024:
+                raise forms.ValidationError("File size must be under 10MB.")
+            import os
+            allowed_extensions = ['.pdf', '.doc', '.docx', '.txt', '.jpg', '.jpeg', '.png', '.gif', '.xls', '.xlsx', '.ppt', '.pptx']
+            ext = os.path.splitext(file.name)[1].lower()
+            if ext not in allowed_extensions:
+                raise forms.ValidationError(f"File type not allowed. Allowed types: {', '.join(allowed_extensions)}")
+        return file
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        if self.committee_meeting:
+            instance.committee_meeting = self.committee_meeting
+        if self.uploaded_by:
+            instance.uploaded_by = self.uploaded_by
+        if instance.file:
+            import os
+            instance.filename = os.path.basename(instance.file.name)
         if commit:
             instance.save()
         return instance

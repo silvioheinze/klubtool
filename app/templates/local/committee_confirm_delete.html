@@ -32,7 +32,9 @@
                         <p class="mb-0">{% trans "This action cannot be undone. All committee data will be permanently deleted." %}</p>
                     </div>
 
-                    <h5>{% trans "Committee Information" %}</h5>
+                    {% with committee_type_label=committee.get_committee_type_display %}
+                    <h5>{% trans "Committee Information" context committee_type_label %}</h5>
+                    {% endwith %}
                     <dl class="row">
                         <dt class="col-sm-3">{% trans "Name" %}</dt>
                         <dd class="col-sm-9">{{ committee.name }}</dd>

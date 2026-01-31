@@ -223,10 +223,16 @@ LOGGING = {
             'style': '{',
         },
     },
+    'filters': {
+        'suppress_permission_denied': {
+            '()': 'main.logging_filters.SuppressExpectedRequestErrors',
+        },
+    },
     'handlers': {
         'console': {
             'class': 'logging.StreamHandler',
             'formatter': 'verbose',
+            'filters': ['suppress_permission_denied'],
         },
         'file': {
             'class': 'logging.FileHandler',

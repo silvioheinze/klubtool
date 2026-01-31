@@ -61,7 +61,9 @@
                                 </dd>
                                 
                                 {% if session.committee %}
-                                    <dt class="col-sm-4">{% trans "Committee" %}</dt>
+                                    {% with committee_type_label=session.committee.get_committee_type_display %}
+                                    <dt class="col-sm-4">{% trans "Committee" context committee_type_label %}</dt>
+                                    {% endwith %}
                                     <dd class="col-sm-8">
                                         <a href="{% url 'local:committee-detail' session.committee.pk %}">
                                             <span class="badge bg-info">{{ session.committee.name }}</span>

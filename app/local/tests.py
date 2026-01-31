@@ -7,12 +7,12 @@ from datetime import datetime, timedelta
 
 from .forms import (
     LocalForm, LocalFilterForm, CouncilForm, CouncilFilterForm,
-    CommitteeForm, CommitteeFilterForm, CommitteeMemberForm, CommitteeMemberFilterForm,
+    CommitteeForm, CommitteeFilterForm, CommitteeMeetingForm, CommitteeMemberForm, CommitteeMemberFilterForm,
     SessionForm, SessionFilterForm, TermForm, TermFilterForm,
     PartyForm, PartyFilterForm, TermSeatDistributionForm
 )
 from .models import (
-    Local, Council, Committee, CommitteeMember, Session, Term, Party, 
+    Local, Council, Committee, CommitteeMeeting, CommitteeMember, Session, Term, Party,
     TermSeatDistribution, SessionAttachment
 )
 
@@ -235,18 +235,34 @@ class CommitteeMemberFormTests(TestCase):
             name='Test Committee',
             council=self.council
         )
+        
+        # CommitteeMemberForm filters users to those in groups in the committee's local.
+        # Add user to a group so they appear in the form's user queryset.
+        from local.models import Party
+        from group.models import Group, GroupMember
+        from user.models import Role
+        party = Party.objects.create(name='Test Party', local=self.local, is_active=True)
+        group = Group.objects.create(name='Test Group', party=party, is_active=True)
+        role = Role.objects.filter(is_active=True).first()
+        if role:
+            gm = GroupMember.objects.create(user=self.user, group=group, is_active=True)
+            gm.roles.add(role)
+        else:
+            GroupMember.objects.create(user=self.user, group=group, is_active=True)
     
     def test_committee_member_form_valid_data(self):
         """Test CommitteeMemberForm with valid data"""
+        from datetime import date
         form_data = {
             'user': self.user.pk,
             'committee': self.committee.pk,
             'role': 'member',
-            'is_active': True
+            'joined_date': date.today().isoformat(),
+            'notes': ''
         }
         
         form = CommitteeMemberForm(data=form_data)
-        self.assertTrue(form.is_valid())
+        self.assertTrue(form.is_valid(), form.errors)
     
     def test_committee_member_form_required_fields(self):
         """Test CommitteeMemberForm with missing required fields"""
@@ -270,6 +286,70 @@ class CommitteeMemberFormTests(TestCase):
             expected_committees,
             transform=lambda x: x
         )
+
+
+class CommitteeMeetingFormTests(TestCase):
+    """Test cases for CommitteeMeetingForm"""
+
+    def setUp(self):
+        self.local = Local.objects.create(
+            name='Test Local',
+            code='TL',
+            description='Test local description'
+        )
+        self.council = self.local.council
+        self.committee = Committee.objects.create(
+            name='Test Committee',
+            council=self.council,
+            is_active=True
+        )
+
+    def test_committee_meeting_form_valid_data(self):
+        """Test CommitteeMeetingForm (create) with valid data; title and is_active are set in save()"""
+        scheduled = timezone.now() + timedelta(days=1)
+        form_data = {
+            'committee': self.committee.pk,
+            'scheduled_date': scheduled.strftime('%Y-%m-%dT%H:%M'),
+            'location': 'Room 101',
+            'description': 'Agenda items',
+        }
+        form = CommitteeMeetingForm(data=form_data)
+        self.assertTrue(form.is_valid(), form.errors)
+        meeting = form.save()
+        self.assertEqual(meeting.title, f"{self.committee.name} {scheduled.strftime('%d.%m.%Y %H:%M')}")
+        self.assertTrue(meeting.is_active)
+
+    def test_committee_meeting_form_required_fields(self):
+        """Test CommitteeMeetingForm (create) with missing required fields (scheduled_date)"""
+        form_data = {
+            'committee': self.committee.pk,
+        }
+        form = CommitteeMeetingForm(data=form_data)
+        self.assertFalse(form.is_valid())
+        self.assertIn('scheduled_date', form.errors)
+
+    def test_committee_meeting_form_committee_filtering(self):
+        """Test that CommitteeMeetingForm filters committees correctly"""
+        form = CommitteeMeetingForm()
+        self.assertIn(self.committee, form.fields['committee'].queryset)
+
+    def test_committee_meeting_form_with_committee_kwarg(self):
+        """Test CommitteeMeetingForm with committee kwarg restricts queryset"""
+        form = CommitteeMeetingForm(committee=self.committee)
+        self.assertEqual(form.fields['committee'].queryset.count(), 1)
+        self.assertEqual(form.fields['committee'].queryset.get(), self.committee)
+
+    def test_committee_meeting_form_edit_has_title_and_is_active(self):
+        """Test CommitteeMeetingForm for edit (existing instance) shows title and is_active"""
+        meeting = CommitteeMeeting.objects.create(
+            committee=self.committee,
+            title='Existing Meeting',
+            scheduled_date=timezone.now() + timedelta(days=1),
+            is_active=True,
+        )
+        form = CommitteeMeetingForm(instance=meeting)
+        self.assertIn('title', form.fields)
+        self.assertIn('is_active', form.fields)
 
 
 class SessionFormTests(TestCase):
@@ -1389,6 +1469,195 @@ class SessionViewTests(TestCase):
         self.assertFalse(Session.objects.filter(pk=self.session.pk).exists())
 
 
+class CommitteeMeetingViewTests(TestCase):
+    """Test cases for CommitteeMeeting views"""
+
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(
+            username='testuser',
+            email='test@example.com',
+            password='testpass123'
+        )
+        self.superuser = User.objects.create_superuser(
+            username='admin',
+            email='admin@example.com',
+            password='adminpass123'
+        )
+        self.local = Local.objects.create(
+            name='Test Local',
+            code='TL',
+            description='Test local description'
+        )
+        self.council = self.local.council
+        self.committee = Committee.objects.create(
+            name='Test Committee',
+            council=self.council,
+            is_active=True
+        )
+        self.meeting = CommitteeMeeting.objects.create(
+            committee=self.committee,
+            title='Test Committee Meeting',
+            scheduled_date=timezone.now() + timedelta(days=1),
+            location='Room 101',
+            is_active=True
+        )
+
+    def test_committee_meeting_create_view_requires_superuser(self):
+        """Test that CommitteeMeetingCreateView requires superuser"""
+        self.client.login(username='testuser', password='testpass123')
+        response = self.client.get(
+            reverse('local:committee-meeting-create', kwargs={'committee_pk': self.committee.pk})
+        )
+        self.assertEqual(response.status_code, 403)
+        self.client.login(username='admin', password='adminpass123')
+        response = self.client.get(
+            reverse('local:committee-meeting-create', kwargs={'committee_pk': self.committee.pk})
+        )
+        self.assertEqual(response.status_code, 200)
+
+    def test_committee_meeting_create_view_post_valid_data(self):
+        """Test CommitteeMeetingCreateView with valid POST data; title is set to committee name + date"""
+        self.client.login(username='admin', password='adminpass123')
+        scheduled = timezone.now() + timedelta(days=2)
+        form_data = {
+            'committee': self.committee.pk,
+            'scheduled_date': scheduled.strftime('%Y-%m-%dT%H:%M'),
+            'location': 'Hall A',
+            'description': 'Agenda',
+        }
+        response = self.client.post(
+            reverse('local:committee-meeting-create', kwargs={'committee_pk': self.committee.pk}),
+            form_data
+        )
+        self.assertEqual(response.status_code, 302)
+        expected_title = f"{self.committee.name} {scheduled.strftime('%d.%m.%Y %H:%M')}"
+        self.assertTrue(CommitteeMeeting.objects.filter(title=expected_title).exists())
+
+    def test_committee_meeting_create_view_redirects_to_committee_detail(self):
+        """Test that create redirects to committee detail after success"""
+        self.client.login(username='admin', password='adminpass123')
+        form_data = {
+            'committee': self.committee.pk,
+            'scheduled_date': (timezone.now() + timedelta(days=3)).strftime('%Y-%m-%dT%H:%M'),
+        }
+        response = self.client.post(
+            reverse('local:committee-meeting-create', kwargs={'committee_pk': self.committee.pk}),
+            form_data
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('local:committee-detail', kwargs={'pk': self.committee.pk}))
+
+    def test_committee_meeting_detail_view_requires_superuser(self):
+        """Test that CommitteeMeetingDetailView requires superuser"""
+        self.client.login(username='testuser', password='testpass123')
+        response = self.client.get(
+            reverse('local:committee-meeting-detail', kwargs={'pk': self.meeting.pk})
+        )
+        self.assertEqual(response.status_code, 403)
+        self.client.login(username='admin', password='adminpass123')
+        response = self.client.get(
+            reverse('local:committee-meeting-detail', kwargs={'pk': self.meeting.pk})
+        )
+        self.assertEqual(response.status_code, 200)
+
+    def test_committee_meeting_detail_view_contains_meeting_info(self):
+        """Test that CommitteeMeetingDetailView contains meeting information"""
+        self.client.login(username='admin', password='adminpass123')
+        response = self.client.get(
+            reverse('local:committee-meeting-detail', kwargs={'pk': self.meeting.pk})
+        )
+        self.assertContains(response, self.meeting.title)
+        self.assertContains(response, self.committee.name)
+
+    def test_committee_meeting_edit_view_requires_superuser(self):
+        """Test that CommitteeMeetingUpdateView requires superuser"""
+        self.client.login(username='testuser', password='testpass123')
+        response = self.client.get(
+            reverse('local:committee-meeting-edit', kwargs={'pk': self.meeting.pk})
+        )
+        self.assertEqual(response.status_code, 403)
+
+    def test_committee_meeting_edit_view_post_valid_data(self):
+        """Test CommitteeMeetingUpdateView with valid POST data"""
+        self.client.login(username='admin', password='adminpass123')
+        form_data = {
+            'committee': self.committee.pk,
+            'title': 'Updated Meeting Title',
+            'scheduled_date': (timezone.now() + timedelta(days=5)).strftime('%Y-%m-%dT%H:%M'),
+            'location': 'Room 202',
+            'description': 'Updated agenda',
+            'is_active': True,
+        }
+        response = self.client.post(
+            reverse('local:committee-meeting-edit', kwargs={'pk': self.meeting.pk}),
+            form_data
+        )
+        self.assertEqual(response.status_code, 302)
+        self.meeting.refresh_from_db()
+        self.assertEqual(self.meeting.title, 'Updated Meeting Title')
+
+    def test_committee_meeting_delete_view_requires_superuser(self):
+        """Test that CommitteeMeetingDeleteView requires superuser"""
+        self.client.login(username='testuser', password='testpass123')
+        response = self.client.get(
+            reverse('local:committee-meeting-delete', kwargs={'pk': self.meeting.pk})
+        )
+        self.assertEqual(response.status_code, 403)
+
+    def test_committee_meeting_delete_view_post_confirms_deletion(self):
+        """Test CommitteeMeetingDeleteView with POST confirmation"""
+        self.client.login(username='admin', password='adminpass123')
+        response = self.client.post(
+            reverse('local:committee-meeting-delete', kwargs={'pk': self.meeting.pk})
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(CommitteeMeeting.objects.filter(pk=self.meeting.pk).exists())
+
+    def test_committee_meeting_export_ics_requires_login(self):
+        """Test that committee_meeting_export_ics requires login"""
+        response = self.client.get(
+            reverse('local:committee-meeting-export-ics', kwargs={'pk': self.meeting.pk})
+        )
+        self.assertEqual(response.status_code, 302)
+
+    def test_committee_meeting_export_ics_superuser_gets_ics(self):
+        """Test that superuser can export committee meeting as ICS"""
+        self.client.login(username='admin', password='adminpass123')
+        response = self.client.get(
+            reverse('local:committee-meeting-export-ics', kwargs={'pk': self.meeting.pk})
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get('Content-Type'), 'text/calendar; charset=utf-8')
+        self.assertIn(b'BEGIN:VCALENDAR', response.content)
+        self.assertIn(b'BEGIN:VEVENT', response.content)
+        self.assertIn(b'SUMMARY:', response.content)
+        self.assertIn(self.meeting.title.encode(), response.content)
+
+    def test_committee_meeting_export_ics_regular_user_denied(self):
+        """Test that regular user without committee membership is denied"""
+        self.client.login(username='testuser', password='testpass123')
+        response = self.client.get(
+            reverse('local:committee-meeting-export-ics', kwargs={'pk': self.meeting.pk})
+        )
+        self.assertEqual(response.status_code, 302)
+
+    def test_committee_meeting_export_ics_committee_member_allowed(self):
+        """Test that committee member can export committee meeting as ICS"""
+        CommitteeMember.objects.create(
+            committee=self.committee,
+            user=self.user,
+            role='member',
+            is_active=True
+        )
+        self.client.login(username='testuser', password='testpass123')
+        response = self.client.get(
+            reverse('local:committee-meeting-export-ics', kwargs={'pk': self.meeting.pk})
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get('Content-Type'), 'text/calendar; charset=utf-8')
+
+
 class CommitteeMemberViewTests(TestCase):
     """Test cases for CommitteeMember views"""
     
@@ -1496,11 +1765,13 @@ class CommitteeMemberViewTests(TestCase):
     
     def test_committee_member_create_view_post_valid_data(self):
         """Test CommitteeMemberCreateView with valid POST data"""
+        from datetime import date
         self.client.login(username='admin', password='adminpass123')
         form_data = {
             'user': self.member_user.pk,
             'committee': self.committee.pk,
             'role': 'member',
+            'joined_date': date.today().isoformat(),
             'notes': 'Test member notes'
         }
         response = self.client.post(reverse('local:committee-member-create'), form_data)
@@ -1530,11 +1801,13 @@ class CommitteeMemberViewTests(TestCase):
     
     def test_committee_member_create_view_redirect_to_committee_detail(self):
         """Test that CommitteeMemberCreateView redirects to committee detail after creation"""
+        from datetime import date
         self.client.login(username='admin', password='adminpass123')
         form_data = {
             'user': self.member_user.pk,
             'committee': self.committee.pk,
-            'role': 'member'
+            'role': 'member',
+            'joined_date': date.today().isoformat(),
         }
         response = self.client.post(reverse('local:committee-member-create'), form_data)
         self.assertEqual(response.status_code, 302)
@@ -1552,11 +1825,13 @@ class CommitteeMemberViewTests(TestCase):
             role='member'
         )
         
+        from datetime import date
         self.client.login(username='admin', password='adminpass123')
         form_data = {
             'user': self.member_user.pk,
             'committee': self.committee.pk,
-            'role': 'member'
+            'role': 'member',
+            'joined_date': date.today().isoformat(),
         }
         response = self.client.post(reverse('local:committee-member-create'), form_data)
         self.assertEqual(response.status_code, 200)  # Form errors, stays on page
@@ -1568,11 +1843,13 @@ class CommitteeMemberViewTests(TestCase):
     
     def test_committee_member_create_view_success_message(self):
         """Test that success message is displayed after creation"""
+        from datetime import date
         self.client.login(username='admin', password='adminpass123')
         form_data = {
             'user': self.member_user.pk,
             'committee': self.committee.pk,
-            'role': 'member'
+            'role': 'member',
+            'joined_date': date.today().isoformat(),
         }
         response = self.client.post(reverse('local:committee-member-create'), form_data)
         
@@ -1618,11 +1895,81 @@ class CommitteeMemberViewTests(TestCase):
         self.assertContains(response, 'memberuser')
 
 
-class CommitteeSessionTests(TestCase):
-    """Test cases for committee sessions functionality"""
-    
+class CommitteeMeetingModelTests(TestCase):
+    """Test cases for CommitteeMeeting model"""
+
     def setUp(self):
-        """Set up test data"""
+        self.local = Local.objects.create(
+            name='Test Local',
+            code='TL',
+            description='Test local description'
+        )
+        self.council = self.local.council
+        self.committee = Committee.objects.create(
+            name='Test Committee',
+            council=self.council,
+            is_active=True
+        )
+
+    def test_committee_has_meetings_relationship(self):
+        """Test that Committee model has meetings relationship"""
+        meeting = CommitteeMeeting.objects.create(
+            committee=self.committee,
+            title='Test Meeting',
+            scheduled_date=timezone.now() + timedelta(days=1),
+            is_active=True
+        )
+        self.assertIn(meeting, self.committee.meetings.all())
+        self.assertEqual(self.committee.meetings.count(), 1)
+
+    def test_committee_meeting_str(self):
+        """Test CommitteeMeeting __str__"""
+        meeting = CommitteeMeeting.objects.create(
+            committee=self.committee,
+            title='Budget Review',
+            scheduled_date=timezone.now() + timedelta(days=1),
+            is_active=True
+        )
+        self.assertIn('Budget Review', str(meeting))
+        self.assertIn(self.committee.name, str(meeting))
+
+    def test_committee_meeting_get_absolute_url(self):
+        """Test CommitteeMeeting get_absolute_url"""
+        meeting = CommitteeMeeting.objects.create(
+            committee=self.committee,
+            title='Test Meeting',
+            scheduled_date=timezone.now() + timedelta(days=1),
+            is_active=True
+        )
+        url = meeting.get_absolute_url()
+        self.assertIn(str(meeting.pk), url)
+        self.assertTrue(url.endswith('/'))
+
+    def test_committee_meeting_is_past_future(self):
+        """Test CommitteeMeeting is_past for future meeting"""
+        meeting = CommitteeMeeting.objects.create(
+            committee=self.committee,
+            title='Future Meeting',
+            scheduled_date=timezone.now() + timedelta(days=1),
+            is_active=True
+        )
+        self.assertFalse(meeting.is_past)
+
+    def test_committee_meeting_is_past_past(self):
+        """Test CommitteeMeeting is_past for past meeting"""
+        meeting = CommitteeMeeting.objects.create(
+            committee=self.committee,
+            title='Past Meeting',
+            scheduled_date=timezone.now() - timedelta(days=1),
+            is_active=True
+        )
+        self.assertTrue(meeting.is_past)
+
+
+class CommitteeSessionTests(TestCase):
+    """Test cases for committee meetings on committee detail (and legacy Session relationship)"""
+
+    def setUp(self):
         self.user = User.objects.create_user(
             username='testuser',
             email='test@example.com',
@@ -1634,32 +1981,28 @@ class CommitteeSessionTests(TestCase):
             password='adminpass123'
         )
         self.client = Client()
-        
         self.local = Local.objects.create(
             name='Test Local',
             code='TL',
             description='Test local description'
         )
-        
-        self.council, created = Council.objects.get_or_create(
+        self.council, _ = Council.objects.get_or_create(
             local=self.local,
             defaults={'name': 'Test Council'}
         )
-        
         self.term = Term.objects.create(
             name='Test Term',
             start_date=timezone.now().date(),
             end_date=(timezone.now().date() + timedelta(days=365))
         )
-        
         self.committee = Committee.objects.create(
             name='Test Committee',
             council=self.council,
             is_active=True
         )
-    
+
     def test_committee_has_sessions_relationship(self):
-        """Test that Committee model has sessions relationship"""
+        """Test that Committee model still has sessions relationship (Session with committee FK)"""
         session = Session.objects.create(
             title='Committee Session',
             council=self.council,
@@ -1669,131 +2012,95 @@ class CommitteeSessionTests(TestCase):
             status='scheduled',
             scheduled_date=timezone.now() + timedelta(days=1)
         )
-        
-        # Test reverse relationship
         self.assertIn(session, self.committee.sessions.all())
         self.assertEqual(self.committee.sessions.count(), 1)
-    
-    def test_committee_detail_view_shows_sessions(self):
-        """Test that CommitteeDetailView includes sessions in context"""
-        session1 = Session.objects.create(
-            title='Session 1',
-            council=self.council,
+
+    def test_committee_detail_view_shows_meetings(self):
+        """Test that CommitteeDetailView includes meetings in context"""
+        meeting1 = CommitteeMeeting.objects.create(
             committee=self.committee,
-            term=self.term,
-            session_type='regular',
-            status='scheduled',
-            scheduled_date=timezone.now() + timedelta(days=1)
+            title='Meeting 1',
+            scheduled_date=timezone.now() + timedelta(days=1),
+            is_active=True
         )
-        session2 = Session.objects.create(
-            title='Session 2',
-            council=self.council,
+        meeting2 = CommitteeMeeting.objects.create(
             committee=self.committee,
-            term=self.term,
-            session_type='regular',
-            status='completed',
-            scheduled_date=timezone.now() + timedelta(days=2)
+            title='Meeting 2',
+            scheduled_date=timezone.now() + timedelta(days=2),
+            is_active=True
         )
-        # Create a session for another committee (should not appear)
         other_committee = Committee.objects.create(
             name='Other Committee',
             council=self.council,
             is_active=True
         )
-        other_session = Session.objects.create(
-            title='Other Session',
-            council=self.council,
+        other_meeting = CommitteeMeeting.objects.create(
             committee=other_committee,
-            term=self.term,
-            session_type='regular',
-            status='scheduled',
-            scheduled_date=timezone.now() + timedelta(days=3)
+            title='Other Meeting',
+            scheduled_date=timezone.now() + timedelta(days=3),
+            is_active=True
         )
-        
         self.client.login(username='admin', password='adminpass123')
         response = self.client.get(reverse('local:committee-detail', kwargs={'pk': self.committee.pk}))
-        
         self.assertEqual(response.status_code, 200)
-        self.assertIn('sessions', response.context)
-        sessions = response.context['sessions']
-        self.assertEqual(sessions.count(), 2)
-        self.assertIn(session1, sessions)
-        self.assertIn(session2, sessions)
-        self.assertNotIn(other_session, sessions)
-        self.assertEqual(response.context['total_sessions'], 2)
-    
-    def test_committee_detail_view_sessions_ordered_by_date(self):
-        """Test that committee sessions are ordered by scheduled_date descending"""
-        session1 = Session.objects.create(
-            title='Session 1',
-            council=self.council,
+        self.assertIn('meetings', response.context)
+        meetings = response.context['meetings']
+        self.assertEqual(meetings.count(), 2)
+        self.assertIn(meeting1, meetings)
+        self.assertIn(meeting2, meetings)
+        self.assertNotIn(other_meeting, meetings)
+        self.assertEqual(response.context['total_meetings'], 2)
+
+    def test_committee_detail_view_meetings_ordered_by_date(self):
+        """Test that committee meetings are ordered by scheduled_date descending"""
+        meeting1 = CommitteeMeeting.objects.create(
             committee=self.committee,
-            term=self.term,
-            session_type='regular',
-            status='scheduled',
-            scheduled_date=timezone.now() + timedelta(days=3)
+            title='Meeting 1',
+            scheduled_date=timezone.now() + timedelta(days=3),
+            is_active=True
         )
-        session2 = Session.objects.create(
-            title='Session 2',
-            council=self.council,
+        meeting2 = CommitteeMeeting.objects.create(
             committee=self.committee,
-            term=self.term,
-            session_type='regular',
-            status='scheduled',
-            scheduled_date=timezone.now() + timedelta(days=1)
-        )
-        session3 = Session.objects.create(
-            title='Session 3',
-            council=self.council,
-            committee=self.committee,
-            term=self.term,
-            session_type='regular',
-            status='scheduled',
-            scheduled_date=timezone.now() + timedelta(days=2)
-        )
-        
-        self.client.login(username='admin', password='adminpass123')
-        response = self.client.get(reverse('local:committee-detail', kwargs={'pk': self.committee.pk}))
-        
-        sessions = list(response.context['sessions'])
-        # Should be ordered by scheduled_date descending
-        self.assertEqual(sessions[0], session1)  # Latest date first
-        self.assertEqual(sessions[1], session3)
-        self.assertEqual(sessions[2], session2)  # Earliest date last
-    
-    def test_committee_detail_view_only_shows_active_sessions(self):
-        """Test that CommitteeDetailView only shows active sessions"""
-        active_session = Session.objects.create(
-            title='Active Session',
-            council=self.council,
-            committee=self.committee,
-            term=self.term,
-            session_type='regular',
-            status='scheduled',
+            title='Meeting 2',
             scheduled_date=timezone.now() + timedelta(days=1),
             is_active=True
         )
-        inactive_session = Session.objects.create(
-            title='Inactive Session',
-            council=self.council,
+        meeting3 = CommitteeMeeting.objects.create(
             committee=self.committee,
-            term=self.term,
-            session_type='regular',
-            status='scheduled',
+            title='Meeting 3',
+            scheduled_date=timezone.now() + timedelta(days=2),
+            is_active=True
+        )
+        self.client.login(username='admin', password='adminpass123')
+        response = self.client.get(reverse('local:committee-detail', kwargs={'pk': self.committee.pk}))
+        meetings = list(response.context['meetings'])
+        self.assertEqual(meetings[0], meeting1)
+        self.assertEqual(meetings[1], meeting3)
+        self.assertEqual(meetings[2], meeting2)
+
+    def test_committee_detail_view_only_shows_active_meetings(self):
+        """Test that CommitteeDetailView only shows active meetings"""
+        active_meeting = CommitteeMeeting.objects.create(
+            committee=self.committee,
+            title='Active Meeting',
+            scheduled_date=timezone.now() + timedelta(days=1),
+            is_active=True
+        )
+        inactive_meeting = CommitteeMeeting.objects.create(
+            committee=self.committee,
+            title='Inactive Meeting',
             scheduled_date=timezone.now() + timedelta(days=2),
             is_active=False
         )
-        
         self.client.login(username='admin', password='adminpass123')
         response = self.client.get(reverse('local:committee-detail', kwargs={'pk': self.committee.pk}))
-        
-        sessions = response.context['sessions']
-        self.assertEqual(sessions.count(), 1)
-        self.assertIn(active_session, sessions)
-        self.assertNotIn(inactive_session, sessions)
-    
+        meetings = response.context['meetings']
+        self.assertEqual(meetings.count(), 1)
+        self.assertIn(active_meeting, meetings)
+        self.assertNotIn(inactive_meeting, meetings)
+
     def test_session_detail_view_shows_committee(self):
-        """Test that SessionDetailView shows committee information"""
+        """Test that SessionDetailView shows committee information when session has committee"""
         session = Session.objects.create(
             title='Committee Session',
             council=self.council,
@@ -1803,15 +2110,12 @@ class CommitteeSessionTests(TestCase):
             status='scheduled',
             scheduled_date=timezone.now() + timedelta(days=1)
         )
-        
         self.client.login(username='admin', password='adminpass123')
         response = self.client.get(reverse('local:session-detail', kwargs={'pk': session.pk}))
-        
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context['session'].committee, self.committee)
-        # Check that committee name appears in response
         self.assertContains(response, self.committee.name)
-    
+
     def test_session_without_committee(self):
         """Test that sessions can exist without a committee"""
         session = Session.objects.create(
@@ -1822,11 +2126,8 @@ class CommitteeSessionTests(TestCase):
             status='scheduled',
             scheduled_date=timezone.now() + timedelta(days=1)
         )
-        
         self.assertIsNone(session.committee)
         self.assertEqual(session.council, self.council)
-        
-        # Should not appear in committee sessions
         self.assertNotIn(session, self.committee.sessions.all())
 
 
@@ -2130,7 +2431,8 @@ class CouncilCommitteesExportPDFViewTests(TestCase):
         self.assertEqual(response['Content-Type'], 'application/pdf')
         self.assertIn('attachment', response['Content-Disposition'])
         self.assertIn('.pdf', response['Content-Disposition'])
-        self.assertIn(f'council_{self.council.pk}', response['Content-Disposition'])
+        # View uses filename like "Council_of_Test_Local_Stand_2026-01-31.pdf"
+        self.assertIn('attachment; filename=', response['Content-Disposition'])
     
     def test_pdf_export_role_user_access(self):
         """Test that user with session.view permission can export PDF"""
@@ -2285,10 +2587,10 @@ class CouncilCommitteesExportPDFViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         content_disposition = response['Content-Disposition']
         
-        # Check filename format: council_{pk}_committees_{name}.pdf
-        self.assertIn(f'council_{self.council.pk}_committees_', content_disposition)
-        self.assertIn('.pdf', content_disposition)
+        # View uses filename like "Council_of_Test_Local_Stand_2026-01-31.pdf" or group name + _Stand_ + date
         self.assertIn('attachment; filename=', content_disposition)
+        self.assertIn('.pdf', content_disposition)
+        self.assertIn('Stand_', content_disposition)
     
     def test_pdf_export_committee_ordering(self):
         """Test that PDF is generated with committees ordered by name"""

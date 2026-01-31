@@ -66,7 +66,7 @@
                         {% if form.committee.field.widget.input_type != 'hidden' %}
                             <div class="mb-3">
                                 <label for="{{ form.committee.id_for_label }}" class="form-label">
-                                    {% trans "Committee" %} <span class="text-danger">*</span>
+                                    {% if committeemember %}{% with committee_type_label=committeemember.committee.get_committee_type_display %}{% trans "Committee" context committee_type_label %}{% endwith %}{% elif committee %}{% with committee_type_label=committee.get_committee_type_display %}{% trans "Committee" context committee_type_label %}{% endwith %}{% else %}{% trans "Committee" %}{% endif %} <span class="text-danger">*</span>
                                 </label>
                                 {{ form.committee }}
                                 {% if form.committee.errors %}
@@ -129,6 +129,24 @@
                                     {% endif %}
                                 </div>
                             </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.joined_date.id_for_label }}" class="form-label">
+                                        {% trans "Joined" %} <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.joined_date }}
+                                    {% if form.joined_date.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.joined_date.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    {% if form.joined_date.help_text %}
+                                        <div class="form-text">{{ form.joined_date.help_text }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Notes -->
@@ -149,23 +167,33 @@
                             {% endif %}
                         </div>
 
-                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                            {% if form.committee.value %}
-                                <a href="{% url 'local:committee-detail' form.committee.value %}" class="btn btn-secondary me-md-2">
-                                    {% trans "Cancel" %}
-                                </a>
-                            {% else %}
-                                <a href="{% url 'local:committee-member-list' %}" class="btn btn-secondary me-md-2">
-                                    {% trans "Cancel" %}
-                                </a>
-                            {% endif %}
-                            <button type="submit" class="btn btn-primary">
+                        <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center">
+                            <div>
                                 {% if committeemember %}
-                                    <i class="bi bi-check-circle"></i> {% trans "Update Member" %}
-                                {% else %}
-                                    <i class="bi bi-plus-circle"></i> {% trans "Add Member" %}
+                                    <a href="{% url 'local:committee-member-delete' committeemember.pk %}" class="btn btn-danger"
+                                       onclick="return confirm('{% trans 'Are you sure you want to remove this member?' %}');">
+                                        <i class="bi bi-person-x"></i> {% trans "Remove Member" %}
+                                    </a>
                                 {% endif %}
-                            </button>
+                            </div>
+                            <div class="d-flex gap-2">
+                                {% if form.committee.value %}
+                                    <a href="{% url 'local:committee-detail' form.committee.value %}" class="btn btn-secondary">
+                                        {% trans "Cancel" %}
+                                    </a>
+                                {% else %}
+                                    <a href="{% url 'local:committee-member-list' %}" class="btn btn-secondary">
+                                        {% trans "Cancel" %}
+                                    </a>
+                                {% endif %}
+                                <button type="submit" class="btn btn-primary">
+                                    {% if committeemember %}
+                                        <i class="bi bi-check-circle"></i> {% trans "Update Member" %}
+                                    {% else %}
+                                        <i class="bi bi-plus-circle"></i> {% trans "Add Member" %}
+                                    {% endif %}
+                                </button>
+                            </div>
                         </div>
                     </form>
                 </div>

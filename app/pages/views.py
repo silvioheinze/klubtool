@@ -113,10 +113,10 @@ class DocumentationPageView(TemplateView):
 
 
 def _get_personal_calendar_events(user, group_memberships, councils_from_memberships):
-    """Build list of calendar event dicts (council/committee sessions + group meetings) for the user."""
+    """Build list of calendar event dicts (council sessions + committee meetings + group meetings) for the user."""
     from datetime import timedelta
     from django.urls import reverse
-    from local.models import Session, CommitteeMember
+    from local.models import Session, CommitteeMeeting, CommitteeMember
     from group.models import GroupMeeting
 
     user_council_ids = [c.pk for c in councils_from_memberships]
@@ -153,23 +153,23 @@ def _get_personal_calendar_events(user, group_memberships, councils_from_members
             })
 
     if user_committee_ids:
-        committee_sessions = Session.objects.filter(
+        committee_meetings = CommitteeMeeting.objects.filter(
             committee_id__in=user_committee_ids,
             is_active=True,
             scheduled_date__gte=range_start,
             scheduled_date__lte=range_end,
-        ).select_related('committee', 'council').order_by('scheduled_date')
-        for s in committee_sessions:
+        ).select_related('committee').order_by('scheduled_date')
+        for m in committee_meetings:
             calendar_events.append({
-                'date': s.scheduled_date,
-                'title': s.title,
-                'url': s.get_absolute_url(),
-                'ics_export_url': reverse('local:session-export-ics', args=[s.pk]),
-                'type': 'committee_session',
-                'subtitle': s.committee.name if s.committee else s.council.name,
-                'location': getattr(s, 'location', '') or '',
-                'pk': s.pk,
-                'model': 'session',
+                'date': m.scheduled_date,
+                'title': m.title,
+                'url': m.get_absolute_url(),
+                'ics_export_url': reverse('local:committee-meeting-export-ics', args=[m.pk]),
+                'type': 'committee_meeting',
+                'subtitle': m.committee.name,
+                'location': getattr(m, 'location', '') or '',
+                'pk': m.pk,
+                'model': 'committeemeeting',
             })
 
     if user_group_ids:

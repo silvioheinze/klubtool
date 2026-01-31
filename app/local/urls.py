@@ -11,7 +11,8 @@ from .views import (
     PartyListView, PartyDetailView, PartyCreateView, PartyUpdateView, PartyDeleteView,
     SessionListView, SessionDetailView, SessionCreateView, SessionUpdateView, SessionDeleteView, SessionExportPDFView, SessionAttachmentView, update_motion_order, update_question_order, update_session_presence, session_export_ics,
     CommitteeListView, CommitteeDetailView, CommitteeCreateView, CommitteeUpdateView, CommitteeDeleteView,
-    CommitteeMemberListView, CommitteeMemberDetailView, CommitteeMemberCreateView, CommitteeMemberUpdateView, CommitteeMemberDeleteView
+    CommitteeMeetingCreateView, CommitteeMeetingDetailView, CommitteeMeetingUpdateView, CommitteeMeetingDeleteView, committee_meeting_export_ics, CommitteeMeetingAttachmentView,
+    CommitteeMemberListView, CommitteeMemberCreateView, CommitteeMemberUpdateView, CommitteeMemberDeleteView
 )
 
 app_name = 'local'
@@ -74,11 +75,16 @@ urlpatterns = [
     path('committees/<int:pk>/', CommitteeDetailView.as_view(), name='committee-detail'),
     path('committees/<int:pk>/edit/', CommitteeUpdateView.as_view(), name='committee-edit'),
     path('committees/<int:pk>/delete/', CommitteeDeleteView.as_view(), name='committee-delete'),
-    
+    path('committees/<int:committee_pk>/meetings/create/', CommitteeMeetingCreateView.as_view(), name='committee-meeting-create'),
+    path('committee-meetings/<int:pk>/', CommitteeMeetingDetailView.as_view(), name='committee-meeting-detail'),
+    path('committee-meetings/<int:pk>/edit/', CommitteeMeetingUpdateView.as_view(), name='committee-meeting-edit'),
+    path('committee-meetings/<int:pk>/delete/', CommitteeMeetingDeleteView.as_view(), name='committee-meeting-delete'),
+    path('committee-meetings/<int:pk>/export-ics/', committee_meeting_export_ics, name='committee-meeting-export-ics'),
+    path('committee-meetings/<int:committee_meeting_pk>/attach/', CommitteeMeetingAttachmentView.as_view(), name='committee-meeting-attach'),
+
     # Committee Member URLs
     path('committee-members/', CommitteeMemberListView.as_view(), name='committee-member-list'),
     path('committee-members/create/', CommitteeMemberCreateView.as_view(), name='committee-member-create'),
-    path('committee-members/<int:pk>/', CommitteeMemberDetailView.as_view(), name='committee-member-detail'),
     path('committee-members/<int:pk>/edit/', CommitteeMemberUpdateView.as_view(), name='committee-member-edit'),
     path('committee-members/<int:pk>/delete/', CommitteeMemberDeleteView.as_view(), name='committee-member-delete'),
 ]
