@@ -18,9 +18,9 @@
                 <h1>
                     <i class="bi bi-calendar-event"></i>
                     {% if object %}
-                        {% trans "Edit Meeting" %}
+                        {% trans "Edit Group Meeting" %}
                     {% else %}
-                        {% trans "Add Meeting" %}
+                        {% trans "Add Group Meeting" %}
                     {% endif %}
                 </h1>
                 <div>
@@ -67,6 +67,7 @@
                         {% endif %}
 
                         <div class="row">
+                            {% if 'title' in form.fields %}
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label for="{{ form.title.id_for_label }}" class="form-label">
@@ -88,7 +89,7 @@
                                     {% endif %}
                                 </div>
                             </div>
-                            
+                            {% endif %}
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label for="{{ form.scheduled_date.id_for_label }}" class="form-label">
@@ -110,9 +111,6 @@
                                     {% endif %}
                                 </div>
                             </div>
-                        </div>
-
-                        <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label for="{{ form.location.id_for_label }}" class="form-label">
@@ -195,20 +193,26 @@
                             {% endif %}
                         </div>
 
-                        <div class="d-flex justify-content-between">
-                            {% if object %}
-                                <a href="{% url 'group:meeting-detail' object.pk %}" class="btn btn-secondary">
-                                    <i class="bi bi-x-circle"></i> {% trans "Cancel" %}
-                                </a>
-                            {% elif selected_group %}
-                                <a href="{% url 'group:group-detail' selected_group.pk %}" class="btn btn-secondary">
-                                    <i class="bi bi-x-circle"></i> {% trans "Cancel" %}
-                                </a>
-                            {% else %}
-                                <a href="{% url 'group:meeting-list' %}" class="btn btn-secondary">
-                                    <i class="bi bi-x-circle"></i> {% trans "Cancel" %}
-                                </a>
-                            {% endif %}
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex gap-2">
+                                {% if object %}
+                                    <a href="{% url 'group:meeting-detail' object.pk %}" class="btn btn-secondary">
+                                        <i class="bi bi-x-circle"></i> {% trans "Cancel" %}
+                                    </a>
+                                    <a href="{% url 'group:meeting-delete' object.pk %}" class="btn btn-danger"
+                                       onclick="return confirm('{% trans "Are you sure you want to delete this meeting?" %}');">
+                                        <i class="bi bi-trash"></i> {% trans "Delete Meeting" %}
+                                    </a>
+                                {% elif selected_group %}
+                                    <a href="{% url 'group:group-detail' selected_group.pk %}" class="btn btn-secondary">
+                                        <i class="bi bi-x-circle"></i> {% trans "Cancel" %}
+                                    </a>
+                                {% else %}
+                                    <a href="{% url 'group:meeting-list' %}" class="btn btn-secondary">
+                                        <i class="bi bi-x-circle"></i> {% trans "Cancel" %}
+                                    </a>
+                                {% endif %}
+                            </div>
                             <button type="submit" class="btn btn-primary">
                                 <i class="bi bi-check-circle"></i>
                                 {% if object %}
@@ -236,7 +240,6 @@
                     
                     <h6>{% trans "Required Fields" %}</h6>
                     <ul class="text-muted">
-                        <li><strong>{% trans "Title" %}:</strong> {% trans "Name or title of the meeting" %}</li>
                         <li><strong>{% trans "Date & Time" %}:</strong> {% trans "When the meeting will take place" %}</li>
                         <li><strong>{% trans "Group" %}:</strong> {% trans "Which group is holding the meeting" %}</li>
                     </ul>

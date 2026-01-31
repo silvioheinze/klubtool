@@ -135,11 +135,18 @@ class GroupMember(models.Model):
 class GroupMeeting(models.Model):
     """Model representing a meeting of a political group"""
     
+    STATUS_CHOICES = [
+        ('scheduled', 'Scheduled'),
+        ('invited', 'Invited'),
+        ('cancelled', 'Cancelled'),
+    ]
+    
     group = models.ForeignKey(Group, on_delete=models.CASCADE, related_name='meetings', help_text="Group holding the meeting")
-    title = models.CharField(max_length=200, help_text="Title or name of the meeting")
+    title = models.CharField(max_length=200, blank=True, default='', help_text="Title (set automatically on create: Klubsitzung + date)")
     scheduled_date = models.DateTimeField(help_text="Date and time when the meeting is scheduled")
     location = models.CharField(max_length=300, blank=True, help_text="Location where the meeting will be held")
     description = models.TextField(blank=True, help_text="Description or agenda of the meeting")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='scheduled', help_text="Current status of the meeting")
     is_active = models.BooleanField(default=True, help_text="Whether the meeting is currently active")
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_meetings', help_text="User who created the meeting")
     created_at = models.DateTimeField(auto_now_add=True)

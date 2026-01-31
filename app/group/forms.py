@@ -94,6 +94,9 @@ class GroupMeetingForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        # On create: hide title (set in save() as "Klubsitzung" + date)
+        if not self.instance.pk and 'title' in self.fields:
+            del self.fields['title']
         # Set the group field as hidden if provided in initial data
         group_id = self.initial.get('group') or self.data.get('group')
         if group_id:
@@ -111,6 +114,13 @@ class GroupMeetingForm(forms.ModelForm):
         if value and timezone.is_naive(value):
             return timezone.make_aware(value, timezone.get_current_timezone())
         return value
+
+    def save(self, commit=True):
+        if not self.instance.pk:
+            scheduled_date = self.cleaned_data.get('scheduled_date')
+            if scheduled_date:
+                self.instance.title = f"Klubsitzung {scheduled_date.strftime('%d.%m.%Y')}"
+        return super().save(commit=commit)
 
 
 class AgendaItemForm(forms.ModelForm):

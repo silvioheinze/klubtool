@@ -14,11 +14,11 @@
             </h1>
         </div>
         <div>
-            <a href="{% url 'local:council-detail' session.council.pk %}" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left"></i> {% trans "Back" %}
-            </a>
             <a href="{% url 'local:session-edit' session.pk %}" class="btn btn-primary">
                 <i class="bi bi-pencil"></i> {% trans "Edit" %}
+            </a>
+            <a href="{% url 'local:council-detail' session.council.pk %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> {% trans "Back" %}
             </a>
         </div>
     </div>
@@ -79,7 +79,6 @@
                     </div>
                     {% if session.status != 'cancelled' %}
                         <div class="mt-3 pt-3 border-top">
-                            <h6 class="mb-2">{% trans "Session actions" %}</h6>
                             <div class="d-flex flex-wrap gap-2">
                                 {% if session.status == 'scheduled' %}
                                     <a href="{% url 'local:session-invitation' session.pk %}" class="btn btn-warning btn-sm">
