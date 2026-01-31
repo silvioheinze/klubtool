@@ -281,19 +281,33 @@ class CommitteeForm(forms.ModelForm):
     
     class Meta:
         model = Committee
-        fields = ['name', 'abbreviation', 'council', 'committee_type', 'description']
+        fields = ['name', 'abbreviation', 'council', 'term', 'committee_type', 'description']
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control'}),
             'abbreviation': forms.TextInput(attrs={'class': 'form-control', 'maxlength': '20'}),
             'council': forms.Select(attrs={'class': 'form-select'}),
+            'term': forms.Select(attrs={'class': 'form-select'}),
             'committee_type': forms.Select(attrs={'class': 'form-select'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
     
     def __init__(self, *args, **kwargs):
+        # On create: auto-select the last (most recent) term before super() so initial is used
+        instance = kwargs.get('instance')
+        if instance is None or getattr(instance, 'pk', None) is None:
+            initial = kwargs.get('initial') or {}
+            if 'term' not in initial and not (kwargs.get('data') and 'term' in kwargs.get('data')):
+                last_term = Term.objects.filter(is_active=True).order_by('-start_date').first()
+                if last_term:
+                    initial = dict(initial)
+                    initial['term'] = last_term
+                    kwargs['initial'] = initial
         super().__init__(*args, **kwargs)
         # Filter councils to only show active ones
         self.fields['council'].queryset = Council.objects.filter(is_active=True)
+        # Filter terms to show active ones, ordered by start_date descending (most recent first)
+        self.fields['term'].queryset = Term.objects.filter(is_active=True).order_by('-start_date')
+        self.fields['term'].required = False
         
         # Set initial council if provided in URL
         council_id = self.initial.get('council') or self.data.get('council')

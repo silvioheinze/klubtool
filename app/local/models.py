@@ -73,6 +73,14 @@ class Committee(models.Model):
     name = models.CharField(max_length=200, help_text="Name of the committee")
     abbreviation = models.CharField(max_length=20, blank=True, help_text="Abbreviation for the committee (e.g., 'BA' for Budgetausschuss)")
     council = models.ForeignKey(Council, on_delete=models.CASCADE, related_name='committees', help_text="Council this committee belongs to")
+    term = models.ForeignKey(
+        'Term',
+        on_delete=models.SET_NULL,
+        related_name='committees',
+        null=True,
+        blank=True,
+        help_text="Term this committee belongs to"
+    )
     committee_type = models.CharField(max_length=20, choices=COMMITTEE_TYPE_CHOICES, default='standing', help_text="Type of committee")
     description = models.TextField(blank=True, help_text="Description of the committee's purpose and responsibilities")
     chairperson = models.CharField(max_length=100, blank=True, help_text="Name of the committee chairperson")
