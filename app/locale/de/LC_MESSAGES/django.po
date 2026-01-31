@@ -1931,7 +1931,7 @@ msgstr "Alle Klubs anzeigen"
 #: templates/home.html:134 templates/home.html:176
 #| msgid "Download"
 msgid "Personal calendar"
-msgstr "Herunterladen"
+msgstr "Persönlicher Kalender"
 
 #: templates/home.html:135
 msgid "Council and committee sessions plus group meetings (next 60 days)"
