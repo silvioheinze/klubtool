@@ -195,20 +195,26 @@
                             {% endif %}
                         </div>
 
-                        <div class="d-flex justify-content-between">
-                            {% if object %}
-                                <a href="{% url 'group:meeting-detail' object.pk %}" class="btn btn-secondary">
-                                    <i class="bi bi-x-circle"></i> {% trans "Cancel" %}
-                                </a>
-                            {% elif selected_group %}
-                                <a href="{% url 'group:group-detail' selected_group.pk %}" class="btn btn-secondary">
-                                    <i class="bi bi-x-circle"></i> {% trans "Cancel" %}
-                                </a>
-                            {% else %}
-                                <a href="{% url 'group:meeting-list' %}" class="btn btn-secondary">
-                                    <i class="bi bi-x-circle"></i> {% trans "Cancel" %}
-                                </a>
-                            {% endif %}
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex gap-2">
+                                {% if object %}
+                                    <a href="{% url 'group:meeting-detail' object.pk %}" class="btn btn-secondary">
+                                        <i class="bi bi-x-circle"></i> {% trans "Cancel" %}
+                                    </a>
+                                    <a href="{% url 'group:meeting-delete' object.pk %}" class="btn btn-danger"
+                                       onclick="return confirm('{% trans "Are you sure you want to delete this meeting?" %}');">
+                                        <i class="bi bi-trash"></i> {% trans "Delete Meeting" %}
+                                    </a>
+                                {% elif selected_group %}
+                                    <a href="{% url 'group:group-detail' selected_group.pk %}" class="btn btn-secondary">
+                                        <i class="bi bi-x-circle"></i> {% trans "Cancel" %}
+                                    </a>
+                                {% else %}
+                                    <a href="{% url 'group:meeting-list' %}" class="btn btn-secondary">
+                                        <i class="bi bi-x-circle"></i> {% trans "Cancel" %}
+                                    </a>
+                                {% endif %}
+                            </div>
                             <button type="submit" class="btn btn-primary">
                                 <i class="bi bi-check-circle"></i>
                                 {% if object %}
