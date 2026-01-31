@@ -14,15 +14,12 @@
             </h1>
         </div>
         <div>
-            {% if session.committee %}
-                <a href="{% url 'local:committee-detail' session.committee.pk %}" class="btn btn-outline-secondary">
-                    <i class="bi bi-arrow-left"></i> {% trans "Back to Committee" %}
-                </a>
-            {% else %}
-                <a href="{% url 'local:council-detail' session.council.pk %}" class="btn btn-outline-secondary">
-                    <i class="bi bi-arrow-left"></i> {% trans "Back to Council" %}
-                </a>
-            {% endif %}
+            <a href="{% url 'local:council-detail' session.council.pk %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> {% trans "Back" %}
+            </a>
+            <a href="{% url 'local:session-edit' session.pk %}" class="btn btn-primary">
+                <i class="bi bi-pencil"></i> {% trans "Edit" %}
+            </a>
         </div>
     </div>
 
@@ -59,18 +56,6 @@
                                         <span class="badge bg-info">{% trans "Invited" %}</span>
                                     {% endif %}
                                 </dd>
-                                
-                                {% if session.committee %}
-                                    {% with committee_type_label=session.committee.get_committee_type_display %}
-                                    <dt class="col-sm-4">{% trans "Committee" context committee_type_label %}</dt>
-                                    {% endwith %}
-                                    <dd class="col-sm-8">
-                                        <a href="{% url 'local:committee-detail' session.committee.pk %}">
-                                            <span class="badge bg-info">{{ session.committee.name }}</span>
-                                        </a>
-                                    </dd>
-                                {% endif %}
-                                
                             </dl>
                         </div>
                         <div class="col-md-6">
@@ -347,30 +332,8 @@
 
         {% if user_group_admin_groups or user.is_superuser %}
         <div class="col-lg-4">
-            <!-- Actions -->
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">{% trans "Actions" %}</h5>
-                </div>
-                <div class="card-body">
-                    <div class="d-grid gap-2">
-                        <a href="{% url 'local:session-edit' session.pk %}" class="btn btn-primary">
-                            <i class="bi bi-pencil"></i> {% trans "Edit Session" %}
-                        </a>
-                        <a href="{% url 'local:session-delete' session.pk %}" class="btn btn-danger">
-                            <i class="bi bi-trash"></i> {% trans "Delete Session" %}
-                        </a>
-                        {% if session.council %}
-                            <a href="{% url 'local:council-detail' session.council.pk %}" class="btn btn-outline-info">
-                                <i class="bi bi-building"></i> {% trans "View Council" %}
-                            </a>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-            
             <!-- Exports -->
-            <div class="card mt-3">
+            <div class="card">
                 <div class="card-header">
                     <h5 class="mb-0">{% trans "Exports" %}</h5>
                 </div>
