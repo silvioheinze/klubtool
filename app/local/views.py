@@ -1,4 +1,4 @@
-from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView
+from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView, FormView
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -12,7 +12,7 @@ from django.utils.translation import gettext_lazy as _
 import json
 
 from .models import Local, Term, Council, TermSeatDistribution, Party, Session, Committee, CommitteeMeeting, CommitteeMeetingAttachment, CommitteeMember, SessionAttachment, SessionPresence
-from .forms import LocalForm, LocalFilterForm, CouncilForm, CouncilFilterForm, TermForm, TermFilterForm, CouncilNameForm, TermSeatDistributionForm, PartyForm, PartyFilterForm, SessionForm, SessionFilterForm, CommitteeForm, CommitteeFilterForm, CommitteeMeetingForm, CommitteeMemberForm, CommitteeMemberFilterForm, SessionAttachmentForm, CommitteeMeetingAttachmentForm
+from .forms import LocalForm, LocalFilterForm, CouncilForm, CouncilFilterForm, TermForm, TermFilterForm, CouncilNameForm, TermSeatDistributionForm, PartyForm, PartyFilterForm, SessionForm, SessionFilterForm, CommitteeForm, CommitteeFilterForm, CommitteeMeetingForm, CommitteeMemberForm, CommitteeMemberFilterForm, SessionAttachmentForm, CommitteeMeetingAttachmentForm, SessionInvitationForm, SessionMinutesForm
 
 
 class LocalListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
@@ -2058,6 +2058,113 @@ class SessionAttachmentView(LoginRequiredMixin, UserPassesTestMixin, CreateView)
         """Display success message on form validation"""
         messages.success(self.request, f"Attachment '{form.instance.filename}' uploaded successfully.")
         return super().form_valid(form)
+
+
+class SessionInvitationUploadView(LoginRequiredMixin, UserPassesTestMixin, FormView):
+    """View for uploading invitation PDF and setting session status to invited."""
+    form_class = SessionInvitationForm
+    template_name = 'local/session_invitation_form.html'
+
+    def test_func(self):
+        return self.request.user.is_superuser
+
+    def get_session(self):
+        return get_object_or_404(Session, pk=self.kwargs['session_pk'])
+
+    def dispatch(self, request, *args, **kwargs):
+        session = self.get_session()
+        if session.status != 'scheduled':
+            messages.error(request, _("Invitation can only be added when the session is scheduled."))
+            return redirect('local:session-detail', pk=session.pk)
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_success_url(self):
+        return reverse('local:session-detail', kwargs={'pk': self.get_session().pk})
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['session'] = self.get_session()
+        return context
+
+    def form_valid(self, form):
+        import os
+        session = self.get_session()
+        file = form.cleaned_data['file']
+        description = form.cleaned_data.get('description') or ''
+        attachment = SessionAttachment(
+            session=session,
+            file=file,
+            file_type='invitation',
+            filename=os.path.basename(file.name),
+            description=description,
+            uploaded_by=self.request.user,
+        )
+        attachment.save()
+        session.status = 'invited'
+        session.save(update_fields=['status'])
+        messages.success(self.request, _("Invitation uploaded and session status set to Invited."))
+        return redirect(self.get_success_url())
+
+
+class SessionCancelView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
+    """View to confirm and cancel a session (set status to cancelled)."""
+    model = Session
+    context_object_name = 'session'
+    template_name = 'local/session_cancel_confirm.html'
+
+    def test_func(self):
+        return self.request.user.is_superuser
+
+    def dispatch(self, request, *args, **kwargs):
+        session = self.get_object()
+        if session.status not in ('scheduled', 'invited'):
+            messages.error(request, _("Only scheduled or invited sessions can be cancelled."))
+            return redirect('local:session-detail', pk=session.pk)
+        return super().dispatch(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        session = self.get_object()
+        session.status = 'cancelled'
+        session.save(update_fields=['status'])
+        messages.success(request, _("Session has been cancelled."))
+        return redirect('local:session-detail', pk=session.pk)
+
+
+class SessionMinutesUpdateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
+    """View for adding or editing session minutes (when status is completed)."""
+    form_class = SessionMinutesForm
+    template_name = 'local/session_minutes_form.html'
+
+    def test_func(self):
+        return self.request.user.is_superuser
+
+    def get_session(self):
+        return get_object_or_404(Session, pk=self.kwargs['session_pk'])
+
+    def dispatch(self, request, *args, **kwargs):
+        session = self.get_session()
+        if session.status != 'completed':
+            messages.error(request, _("Minutes can only be added for completed sessions."))
+            return redirect('local:session-detail', pk=session.pk)
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_initial(self):
+        return {'minutes': self.get_session().minutes}
+
+    def get_success_url(self):
+        return reverse('local:session-detail', kwargs={'pk': self.get_session().pk})
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['session'] = self.get_session()
+        return context
+
+    def form_valid(self, form):
+        session = self.get_session()
+        session.minutes = form.cleaned_data.get('minutes') or ''
+        session.save(update_fields=['minutes'])
+        messages.success(self.request, _("Minutes saved successfully."))
+        return redirect(self.get_success_url())
 
 
 class CommitteeMeetingAttachmentView(LoginRequiredMixin, UserPassesTestMixin, CreateView):

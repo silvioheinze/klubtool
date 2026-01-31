@@ -77,6 +77,28 @@
                             </dl>
                         </div>
                     </div>
+                    {% if session.status != 'cancelled' %}
+                        <div class="mt-3 pt-3 border-top">
+                            <h6 class="mb-2">{% trans "Session actions" %}</h6>
+                            <div class="d-flex flex-wrap gap-2">
+                                {% if session.status == 'scheduled' %}
+                                    <a href="{% url 'local:session-invitation' session.pk %}" class="btn btn-warning btn-sm">
+                                        <i class="bi bi-envelope-paper"></i> {% trans "Add invitation" %}
+                                    </a>
+                                {% endif %}
+                                {% if session.status == 'scheduled' or session.status == 'invited' %}
+                                    <a href="{% url 'local:session-cancel' session.pk %}" class="btn btn-warning btn-sm">
+                                        <i class="bi bi-x-circle"></i> {% trans "Cancel session" %}
+                                    </a>
+                                {% endif %}
+                                {% if session.status == 'completed' %}
+                                    <a href="{% url 'local:session-minutes' session.pk %}" class="btn btn-warning btn-sm">
+                                        <i class="bi bi-journal-text"></i> {% trans "Add minutes" %}
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endif %}
                     
                     {% if session.description %}
                         <hr>

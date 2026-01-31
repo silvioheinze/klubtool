@@ -9,7 +9,7 @@ from .views import (
     TermSeatDistributionListView, TermSeatDistributionDetailView, TermSeatDistributionCreateView,
     TermSeatDistributionUpdateView, TermSeatDistributionDeleteView, TermSeatDistributionView,
     PartyListView, PartyDetailView, PartyCreateView, PartyUpdateView, PartyDeleteView,
-    SessionDetailView, SessionCreateView, SessionUpdateView, SessionDeleteView, SessionExportPDFView, SessionAttachmentView, update_motion_order, update_question_order, update_session_presence, session_export_ics,
+    SessionDetailView, SessionCreateView, SessionUpdateView, SessionDeleteView, SessionExportPDFView, SessionAttachmentView, SessionInvitationUploadView, SessionCancelView, SessionMinutesUpdateView, update_motion_order, update_question_order, update_session_presence, session_export_ics,
     CommitteeListView, CommitteeDetailView, CommitteeCreateView, CommitteeUpdateView, CommitteeDeleteView,
     CommitteeMeetingCreateView, CommitteeMeetingDetailView, CommitteeMeetingUpdateView, CommitteeMeetingDeleteView, committee_meeting_export_ics, CommitteeMeetingAttachmentView,
     CommitteeMemberListView, CommitteeMemberCreateView, CommitteeMemberUpdateView, CommitteeMemberDeleteView
@@ -64,6 +64,9 @@ urlpatterns = [
     path('sessions/<int:pk>/export-pdf/', SessionExportPDFView.as_view(), name='session-export-pdf'),
     path('sessions/<int:pk>/export-ics/', session_export_ics, name='session-export-ics'),
     path('sessions/<int:session_pk>/attach/', SessionAttachmentView.as_view(), name='session-attach'),
+    path('sessions/<int:session_pk>/invitation/', SessionInvitationUploadView.as_view(), name='session-invitation'),
+    path('sessions/<int:pk>/cancel/', SessionCancelView.as_view(), name='session-cancel'),
+    path('sessions/<int:session_pk>/minutes/', SessionMinutesUpdateView.as_view(), name='session-minutes'),
     path('sessions/<int:session_pk>/update-motion-order/', update_motion_order, name='session-update-motion-order'),
     path('sessions/<int:session_pk>/update-question-order/', update_question_order, name='session-update-question-order'),
     path('sessions/<int:session_pk>/presence/<int:party_pk>/update/', update_session_presence, name='session-update-presence'),

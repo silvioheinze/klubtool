@@ -542,6 +542,37 @@ class SessionAttachmentForm(forms.ModelForm):
         return instance
 
 
+class SessionInvitationForm(forms.Form):
+    """Form for uploading invitation PDF and setting session status to invited"""
+    file = forms.FileField(
+        widget=forms.FileInput(attrs={'class': 'form-control', 'accept': '.pdf'}),
+        help_text="PDF file only"
+    )
+    description = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 2})
+    )
+
+    def clean_file(self):
+        import os
+        file = self.cleaned_data.get('file')
+        if file:
+            if file.size > 10 * 1024 * 1024:
+                raise forms.ValidationError("File size must be under 10MB.")
+            ext = os.path.splitext(file.name)[1].lower()
+            if ext != '.pdf':
+                raise forms.ValidationError("Only PDF files are allowed for the invitation.")
+        return file
+
+
+class SessionMinutesForm(forms.Form):
+    """Form for adding or editing session minutes"""
+    minutes = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 8})
+    )
+
+
 class CommitteeMeetingAttachmentForm(forms.ModelForm):
     """Form for uploading attachments to committee meetings"""
 
