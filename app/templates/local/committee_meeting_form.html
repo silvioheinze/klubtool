@@ -1,0 +1,146 @@
+{% extends "_base.html" %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}
+    {% if meeting %}
+        {% trans "Edit Committee Meeting" %} - {{ meeting.title }}
+    {% else %}
+        {% trans "Add Committee Meeting" %}
+    {% endif %}
+{% endblock title %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1>
+                    <i class="bi bi-calendar-event"></i>
+                    {% if meeting %}
+                        {% trans "Edit Committee Meeting" %}
+                    {% else %}
+                        {% trans "Add Committee Meeting" %}
+                    {% endif %}
+                </h1>
+                <div>
+                    {% if meeting %}
+                        <a href="{% url 'local:committee-meeting-detail' meeting.pk %}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> {% trans "Back to Meeting" %}
+                        </a>
+                    {% elif committee %}
+                        <a href="{% url 'local:committee-detail' committee.pk %}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> {% trans "Back to Committee" %}
+                        </a>
+                    {% else %}
+                        <a href="{% url 'local:committee-list' %}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> {% trans "Back to List" %}
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        {% if meeting %}
+                            {% trans "Edit Meeting" %}
+                        {% else %}
+                            {% trans "Meeting Information" %}
+                        {% endif %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+
+                        {% if committee and not meeting %}
+                            <div class="mb-3">
+                                <label class="form-label">{% trans "Committee" %}</label>
+                                <div class="form-control-plaintext"><strong>{{ committee.name }}</strong></div>
+                                <input type="hidden" name="committee" value="{{ committee.pk }}">
+                            </div>
+                        {% else %}
+                            <div class="mb-3">
+                                <label for="{{ form.committee.id_for_label }}" class="form-label">{% trans "Committee" %} <span class="text-danger">*</span></label>
+                                {{ form.committee }}
+                                {% if form.committee.errors %}
+                                    <div class="invalid-feedback d-block">{% for error in form.committee.errors %}{{ error }}{% endfor %}</div>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.title.id_for_label }}" class="form-label">{% trans "Title" %} <span class="text-danger">*</span></label>
+                                    {{ form.title }}
+                                    {% if form.title.errors %}
+                                        <div class="invalid-feedback d-block">{% for error in form.title.errors %}{{ error }}{% endfor %}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.scheduled_date.id_for_label }}" class="form-label">{% trans "Date & Time" %} <span class="text-danger">*</span></label>
+                                    {{ form.scheduled_date }}
+                                    {% if form.scheduled_date.errors %}
+                                        <div class="invalid-feedback d-block">{% for error in form.scheduled_date.errors %}{{ error }}{% endfor %}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.location.id_for_label }}" class="form-label">{% trans "Location" %}</label>
+                            {{ form.location }}
+                            {% if form.location.errors %}
+                                <div class="invalid-feedback d-block">{% for error in form.location.errors %}{{ error }}{% endfor %}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.description.id_for_label }}" class="form-label">{% trans "Description" %} / {% trans "Agenda" %}</label>
+                            {{ form.description }}
+                            {% if form.description.errors %}
+                                <div class="invalid-feedback d-block">{% for error in form.description.errors %}{{ error }}{% endfor %}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3 form-check">
+                            {{ form.is_active }}
+                            <label for="{{ form.is_active.id_for_label }}" class="form-check-label">{% trans "Active" %}</label>
+                            {% if form.is_active.errors %}
+                                <div class="invalid-feedback d-block">{% for error in form.is_active.errors %}{{ error }}{% endfor %}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            {% if meeting %}
+                                <a href="{% url 'local:committee-meeting-detail' meeting.pk %}" class="btn btn-secondary"><i class="bi bi-x-circle"></i> {% trans "Cancel" %}</a>
+                            {% elif committee %}
+                                <a href="{% url 'local:committee-detail' committee.pk %}" class="btn btn-secondary"><i class="bi bi-x-circle"></i> {% trans "Cancel" %}</a>
+                            {% else %}
+                                <a href="{% url 'local:committee-list' %}" class="btn btn-secondary"><i class="bi bi-x-circle"></i> {% trans "Cancel" %}</a>
+                            {% endif %}
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i>
+                                {% if meeting %}{% trans "Update Meeting" %}{% else %}{% trans "Create Meeting" %}{% endif %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

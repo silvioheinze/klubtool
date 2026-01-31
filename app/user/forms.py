@@ -49,6 +49,8 @@ class CustomUserCreationForm(UserCreationForm):
             del self.fields['username']
         if 'role' in self.fields:
             del self.fields['role']
+        # Require email for user creation
+        self.fields['email'].required = True
     
     def clean_email(self):
         email = self.cleaned_data.get('email')

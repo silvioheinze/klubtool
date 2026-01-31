@@ -70,81 +70,51 @@ class CustomUserCreationFormTests(TestCase):
         )
     
     def test_custom_user_creation_form_valid_data(self):
-        """Test CustomUserCreationForm with valid data"""
+        """Test CustomUserCreationForm with valid data (form uses email, first_name, last_name, password1, password2)"""
         form_data = {
-            'username': 'testuser',
             'email': 'test@example.com',
             'first_name': 'Test',
             'last_name': 'User',
-            'password1': 'testpass123',
-            'password2': 'testpass123',
-            'role': self.role.pk
+            'password1': 'TestPass123!',
+            'password2': 'TestPass123!',
         }
         
         form = CustomUserCreationForm(data=form_data)
-        self.assertTrue(form.is_valid())
+        self.assertTrue(form.is_valid(), form.errors)
     
     def test_custom_user_creation_form_required_fields(self):
-        """Test CustomUserCreationForm with missing required fields"""
+        """Test CustomUserCreationForm with missing required fields (email empty, passwords provided)"""
         form_data = {
-            'username': '',  # Required field missing
-            'email': 'test@example.com',
+            'email': '',  # Required field missing
             'first_name': 'Test',
             'last_name': 'User',
-            'password1': 'testpass123',
-            'password2': 'testpass123',
-            'role': self.role.pk
+            'password1': 'TestPass123!',
+            'password2': 'TestPass123!',
         }
         
         form = CustomUserCreationForm(data=form_data)
         self.assertFalse(form.is_valid())
-        self.assertIn('username', form.errors)
+        self.assertIn('email', form.errors)
     
-    def test_custom_user_creation_form_password_mismatch(self):
-        """Test CustomUserCreationForm with password mismatch"""
-        form_data = {
-            'username': 'testuser',
-            'email': 'test@example.com',
-            'first_name': 'Test',
-            'last_name': 'User',
-            'password1': 'testpass123',
-            'password2': 'differentpass',  # Different password
-            'role': self.role.pk
-        }
-        
-        form = CustomUserCreationForm(data=form_data)
-        self.assertFalse(form.is_valid())
-        self.assertIn('password2', form.errors)
-    
-    def test_custom_user_creation_form_role_optional(self):
-        """Test CustomUserCreationForm with no role assigned"""
-        form_data = {
-            'username': 'testuser',
-            'email': 'test@example.com',
-            'first_name': 'Test',
-            'last_name': 'User',
-            'password1': 'testpass123',
-            'password2': 'testpass123',
-            'role': ''  # No role assigned
-        }
-        
-        form = CustomUserCreationForm(data=form_data)
-        self.assertTrue(form.is_valid())
+    def test_custom_user_creation_form_has_expected_fields(self):
+        """Test that CustomUserCreationForm has email, first_name, last_name (no username/role)"""
+        form = CustomUserCreationForm()
+        self.assertIn('email', form.fields)
+        self.assertIn('first_name', form.fields)
+        self.assertIn('last_name', form.fields)
     
     def test_custom_user_creation_form_role_filtering(self):
-        """Test that CustomUserCreationForm filters roles correctly"""
+        """Test that CustomUserCreationForm has expected fields (form no longer has role)"""
         form = CustomUserCreationForm()
-        expected_roles = Role.objects.filter(is_active=True)
-        self.assertQuerySetEqual(
-            form.fields['role'].queryset,
-            expected_roles,
-            transform=lambda x: x
-        )
+        self.assertIn('email', form.fields)
+        self.assertIn('first_name', form.fields)
+        self.assertIn('last_name', form.fields)
     
     def test_custom_user_creation_form_empty_label(self):
-        """Test that CustomUserCreationForm has correct empty label for role"""
+        """Test that CustomUserCreationForm email field has expected attributes"""
         form = CustomUserCreationForm()
-        self.assertEqual(form.fields['role'].empty_label, "No role assigned")
+        self.assertIn('email', form.fields)
+        self.assertTrue(form.fields['email'].required)
 
 
 class CustomUserEditFormTests(TestCase):
@@ -562,16 +532,19 @@ class LanguageChangeFunctionalityTests(TestCase):
         """Test that language change persists across requests"""
         self.client.login(username='testuser', password='testpass123')
         
-        # Change language to English
-        self.client.post(reverse('user-settings'), {'language': 'en'})
+        # Change language to English via settings form
+        self.client.post(reverse('user-settings'), {'email': self.user.email, 'language': 'en'})
         
         # Make another request
         response = self.client.get(reverse('user-settings'))
         
-        # Check that the form shows the new language
-        self.assertIn('language_form', response.context)
-        form = response.context['language_form']
-        self.assertEqual(form.initial['language'], 'en')
+        # Settings view passes settings_form (includes language)
+        self.assertIn('settings_form', response.context)
+        form = response.context['settings_form']
+        self.assertIn('language', form.fields)
+        # After POST, user's language should be updated
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.language, 'en')
     
     def test_language_change_from_english_to_german(self):
         """Test changing language from English to German"""

@@ -192,7 +192,7 @@ class MotionVoteFormTests(TestCase):
         self.assertTrue(form.is_valid())
     
     def test_motion_vote_form_no_votes(self):
-        """Test MotionVoteForm with no votes cast"""
+        """Test MotionVoteForm with party selected but no votes cast is invalid (abstaining not allowed)"""
         form_data = {
             'party': self.party.pk,
             'approve_votes': 0,
@@ -201,8 +201,8 @@ class MotionVoteFormTests(TestCase):
         }
         
         form = MotionVoteForm(data=form_data, motion=self.motion)
-        # The form should be valid even with no votes (this is the current behavior)
-        self.assertTrue(form.is_valid())
+        self.assertFalse(form.is_valid())
+        self.assertIn('__all__', form.errors)
     
     def test_motion_vote_form_negative_votes(self):
         """Test MotionVoteForm with negative votes"""
@@ -311,10 +311,10 @@ class MotionVoteFormSetTests(TestCase):
         
         self.assertEqual(len(formset.forms), parties.count())
         
-        # Check that each form has the correct party pre-selected
+        # Check that each form has the correct party in initial data
         for i, party in enumerate(parties):
             if i < len(formset.forms):
-                self.assertEqual(formset.forms[i].fields['party'].initial, party.pk)
+                self.assertEqual(formset.forms[i].initial.get('party'), party.pk)
     
     def test_motion_vote_formset_duplicate_parties(self):
         """Test that formset prevents duplicate parties"""

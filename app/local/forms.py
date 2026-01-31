@@ -1,5 +1,6 @@
 from django import forms
-from .models import Local, Council, Committee, CommitteeMember, Session, Term, Party, TermSeatDistribution, SessionAttachment
+from django.utils import timezone
+from .models import Local, Council, Committee, CommitteeMeeting, CommitteeMember, Session, Term, Party, TermSeatDistribution, SessionAttachment
 
 
 class LocalForm(forms.ModelForm):
@@ -240,6 +241,13 @@ class SessionForm(forms.ModelForm):
         
         # Add JavaScript to filter committees when council changes (will be handled in template)
 
+    def clean_scheduled_date(self):
+        """Ensure scheduled_date is timezone-aware to avoid DateTimeField warnings."""
+        value = self.cleaned_data.get('scheduled_date')
+        if value and timezone.is_naive(value):
+            return timezone.make_aware(value, timezone.get_current_timezone())
+        return value
+
 
 class SessionFilterForm(forms.Form):
     """Form for filtering sessions in the session list view"""
@@ -370,6 +378,39 @@ class CommitteeMemberForm(forms.ModelForm):
         else:
             # If no committee specified, show all active users
             self.fields['user'].queryset = User.objects.filter(is_active=True)
+
+
+class CommitteeMeetingForm(forms.ModelForm):
+    """Form for creating and editing CommitteeMeeting objects."""
+
+    class Meta:
+        model = CommitteeMeeting
+        fields = ['committee', 'title', 'scheduled_date', 'location', 'description', 'is_active']
+        widgets = {
+            'committee': forms.Select(attrs={'class': 'form-select'}),
+            'title': forms.TextInput(attrs={'class': 'form-control'}),
+            'scheduled_date': forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}, format='%Y-%m-%dT%H:%M'),
+            'location': forms.TextInput(attrs={'class': 'form-control'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
+            'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        committee = kwargs.pop('committee', None)
+        super().__init__(*args, **kwargs)
+        self.fields['committee'].queryset = Committee.objects.filter(is_active=True)
+        if committee:
+            self.fields['committee'].queryset = Committee.objects.filter(pk=committee.pk)
+            self.fields['committee'].initial = committee
+            if not self.instance.pk:
+                self.initial['committee'] = committee.pk
+
+    def clean_scheduled_date(self):
+        """Ensure scheduled_date is timezone-aware to avoid DateTimeField warnings."""
+        value = self.cleaned_data.get('scheduled_date')
+        if value and timezone.is_naive(value):
+            return timezone.make_aware(value, timezone.get_current_timezone())
+        return value
 
 
 class CommitteeMemberFilterForm(forms.Form):

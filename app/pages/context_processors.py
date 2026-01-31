@@ -106,8 +106,8 @@ def group_memberships(request):
                 from local.models import Session
                 next_session = Session.objects.filter(
                     council__in=councils_from_memberships,
-                    scheduled_date__gte=now.date(),
-                    scheduled_date__lte=fourteen_days_from_now.date(),
+                    scheduled_date__date__gte=now.date(),
+                    scheduled_date__date__lte=fourteen_days_from_now.date(),
                     is_active=True
                 ).order_by('scheduled_date').first()
                 

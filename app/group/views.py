@@ -429,7 +429,7 @@ def meeting_export_ics(request, pk):
     dtstart = meeting.scheduled_date
     if not timezone.is_aware(dtstart):
         dtstart = timezone.make_aware(dtstart)
-    dtstart_utc = dtstart.astimezone(timezone.utc)
+    dtstart_utc = dtstart.astimezone(timezone.UTC)
     
     # Assume 1 hour duration if not specified
     dtend_utc = dtstart_utc + timezone.timedelta(hours=1)
@@ -477,13 +477,13 @@ def meeting_export_ics(request, pk):
     created = meeting.created_at
     if not timezone.is_aware(created):
         created = timezone.make_aware(created)
-    created_utc = created.astimezone(timezone.utc)
+    created_utc = created.astimezone(timezone.UTC)
     ics_content.append(f"DTSTAMP:{created_utc.strftime('%Y%m%dT%H%M%SZ')}")
     
     updated = meeting.updated_at
     if not timezone.is_aware(updated):
         updated = timezone.make_aware(updated)
-    updated_utc = updated.astimezone(timezone.utc)
+    updated_utc = updated.astimezone(timezone.UTC)
     ics_content.append(f"LAST-MODIFIED:{updated_utc.strftime('%Y%m%dT%H%M%SZ')}")
     
     # Add URL to the meeting detail page

@@ -147,7 +147,7 @@
                                                     <span class="fw-bold">{{ event.title }}</span>
                                                     {% if event.type == 'council_session' %}
                                                         <span class="badge bg-primary">{% trans "Council" %}</span>
-                                                    {% elif event.type == 'committee_session' %}
+                                                    {% elif event.type == 'committee_meeting' or event.type == 'committee_session' %}
                                                         <span class="badge bg-info">{% trans "Committee" %}</span>
                                                     {% elif event.type == 'group_meeting' %}
                                                         <span class="badge bg-success">{% trans "Group meeting" %}</span>

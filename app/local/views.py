@@ -8,10 +8,11 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
 from django.http import JsonResponse, HttpResponse
 from django.views.decorators.http import require_http_methods
+from django.utils.translation import gettext_lazy as _
 import json
 
-from .models import Local, Term, Council, TermSeatDistribution, Party, Session, Committee, CommitteeMember, SessionAttachment, SessionPresence
-from .forms import LocalForm, LocalFilterForm, CouncilForm, CouncilFilterForm, TermForm, TermFilterForm, CouncilNameForm, TermSeatDistributionForm, PartyForm, PartyFilterForm, SessionForm, SessionFilterForm, CommitteeForm, CommitteeFilterForm, CommitteeMemberForm, CommitteeMemberFilterForm, SessionAttachmentForm
+from .models import Local, Term, Council, TermSeatDistribution, Party, Session, Committee, CommitteeMeeting, CommitteeMember, SessionAttachment, SessionPresence
+from .forms import LocalForm, LocalFilterForm, CouncilForm, CouncilFilterForm, TermForm, TermFilterForm, CouncilNameForm, TermSeatDistributionForm, PartyForm, PartyFilterForm, SessionForm, SessionFilterForm, CommitteeForm, CommitteeFilterForm, CommitteeMeetingForm, CommitteeMemberForm, CommitteeMemberFilterForm, SessionAttachmentForm
 
 
 class LocalListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
@@ -1206,6 +1207,65 @@ def session_export_ics(request, pk):
     return response
 
 
+@login_required
+def committee_meeting_export_ics(request, pk):
+    """Export a single committee meeting as an ICS calendar file."""
+    meeting = get_object_or_404(CommitteeMeeting, pk=pk)
+    can_export = (
+        request.user.is_superuser
+        or request.user.has_role_permission('session.view')
+    )
+    if not can_export:
+        from .models import CommitteeMember
+        can_export = CommitteeMember.objects.filter(
+            user=request.user, committee_id=meeting.committee_id, is_active=True
+        ).exists()
+    if not can_export:
+        messages.error(request, _("You don't have permission to export this meeting."))
+        return redirect('local:committee-meeting-detail', pk=pk)
+
+    dtstart = meeting.scheduled_date
+    if not timezone.is_aware(dtstart):
+        dtstart = timezone.make_aware(dtstart)
+    dtstart_utc = dtstart.astimezone(timezone.UTC)
+    dtend_utc = dtstart_utc + timezone.timedelta(hours=1)
+    dtstart_str = dtstart_utc.strftime('%Y%m%dT%H%M%SZ')
+    dtend_str = dtend_utc.strftime('%Y%m%dT%H%M%SZ')
+    uid = f"committee-meeting-{meeting.pk}@{request.get_host()}"
+
+    def escape_ics(text):
+        if not text:
+            return ""
+        text = str(text).replace('\\', '\\\\').replace(',', '\\,').replace(';', '\\;').replace('\n', '\\n')
+        return text
+
+    lines = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "PRODID:-//Klubtool//Committee Meeting//EN",
+        "CALSCALE:GREGORIAN",
+        "METHOD:PUBLISH",
+        "BEGIN:VEVENT",
+        f"UID:{uid}",
+        f"DTSTART:{dtstart_str}",
+        f"DTEND:{dtend_str}",
+        f"SUMMARY:{escape_ics(meeting.title)}",
+    ]
+    if meeting.location:
+        lines.append(f"LOCATION:{escape_ics(meeting.location)}")
+    if meeting.description:
+        lines.append(f"DESCRIPTION:{escape_ics(meeting.description)}")
+    meeting_url = request.build_absolute_uri(reverse('local:committee-meeting-detail', args=[meeting.pk]))
+    lines.append(f"URL:{meeting_url}")
+    lines.append(f"DTSTAMP:{timezone.now().astimezone(timezone.UTC).strftime('%Y%m%dT%H%M%SZ')}")
+    lines.extend(["STATUS:CONFIRMED", "END:VEVENT", "END:VCALENDAR"])
+    ics_file = "\r\n".join(lines)
+    response = HttpResponse(ics_file, content_type='text/calendar; charset=utf-8')
+    filename = f"committee_meeting_{meeting.pk}_{meeting.title.replace(' ', '_')}.ics"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return response
+
+
 class CouncilCommitteesExportPDFView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
     """View for exporting all committees of a council as PDF"""
     model = Council
@@ -1658,9 +1718,9 @@ class CommitteeDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         # Get motions assigned to this committee
         context['motions'] = self.object.motions.filter(is_active=True).order_by('-submitted_date')[:5]
         context['total_motions'] = self.object.motions.count()
-        # Get sessions for this committee
-        context['sessions'] = self.object.sessions.filter(is_active=True).order_by('-scheduled_date')
-        context['total_sessions'] = self.object.sessions.count()
+        # Get committee meetings (replaces committee sessions)
+        context['meetings'] = self.object.meetings.filter(is_active=True).order_by('-scheduled_date')
+        context['total_meetings'] = self.object.meetings.count()
         return context
 
 
@@ -1749,6 +1809,127 @@ class CommitteeDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
         committee_obj = self.get_object()
         messages.success(request, f"Committee '{committee_obj.name}' deleted successfully.")
         return super().delete(request, *args, **kwargs)
+
+
+# Committee Meeting Views
+class CommitteeMeetingCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
+    """View for creating a new CommitteeMeeting (optionally for a specific committee)."""
+    model = CommitteeMeeting
+    form_class = CommitteeMeetingForm
+    template_name = 'local/committee_meeting_form.html'
+
+    def test_func(self):
+        return self.request.user.is_superuser
+
+    def get_initial(self):
+        initial = super().get_initial()
+        committee_pk = self.kwargs.get('committee_pk') or self.request.GET.get('committee')
+        if committee_pk:
+            try:
+                committee = Committee.objects.get(pk=committee_pk)
+                initial['committee'] = committee
+            except Committee.DoesNotExist:
+                pass
+        return initial
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        committee_pk = self.kwargs.get('committee_pk') or self.request.GET.get('committee')
+        if committee_pk:
+            try:
+                kwargs['committee'] = Committee.objects.get(pk=committee_pk)
+            except Committee.DoesNotExist:
+                pass
+        return kwargs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        committee_pk = self.kwargs.get('committee_pk') or self.request.GET.get('committee')
+        if committee_pk:
+            try:
+                context['committee'] = Committee.objects.get(pk=committee_pk)
+            except Committee.DoesNotExist:
+                context['committee'] = None
+        else:
+            context['committee'] = None
+        return context
+
+    def get_success_url(self):
+        if self.object.committee_id:
+            return reverse('local:committee-detail', kwargs={'pk': self.object.committee_id})
+        return reverse('local:committee-list')
+
+    def form_valid(self, form):
+        messages.success(self.request, _("Committee meeting '%(title)s' created successfully.") % {'title': form.instance.title})
+        return super().form_valid(form)
+
+
+class CommitteeMeetingDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
+    """View for displaying a single CommitteeMeeting."""
+    model = CommitteeMeeting
+    context_object_name = 'meeting'
+    template_name = 'local/committee_meeting_detail.html'
+
+    def test_func(self):
+        return self.request.user.is_superuser
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['committee'] = self.object.committee
+        return context
+
+
+class CommitteeMeetingUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
+    """View for updating a CommitteeMeeting."""
+    model = CommitteeMeeting
+    form_class = CommitteeMeetingForm
+    context_object_name = 'meeting'
+    template_name = 'local/committee_meeting_form.html'
+
+    def test_func(self):
+        return self.request.user.is_superuser
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        if self.object and self.object.committee_id:
+            kwargs['committee'] = self.object.committee
+        return kwargs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['committee'] = self.object.committee if self.object else None
+        return context
+
+    def get_success_url(self):
+        if self.object.committee_id:
+            return reverse('local:committee-detail', kwargs={'pk': self.object.committee_id})
+        return reverse('local:committee-list')
+
+    def form_valid(self, form):
+        messages.success(self.request, _("Committee meeting '%(title)s' updated successfully.") % {'title': form.instance.title})
+        return super().form_valid(form)
+
+
+class CommitteeMeetingDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
+    """View for deleting a CommitteeMeeting."""
+    model = CommitteeMeeting
+    template_name = 'local/committee_meeting_confirm_delete.html'
+    context_object_name = 'meeting'
+
+    def test_func(self):
+        return self.request.user.is_superuser
+
+    def get_success_url(self):
+        if self.object.committee_id:
+            return reverse('local:committee-detail', kwargs={'pk': self.object.committee_id})
+        return reverse('local:committee-list')
+
+    def delete(self, request, *args, **kwargs):
+        meeting = self.get_object()
+        committee_pk = meeting.committee_id
+        messages.success(request, _("Committee meeting '%(title)s' deleted successfully.") % {'title': meeting.title})
+        result = super().delete(request, *args, **kwargs)
+        return result
 
 
 # Committee Member Views

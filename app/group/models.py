@@ -81,7 +81,7 @@ class GroupMember(models.Model):
 
     class Meta:
         unique_together = ['user', 'group']
-        ordering = ['-joined_date']
+        ordering = ['-joined_date', '-id']
         verbose_name = "Group Member"
         verbose_name_plural = "Group Members"
 

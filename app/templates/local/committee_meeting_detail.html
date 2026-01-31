@@ -1,0 +1,92 @@
+{% extends "_base.html" %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}{{ meeting.title }} - {% trans "Committee Meeting" %}{% endblock title %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="mb-0"><i class="bi bi-calendar-event"></i> {{ meeting.title }}</h1>
+                </div>
+                <div>
+                    <a href="{% url 'local:committee-detail' meeting.committee.pk %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> {% trans "Back to Committee" %}
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">{% trans "Meeting Information" %}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">{% trans "Title" %}</dt>
+                                <dd class="col-sm-8">{{ meeting.title }}</dd>
+                                <dt class="col-sm-4">{% trans "Committee" %}</dt>
+                                <dd class="col-sm-8">
+                                    <a href="{% url 'local:committee-detail' meeting.committee.pk %}">{{ meeting.committee.name }}</a>
+                                </dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">{% trans "Date & Time" %}</dt>
+                                <dd class="col-sm-8">{{ meeting.scheduled_date|date:"M d, Y H:i" }}</dd>
+                                {% if meeting.location %}
+                                <dt class="col-sm-4">{% trans "Location" %}</dt>
+                                <dd class="col-sm-8">{{ meeting.location }}</dd>
+                                {% endif %}
+                                <dt class="col-sm-4">{% trans "Status" %}</dt>
+                                <dd class="col-sm-8">
+                                    {% if meeting.is_past %}
+                                        <span class="badge bg-secondary">{% trans "Past" %}</span>
+                                    {% else %}
+                                        <span class="badge bg-success">{% trans "Upcoming" %}</span>
+                                    {% endif %}
+                                </dd>
+                            </dl>
+                        </div>
+                    </div>
+                    {% if meeting.description %}
+                        <hr>
+                        <h6>{% trans "Description" %} / {% trans "Agenda" %}</h6>
+                        <p>{{ meeting.description|linebreaks }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">{% trans "Actions" %}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'local:committee-meeting-export-ics' meeting.pk %}" class="btn btn-outline-primary">
+                            <i class="bi bi-calendar-plus"></i> {% trans "Download Calendar (ICS)" %}
+                        </a>
+                        <a href="{% url 'local:committee-meeting-edit' meeting.pk %}" class="btn btn-primary">
+                            <i class="bi bi-pencil"></i> {% trans "Edit Meeting" %}
+                        </a>
+                        <a href="{% url 'local:committee-meeting-delete' meeting.pk %}" class="btn btn-danger"
+                           onclick="return confirm('{% trans 'Are you sure you want to delete this meeting?' %}');">
+                            <i class="bi bi-trash"></i> {% trans "Delete Meeting" %}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

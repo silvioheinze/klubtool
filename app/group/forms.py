@@ -1,6 +1,7 @@
 from django import forms
 from django.db import models
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from .models import Group, GroupMember, GroupMeeting, AgendaItem
 from local.models import Party
@@ -103,6 +104,13 @@ class GroupMeetingForm(forms.ModelForm):
         
         # Filter groups to only show active ones
         self.fields['group'].queryset = Group.objects.filter(is_active=True)
+
+    def clean_scheduled_date(self):
+        """Ensure scheduled_date is timezone-aware to avoid DateTimeField warnings."""
+        value = self.cleaned_data.get('scheduled_date')
+        if value and timezone.is_naive(value):
+            return timezone.make_aware(value, timezone.get_current_timezone())
+        return value
 
 
 class AgendaItemForm(forms.ModelForm):

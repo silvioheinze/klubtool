@@ -137,6 +137,40 @@ class Committee(models.Model):
         return None
 
 
+class CommitteeMeeting(models.Model):
+    """Model representing a meeting of a committee (replaces committee sessions)."""
+    committee = models.ForeignKey(
+        Committee, on_delete=models.CASCADE, related_name='meetings',
+        help_text="Committee holding the meeting"
+    )
+    title = models.CharField(max_length=200, help_text="Title or name of the meeting")
+    scheduled_date = models.DateTimeField(help_text="Date and time when the meeting is scheduled")
+    location = models.CharField(max_length=300, blank=True, help_text="Location where the meeting will be held")
+    description = models.TextField(blank=True, help_text="Description or agenda of the meeting")
+    is_active = models.BooleanField(default=True, help_text="Whether the meeting is currently active")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    history = AuditlogHistoryField()
+
+    class Meta:
+        ordering = ['-scheduled_date']
+        verbose_name = "Committee Meeting"
+        verbose_name_plural = "Committee Meetings"
+
+    def __str__(self):
+        return f"{self.title} - {self.committee.name} ({self.scheduled_date.strftime('%Y-%m-%d %H:%M')})"
+
+    def get_absolute_url(self):
+        from django.urls import reverse
+        return reverse('local:committee-meeting-detail', kwargs={'pk': self.pk})
+
+    @property
+    def is_past(self):
+        """Check if the meeting is in the past"""
+        from django.utils import timezone
+        return self.scheduled_date < timezone.now()
+
+
 class CommitteeMember(models.Model):
     """Model representing membership in a committee"""
     ROLE_CHOICES = [
@@ -359,6 +393,7 @@ class SessionPresence(models.Model):
 auditlog.register(Local)
 auditlog.register(Council)
 auditlog.register(Committee)
+auditlog.register(CommitteeMeeting)
 auditlog.register(CommitteeMember)
 auditlog.register(Term)
 auditlog.register(Party)
