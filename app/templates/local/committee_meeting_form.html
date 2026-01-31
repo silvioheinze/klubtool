@@ -148,18 +148,28 @@
                         </div>
                         {% endif %}
 
-                        <div class="d-flex justify-content-between">
-                            {% if meeting %}
-                                <a href="{% url 'local:committee-meeting-detail' meeting.pk %}" class="btn btn-secondary"><i class="bi bi-x-circle"></i> {% trans "Cancel" %}</a>
-                            {% elif committee %}
-                                <a href="{% url 'local:committee-detail' committee.pk %}" class="btn btn-secondary"><i class="bi bi-x-circle"></i> {% trans "Cancel" %}</a>
-                            {% else %}
-                                <a href="{% url 'local:committee-list' %}" class="btn btn-secondary"><i class="bi bi-x-circle"></i> {% trans "Cancel" %}</a>
-                            {% endif %}
-                            <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-check-circle"></i>
-                                {% if meeting %}{% trans "Update Meeting" %}{% else %}{% trans "Create Meeting" %}{% endif %}
-                            </button>
+                        <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center">
+                            <div>
+                                {% if meeting %}
+                                    <a href="{% url 'local:committee-meeting-delete' meeting.pk %}" class="btn btn-danger"
+                                       onclick="return confirm('{% trans 'Are you sure you want to delete this meeting?' %}');">
+                                        <i class="bi bi-trash"></i> {% trans "Delete Meeting" %}
+                                    </a>
+                                {% endif %}
+                            </div>
+                            <div class="d-flex gap-2">
+                                {% if meeting %}
+                                    <a href="{% url 'local:committee-meeting-detail' meeting.pk %}" class="btn btn-secondary"><i class="bi bi-x-circle"></i> {% trans "Cancel" %}</a>
+                                {% elif committee %}
+                                    <a href="{% url 'local:committee-detail' committee.pk %}" class="btn btn-secondary"><i class="bi bi-x-circle"></i> {% trans "Cancel" %}</a>
+                                {% else %}
+                                    <a href="{% url 'local:committee-list' %}" class="btn btn-secondary"><i class="bi bi-x-circle"></i> {% trans "Cancel" %}</a>
+                                {% endif %}
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-check-circle"></i>
+                                    {% if meeting %}{% trans "Update Meeting" %}{% else %}{% trans "Create Meeting" %}{% endif %}
+                                </button>
+                            </div>
                         </div>
                     </form>
                 </div>

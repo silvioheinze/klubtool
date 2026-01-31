@@ -768,6 +768,10 @@ msgstr "Beschreibung"
 msgid "Agenda"
 msgstr "Tagesordnung"
 
+#: templates/local/committee_meeting_detail.html:72
+msgid "No agenda available."
+msgstr "Keine Tagesordnung vorhanden."
+
 #: templates/group/email/meeting_invite.html:138
 #: templates/group/email/meeting_invite.txt:30
 #: templates/group/email/member_invite.html:26
@@ -2171,11 +2175,11 @@ msgstr "Erstelle erste Sitzung"
 
 #: templates/local/committee_detail.html:276
 msgid "Committee Motions"
-msgstr "Ausschusanträge"
+msgstr "Ausschussanträge"
 
 msgctxt "Ausschuss"
 msgid "Committee Motions"
-msgstr "Ausschusanträge"
+msgstr "Ausschussanträge"
 
 msgctxt "Kommission"
 msgid "Committee Motions"
