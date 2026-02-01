@@ -394,6 +394,14 @@ class CommitteeMemberForm(forms.ModelForm):
         from group.models import GroupMember, Group
         User = get_user_model()
         
+        # Show first name, last name and email in the user dropdown (not username)
+        def user_label(obj):
+            name = f"{obj.first_name or ''} {obj.last_name or ''}".strip()
+            display = name or obj.username
+            return f"{display} ({obj.email})" if obj.email else display
+        
+        self.fields['user'].label_from_instance = user_label
+        
         # Get the committee from initial data or form data
         committee_id = self.initial.get('committee') or self.data.get('committee')
         if committee_id:
@@ -408,18 +416,23 @@ class CommitteeMemberForm(forms.ModelForm):
                     group__in=groups, 
                     is_active=True
                 ).values_list('user_id', flat=True)
-                # Filter users to only those in the groups
+                # Exclude users who already have a membership in this committee
+                # (when editing, exclude other members so current user stays in the list)
+                already_member_ids = CommitteeMember.objects.filter(
+                    committee=committee
+                ).exclude(pk=self.instance.pk).values_list('user_id', flat=True)
+                # Filter users to group members who are not yet in this committee
                 self.fields['user'].queryset = User.objects.filter(
                     id__in=user_ids, 
                     is_active=True
-                ).order_by('first_name', 'last_name')
+                ).exclude(id__in=already_member_ids).order_by('first_name', 'last_name')
                 self.fields['committee'].initial = committee
             except Committee.DoesNotExist:
                 # Fallback to all active users if committee not found
                 self.fields['user'].queryset = User.objects.filter(is_active=True)
         else:
             # If no committee specified, show all active users
-            self.fields['user'].queryset = User.objects.filter(is_active=True)
+            self.fields['user'].queryset = User.objects.filter(is_active=True).order_by('first_name', 'last_name')
 
 
 class CommitteeMeetingForm(forms.ModelForm):
