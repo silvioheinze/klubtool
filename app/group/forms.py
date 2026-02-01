@@ -3,9 +3,14 @@ from django.db import models
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
-from .models import Group, GroupMember, GroupMeeting, AgendaItem
+import bleach
+from .models import Group, GroupMember, GroupMeeting, AgendaItem, MinuteItem
 from local.models import Party
 from user.models import Role
+
+# Allowed HTML for minute item rich text description (sanitized on save)
+MINUTE_DESCRIPTION_ALLOWED_TAGS = ['p', 'br', 'strong', 'b', 'em', 'i', 'u', 'ul', 'ol', 'li', 'a', 'span', 'div']
+MINUTE_DESCRIPTION_ALLOWED_ATTRS = {'a': ['href', 'title'], 'span': ['class'], 'div': ['class']}
 
 User = get_user_model()
 
@@ -170,3 +175,28 @@ class AgendaItemForm(forms.ModelForm):
         logger.debug(f"AgendaItemForm clean - form data: {self.data}")
         
         return cleaned_data
+
+
+class MinuteItemForm(forms.ModelForm):
+    """Form for creating and editing minute items (title and description only; order is auto-set)."""
+    class Meta:
+        model = MinuteItem
+        fields = ['title', 'description']
+        widgets = {
+            'title': forms.TextInput(attrs={'class': 'form-control'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.meeting = kwargs.pop('meeting', None)
+        super().__init__(*args, **kwargs)
+
+    def clean_description(self):
+        """Sanitize rich text HTML before saving."""
+        value = self.cleaned_data.get('description') or ''
+        return bleach.clean(
+            value,
+            tags=MINUTE_DESCRIPTION_ALLOWED_TAGS,
+            attributes=MINUTE_DESCRIPTION_ALLOWED_ATTRS,
+            strip=True,
+        )

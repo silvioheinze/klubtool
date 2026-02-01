@@ -12,8 +12,8 @@ from django.template.loader import render_to_string
 from django.utils.translation import gettext_lazy as _
 from django.http import HttpResponse
 from django.utils import timezone
-from .models import Group, GroupMember, GroupMeeting, AgendaItem
-from .forms import GroupForm, GroupFilterForm, GroupMemberForm, GroupMeetingForm, AgendaItemForm, GroupInviteForm
+from .models import Group, GroupMember, GroupMeeting, AgendaItem, MinuteItem
+from .forms import GroupForm, GroupFilterForm, GroupMemberForm, GroupMeetingForm, AgendaItemForm, MinuteItemForm, GroupInviteForm
 
 User = get_user_model()
 
@@ -425,10 +425,13 @@ class GroupMeetingDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView
         return meeting.group.can_user_manage_group(self.request.user)
 
     def get_context_data(self, **kwargs):
-        """Add agenda items to context"""
+        """Add agenda items and minute items (when invited) to context"""
         context = super().get_context_data(**kwargs)
         context['agenda_items'] = self.object.agenda_items.filter(is_active=True).order_by('order')
-        
+        if self.object.status == 'invited':
+            context['minute_items'] = self.object.minute_items.filter(is_active=True).order_by('order')
+        else:
+            context['minute_items'] = []
         # Check if user can manage the meeting's group
         user = self.request.user
         meeting_group = self.object.group
@@ -641,6 +644,107 @@ class GroupMeetingDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView
         return super().delete(request, *args, **kwargs)
 
 
+class GroupMeetingAgendaExportPDFView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
+    """View for exporting group meeting agenda as PDF"""
+    model = GroupMeeting
+    context_object_name = 'meeting'
+    template_name = 'group/meeting_agenda_export_pdf.html'
+
+    def test_func(self):
+        if self.request.user.is_superuser:
+            return True
+        meeting = self.get_object()
+        return meeting.group.can_user_manage_group(self.request.user)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['agenda_items'] = self.object.agenda_items.filter(is_active=True).order_by('order')
+        return context
+
+    def render_to_response(self, context, **response_kwargs):
+        from django.template.loader import render_to_string
+        from django.http import HttpResponse
+        from weasyprint import HTML, CSS
+
+        html_string = render_to_string(self.template_name, context)
+        html = HTML(string=html_string)
+        css = CSS(string='''
+            @page { size: A4; margin: 15mm; }
+            body { font-family: Arial, sans-serif; margin: 0; font-size: 10pt; }
+            .header { text-align: center; margin-bottom: 20px; }
+            .header h1 { font-size: 14pt; margin: 0 0 5px 0; }
+            .header p { font-size: 10pt; margin: 2px 0; }
+            .agenda-table { width: 100%; border-collapse: collapse; margin-top: 15px; page-break-inside: auto; }
+            .agenda-table thead { display: table-header-group; }
+            .agenda-table tbody tr { page-break-inside: avoid; }
+            .agenda-table th, .agenda-table td { border: 1px solid #333; padding: 8px; text-align: left; vertical-align: top; }
+            .agenda-table th { background-color: #f2f2f2; font-weight: bold; }
+            .agenda-table td:first-child { width: 8%; text-align: center; font-weight: bold; }
+            .agenda-table td:nth-child(2) { width: 92%; }
+            .agenda-desc { font-size: 9pt; color: #444; margin-top: 4px; }
+            .no-agenda { text-align: center; color: #666; font-style: italic; margin: 40px 0; }
+            .footer { margin-top: 30px; padding-top: 15px; border-top: 1px solid #ddd; text-align: center; color: #666; font-size: 8pt; }
+        ''')
+        pdf = html.write_pdf(stylesheets=[css])
+        response = HttpResponse(pdf, content_type='application/pdf')
+        safe_title = ''.join(c if c.isalnum() or c in ' -_' else '_' for c in self.object.title)
+        date_str = self.object.scheduled_date.strftime('%Y-%m-%d') if self.object.scheduled_date else ''
+        filename = f"agenda_{safe_title}_{date_str}.pdf".replace(' ', '_')
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        return response
+
+
+class GroupMeetingMinutesExportPDFView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
+    """View for exporting group meeting minutes as PDF"""
+    model = GroupMeeting
+    context_object_name = 'meeting'
+    template_name = 'group/meeting_minutes_export_pdf.html'
+
+    def test_func(self):
+        if self.request.user.is_superuser:
+            return True
+        meeting = self.get_object()
+        return meeting.group.can_user_manage_group(self.request.user)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['minute_items'] = self.object.minute_items.filter(is_active=True).order_by('order')
+        return context
+
+    def render_to_response(self, context, **response_kwargs):
+        from django.template.loader import render_to_string
+        from django.http import HttpResponse
+        from weasyprint import HTML, CSS
+
+        html_string = render_to_string(self.template_name, context)
+        html = HTML(string=html_string)
+        css = CSS(string='''
+            @page { size: A4; margin: 15mm; }
+            body { font-family: Arial, sans-serif; margin: 0; font-size: 10pt; }
+            .header { text-align: center; margin-bottom: 20px; }
+            .header h1 { font-size: 14pt; margin: 0 0 5px 0; }
+            .header p { font-size: 10pt; margin: 2px 0; }
+            .minutes-table { width: 100%; border-collapse: collapse; margin-top: 15px; page-break-inside: auto; }
+            .minutes-table thead { display: table-header-group; }
+            .minutes-table tbody tr { page-break-inside: avoid; }
+            .minutes-table th, .minutes-table td { border: 1px solid #333; padding: 8px; text-align: left; vertical-align: top; }
+            .minutes-table th { background-color: #f2f2f2; font-weight: bold; }
+            .minutes-table td:first-child { width: 8%; text-align: center; font-weight: bold; }
+            .minutes-table td:nth-child(2) { width: 92%; }
+            .minutes-desc { font-size: 9pt; color: #444; margin-top: 4px; }
+            .minutes-desc p { margin: 2px 0; }
+            .no-minutes { text-align: center; color: #666; font-style: italic; margin: 40px 0; }
+            .footer { margin-top: 30px; padding-top: 15px; border-top: 1px solid #ddd; text-align: center; color: #666; font-size: 8pt; }
+        ''')
+        pdf = html.write_pdf(stylesheets=[css])
+        response = HttpResponse(pdf, content_type='application/pdf')
+        safe_title = ''.join(c if c.isalnum() or c in ' -_' else '_' for c in self.object.title)
+        date_str = self.object.scheduled_date.strftime('%Y-%m-%d') if self.object.scheduled_date else ''
+        filename = f"minutes_{safe_title}_{date_str}.pdf".replace(' ', '_')
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        return response
+
+
 class GroupMeetingCancelView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
     """View to confirm and cancel a meeting (set status to cancelled)."""
     model = GroupMeeting
@@ -743,6 +847,17 @@ class AgendaItemDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
         """Check if user has permission to delete agenda items"""
         return self.request.user.is_superuser
 
+    def dispatch(self, request, *args, **kwargs):
+        """Only allow delete when meeting status is scheduled"""
+        obj = self.get_object()
+        if obj.meeting.status != 'scheduled':
+            messages.error(
+                request,
+                _('Agenda can only be modified when the meeting status is scheduled.'),
+            )
+            return redirect('group:meeting-detail', pk=obj.meeting.pk)
+        return super().dispatch(request, *args, **kwargs)
+
     def get_success_url(self):
         """Redirect to the meeting detail page"""
         return reverse('group:meeting-detail', kwargs={'pk': self.object.meeting.pk})
@@ -773,6 +888,11 @@ class AgendaItemCreateAjaxView(LoginRequiredMixin, UserPassesTestMixin, View):
             
             meeting = GroupMeeting.objects.get(pk=meeting_id)
             logger.debug(f"Meeting found: {meeting}")
+            if meeting.status != 'scheduled':
+                return JsonResponse({
+                    'success': False,
+                    'error': _('Agenda can only be modified when the meeting status is scheduled.'),
+                }, status=403)
             
             form = AgendaItemForm(request.POST, meeting=meeting)
             logger.debug(f"Form data: {request.POST}")
@@ -860,6 +980,11 @@ class AgendaItemUpdateAjaxView(LoginRequiredMixin, UserPassesTestMixin, View):
             
             agenda_item = AgendaItem.objects.get(pk=agenda_item_id)
             logger.debug(f"Agenda item found: {agenda_item}")
+            if agenda_item.meeting.status != 'scheduled':
+                return JsonResponse({
+                    'success': False,
+                    'error': _('Agenda can only be modified when the meeting status is scheduled.'),
+                }, status=403)
             
             form = AgendaItemForm(request.POST, instance=agenda_item, meeting=agenda_item.meeting)
             logger.debug(f"Form data: {request.POST}")
@@ -934,6 +1059,11 @@ class AgendaItemUpdateOrderAjaxView(LoginRequiredMixin, UserPassesTestMixin, Vie
         
         try:
             meeting = GroupMeeting.objects.get(pk=meeting_id)
+            if meeting.status != 'scheduled':
+                return JsonResponse({
+                    'success': False,
+                    'error': _('Agenda order can only be changed when the meeting status is scheduled.'),
+                }, status=403)
             data = json.loads(request.body)
             item_orders = data.get('item_orders', [])
             
@@ -967,6 +1097,80 @@ class AgendaItemUpdateOrderAjaxView(LoginRequiredMixin, UserPassesTestMixin, Vie
                 'success': False,
                 'error': str(e)
             })
+
+
+# Minute item views (allowed when meeting status is 'invited')
+def _can_manage_minutes(user, meeting):
+    if user.is_superuser:
+        return True
+    return meeting.group.can_user_manage_group(user)
+
+
+class MinuteItemCreateAjaxView(LoginRequiredMixin, View):
+    """AJAX view for creating minute items (when meeting status is invited)."""
+    def post(self, request, meeting_id):
+        from django.http import JsonResponse
+        meeting = get_object_or_404(GroupMeeting, pk=meeting_id)
+        if meeting.status != 'invited':
+            return JsonResponse({
+                'success': False,
+                'error': _('Minutes can only be modified when the meeting status is invited.'),
+            }, status=403)
+        if not _can_manage_minutes(request.user, meeting):
+            return JsonResponse({'success': False, 'error': _('Permission denied.')}, status=403)
+        form = MinuteItemForm(request.POST, meeting=meeting)
+        if not form.is_valid():
+            return JsonResponse({'success': False, 'error': 'Form validation failed', 'errors': form.errors})
+        item = form.save(commit=False)
+        item.meeting = meeting
+        item.created_by = request.user
+        from django.db.models import Max
+        max_order = MinuteItem.objects.filter(meeting=meeting).aggregate(max_order=Max('order'))['max_order'] or 0
+        item.order = max_order + 1
+        item.parent_item = None
+        item.save()
+        return JsonResponse({
+            'success': True,
+            'minute_item': {'id': item.pk, 'title': item.title, 'description': item.description, 'order': item.order},
+        })
+
+
+class MinuteItemUpdateAjaxView(LoginRequiredMixin, View):
+    """AJAX view for updating minute items."""
+    def post(self, request, minute_item_id):
+        from django.http import JsonResponse
+        item = get_object_or_404(MinuteItem, pk=minute_item_id)
+        if item.meeting.status != 'invited':
+            return JsonResponse({
+                'success': False,
+                'error': _('Minutes can only be modified when the meeting status is invited.'),
+            }, status=403)
+        if not _can_manage_minutes(request.user, item.meeting):
+            return JsonResponse({'success': False, 'error': _('Permission denied.')}, status=403)
+        form = MinuteItemForm(request.POST, instance=item, meeting=item.meeting)
+        if not form.is_valid():
+            return JsonResponse({'success': False, 'error': 'Form validation failed', 'errors': form.errors})
+        form.save()
+        return JsonResponse({'success': True})
+
+
+class MinuteItemDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
+    """View for deleting a minute item."""
+    model = MinuteItem
+    def test_func(self):
+        obj = self.get_object()
+        if not _can_manage_minutes(self.request.user, obj.meeting):
+            return False
+        return obj.meeting.status == 'invited'
+    def get_success_url(self):
+        return reverse('group:meeting-detail', kwargs={'pk': self.object.meeting.pk})
+    def get(self, request, *args, **kwargs):
+        obj = self.get_object()
+        obj.delete()
+        messages.success(request, _('Minute item deleted.'))
+        return redirect(self.get_success_url())
+    def post(self, request, *args, **kwargs):
+        return self.get(request, *args, **kwargs)
 
 
 @login_required
@@ -1107,7 +1311,7 @@ def send_meeting_invites(request, pk):
             logger = logging.getLogger(__name__)
             logger.error(f"Failed to send meeting invite to {member.user.email}: {str(e)}")
     
-    # Show success/error messages and update meeting status
+    # Show success/error messages and update meeting status; copy agenda to minute items on first send
     if success_count > 0:
         messages.success(
             request, 
@@ -1115,6 +1319,22 @@ def send_meeting_invites(request, pk):
         )
         meeting.status = 'invited'
         meeting.save(update_fields=['status'])
+        # Copy all agenda items to minute items (only if no minute items exist yet)
+        if not meeting.minute_items.exists():
+            from .models import MinuteItem
+            agenda_items_ordered = meeting.agenda_items.filter(is_active=True).order_by('order')
+            agenda_to_minute = {}  # agenda_item.pk -> minute_item
+            for agenda_item in agenda_items_ordered:
+                parent_minute = agenda_to_minute.get(agenda_item.parent_item_id) if agenda_item.parent_item_id else None
+                minute_item = MinuteItem.objects.create(
+                    meeting=meeting,
+                    title=agenda_item.title,
+                    description=agenda_item.description or '',
+                    order=agenda_item.order,
+                    parent_item=parent_minute,
+                    created_by=request.user,
+                )
+                agenda_to_minute[agenda_item.pk] = minute_item
     if failed_count > 0:
         messages.error(
             request,

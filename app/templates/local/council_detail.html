@@ -151,9 +151,7 @@
                                     {% for session in sessions %}
                                         <tr>
                                             <td>
-                                                <a href="{% url 'local:session-detail' session.pk %}" class="badge bg-primary text-decoration-none">
-                                                    {{ session.title }}
-                                                </a>
+                                                <a href="{% url 'local:session-detail' session.pk %}">{{ session.title }}</a>
                                             </td>
                                             <td>
                                                 <span class="text-muted">{{ session.get_session_type_display }}</span>
@@ -228,9 +226,7 @@
                                     {% for committee in committees %}
                                         <tr>
                                             <td>
-                                                <a href="{% url 'local:committee-detail' committee.pk %}" class="badge bg-primary text-decoration-none">
-                                                    {{ committee.name }}
-                                                </a>
+                                                <a href="{% url 'local:committee-detail' committee.pk %}">{{ committee.name }}</a>
                                                 {% if committee.description %}
                                                     <br><small class="text-muted mt-1 d-block">{{ committee.description|truncatewords:10 }}</small>
                                                 {% endif %}
