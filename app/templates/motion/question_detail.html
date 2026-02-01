@@ -16,27 +16,25 @@
             </h1>
         </div>
         <div>
-            <div class="btn-group" role="group">
-                {% if question.can_be_edited %}
-                    <a href="{% url 'question:question-edit' question.pk %}" class="btn btn-primary">
-                        <i class="bi bi-pencil"></i> {% trans "Edit" %}
-                    </a>
-                {% endif %}
-                {% if user.is_superuser or question.submitted_by == user %}
-                    <a href="{% url 'question:question-delete' question.pk %}" class="btn btn-outline-danger">
-                        <i class="bi bi-trash"></i> {% trans "Delete" %}
-                    </a>
-                {% endif %}
-                {% if question.session %}
-                    <a href="{% url 'local:session-detail' question.session.pk %}" class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-left"></i> {% trans "Back to Session" %}
-                    </a>
-                {% else %}
-                    <a href="{% url 'question:question-list' %}" class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-left"></i> {% trans "Back to Questions" %}
-                    </a>
-                {% endif %}
-            </div>
+            {% if question.can_be_edited %}
+                <a href="{% url 'question:question-edit' question.pk %}" class="btn btn-primary">
+                    <i class="bi bi-pencil"></i> {% trans "Edit" %}
+                </a>
+            {% endif %}
+            {% if user.is_superuser or question.submitted_by == user %}
+                <a href="{% url 'question:question-delete' question.pk %}" class="btn btn-outline-danger">
+                    <i class="bi bi-trash"></i> {% trans "Delete" %}
+                </a>
+            {% endif %}
+            {% if question.session %}
+                <a href="{% url 'local:session-detail' question.session.pk %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> {% trans "Back to Session" %}
+                </a>
+            {% else %}
+                <a href="{% url 'question:question-list' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> {% trans "Back to Questions" %}
+                </a>
+            {% endif %}
         </div>
     </div>
 

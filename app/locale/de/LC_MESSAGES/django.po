@@ -1628,13 +1628,13 @@ msgstr "Tagesordnungpunkt hinzufügen"
 #: templates/group/meeting_detail.html:196
 #: templates/group/meeting_detail.html:240
 msgid "Parent Item"
-msgstr ""
+msgstr "Übergeordneter Eintrag"
 
 #: templates/group/meeting_detail.html:198
 #: templates/group/meeting_detail.html:242
 #: templates/group/meeting_detail.html:277
 msgid "No parent (top level)"
-msgstr ""
+msgstr "Kein übergeordneter Eintrag (oberste Ebene)"
 
 #: templates/group/meeting_detail.html:205
 #: templates/group/meeting_detail.html:246
@@ -4154,7 +4154,7 @@ msgstr "Sitzung anzeigen"
 #: templates/motion/question_confirm_delete.html:114
 #: templates/motion/question_form.html:7 templates/motion/question_form.html:22
 msgid "Edit Question"
-msgstr "Sitzung bearbeiten"
+msgstr "Anfrage bearbeiten"
 
 #: templates/motion/question_detail.html:36
 msgid "Back to Questions"
