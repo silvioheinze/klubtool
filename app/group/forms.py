@@ -88,13 +88,15 @@ class GroupMeetingForm(forms.ModelForm):
         fields = ['title', 'scheduled_date', 'location', 'description', 'group']
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control'}),
-            'scheduled_date': forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local'}),
+            'scheduled_date': forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local'}, format='%Y-%m-%dT%H:%M'),
             'location': forms.TextInput(attrs={'class': 'form-control'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        # Ensure scheduled_date displays and parses as YYYY-MM-DDTHH:MM for datetime-local input
+        self.fields['scheduled_date'].input_formats = ['%Y-%m-%dT%H:%M', '%Y-%m-%d %H:%M:%S', '%Y-%m-%d %H:%M']
         # On create: hide title (set in save() as "Klubsitzung" + date)
         if not self.instance.pk and 'title' in self.fields:
             del self.fields['title']
