@@ -236,10 +236,10 @@ class CommitteeMeetingAttachment(models.Model):
 class CommitteeMember(models.Model):
     """Model representing membership in a committee"""
     ROLE_CHOICES = [
-        ('chairperson', 'Chairperson'),
-        ('vice_chairperson', 'Vice Chairperson'),
-        ('member', 'Member'),
-        ('substitute_member', 'Substitute Member'),
+        ('chairperson', _('Chairperson')),
+        ('vice_chairperson', _('Vice Chairperson')),
+        ('member', _('Member')),
+        ('substitute_member', _('Substitute Member')),
     ]
 
     committee = models.ForeignKey(Committee, on_delete=models.CASCADE, related_name='members', help_text=_("Committee the user belongs to"))
