@@ -1741,7 +1741,11 @@ class CommitteeUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     def test_func(self):
         """Check if user has permission to edit Committee objects"""
         return self.request.user.is_superuser
-    
+
+    def get_success_url(self):
+        """Redirect to committee detail after edit"""
+        return reverse('local:committee-detail', kwargs={'pk': self.object.pk})
+
     def get_context_data(self, **kwargs):
         """Add local to context"""
         context = super().get_context_data(**kwargs)
