@@ -119,7 +119,12 @@ class Committee(models.Model):
     def member_count(self):
         """Number of active members in the committee (excluding substitute members)"""
         return self.members.filter(is_active=True).exclude(role='substitute_member').count()
-    
+
+    @property
+    def substitute_member_count(self):
+        """Number of active substitute members in the committee"""
+        return self.members.filter(is_active=True, role='substitute_member').count()
+
     @property
     def chairperson_member(self):
         """Get the chairperson from committee members"""

@@ -246,7 +246,7 @@
                                                 {% endif %}
                                             </td>
                                             <td>
-                                                <span class="text-muted">{{ committee.member_count }}</span>
+                                                <span class="text-muted">{{ committee.member_count }}{% if committee.substitute_member_count %} ({{ committee.substitute_member_count }}){% endif %}</span>
                                             </td>
                                         </tr>
                                     {% endfor %}
