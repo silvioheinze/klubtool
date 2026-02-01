@@ -54,105 +54,6 @@
                 </div>
             </div>
 
-            <!-- Members Section -->
-            <div class="card mt-4">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0"><i class="bi bi-person-lines-fill"></i> {% trans "Group members" %}</h5>
-                    <div class="d-flex gap-1">
-                        <a href="{% url 'group:group-invite-member' group.pk %}" class="btn btn-sm btn-outline-primary">
-                            <i class="bi bi-envelope-plus"></i> {% trans "Invite member" %}
-                        </a>
-                        <a href="{% url 'group:member-create' %}?group={{ group.pk }}" class="btn btn-sm btn-primary">
-                            <i class="bi bi-plus-circle"></i> {% trans "Add" %}
-                        </a>
-                    </div>
-                </div>
-                <div class="card-body">
-                    {% if members %}
-                        <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>{% trans "User" %}</th>
-                                        <th>{% trans "Role" %}</th>
-                                        <th>{% trans "Joined" %}</th>
-                                        <th>{% trans "Actions" %}</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for member in members %}
-                                        <tr>
-                                            <td>
-                                                <strong>{{ member.user.get_full_name|default:member.user.username }}</strong>
-                                                <br><small class="text-muted">{{ member.user.email }}</small>
-                                            </td>
-                                            <td>
-                                                {% for role in member.roles.all %}
-                                                    {% if role.name == 'Group Admin' %}
-                                                        <span class="badge bg-warning me-1">
-                                                            <i class="bi bi-shield-check"></i> {% trans "Group Admin" %}
-                                                        </span>
-                                                    {% elif role.name == 'Leader' %}
-                                                        <span class="badge bg-primary me-1">
-                                                            <i class="bi bi-star"></i> {% trans "Leader" %}
-                                                        </span>
-                                                    {% elif role.name == 'Deputy Leader' %}
-                                                        <span class="badge bg-info me-1">
-                                                            <i class="bi bi-star-half"></i> {% trans "Deputy Leader" %}
-                                                        </span>
-                                                    
-                                                    {% elif role.name == 'Board Member' %}
-                                                        <span class="badge bg-dark me-1">
-                                                            <i class="bi bi-people"></i> {% trans "Board Member" %}
-                                                        </span>
-                                                    {% else %}
-                                                        <span class="badge bg-secondary me-1">{{ role.name }}</span>
-                                                    {% endif %}
-                                                {% empty %}
-                                                    <span class="badge bg-secondary">{% trans "Member" %}</span>
-                                                {% endfor %}
-                                            </td>
-                                            <td>{{ member.joined_date|date:"M d, Y" }}</td>
-                                            <td>
-                                                <div class="btn-group" role="group">
-                                                    <a href="{% url 'group:member-detail' member.pk %}" class="btn btn-sm btn-outline-info">
-                                                        <i class="bi bi-eye"></i>
-                                                    </a>
-                                                    <a href="{% url 'group:member-edit' member.pk %}" class="btn btn-sm btn-outline-primary">
-                                                        <i class="bi bi-pencil"></i>
-                                                    </a>
-                                                    {% if user.is_superuser %}
-                                                        <button type="button" class="btn btn-sm btn-outline-success" 
-                                                                onclick="openRoleManagement('{{ member.pk }}', '{{ member.user.get_full_name|default:member.user.username }}', '{{ member.get_roles_display }}')"
-                                                                title="{% trans 'Manage Roles' %}">
-                                                            <i class="bi bi-person-gear"></i>
-                                                        </button>
-                                                    {% endif %}
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    {% else %}
-                        <div class="text-center py-4">
-                            <i class="bi bi-person-lines-fill fs-1 text-muted"></i>
-                            <h6 class="mt-3">{% trans "No Members found" %}</h6>
-                            <p class="text-muted">{% trans "Add members to this group to get started." %}</p>
-                            <div class="d-flex gap-2 justify-content-center flex-wrap">
-                                <a href="{% url 'group:group-invite-member' group.pk %}" class="btn btn-outline-primary">
-                                    <i class="bi bi-envelope-plus"></i> {% trans "Invite member" %}
-                                </a>
-                                <a href="{% url 'group:member-create' %}?group={{ group.pk }}" class="btn btn-primary">
-                                    <i class="bi bi-plus-circle"></i> {% trans "Add Member" %}
-                                </a>
-                            </div>
-                        </div>
-                    {% endif %}
-                </div>
-            </div>
-
             <!-- Group Meetings Section + Monthly Calendar -->
             <div class="row mt-4">
                 <div class="col-lg-6 mb-4 mb-lg-0">
@@ -273,6 +174,109 @@
                         {% endif %}
                     </div>
                     <div id="group-calendar-events-popup" class="calendar-events-popup d-none" role="tooltip" aria-live="polite"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Group Members Section (at bottom) -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-person-lines-fill"></i> {% trans "Group members" %}</h5>
+                    <div class="d-flex gap-1">
+                        <a href="{% url 'group:group-invite-member' group.pk %}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-envelope-plus"></i> {% trans "Invite member" %}
+                        </a>
+                        <a href="{% url 'group:member-create' %}?group={{ group.pk }}" class="btn btn-sm btn-primary">
+                            <i class="bi bi-plus-circle"></i> {% trans "Add" %}
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if members %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>{% trans "User" %}</th>
+                                        <th>{% trans "Role" %}</th>
+                                        <th>{% trans "Joined" %}</th>
+                                        <th>{% trans "Actions" %}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for member in members %}
+                                        <tr>
+                                            <td>
+                                                <strong>{{ member.user.get_full_name|default:member.user.username }}</strong>
+                                                <br><small class="text-muted">{{ member.user.email }}</small>
+                                            </td>
+                                            <td>
+                                                {% for role in member.roles.all %}
+                                                    {% if role.name == 'Group Admin' %}
+                                                        <span class="badge bg-warning me-1">
+                                                            <i class="bi bi-shield-check"></i> {% trans "Group Admin" %}
+                                                        </span>
+                                                    {% elif role.name == 'Leader' %}
+                                                        <span class="badge bg-primary me-1">
+                                                            <i class="bi bi-star"></i> {% trans "Leader" %}
+                                                        </span>
+                                                    {% elif role.name == 'Deputy Leader' %}
+                                                        <span class="badge bg-info me-1">
+                                                            <i class="bi bi-star-half"></i> {% trans "Deputy Leader" %}
+                                                        </span>
+                                                    
+                                                    {% elif role.name == 'Board Member' %}
+                                                        <span class="badge bg-dark me-1">
+                                                            <i class="bi bi-people"></i> {% trans "Board Member" %}
+                                                        </span>
+                                                    {% else %}
+                                                        <span class="badge bg-secondary me-1">{{ role.name }}</span>
+                                                    {% endif %}
+                                                {% empty %}
+                                                    <span class="badge bg-secondary">{% trans "Member" %}</span>
+                                                {% endfor %}
+                                            </td>
+                                            <td>{{ member.joined_date|date:"M d, Y" }}</td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <a href="{% url 'group:member-detail' member.pk %}" class="btn btn-sm btn-outline-info">
+                                                        <i class="bi bi-eye"></i>
+                                                    </a>
+                                                    <a href="{% url 'group:member-edit' member.pk %}" class="btn btn-sm btn-outline-primary">
+                                                        <i class="bi bi-pencil"></i>
+                                                    </a>
+                                                    {% if user.is_superuser %}
+                                                        <button type="button" class="btn btn-sm btn-outline-success" 
+                                                                onclick="openRoleManagement('{{ member.pk }}', '{{ member.user.get_full_name|default:member.user.username }}', '{{ member.get_roles_display }}')"
+                                                                title="{% trans 'Manage Roles' %}">
+                                                            <i class="bi bi-person-gear"></i>
+                                                        </button>
+                                                    {% endif %}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="bi bi-person-lines-fill fs-1 text-muted"></i>
+                            <h6 class="mt-3">{% trans "No Members found" %}</h6>
+                            <p class="text-muted">{% trans "Add members to this group to get started." %}</p>
+                            <div class="d-flex gap-2 justify-content-center flex-wrap">
+                                <a href="{% url 'group:group-invite-member' group.pk %}" class="btn btn-outline-primary">
+                                    <i class="bi bi-envelope-plus"></i> {% trans "Invite member" %}
+                                </a>
+                                <a href="{% url 'group:member-create' %}?group={{ group.pk }}" class="btn btn-primary">
+                                    <i class="bi bi-plus-circle"></i> {% trans "Add Member" %}
+                                </a>
+                            </div>
+                        </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
