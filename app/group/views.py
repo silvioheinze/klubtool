@@ -72,6 +72,9 @@ class GroupDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         return group.can_user_manage_group(self.request.user)
 
     def get_context_data(self, **kwargs):
+        from datetime import date, timedelta
+        from pages.views import _build_month_calendar
+
         context = super().get_context_data(**kwargs)
         context['members'] = self.object.members.select_related('user').filter(is_active=True).order_by('user__first_name', 'user__last_name', 'user__username')
         context['active_members'] = context['members'].filter(is_active=True)
@@ -83,6 +86,54 @@ class GroupDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         # Add available roles for role management
         from user.models import Role
         context['available_roles'] = Role.objects.filter(is_active=True).order_by('name')
+
+        # Monthly calendar for this group's meetings
+        now = timezone.now()
+        req_month = self.request.GET.get('calendar_month')
+        req_year = self.request.GET.get('calendar_year')
+        try:
+            cal_month = int(req_month) if req_month else now.month
+            cal_year = int(req_year) if req_year else now.year
+            if cal_month < 1 or cal_month > 12 or cal_year < 2000 or cal_year > 2100:
+                cal_month, cal_year = now.month, now.year
+        except (TypeError, ValueError):
+            cal_month, cal_year = now.month, now.year
+        start = date(cal_year, cal_month, 1)
+        end = date(cal_year, cal_month + 1, 1) - timedelta(days=1) if cal_month < 12 else date(cal_year, 12, 31)
+        group_meetings = self.object.meetings.filter(
+            is_active=True,
+            scheduled_date__date__gte=start,
+            scheduled_date__date__lte=end,
+        ).order_by('scheduled_date')
+        badge_label = (self.object.calendar_badge_name or '').strip() or _('Group meeting')
+        events = [
+            {
+                'date': m.scheduled_date,
+                'title': m.title or '',
+                'url': m.get_absolute_url(),
+                'type': 'group_meeting',
+                'badge_label': badge_label,
+            }
+            for m in group_meetings
+        ]
+        cal_month, cal_year, context['calendar_weeks'] = _build_month_calendar(events, cal_year, cal_month)
+        context['calendar_month'] = cal_month
+        context['calendar_year'] = cal_year
+        import calendar as cal_module
+        context['calendar_month_name'] = cal_module.month_name[cal_month]
+        context['calendar_today_day'] = now.day if (now.year == cal_year and now.month == cal_month) else None
+        if cal_month == 1:
+            prev_month, prev_year = 12, cal_year - 1
+        else:
+            prev_month, prev_year = cal_month - 1, cal_year
+        if cal_month == 12:
+            next_month, next_year = 1, cal_year + 1
+        else:
+            next_month, next_year = cal_month + 1, cal_year
+        detail_url = reverse('group:group-detail', kwargs={'pk': self.object.pk})
+        context['calendar_prev_url'] = f'{detail_url}?calendar_month={prev_month}&calendar_year={prev_year}'
+        context['calendar_next_url'] = f'{detail_url}?calendar_month={next_month}&calendar_year={next_year}'
+        context['calendar_today_url'] = f'{detail_url}?calendar_month={now.month}&calendar_year={now.year}'
         
         return context
 

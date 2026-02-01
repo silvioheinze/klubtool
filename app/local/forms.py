@@ -50,9 +50,10 @@ class CouncilForm(forms.ModelForm):
     
     class Meta:
         model = Council
-        fields = ['name', 'local']
+        fields = ['name', 'local', 'calendar_badge_name']
         widgets = {
             'local': forms.Select(attrs={'class': 'form-select'}),
+            'calendar_badge_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': ''}),
         }
 
 

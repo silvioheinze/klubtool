@@ -118,3 +118,79 @@ html {
     background-color: #ce2c77;
     color: white;
 }
+
+/* Monthly calendar (home page) – fixed layout, events on hover only */
+.calendar-month-table {
+    table-layout: fixed;
+    width: 100%;
+}
+
+.calendar-month-table .calendar-day {
+    min-height: 5rem;
+    height: 5rem;
+    vertical-align: top;
+    overflow: visible;
+}
+
+/* Today: success color – explicit fallback; !important overrides Bootstrap .table */
+table.calendar-month-table td.calendar-day.calendar-day-today {
+    background-color: rgba(125, 161, 48, 0.25) !important;
+    background-color: rgba(var(--bs-success-rgb), 0.2) !important;
+}
+
+/* Days with events: primary color */
+table.calendar-month-table td.calendar-day.calendar-day-has-events {
+    background-color: rgba(94, 131, 60, 0.22) !important;
+    background-color: rgba(var(--bs-primary-rgb), 0.18) !important;
+    cursor: pointer;
+}
+
+/* Today + events: stronger success */
+table.calendar-month-table td.calendar-day.calendar-day-today.calendar-day-has-events {
+    background-color: rgba(125, 161, 48, 0.35) !important;
+    background-color: rgba(var(--bs-success-rgb), 0.28) !important;
+}
+
+.calendar-day-num {
+    display: inline-block;
+    min-width: 1.5em;
+}
+
+#calendar-card-body,
+#group-calendar-card-body {
+    min-height: 16rem;
+}
+
+.calendar-loading-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: var(--bs-border-radius, 0.25rem);
+}
+
+/* Events popup on hover */
+.calendar-events-popup {
+    position: fixed;
+    z-index: 1050;
+    max-width: 320px;
+    padding: 0.75rem 1rem;
+    background: #fff;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: var(--bs-border-radius, 0.25rem);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    pointer-events: auto;
+}
+
+.calendar-popup-event {
+    padding: 0.35rem 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    font-size: 0.875rem;
+}
+
+.calendar-popup-event:last-child {
+    border-bottom: none;
+}
+
+.calendar-popup-event .badge {
+    font-size: 0.65em;
+}

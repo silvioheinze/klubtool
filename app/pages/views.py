@@ -5,10 +5,11 @@ import json
 from django.views.generic import TemplateView
 from django.conf import settings
 from django.http import HttpResponse
-from django.shortcuts import redirect
+from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
+from django.utils.translation import gettext as _
 
 logger = logging.getLogger(__name__)
 
@@ -129,20 +130,46 @@ class HomePageView(TemplateView):
                     reverse('home'), context['calendar_prev_month'], context['calendar_prev_year'])
                 context['calendar_next_url'] = '{}?calendar_month={}&calendar_year={}'.format(
                     reverse('home'), context['calendar_next_month'], context['calendar_next_year'])
+                # For "today" highlight: day number in current month, or None
+                now = timezone.now()
+                context['calendar_today_day'] = now.day if (now.year == cal_year and now.month == cal_month) else None
             except (ImportError, AttributeError):
                 context['calendar_month'] = context['calendar_year'] = None
                 context['calendar_weeks'] = []
                 context['calendar_month_name'] = ''
                 context['calendar_prev_url'] = context['calendar_next_url'] = ''
+                context['calendar_today_day'] = None
         else:
             context['personal_calendar_events'] = []
             context['calendar_month'] = context['calendar_year'] = None
             context['calendar_weeks'] = []
             context['calendar_month_name'] = ''
             context['calendar_prev_url'] = context['calendar_next_url'] = ''
+            context['calendar_today_day'] = None
 
         return context
-    
+
+    def get(self, request, *args, **kwargs):
+        context = self.get_context_data(**kwargs)
+        # Return only the calendar fragment for AJAX month navigation (require partial=1 in URL)
+        wants_partial = request.GET.get('partial') == '1'
+        # Debug: log GET params and what month we built
+        logger.info(
+            'calendar get: wants_partial=%s GET=%s -> month=%s year=%s name=%s',
+            wants_partial,
+            dict(request.GET),
+            context.get('calendar_month'),
+            context.get('calendar_year'),
+            context.get('calendar_month_name'),
+        )
+        if wants_partial:
+            if request.user.is_authenticated and context.get('calendar_weeks') is not None:
+                logger.info('calendar partial: returning fragment for %s %s', context.get('calendar_month_name'), context.get('calendar_year'))
+                return render(request, 'pages/calendar_month_partial.html', context)
+            logger.warning('calendar partial: rejected (auth=%s weeks=%s)', request.user.is_authenticated, context.get('calendar_weeks'))
+            return HttpResponse(status=400)
+        return self.render_to_response(context)
+
 
 class DocumentationPageView(TemplateView):
     template_name = "documentation.html"
@@ -181,12 +208,14 @@ def _get_personal_calendar_events(user, group_memberships, councils_from_members
             scheduled_date__lte=range_end,
         ).select_related('council', 'council__local').order_by('scheduled_date')
         for s in council_sessions:
+            badge_name = (s.council.calendar_badge_name or '').strip()
             calendar_events.append({
                 'date': s.scheduled_date,
                 'title': s.title,
                 'url': s.get_absolute_url(),
                 'ics_export_url': reverse('local:session-export-ics', args=[s.pk]),
                 'type': 'council_session',
+                'badge_label': badge_name or _('Council'),
                 'subtitle': s.council.name,
                 'location': getattr(s, 'location', '') or '',
                 'pk': s.pk,
@@ -207,6 +236,7 @@ def _get_personal_calendar_events(user, group_memberships, councils_from_members
                 'url': m.get_absolute_url(),
                 'ics_export_url': reverse('local:committee-meeting-export-ics', args=[m.pk]),
                 'type': 'committee_meeting',
+                'badge_label': _('Committee'),
                 'subtitle': m.committee.name,
                 'location': getattr(m, 'location', '') or '',
                 'pk': m.pk,
@@ -221,12 +251,14 @@ def _get_personal_calendar_events(user, group_memberships, councils_from_members
             scheduled_date__lte=range_end,
         ).select_related('group').order_by('scheduled_date')
         for m in group_meetings:
+            badge_name = (m.group.calendar_badge_name or '').strip()
             calendar_events.append({
                 'date': m.scheduled_date,
                 'title': m.title,
                 'url': m.get_absolute_url(),
                 'ics_export_url': reverse('group:meeting-export-ics', args=[m.pk]),
                 'type': 'group_meeting',
+                'badge_label': badge_name or _('Group meeting'),
                 'subtitle': m.group.name,
                 'location': getattr(m, 'location', '') or '',
                 'pk': m.pk,
