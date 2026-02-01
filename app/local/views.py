@@ -249,8 +249,8 @@ class CouncilDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
     def get_context_data(self, **kwargs):
         """Add sessions and committees data to context"""
         context = super().get_context_data(**kwargs)
-        # Get sessions for this council
-        context['sessions'] = self.object.sessions.filter(is_active=True).order_by('-scheduled_date')[:10]
+        # Get sessions for this council, youngest (most recent) date first
+        context['sessions'] = self.object.sessions.filter(is_active=True).order_by('-scheduled_date')
         context['total_sessions'] = self.object.sessions.count()
         # Get committees for this council
         context['committees'] = self.object.committees.filter(is_active=True).order_by('name')
