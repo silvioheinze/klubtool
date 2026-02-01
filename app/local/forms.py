@@ -1,5 +1,6 @@
 from django import forms
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 from .models import Local, Council, Committee, CommitteeMeeting, CommitteeMeetingAttachment, CommitteeMember, Session, Term, Party, TermSeatDistribution, SessionAttachment
 
 
@@ -481,7 +482,7 @@ class CommitteeMemberFilterForm(forms.Form):
         })
     )
     role = forms.ChoiceField(
-        choices=[('', 'All Roles')] + CommitteeMember.ROLE_CHOICES,
+        choices=[('', _('All Roles'))] + list(CommitteeMember.ROLE_CHOICES),
         required=False,
         widget=forms.Select(attrs={'class': 'form-select'})
     )

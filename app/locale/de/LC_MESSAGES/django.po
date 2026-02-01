@@ -2210,6 +2210,14 @@ msgstr "Zurück"
 msgid "Vice Chairperson"
 msgstr "Stellv. Vorsitzende/r"
 
+#: local/models.py local/forms.py
+msgid "Substitute Member"
+msgstr "Ersatzmitglied"
+
+#: local/forms.py
+msgid "All Roles"
+msgstr "Alle Rollen"
+
 #: templates/local/committee_detail.html:88
 msgid "Committee Members"
 msgstr "Ausschussmitglieder"
