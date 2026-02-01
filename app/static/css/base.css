@@ -4,6 +4,10 @@
     font-family: 'Nunito Sans', sans-serif;
 }
 
+h1, .h1 {
+    font-size: 1.75rem;
+}
+
 body {
     display: flex;
     flex-direction: column;

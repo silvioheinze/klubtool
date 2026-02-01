@@ -97,9 +97,50 @@ class HomePageView(TemplateView):
                 context['personal_calendar_events'] = events
             except (ImportError, AttributeError):
                 context['personal_calendar_events'] = []
+            # Monthly calendar view: month grid (use GET params if valid, else current month)
+            try:
+                events = context.get('personal_calendar_events', [])
+                now = timezone.now()
+                req_month = self.request.GET.get('calendar_month')
+                req_year = self.request.GET.get('calendar_year')
+                try:
+                    cal_month = int(req_month) if req_month else now.month
+                    cal_year = int(req_year) if req_year else now.year
+                    if cal_month < 1 or cal_month > 12 or cal_year < 2000 or cal_year > 2100:
+                        cal_month, cal_year = now.month, now.year
+                except (TypeError, ValueError):
+                    cal_month, cal_year = now.month, now.year
+                cal_month, cal_year, context['calendar_weeks'] = _build_month_calendar(events, cal_year, cal_month)
+                context['calendar_month'] = cal_month
+                context['calendar_year'] = cal_year
+                import calendar as cal
+                context['calendar_month_name'] = cal.month_name[cal_month]
+                # Prev/next month for navigation
+                if cal_month == 1:
+                    context['calendar_prev_month'], context['calendar_prev_year'] = 12, cal_year - 1
+                else:
+                    context['calendar_prev_month'], context['calendar_prev_year'] = cal_month - 1, cal_year
+                if cal_month == 12:
+                    context['calendar_next_month'], context['calendar_next_year'] = 1, cal_year + 1
+                else:
+                    context['calendar_next_month'], context['calendar_next_year'] = cal_month + 1, cal_year
+                from django.urls import reverse
+                context['calendar_prev_url'] = '{}?calendar_month={}&calendar_year={}'.format(
+                    reverse('home'), context['calendar_prev_month'], context['calendar_prev_year'])
+                context['calendar_next_url'] = '{}?calendar_month={}&calendar_year={}'.format(
+                    reverse('home'), context['calendar_next_month'], context['calendar_next_year'])
+            except (ImportError, AttributeError):
+                context['calendar_month'] = context['calendar_year'] = None
+                context['calendar_weeks'] = []
+                context['calendar_month_name'] = ''
+                context['calendar_prev_url'] = context['calendar_next_url'] = ''
         else:
             context['personal_calendar_events'] = []
-        
+            context['calendar_month'] = context['calendar_year'] = None
+            context['calendar_weeks'] = []
+            context['calendar_month_name'] = ''
+            context['calendar_prev_url'] = context['calendar_next_url'] = ''
+
         return context
     
 
@@ -194,6 +235,35 @@ def _get_personal_calendar_events(user, group_memberships, councils_from_members
 
     calendar_events.sort(key=lambda e: e['date'])
     return calendar_events
+
+
+def _build_month_calendar(events, year=None, month=None):
+    """Build a month calendar structure (weeks of days with events) for the given month (default: current)."""
+    import calendar
+    now = timezone.now()
+    if year is None:
+        year = now.year
+    if month is None:
+        month = now.month
+    events_by_day = {}
+    for e in events:
+        d = e['date']
+        if getattr(d, 'tzinfo', None):
+            d = timezone.localtime(d)
+        if d.year == year and d.month == month:
+            key = d.day
+            events_by_day.setdefault(key, []).append(e)
+    weeks = calendar.monthcalendar(year, month)
+    calendar_weeks = []
+    for week in weeks:
+        row = []
+        for day in week:
+            if day == 0:
+                row.append(None)
+            else:
+                row.append({'day': day, 'events': events_by_day.get(day, [])})
+        calendar_weeks.append(row)
+    return month, year, calendar_weeks
 
 
 def _escape_ics_text(text):
