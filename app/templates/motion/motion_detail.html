@@ -12,22 +12,20 @@
     <!-- Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h1 class="h3 mb-0">
+            <h1 class="h1 mb-0">
                 <i class="bi bi-file-text"></i> {{ motion.title }}
             </h1>
 
         </div>
         <div>
-            <div class="btn-group" role="group">
-                {% if motion.can_be_edited %}
-                    <a href="{% url 'motion:motion-edit' motion.pk %}" class="btn btn-primary">
-                        <i class="bi bi-pencil"></i> {% trans "Edit" %}
-                    </a>
-                {% endif %}
-                <a href="{% url 'local:session-detail' motion.session.pk %}" class="btn btn-outline-secondary">
-                    <i class="bi bi-arrow-left"></i> {% trans "Back to Session" %}
+            {% if motion.can_be_edited %}
+                <a href="{% url 'motion:motion-edit' motion.pk %}" class="btn btn-primary">
+                    <i class="bi bi-pencil"></i> {% trans "Edit" %}
                 </a>
-            </div>
+            {% endif %}
+            <a href="{% url 'local:session-detail' motion.session.pk %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> {% trans "Back to Session" %}
+            </a>
         </div>
     </div>
 
@@ -128,51 +126,51 @@
                         <hr>
                         <div class="d-flex flex-wrap gap-2">
                             {% if status_for_buttons == 'draft' %}
-                                <a href="{% url 'motion:motion-status-change' motion.pk %}?status=submitted" class="btn btn-primary">
+                                <a href="{% url 'motion:motion-status-change' motion.pk %}?status=submitted" class="btn btn-warning btn-sm">
                                     <i class="bi bi-send"></i> {% trans "Submit" %}
                                 </a>
                             {% elif status_for_buttons == 'submitted' %}
-                                <a href="{% url 'motion:motion-status-change' motion.pk %}?status=tabled" class="btn btn-info">
+                                <a href="{% url 'motion:motion-status-change' motion.pk %}?status=tabled" class="btn btn-warning btn-sm">
                                     <i class="bi bi-table"></i> {% trans "Table" %}
                                 </a>
-                                <a href="{% url 'motion:motion-status-change' motion.pk %}?status=withdrawn" class="btn btn-warning">
+                                <a href="{% url 'motion:motion-status-change' motion.pk %}?status=withdrawn" class="btn btn-warning btn-sm">
                                     <i class="bi bi-x-circle"></i> {% trans "Withdraw" %}
                                 </a>
-                                <a href="{% url 'motion:motion-status-change' motion.pk %}?status=not_admitted" class="btn btn-dark">
+                                <a href="{% url 'motion:motion-status-change' motion.pk %}?status=not_admitted" class="btn btn-warning btn-sm">
                                     <i class="bi bi-x-octagon"></i> {% trans "Not Admitted" %}
                                 </a>
                             {% elif status_for_buttons == 'tabled' or status_for_buttons == 'refer_no_majority' %}
-                                <a href="{% url 'motion:motion-status-change' motion.pk %}?status=approved" class="btn btn-success">
+                                <a href="{% url 'motion:motion-status-change' motion.pk %}?status=approved" class="btn btn-warning btn-sm">
                                     <i class="bi bi-check-circle"></i> {% trans "Approve" %}
                                 </a>
-                                <a href="{% url 'motion:motion-status-change' motion.pk %}?status=rejected" class="btn btn-danger">
+                                <a href="{% url 'motion:motion-status-change' motion.pk %}?status=rejected" class="btn btn-warning btn-sm">
                                     <i class="bi bi-x-circle"></i> {% trans "Reject" %}
                                 </a>
-                                <a href="{% url 'motion:motion-status-change' motion.pk %}?status=refer_to_committee" class="btn btn-warning">
+                                <a href="{% url 'motion:motion-status-change' motion.pk %}?status=refer_to_committee" class="btn btn-warning btn-sm">
                                     <i class="bi bi-arrow-right-circle"></i> {% trans "Refer to Committee" %}
                                 </a>
-                                <a href="{% url 'motion:motion-status-change' motion.pk %}?status=withdrawn" class="btn btn-warning">
+                                <a href="{% url 'motion:motion-status-change' motion.pk %}?status=withdrawn" class="btn btn-warning btn-sm">
                                     <i class="bi bi-x-circle"></i> {% trans "Withdraw" %}
                                 </a>
                             {% elif status_for_buttons == 'refer_to_committee' %}
-                                <a href="{% url 'motion:motion-status-change' motion.pk %}?status=voted_in_committee" class="btn btn-warning">
+                                <a href="{% url 'motion:motion-status-change' motion.pk %}?status=voted_in_committee" class="btn btn-warning btn-sm">
                                     <i class="bi bi-check-circle"></i> {% trans "Voted in Committee" %}
                                 </a>
-                                <a href="{% url 'motion:motion-status-change' motion.pk %}?status=withdrawn" class="btn btn-warning">
+                                <a href="{% url 'motion:motion-status-change' motion.pk %}?status=withdrawn" class="btn btn-warning btn-sm">
                                     <i class="bi bi-x-circle"></i> {% trans "Withdraw" %}
                                 </a>
                             {% elif status_for_buttons == 'voted_in_committee' %}
-                                <a href="{% url 'motion:motion-status-change' motion.pk %}?status=tabled" class="btn btn-info">
+                                <a href="{% url 'motion:motion-status-change' motion.pk %}?status=tabled" class="btn btn-warning btn-sm">
                                     <i class="bi bi-table"></i> {% trans "Table" %}
                                 </a>
-                                <a href="{% url 'motion:motion-status-change' motion.pk %}?status=withdrawn" class="btn btn-warning">
+                                <a href="{% url 'motion:motion-status-change' motion.pk %}?status=withdrawn" class="btn btn-warning btn-sm">
                                     <i class="bi bi-x-circle"></i> {% trans "Withdraw" %}
                                 </a>
-                                <a href="{% url 'motion:motion-status-change' motion.pk %}?status=rejected" class="btn btn-danger">
+                                <a href="{% url 'motion:motion-status-change' motion.pk %}?status=rejected" class="btn btn-warning btn-sm">
                                     <i class="bi bi-x-circle"></i> {% trans "Reject" %}
                                 </a>
                             {% elif status_for_buttons == 'approved' %}
-                                <a href="{% url 'motion:motion-status-change' motion.pk %}?status=answered" class="btn btn-success">
+                                <a href="{% url 'motion:motion-status-change' motion.pk %}?status=answered" class="btn btn-warning btn-sm">
                                     <i class="bi bi-check2-all"></i> {% trans "Mark as Answered" %}
                                 </a>
                             {% endif %}
@@ -226,7 +224,7 @@
                     <h5 class="mb-0">{% trans "Group Decisions" %}</h5>
                     {% if can_add_group_decision %}
                         <a href="{% url 'motion:motion-group-decision' motion.pk %}" class="btn btn-sm btn-primary">
-                            <i class="bi bi-plus-circle"></i> {% trans "Add Group Decision" %}
+                            <i class="bi bi-plus-circle"></i> {% trans "Add" %}
                         </a>
                     {% endif %}
                 </div>

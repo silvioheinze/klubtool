@@ -8,8 +8,8 @@
 <div class="container mt-5">
     <div class="row">
         <div class="col-md-12">
-            <h1>Welcome to Klubtool</h1>
-            <p class="lead">Your application management system</p>
+            <h1>{% trans "Welcome to Klubtool" %}</h1>
+            <p class="lead">{% trans "Facilitate your political work" %}</p>
             
             {% if user.is_authenticated and not email_verified %}
             <div class="alert alert-warning alert-dismissible fade show" role="alert">
@@ -124,62 +124,108 @@
             </div>
             {% endif %}
             
-            <!-- Personal Calendar -->
-            {% if user.is_authenticated and personal_calendar_events %}
+            <!-- Personal Calendar and Monthly Calendar -->
+            {% if user.is_authenticated %}
                 <div class="row mt-4">
-                    <div class="col-12">
-                        <div class="card">
+                    <!-- Personal calendar (event list) -->
+                    <div class="col-lg-6 mb-4 mb-lg-0">
+                        <div class="card h-100">
                             <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
                                 <div>
                                     <h5 class="mb-0"><i class="bi bi-calendar-event"></i> {% trans "Personal calendar" %}</h5>
-                                    <small class="text-muted">{% trans "Council and committee sessions plus group meetings (next 60 days)" %}</small>
                                 </div>
                                 <a href="{% url 'personal-calendar-export-ics' %}" class="btn btn-sm btn-outline-primary mt-2 mt-md-0">
                                     <i class="bi bi-download"></i> {% trans "Export (ICS)" %}
                                 </a>
                             </div>
                             <div class="card-body">
-                                <div class="list-group list-group-flush">
-                                    {% for event in personal_calendar_events %}
-                                        <div class="list-group-item d-flex justify-content-between align-items-start">
-                                            <a href="{{ event.url }}" class="list-group-item-action text-decoration-none text-body me-2 flex-grow-1">
-                                                <div class="d-flex align-items-center gap-2 flex-wrap">
-                                                    <span class="fw-bold">{{ event.title }}</span>
-                                                    {% if event.type == 'council_session' %}
-                                                        <span class="badge bg-primary">{% trans "Council" %}</span>
-                                                    {% elif event.type == 'committee_meeting' or event.type == 'committee_session' %}
-                                                        <span class="badge bg-info">{% trans "Committee" %}</span>
-                                                    {% elif event.type == 'group_meeting' %}
-                                                        <span class="badge bg-success">{% trans "Group meeting" %}</span>
-                                                    {% endif %}
-                                                </div>
-                                                <small class="text-muted">{{ event.subtitle }}{% if event.location %} · {{ event.location }}{% endif %}</small>
-                                            </a>
-                                            <div class="d-flex align-items-center gap-2 flex-shrink-0">
-                                                <a href="{{ event.ics_export_url }}" class="btn btn-sm btn-outline-secondary" title="{% trans 'Export ICS' %}" download>
-                                                    <i class="bi bi-download"></i>
+                                {% if personal_calendar_events %}
+                                    <div class="list-group list-group-flush">
+                                        {% for event in personal_calendar_events %}
+                                            <div class="list-group-item d-flex justify-content-between align-items-start">
+                                                <a href="{{ event.url }}" class="list-group-item-action text-decoration-none text-body me-2 flex-grow-1">
+                                                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                                                        <span class="fw-bold">{{ event.title }}</span>
+                                                        {% if event.type == 'council_session' %}
+                                                            <span class="badge bg-primary">{% trans "Council" %}</span>
+                                                        {% elif event.type == 'committee_meeting' or event.type == 'committee_session' %}
+                                                            <span class="badge bg-info">{% trans "Committee" %}</span>
+                                                        {% elif event.type == 'group_meeting' %}
+                                                            <span class="badge bg-success">{% trans "Group meeting" %}</span>
+                                                        {% endif %}
+                                                    </div>
+                                                    <small class="text-muted">{{ event.subtitle }}{% if event.location %} · {{ event.location }}{% endif %}</small>
                                                 </a>
-                                                <small class="text-nowrap text-muted">{{ event.date|date:"d.m.Y H:i" }}</small>
+                                                <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                                                    
+                                                    <small class="text-nowrap text-muted">{{ event.date|date:"d.m.Y H:i" }}</small>
+                                                </div>
                                             </div>
-                                        </div>
-                                    {% endfor %}
-                                </div>
+                                        {% endfor %}
+                                    </div>
+                                {% else %}
+                                    <p class="text-muted mb-0">{% trans "No upcoming sessions or group meetings. Sessions from your councils and committees, and meetings from your groups, will appear here." %}</p>
+                                {% endif %}
                             </div>
                         </div>
                     </div>
-                </div>
-            {% elif user.is_authenticated %}
-                <div class="row mt-4">
-                    <div class="col-12">
-                        <div class="card">
-                            <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
-                                <h5 class="mb-0"><i class="bi bi-calendar-event"></i> {% trans "Personal calendar" %}</h5>
-                                <a href="{% url 'personal-calendar-export-ics' %}" class="btn btn-sm btn-outline-primary">
-                                    <i class="bi bi-download"></i> {% trans "Export (ICS)" %}
-                                </a>
+                    <!-- Monthly calendar view -->
+                    <div class="col-lg-6" id="monthly-calendar-container"
+                         {% if calendar_prev_url %}data-prev-url="{{ calendar_prev_url|escapejs }}"{% endif %}
+                         {% if calendar_next_url %}data-next-url="{{ calendar_next_url|escapejs }}"{% endif %}>
+                        <div class="card h-100">
+                            <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                <h5 class="mb-0"><i class="bi bi-calendar3"></i> {% trans "Monthly calendar" %} – {{ calendar_month_name }} {{ calendar_year }}</h5>
+                                {% if calendar_weeks and calendar_prev_url and calendar_next_url %}
+                                <div class="d-flex gap-1">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" id="calendar-prev-month" aria-label="{% trans 'Previous month' %}">
+                                        <i class="bi bi-chevron-left"></i> {% trans "Previous month" %}
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" id="calendar-next-month" aria-label="{% trans 'Next month' %}">
+                                        {% trans "Next month" %} <i class="bi bi-chevron-right"></i>
+                                    </button>
+                                </div>
+                                {% endif %}
                             </div>
                             <div class="card-body">
-                                <p class="text-muted mb-0">{% trans "No upcoming sessions or group meetings. Sessions from your councils and committees, and meetings from your groups, will appear here." %}</p>
+                                {% if calendar_weeks %}
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered mb-0 small">
+                                            <thead>
+                                                <tr class="text-center">
+                                                    <th scope="col" style="width:14%">{% trans "Mon" %}</th>
+                                                    <th scope="col" style="width:14%">{% trans "Tue" %}</th>
+                                                    <th scope="col" style="width:14%">{% trans "Wed" %}</th>
+                                                    <th scope="col" style="width:14%">{% trans "Thu" %}</th>
+                                                    <th scope="col" style="width:14%">{% trans "Fri" %}</th>
+                                                    <th scope="col" style="width:14%">{% trans "Sat" %}</th>
+                                                    <th scope="col" style="width:14%">{% trans "Sun" %}</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for week in calendar_weeks %}
+                                                    <tr>
+                                                        {% for day_cell in week %}
+                                                            <td class="align-top p-1" style="min-height: 4rem; vertical-align: top;">
+                                                                {% if day_cell %}
+                                                                    <span class="fw-bold">{{ day_cell.day }}</span>
+                                                                    {% for event in day_cell.events %}
+                                                                        <div class="mt-1">
+                                                                            <a href="{{ event.url }}" class="d-block text-truncate" title="{{ event.title }}">{{ event.title }}</a>
+                                                                            <small class="text-muted">{{ event.date|time:"H:i" }}</small>
+                                                                        </div>
+                                                                    {% endfor %}
+                                                                {% endif %}
+                                                            </td>
+                                                        {% endfor %}
+                                                    </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                {% else %}
+                                    <p class="text-muted mb-0">{% trans "Calendar not available." %}</p>
+                                {% endif %}
                             </div>
                         </div>
                     </div>
@@ -189,5 +235,24 @@
         </div>
     </div>
 </div>
+
+{% if user.is_authenticated and calendar_prev_url and calendar_next_url %}
+<script>
+(function() {
+    var container = document.getElementById('monthly-calendar-container');
+    if (!container) return;
+    var prevUrl = container.getAttribute('data-prev-url');
+    var nextUrl = container.getAttribute('data-next-url');
+    var prevBtn = document.getElementById('calendar-prev-month');
+    var nextBtn = document.getElementById('calendar-next-month');
+    if (prevBtn && prevUrl) {
+        prevBtn.addEventListener('click', function() { window.location = prevUrl; });
+    }
+    if (nextBtn && nextUrl) {
+        nextBtn.addEventListener('click', function() { window.location = nextUrl; });
+    }
+})();
+</script>
+{% endif %}
 
 {% endblock %}
