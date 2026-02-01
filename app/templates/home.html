@@ -147,11 +147,11 @@
                                                     <div class="d-flex align-items-center gap-2 flex-wrap">
                                                         <span class="fw-bold">{{ event.title }}</span>
                                                         {% if event.type == 'council_session' %}
-                                                            <span class="badge bg-primary">{% trans "Council" %}</span>
+                                                            <span class="badge bg-primary">{{ event.badge_label }}</span>
                                                         {% elif event.type == 'committee_meeting' or event.type == 'committee_session' %}
-                                                            <span class="badge bg-info">{% trans "Committee" %}</span>
+                                                            <span class="badge bg-info">{{ event.badge_label }}</span>
                                                         {% elif event.type == 'group_meeting' %}
-                                                            <span class="badge bg-success">{% trans "Group meeting" %}</span>
+                                                            <span class="badge bg-success">{{ event.badge_label }}</span>
                                                         {% endif %}
                                                     </div>
                                                     <small class="text-muted">{{ event.subtitle }}{% if event.location %} · {{ event.location }}{% endif %}</small>
@@ -171,26 +171,18 @@
                     </div>
                     <!-- Monthly calendar view -->
                     <div class="col-lg-6" id="monthly-calendar-container"
-                         {% if calendar_prev_url %}data-prev-url="{{ calendar_prev_url|escapejs }}"{% endif %}
-                         {% if calendar_next_url %}data-next-url="{{ calendar_next_url|escapejs }}"{% endif %}>
+                         {% if calendar_prev_url %}data-prev-url="{{ calendar_prev_url }}"{% endif %}
+                         {% if calendar_next_url %}data-next-url="{{ calendar_next_url }}"{% endif %}
+                         data-home-url="{% url 'home' %}">
                         <div class="card h-100">
-                            <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-                                <h5 class="mb-0"><i class="bi bi-calendar3"></i> {% trans "Monthly calendar" %} – {{ calendar_month_name }} {{ calendar_year }}</h5>
-                                {% if calendar_weeks and calendar_prev_url and calendar_next_url %}
-                                <div class="d-flex gap-1">
-                                    <button type="button" class="btn btn-sm btn-outline-secondary" id="calendar-prev-month" aria-label="{% trans 'Previous month' %}">
-                                        <i class="bi bi-chevron-left"></i> {% trans "Previous month" %}
-                                    </button>
-                                    <button type="button" class="btn btn-sm btn-outline-secondary" id="calendar-next-month" aria-label="{% trans 'Next month' %}">
-                                        {% trans "Next month" %} <i class="bi bi-chevron-right"></i>
-                                    </button>
-                                </div>
-                                {% endif %}
+                            <div class="card-header">
+                                <h5 class="mb-0" id="calendar-month-title"><i class="bi bi-calendar3"></i> {% trans "Personal monthly calendar" %} – {{ calendar_month_name }} {{ calendar_year }}</h5>
                             </div>
-                            <div class="card-body">
+                            <div class="card-body position-relative" id="calendar-card-body">
+                                <div id="calendar-month-content" aria-live="polite">
                                 {% if calendar_weeks %}
                                     <div class="table-responsive">
-                                        <table class="table table-bordered mb-0 small">
+                                        <table class="table table-bordered mb-0 small calendar-month-table" role="grid">
                                             <thead>
                                                 <tr class="text-center">
                                                     <th scope="col" style="width:14%">{% trans "Mon" %}</th>
@@ -204,17 +196,28 @@
                                             </thead>
                                             <tbody>
                                                 {% for week in calendar_weeks %}
-                                                    <tr>
+                                                    <tr role="row">
                                                         {% for day_cell in week %}
-                                                            <td class="align-top p-1" style="min-height: 4rem; vertical-align: top;">
+                                                            <td class="calendar-day align-top p-2 {% if day_cell and calendar_today_day == day_cell.day %}calendar-day-today{% endif %}{% if day_cell and day_cell.events %} calendar-day-has-events{% endif %}" role="gridcell">
                                                                 {% if day_cell %}
-                                                                    <span class="fw-bold">{{ day_cell.day }}</span>
-                                                                    {% for event in day_cell.events %}
-                                                                        <div class="mt-1">
-                                                                            <a href="{{ event.url }}" class="d-block text-truncate" title="{{ event.title }}">{{ event.title }}</a>
-                                                                            <small class="text-muted">{{ event.date|time:"H:i" }}</small>
-                                                                        </div>
-                                                                    {% endfor %}
+                                                                    <span class="calendar-day-num fw-bold">{{ day_cell.day }}</span>
+                                                                    {% if day_cell.events %}
+                                                                    <div class="calendar-day-events-source d-none" aria-hidden="true">
+                                                                        {% for event in day_cell.events %}
+                                                                            <div class="calendar-popup-event">
+                                                                                {% if event.type == 'council_session' %}
+                                                                                    <span class="badge bg-primary me-1">{{ event.badge_label }}</span>
+                                                                                {% elif event.type == 'committee_meeting' or event.type == 'committee_session' %}
+                                                                                    <span class="badge bg-info me-1">{{ event.badge_label }}</span>
+                                                                                {% elif event.type == 'group_meeting' %}
+                                                                                    <span class="badge bg-success me-1">{{ event.badge_label }}</span>
+                                                                                {% endif %}
+                                                                                <a href="{{ event.url }}" class="text-decoration-none">{{ event.title }}</a>
+                                                                                <small class="text-muted ms-1">{{ event.date|time:"H:i" }}</small>
+                                                                            </div>
+                                                                        {% endfor %}
+                                                                    </div>
+                                                                    {% endif %}
                                                                 {% endif %}
                                                             </td>
                                                         {% endfor %}
@@ -226,8 +229,26 @@
                                 {% else %}
                                     <p class="text-muted mb-0">{% trans "Calendar not available." %}</p>
                                 {% endif %}
+                                </div>
+                                <div id="calendar-loading-overlay" class="calendar-loading-overlay d-none" aria-hidden="true">
+                                    <div class="d-flex justify-content-center align-items-center h-100">
+                                        <div class="spinner-border text-primary" role="status"><span class="visually-hidden">{% trans "Loading…" %}</span></div>
+                                    </div>
+                                </div>
                             </div>
+                            {% if calendar_weeks and calendar_prev_url and calendar_next_url %}
+                            <div class="card-footer d-flex justify-content-center gap-1 flex-wrap">
+                                <button type="button" class="btn btn-sm btn-outline-secondary" id="calendar-prev-month" aria-label="{% trans 'Previous month' %}">
+                                    <i class="bi bi-chevron-left"></i> {% trans "Previous month" %}
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" id="calendar-today-month" aria-label="{% trans 'Current month' %}">{% trans "Today" %}</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" id="calendar-next-month" aria-label="{% trans 'Next month' %}">
+                                    {% trans "Next month" %} <i class="bi bi-chevron-right"></i>
+                                </button>
+                            </div>
+                            {% endif %}
                         </div>
+                        <div id="calendar-events-popup" class="calendar-events-popup d-none" role="tooltip" aria-live="polite"></div>
                     </div>
                 </div>
             {% endif %}
@@ -239,18 +260,137 @@
 {% if user.is_authenticated and calendar_prev_url and calendar_next_url %}
 <script>
 (function() {
+    function debugCalendarColors() {
+        var cells = document.querySelectorAll('#calendar-month-content .calendar-day');
+        var today = [], hasEvents = [];
+        cells.forEach(function(td) {
+            var bg = td && window.getComputedStyle(td).backgroundColor;
+            var day = td.querySelector('.calendar-day-num');
+            var dayNum = day ? day.textContent : '?';
+            if (td.classList.contains('calendar-day-today')) today.push({ day: dayNum, bg: bg, classes: td.className });
+            if (td.classList.contains('calendar-day-has-events')) hasEvents.push({ day: dayNum, bg: bg, classes: td.className });
+        });
+        console.log('[calendar debug] today cells:', today.length, today);
+        console.log('[calendar debug] has-events cells:', hasEvents.length, hasEvents);
+        return { today: today, hasEvents: hasEvents };
+    }
+
     var container = document.getElementById('monthly-calendar-container');
-    if (!container) return;
-    var prevUrl = container.getAttribute('data-prev-url');
-    var nextUrl = container.getAttribute('data-next-url');
+    var contentEl = document.getElementById('calendar-month-content');
+    var titleEl = document.getElementById('calendar-month-title');
+    var loadingEl = document.getElementById('calendar-loading-overlay');
     var prevBtn = document.getElementById('calendar-prev-month');
     var nextBtn = document.getElementById('calendar-next-month');
-    if (prevBtn && prevUrl) {
-        prevBtn.addEventListener('click', function() { window.location = prevUrl; });
+    var todayBtn = document.getElementById('calendar-today-month');
+    var homeUrl = container && container.getAttribute('data-home-url');
+
+    function appendPartialParam(url) {
+        if (!url) return url;
+        return url + (url.indexOf('?') !== -1 ? '&' : '?') + 'partial=1';
     }
-    if (nextBtn && nextUrl) {
-        nextBtn.addEventListener('click', function() { window.location = nextUrl; });
+
+    function loadMonth(url) {
+        if (!url || !contentEl || !container) return;
+        var ajaxUrl = appendPartialParam(url);
+        if (loadingEl) { loadingEl.classList.remove('d-none'); loadingEl.setAttribute('aria-hidden', 'false'); }
+        if (container) container.setAttribute('aria-busy', 'true');
+
+        console.log('[calendar] loadMonth url=', url, 'ajaxUrl=', ajaxUrl);
+        fetch(ajaxUrl, { headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin', cache: 'no-store' })
+            .then(function(res) {
+                if (!res.ok) throw new Error('Calendar load failed');
+                return res.text();
+            })
+            .then(function(html) {
+                var preview = html.length > 300 ? html.substring(0, 300) + '...' : html;
+                console.log('[calendar] response length=', html.length, 'starts with=', preview.substring(0, 80));
+                var wrap = document.createElement('div');
+                wrap.innerHTML = html.trim();
+                var partial = wrap.querySelector('#calendar-partial-response');
+                console.log('[calendar] found #calendar-partial-response=', !!partial, 'wrap.children.length=', wrap.children.length);
+                if (partial) {
+                    contentEl.innerHTML = partial.innerHTML;
+                    var newTitle = partial.getAttribute('data-title');
+                    if (newTitle && titleEl) titleEl.innerHTML = '<i class="bi bi-calendar3"></i> ' + newTitle;
+                    var prev = partial.getAttribute('data-prev-url');
+                    var next = partial.getAttribute('data-next-url');
+                    if (prev) container.setAttribute('data-prev-url', prev);
+                    if (next) container.setAttribute('data-next-url', next);
+                    if (history.replaceState) history.replaceState(null, '', url);
+                    console.log('[calendar] updated: title=', newTitle, 'prev=', prev, 'next=', next);
+                    debugCalendarColors();
+                } else {
+                    console.warn('[calendar] no partial in response, falling back to full page load');
+                    window.location = url;
+                }
+            })
+            .catch(function() {
+                window.location = url;
+            })
+            .finally(function() {
+                if (loadingEl) { loadingEl.classList.add('d-none'); loadingEl.setAttribute('aria-hidden', 'true'); }
+                if (container) container.removeAttribute('aria-busy');
+            });
     }
+
+    if (prevBtn && container) {
+        prevBtn.addEventListener('click', function() {
+            var url = container.getAttribute('data-prev-url');
+            if (url) loadMonth(url);
+        });
+    }
+    if (nextBtn && container) {
+        nextBtn.addEventListener('click', function() {
+            var url = container.getAttribute('data-next-url');
+            if (url) loadMonth(url);
+        });
+    }
+    if (todayBtn && homeUrl) {
+        todayBtn.addEventListener('click', function() {
+            var now = new Date();
+            var url = homeUrl + '?calendar_month=' + (now.getMonth() + 1) + '&calendar_year=' + now.getFullYear();
+            loadMonth(url);
+        });
+    }
+
+    /* Hover popup for days with events */
+    var popupEl = document.getElementById('calendar-events-popup');
+    var popupHideTimeout = null;
+    var containerForPopup = document.getElementById('monthly-calendar-container');
+    if (popupEl && containerForPopup) {
+        containerForPopup.addEventListener('mouseover', function(e) {
+            var cell = e.target.closest('.calendar-day-has-events');
+            if (!cell) return;
+            if (popupHideTimeout) { clearTimeout(popupHideTimeout); popupHideTimeout = null; }
+            var source = cell.querySelector('.calendar-day-events-source');
+            if (!source) return;
+            popupEl.innerHTML = source.innerHTML;
+            popupEl.classList.remove('d-none');
+            var rect = cell.getBoundingClientRect();
+            popupEl.style.left = rect.left + 'px';
+            popupEl.style.top = (rect.bottom + 6) + 'px';
+            var pr = popupEl.getBoundingClientRect();
+            if (pr.bottom > window.innerHeight - 8) popupEl.style.top = (rect.top - pr.height - 6) + 'px';
+            if (pr.right > window.innerWidth - 8) popupEl.style.left = (window.innerWidth - pr.width - 8) + 'px';
+            if (parseInt(popupEl.style.left, 10) < 8) popupEl.style.left = '8px';
+        });
+        containerForPopup.addEventListener('mouseout', function(e) {
+            var toPopup = e.relatedTarget && (e.relatedTarget === popupEl || popupEl.contains(e.relatedTarget));
+            var stillInside = containerForPopup.contains(e.relatedTarget);
+            if (!toPopup && !stillInside) {
+                popupHideTimeout = setTimeout(function() { popupEl.classList.add('d-none'); popupHideTimeout = null; }, 150);
+            }
+        });
+        popupEl.addEventListener('mouseenter', function() {
+            if (popupHideTimeout) { clearTimeout(popupHideTimeout); popupHideTimeout = null; }
+        });
+        popupEl.addEventListener('mouseleave', function() {
+            popupHideTimeout = setTimeout(function() { popupEl.classList.add('d-none'); popupHideTimeout = null; }, 100);
+        });
+    }
+
+    /* Run calendar color debug on load (remove when done debugging) */
+    setTimeout(debugCalendarColors, 100);
 })();
 </script>
 {% endif %}

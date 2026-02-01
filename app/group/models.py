@@ -12,6 +12,11 @@ class Group(models.Model):
     name = models.CharField(max_length=200, help_text="Name of the political group")
     party = models.ForeignKey(Party, on_delete=models.CASCADE, related_name='groups', help_text="Party this group belongs to")
     is_active = models.BooleanField(default=True, help_text="Whether the group is currently active")
+    calendar_badge_name = models.CharField(
+        max_length=80,
+        blank=True,
+        help_text="Label shown for this group's meetings in the calendar list and monthly calendar (e.g. 'Group meeting'). Leave empty to use the default 'Group meeting'."
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     history = models.JSONField(default=dict, blank=True)

@@ -82,9 +82,20 @@
                                 </div>
                             </div>
                         </div>
-
-
-
+                        <div class="mb-3">
+                            <label for="{{ form.calendar_badge_name.id_for_label }}" class="form-label">
+                                {% trans "Calendar badge name" %}
+                            </label>
+                            {{ form.calendar_badge_name }}
+                            <div class="form-text">{% trans "Label for this council's sessions in the calendar (e.g. City Council). Leave empty for default." %}</div>
+                            {% if form.calendar_badge_name.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.calendar_badge_name.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
 
 
                         <div class="d-flex justify-content-between">
@@ -114,6 +125,7 @@
                     <ul class="list-unstyled">
                         <li><strong>{% trans "Council Name" %}:</strong> {% trans "Enter a descriptive name for the council." %}</li>
                         <li><strong>{% trans "Local District" %}:</strong> {% trans "Select the local district this council belongs to." %}</li>
+                        <li><strong>{% trans "Calendar badge name" %}:</strong> {% trans "Optional short label shown next to this council's sessions on the home calendar (e.g. City Council, District Council)." %}</li>
                     </ul>
                 </div>
             </div>

@@ -49,6 +49,11 @@ class Council(models.Model):
     name = models.CharField(max_length=200)
     local = models.OneToOneField(Local, on_delete=models.CASCADE, related_name='council')
     is_active = models.BooleanField(default=True)
+    calendar_badge_name = models.CharField(
+        max_length=80,
+        blank=True,
+        help_text="Label shown for this council's sessions in the calendar list and monthly calendar (e.g. 'City Council'). Leave empty to use the default 'Council'."
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     history = AuditlogHistoryField()
