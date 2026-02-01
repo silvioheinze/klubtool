@@ -36,7 +36,7 @@
                     <i class="bi bi-arrow-left"></i> {% trans "Back to Council" %}
                 </a>
             {% elif not form.instance.pk and form.initial.council %}
-                <a href="{% url 'local:council-detail' form.initial.council.pk %}" class="btn btn-outline-secondary">
+                <a href="{% url 'local:council-detail' form.initial.council %}" class="btn btn-outline-secondary">
                     <i class="bi bi-arrow-left"></i> {% trans "Back to Council" %}
                 </a>
             {% else %}
@@ -264,7 +264,7 @@
                                     </a>
                                 {% else %}
                                     {% if form.initial.council %}
-                                        <a href="{% url 'local:council-detail' form.initial.council.pk %}" class="btn btn-outline-secondary">
+                                        <a href="{% url 'local:council-detail' form.initial.council %}" class="btn btn-outline-secondary">
                                             <i class="bi bi-x-circle"></i> {% trans "Cancel" %}
                                         </a>
                                     {% else %}
