@@ -94,36 +94,29 @@ def group_memberships(request):
             context['user_locals'] = sorted(locals_from_memberships, key=lambda x: x.name)
             context['user_councils'] = sorted(councils_from_memberships, key=lambda x: x.name)
             
-            # Get next session within 14 days for user's councils
+            # Get next session (any future session) for user's councils
             from django.utils import timezone
-            from datetime import timedelta
             
             now = timezone.now()
-            fourteen_days_from_now = now + timedelta(days=14)
             
-            # Get sessions for user's councils that are within 14 days
             if councils_from_memberships:
                 from local.models import Session
                 next_session = Session.objects.filter(
                     council__in=councils_from_memberships,
                     scheduled_date__date__gte=now.date(),
-                    scheduled_date__date__lte=fourteen_days_from_now.date(),
                     is_active=True
                 ).order_by('scheduled_date').first()
-                
                 context['next_session'] = next_session
             
-            # Get next group meeting within 14 days for user's groups
+            # Get next group meeting (any future meeting) for user's groups
             if combined_groups:
                 from group.models import GroupMeeting
                 user_group_ids = [membership.group.pk for membership in combined_groups]
                 next_group_meeting = GroupMeeting.objects.filter(
                     group__pk__in=user_group_ids,
                     scheduled_date__gte=now,
-                    scheduled_date__lte=fourteen_days_from_now,
                     is_active=True
                 ).select_related('group').order_by('scheduled_date').first()
-                
                 context['next_group_meeting'] = next_group_meeting
             
         except ImportError:
