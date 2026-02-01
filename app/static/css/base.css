@@ -156,7 +156,8 @@ table.calendar-month-table td.calendar-day.calendar-day-today.calendar-day-has-e
     min-width: 1.5em;
 }
 
-#calendar-card-body {
+#calendar-card-body,
+#group-calendar-card-body {
     min-height: 16rem;
 }
 
