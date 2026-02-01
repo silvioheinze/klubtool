@@ -18,7 +18,7 @@
                 <i class="bi bi-pencil"></i> {% trans "Edit" %}
             </a>
             <a href="{% url 'local:council-detail' session.council.pk %}" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left"></i> {% trans "Back" %}
+                <i class="bi bi-arrow-left"></i> {% trans "Back to Council" %}
             </a>
         </div>
     </div>
@@ -191,9 +191,6 @@
                         <div class="text-center py-4">
                             <i class="bi bi-file-text text-muted" style="font-size: 3rem;"></i>
                             <p class="text-muted mt-2">{% trans "No motions have been submitted for this session yet." %}</p>
-                            <a href="{% url 'motion:motion-create' %}?session={{ session.pk }}" class="btn btn-primary">
-                                <i class="bi bi-plus-circle"></i> {% trans "Create First Motion" %}
-                            </a>
                         </div>
                     {% endif %}
                 </div>
@@ -287,9 +284,6 @@
                         <div class="text-center py-4">
                             <i class="bi bi-question-circle text-muted" style="font-size: 3rem;"></i>
                             <p class="text-muted mt-2">{% trans "No questions have been submitted for this session yet." %}</p>
-                            <a href="{% url 'question:question-create' %}?session={{ session.pk }}" class="btn btn-primary">
-                                <i class="bi bi-plus-circle"></i> {% trans "Create First Question" %}
-                            </a>
                         </div>
                     {% endif %}
                 </div>
@@ -342,9 +336,6 @@
                         <div class="text-center py-4">
                             <i class="bi bi-paperclip text-muted" style="font-size: 3rem;"></i>
                             <p class="text-muted mt-2">{% trans "No attachments uploaded for this session yet." %}</p>
-                            <a href="{% url 'local:session-attach' session.pk %}" class="btn btn-primary">
-                                <i class="bi bi-upload"></i> {% trans "Upload First File" %}
-                            </a>
                         </div>
                     {% endif %}
                 </div>
