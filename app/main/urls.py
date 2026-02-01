@@ -41,7 +41,7 @@ urlpatterns = [
     path('accounts/signup/', redirect_to_user_signup, name='account_signup_redirect'),
     path('accounts/logout/', redirect_to_user_logout, name='account_logout_redirect'),
     path('local/', include('local.urls')),
-    path('group/', include('group.urls')),
+    path('group/', include(('group.urls', 'group'))),
     path('motions/', include('motion.urls')),
     path('questions/', include('motion.question_urls')),
 ]

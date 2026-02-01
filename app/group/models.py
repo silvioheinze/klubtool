@@ -249,8 +249,50 @@ class AgendaItem(models.Model):
         else:
             return self.meeting.agenda_items.filter(parent_item__isnull=True, is_active=True).exclude(pk=self.pk).order_by('order')
 
+
+class MinuteItem(models.Model):
+    """Model representing a minute item for a group meeting (created when invites are sent; mirrors agenda structure)."""
+    meeting = models.ForeignKey(
+        GroupMeeting, on_delete=models.CASCADE, related_name='minute_items',
+        help_text="Meeting this minute item belongs to"
+    )
+    title = models.CharField(max_length=200, help_text="Title of the minute item")
+    description = models.TextField(blank=True, help_text="Description or notes for the minute item")
+    parent_item = models.ForeignKey(
+        'self', on_delete=models.CASCADE, null=True, blank=True, related_name='sub_items',
+        help_text="Parent minute item if this is a sub-item"
+    )
+    order = models.PositiveIntegerField(default=0, help_text="Order of the minute item within the meeting")
+    is_active = models.BooleanField(default=True, help_text="Whether the minute item is currently active")
+    created_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_minute_items',
+        help_text="User who created the minute item"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['order', 'created_at']
+        verbose_name = "Minute Item"
+        verbose_name_plural = "Minute Items"
+
+    def __str__(self):
+        return f"{self.title} - {self.meeting.title}"
+
+    @property
+    def level(self):
+        """Get the nesting level of this minute item"""
+        level = 0
+        current = self.parent_item
+        while current:
+            level += 1
+            current = current.parent_item
+        return level
+
+
 # Register models for audit logging
 auditlog.register(Group)
 auditlog.register(GroupMember)
 auditlog.register(GroupMeeting)
 auditlog.register(AgendaItem)
+auditlog.register(MinuteItem)

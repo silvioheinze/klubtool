@@ -3211,6 +3211,37 @@ msgstr "Exporte"
 msgid "Export Session as PDF"
 msgstr "Sitzung als PDF exportieren"
 
+#: templates/group/meeting_detail.html
+msgid "Export Agenda as PDF"
+msgstr "Tagesordnung als PDF exportieren"
+
+msgid "Export Minutes as PDF"
+msgstr "Protokoll als PDF exportieren"
+
+#: templates/group/meeting_detail.html
+msgid "Meeting Minutes"
+msgstr "Sitzungsprotokoll"
+
+#: templates/group/meeting_detail.html
+msgid "Add Minute Item"
+msgstr "Protokollpunkt hinzufügen"
+
+#: templates/group/meeting_detail.html
+msgid "Edit Minute Item"
+msgstr "Protokollpunkt bearbeiten"
+
+#: templates/group/meeting_detail.html
+msgid "No minute items"
+msgstr "Keine Protokollpunkte"
+
+#: templates/group/meeting_detail.html
+msgid "Add minute items to record the meeting. Agenda was copied when invites were sent."
+msgstr "Fügen Sie Protokollpunkte hinzu, um die Sitzung festzuhalten. Die Tagesordnung wurde beim Versand der Einladungen übernommen."
+
+#: templates/group/meeting_detail.html
+msgid "Are you sure you want to delete this minute item?"
+msgstr "Möchten Sie diesen Protokollpunkt wirklich löschen?"
+
 #: templates/local/session_detail.html:367
 msgid "Presence Tracker"
 msgstr "Anwesendheit"
