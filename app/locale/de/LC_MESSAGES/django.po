@@ -2470,6 +2470,39 @@ msgstr "Ausschusssitzung löschen"
 msgid "Committee Meeting"
 msgstr "Ausschusssitzung"
 
+msgid "Participants"
+msgstr "Teilnehmende"
+
+msgid "Substitute"
+msgstr "Vertretung"
+
+msgid "Replaced by"
+msgstr "Ersetzt durch"
+
+msgid "In place of"
+msgstr "Anstelle von"
+
+msgid "Set substitute"
+msgstr "Vertretung festlegen"
+
+msgid "Select a substitute member who will attend this meeting in your place."
+msgstr "Wähle ein Stellvertreter-Mitglied, das an deiner Stelle an der Sitzung teilnimmt."
+
+msgid "Substitute set: %(name)s will attend in your place."
+msgstr "Vertretung festgelegt: %(name)s nimmt an deiner Stelle teil."
+
+msgid "Substitute cleared."
+msgstr "Vertretung entfernt."
+
+msgid "You can only set a substitute for yourself as a regular committee member."
+msgstr "Du kannst nur für dich selbst als reguläres Ausschussmitglied eine Vertretung festlegen."
+
+msgid "Invalid substitute member."
+msgstr "Ungültiges Stellvertreter-Mitglied."
+
+msgid "No committee members (excluding substitutes)."
+msgstr "Keine Ausschussmitglieder (ohne Stellvertreter)."
+
 #: templates/local/committee_meeting_detail.html:71
 msgid "No agenda available."
 msgstr "Keine Tagesordnung vorhanden."

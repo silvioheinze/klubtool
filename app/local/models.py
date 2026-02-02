@@ -271,6 +271,39 @@ class CommitteeMember(models.Model):
         return reverse('local:committee-detail', kwargs={'pk': self.committee.pk})
 
 
+class CommitteeParticipationSubstitute(models.Model):
+    """Records that a substitute member will attend a committee meeting in place of a regular member."""
+    committee_meeting = models.ForeignKey(
+        CommitteeMeeting,
+        on_delete=models.CASCADE,
+        related_name='participation_substitutes',
+        help_text=_("Committee meeting")
+    )
+    member = models.ForeignKey(
+        CommitteeMember,
+        on_delete=models.CASCADE,
+        related_name='meeting_substitutions_as_member',
+        help_text=_("Regular member who will not attend (replaced by substitute)")
+    )
+    substitute_member = models.ForeignKey(
+        CommitteeMember,
+        on_delete=models.CASCADE,
+        related_name='meeting_substitutions_as_substitute',
+        help_text=_("Substitute member who will attend in place of the member")
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['committee_meeting', 'member'], name='local_committeeparticipation_meeting_member_uniq'),
+            models.UniqueConstraint(fields=['committee_meeting', 'substitute_member'], name='local_committeeparticipation_meeting_sub_uniq'),
+        ]
+        verbose_name = _("Committee participation substitute")
+        verbose_name_plural = _("Committee participation substitutes")
+
+    def __str__(self):
+        return f"{self.committee_meeting}: {self.member} → {self.substitute_member}"
+
+
 class Term(models.Model):
     """Model representing a political term/period"""
     name = models.CharField(max_length=100)
@@ -491,6 +524,7 @@ auditlog.register(Committee)
 auditlog.register(CommitteeMeeting)
 auditlog.register(CommitteeMeetingAttachment)
 auditlog.register(CommitteeMember)
+auditlog.register(CommitteeParticipationSubstitute)
 auditlog.register(Term)
 auditlog.register(Party)
 auditlog.register(TermSeatDistribution)
