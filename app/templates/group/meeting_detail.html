@@ -268,6 +268,48 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Participation Section -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-people"></i> {% trans "Participation" %}</h5>
+                </div>
+                <div class="card-body">
+                    {% if group_members %}
+                        <ul class="list-group list-group-flush">
+                            {% for member in group_members %}
+                                <li class="list-group-item px-0">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span>{{ member.user.get_full_name|default:member.user.username }}</span>
+                                        <div class="form-check form-switch">
+                                            <input 
+                                                class="form-check-input participation-toggle" 
+                                                type="checkbox" 
+                                                id="participation-{{ member.pk }}"
+                                                data-meeting-pk="{{ meeting.pk }}"
+                                                data-member-pk="{{ member.pk }}"
+                                                {% if participations %}{% if participations|get_item:member.pk %}checked{% endif %}{% endif %}
+                                            >
+                                            <label class="form-check-label" for="participation-{{ member.pk }}">
+                                                {% trans "Present" %}
+                                            </label>
+                                        </div>
+                                    </div>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                        <div class="mt-3 pt-3 border-top">
+                            <small class="text-muted">
+                                <span id="participation-summary">
+                                    {% trans "Present" %}: <strong id="total-present-count">{{ total_present|default:0 }}</strong> / <strong id="total-members-count">{{ group_members|length }}</strong>
+                                </span>
+                            </small>
+                        </div>
+                    {% else %}
+                        <p class="text-muted mb-0">{% trans "No group members." %}</p>
+                    {% endif %}
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -726,6 +768,54 @@ function deleteMinuteItem(itemId) {
         window.location.href = '{% url "group:minute-item-delete" 0 %}'.replace('0', itemId);
     }
 }
+
+// Participation toggle functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const participationToggles = document.querySelectorAll('.participation-toggle');
+    participationToggles.forEach(toggle => {
+        toggle.addEventListener('change', function() {
+            const meetingPk = this.getAttribute('data-meeting-pk');
+            const memberPk = this.getAttribute('data-member-pk');
+            const checkbox = this;
+            
+            // Disable checkbox during request
+            checkbox.disabled = true;
+            
+            const url = `/group/meetings/${meetingPk}/participation/${memberPk}/toggle/`;
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update total present count
+                    const totalPresentElement = document.getElementById('total-present-count');
+                    if (totalPresentElement) {
+                        totalPresentElement.textContent = data.total_present;
+                    }
+                } else {
+                    // Revert checkbox state on error
+                    checkbox.checked = !checkbox.checked;
+                    alert('Error updating participation: ' + (data.error || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                // Revert checkbox state on error
+                checkbox.checked = !checkbox.checked;
+                console.error('Error:', error);
+                alert('Error updating participation. Please try again.');
+            })
+            .finally(() => {
+                // Re-enable checkbox
+                checkbox.disabled = false;
+            });
+        });
+    });
+});
 </script>
 
 <style>

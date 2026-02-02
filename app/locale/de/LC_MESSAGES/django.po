@@ -1840,6 +1840,18 @@ msgstr "Keine Klubsitzung fällt unter die Suchkriterien."
 msgid "Add First Meeting"
 msgstr "Erstelle die erste Sitzung"
 
+#: templates/group/meeting_detail.html:275
+msgid "Participation"
+msgstr "Teilnahme"
+
+#: templates/group/meeting_detail.html:294
+msgid "Present"
+msgstr "Anwesend"
+
+#: templates/group/meeting_detail.html:309
+msgid "No group members."
+msgstr "Keine Gruppenmitglieder."
+
 #: templates/group/member_confirm_delete.html:5
 #: templates/group/member_confirm_delete.html:12
 #: templates/group/member_confirm_delete.html:89

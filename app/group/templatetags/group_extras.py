@@ -16,3 +16,11 @@ def sanitize_richtext(value):
         return ''
     cleaned = bleach.clean(value, tags=ALLOWED_TAGS, attributes=ALLOWED_ATTRS, strip=True)
     return mark_safe(cleaned)
+
+
+@register.filter
+def get_item(dictionary, key):
+    """Get an item from a dictionary by key."""
+    if dictionary is None:
+        return None
+    return dictionary.get(key)
