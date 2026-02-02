@@ -1,4 +1,4 @@
-from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView, FormView
+from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView, FormView, View
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -11,7 +11,7 @@ from django.views.decorators.http import require_http_methods
 from django.utils.translation import gettext_lazy as _
 import json
 
-from .models import Local, Term, Council, TermSeatDistribution, Party, Session, Committee, CommitteeMeeting, CommitteeMeetingAttachment, CommitteeMember, SessionAttachment, SessionPresence
+from .models import Local, Term, Council, TermSeatDistribution, Party, Session, Committee, CommitteeMeeting, CommitteeMeetingAttachment, CommitteeMember, SessionAttachment, SessionPresence, SessionExcuse
 from .forms import LocalForm, LocalFilterForm, CouncilForm, CouncilFilterForm, TermForm, TermFilterForm, CouncilNameForm, TermSeatDistributionForm, PartyForm, PartyFilterForm, SessionForm, SessionFilterForm, CommitteeForm, CommitteeFilterForm, CommitteeMeetingForm, CommitteeMemberForm, CommitteeMemberFilterForm, SessionAttachmentForm, CommitteeMeetingAttachmentForm, SessionInvitationForm, SessionMinutesForm
 
 
@@ -853,20 +853,96 @@ class SessionDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
                 # Majority is GRÜNE >= half of total present
                 context['majority_needed'] = (total_present // 2) + 1 if total_present > 0 else 0
                 context['has_majority'] = gruene_present >= context['majority_needed'] if total_present > 0 else False
+                # Participants: group members from parties with seats in current term (political group members)
+                party_ids = [d.party_id for d in seat_distributions]
+                from group.models import GroupMember
+                context['session_participants'] = (
+                    GroupMember.objects.filter(
+                        group__party_id__in=party_ids,
+                        group__party__is_active=True,
+                        group__is_active=True,
+                        is_active=True,
+                    )
+                    .select_related('user', 'group', 'group__party')
+                    .order_by('group__party__name', 'group__name', 'user__last_name', 'user__first_name')
+                )
             else:
                 context['presence_data'] = []
                 context['total_seats'] = 0
                 context['total_present'] = 0
                 context['majority_needed'] = 0
                 context['has_majority'] = False
+                context['session_participants'] = []
         else:
             context['presence_data'] = []
             context['total_seats'] = 0
             context['total_present'] = 0
             context['majority_needed'] = 0
             context['has_majority'] = False
-        
+            context['session_participants'] = []
+
+        # Session excuses: who has excused themselves (for Participants section)
+        context['excused_user_ids'] = list(
+            SessionExcuse.objects.filter(session=self.object).values_list('user_id', flat=True)
+        )
+        context['user_has_excused'] = self.request.user.pk in context['excused_user_ids']
+        participants = context.get('session_participants')
+        if hasattr(participants, 'filter'):
+            context['user_is_participant'] = participants.filter(user_id=self.request.user.pk).exists()
+        else:
+            context['user_is_participant'] = any(gm.user_id == self.request.user.pk for gm in (participants or []))
+
         return context
+
+
+class SessionExcuseView(LoginRequiredMixin, View):
+    """View to excuse oneself from a council session or cancel the excuse (POST only)."""
+    http_method_names = ['get', 'post']
+
+    def get(self, request, pk):
+        return redirect('local:session-detail', pk=pk)
+
+    def post(self, request, pk):
+        session = get_object_or_404(Session, pk=pk)
+        # Check user is in participants (group member from a party with seats in current term)
+        from group.models import GroupMember
+        today = timezone.now().date()
+        current_term = Term.objects.filter(
+            start_date__lte=today, end_date__gte=today, is_active=True
+        ).first()
+        if not current_term or not session.council or not session.council.local:
+            messages.error(request, _('You cannot excuse yourself for this session.'))
+            return redirect('local:session-detail', pk=pk)
+        party_ids = list(
+            TermSeatDistribution.objects.filter(
+                term=current_term,
+                party__local=session.council.local,
+                party__is_active=True,
+            ).values_list('party_id', flat=True)
+        )
+        is_participant = GroupMember.objects.filter(
+            group__party_id__in=party_ids,
+            group__party__is_active=True,
+            group__is_active=True,
+            is_active=True,
+            user_id=request.user.pk,
+        ).exists()
+        if not is_participant:
+            messages.error(request, _('You are not a participant of this session.'))
+            return redirect('local:session-detail', pk=pk)
+        clear = request.POST.get('clear') == '1'
+        if clear:
+            SessionExcuse.objects.filter(session=session, user=request.user).delete()
+            messages.success(request, _('Excuse cancelled.'))
+        else:
+            note = (request.POST.get('note') or '').strip()
+            SessionExcuse.objects.update_or_create(
+                session=session,
+                user=request.user,
+                defaults={'note': note},
+            )
+            messages.success(request, _('You have excused yourself from this session.'))
+        return redirect('local:session-detail', pk=pk)
 
 
 class SessionCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):

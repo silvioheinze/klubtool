@@ -456,6 +456,34 @@ class SessionPresence(models.Model):
         return f"{self.party.name} - {self.present_count} present in {self.session.title}"
 
 
+class SessionExcuse(models.Model):
+    """Records that a user has excused themselves from attending a council session."""
+    session = models.ForeignKey(
+        Session,
+        on_delete=models.CASCADE,
+        related_name='excuses',
+        help_text=_("Council session")
+    )
+    user = models.ForeignKey(
+        'user.CustomUser',
+        on_delete=models.CASCADE,
+        related_name='session_excuses',
+        help_text=_("User who excused themselves")
+    )
+    note = models.TextField(blank=True, help_text=_("Optional reason or note"))
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['session', 'user'], name='local_sessionexcuse_session_user_uniq'),
+        ]
+        verbose_name = _("Session excuse")
+        verbose_name_plural = _("Session excuses")
+
+    def __str__(self):
+        return f"{self.session.title}: {self.user.get_full_name() or self.user.username} excused"
+
+
 # Register models for audit logging
 auditlog.register(Local)
 auditlog.register(Council)
@@ -469,3 +497,4 @@ auditlog.register(TermSeatDistribution)
 auditlog.register(Session)
 auditlog.register(SessionAttachment)
 auditlog.register(SessionPresence)
+auditlog.register(SessionExcuse)

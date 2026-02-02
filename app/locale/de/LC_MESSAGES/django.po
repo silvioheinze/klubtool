@@ -2616,6 +2616,45 @@ msgstr ""
 msgid "No seat distribution configured for the current term."
 msgstr ""
 
+msgid "No seat distribution for the current term."
+msgstr "Keine Sitzverteilung für die aktuelle Wahlperiode."
+
+msgid "No political group members for the current term."
+msgstr "Keine Klubmitglieder für die aktuelle Wahlperiode."
+
+msgid "Excuse"
+msgstr "Entschuldigen"
+
+msgid "Cancel excuse"
+msgstr "Entschuldigung zurücknehmen"
+
+msgid "Excuse myself"
+msgstr "Mich entschuldigen"
+
+msgid "Excused"
+msgstr "Entschuldigt"
+
+msgid "You have excused yourself from this session. Cancel to mark yourself as attending again."
+msgstr "Sie haben sich von dieser Sitzung entschuldigt. Zurücknehmen, um sich wieder als teilnehmend zu markieren."
+
+msgid "You will be marked as excused from this session. Optional note:"
+msgstr "Sie werden als von dieser Sitzung entschuldigt markiert. Optionale Anmerkung:"
+
+msgid "Optional reason (e.g. illness, other commitment)"
+msgstr "Optionale Begründung (z. B. Krankheit, andere Verpflichtung)"
+
+msgid "You cannot excuse yourself for this session."
+msgstr "Sie können sich für diese Sitzung nicht entschuldigen."
+
+msgid "You are not a participant of this session."
+msgstr "Sie sind kein Teilnehmer dieser Sitzung."
+
+msgid "Excuse cancelled."
+msgstr "Entschuldigung zurückgenommen."
+
+msgid "You have excused yourself from this session."
+msgstr "Sie haben sich von dieser Sitzung entschuldigt."
+
 #: templates/local/council_detail.html:107
 #: templates/local/local_detail.html:110
 msgid "Configure Seats"

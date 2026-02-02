@@ -357,6 +357,77 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Participants (political group members from parties with seats in current term) -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-people"></i> {% trans "Participants" %}</h5>
+                </div>
+                <div class="card-body">
+                    {% if session_participants %}
+                        <ul class="list-group list-group-flush">
+                            {% for gm in session_participants %}
+                                <li class="list-group-item px-0">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span>{{ gm.user.get_full_name|default:gm.user.username }}</span>
+                                        <span class="d-flex align-items-center gap-1">
+                                            {% if gm.user_id == user.id and user_is_participant %}
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#sessionExcuseModal" title="{% trans 'Excuse myself' %}">
+                                                {% if user_has_excused %}{% trans "Cancel excuse" %}{% else %}{% trans "Excuse" %}{% endif %}
+                                            </button>
+                                            {% endif %}
+                                        </span>
+                                    </div>
+                                    {% if gm.user_id in excused_user_ids %}
+                                    <small class="text-muted d-block mt-1">{% trans "Excused" %}</small>
+                                    {% endif %}
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="text-muted mb-0">{% trans "No political group members for the current term." %}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if user_is_participant %}
+            <!-- Excuse myself modal -->
+            <div class="modal fade" id="sessionExcuseModal" tabindex="-1" aria-labelledby="sessionExcuseModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="sessionExcuseModalLabel">{% if user_has_excused %}{% trans "Cancel excuse" %}{% else %}{% trans "Excuse myself" %}{% endif %}</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        {% if user_has_excused %}
+                        <form method="post" action="{% url 'local:session-excuse' session.pk %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="clear" value="1">
+                            <div class="modal-body">
+                                <p class="text-muted mb-0">{% trans "You have excused yourself from this session. Cancel to mark yourself as attending again." %}</p>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Close" %}</button>
+                                <button type="submit" class="btn btn-primary">{% trans "Cancel excuse" %}</button>
+                            </div>
+                        </form>
+                        {% else %}
+                        <form method="post" action="{% url 'local:session-excuse' session.pk %}">
+                            {% csrf_token %}
+                            <div class="modal-body">
+                                <p class="text-muted small mb-2">{% trans "You will be marked as excused from this session. Optional note:" %}</p>
+                                <textarea name="note" class="form-control" rows="2" placeholder="{% trans 'Optional reason (e.g. illness, other commitment)' %}"></textarea>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
+                                <button type="submit" class="btn btn-primary">{% trans "Excuse myself" %}</button>
+                            </div>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
             
             <!-- Presence Tracker (only on day of session) -->
             {% now "Y-m-d" as today %}
