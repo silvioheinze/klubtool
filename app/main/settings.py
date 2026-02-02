@@ -195,6 +195,7 @@ ACCOUNT_RATE_LIMITS = {
     'login_failed': '5/5m',
 }
 ACCOUNT_ADAPTER = 'user.adapters.CustomAccountAdapter'  # Custom adapter to handle email confirmation
+ACCOUNT_FORMS = {'change_password': 'user.forms.CustomChangePasswordForm'}  # Superusers can change password without current password
 
 # Allauth URL settings
 LOGIN_URL = '/user/settings/'

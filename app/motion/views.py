@@ -14,7 +14,20 @@ from .models import Motion, MotionVote, MotionComment, MotionAttachment, MotionS
 from .forms import MotionForm, MotionFilterForm, MotionVoteForm, MotionVoteFormSetFactory, MotionVoteTypeForm, MotionCommentForm, MotionAttachmentForm, MotionStatusForm, MotionGroupDecisionForm, QuestionForm, QuestionFilterForm, QuestionStatusForm, QuestionAttachmentForm
 from user.models import CustomUser
 from local.models import Session, Party
-from group.models import Group
+from local.views import _get_user_accessible_council_ids
+from group.models import Group, GroupMember
+
+
+def _get_user_accessible_group_ids(user):
+    """Return set of group PKs the user can access (active group membership)."""
+    if user.is_superuser:
+        return None  # None means "all groups" for filtering
+    return set(
+        GroupMember.objects.filter(
+            user=user,
+            is_active=True,
+        ).values_list('group_id', flat=True).distinct()
+    )
 
 
 def is_superuser_or_has_permission(permission):
@@ -33,7 +46,6 @@ def is_leader_or_deputy_leader(user, motion):
         return False
     
     # Check if user is a member of the motion's group with leader or deputy leader role
-    from group.models import GroupMember
     from user.models import Role
     
     try:
@@ -67,7 +79,6 @@ def can_change_question_status(user, question):
         return True
     
     # Check if user is a leader or deputy leader
-    from group.models import GroupMember
     from user.models import Role
     
     try:
@@ -94,14 +105,24 @@ class MotionListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
     paginate_by = 20
 
     def test_func(self):
-        """Check if user has permission to view Motion objects"""
-        return self.request.user.is_superuser or self.request.user.has_role_permission('motion.view')
+        """Allow superuser, motion.view permission, or regular group members (see motions of their groups)."""
+        user = self.request.user
+        if user.is_superuser or user.has_role_permission('motion.view'):
+            return True
+        group_ids = _get_user_accessible_group_ids(user)
+        return group_ids is not None and len(group_ids) > 0
 
     def get_queryset(self):
-        """Filter queryset based on search parameters"""
-        queryset = Motion.objects.all().select_related(
+        """Filter queryset based on search parameters and access: group members see only their groups' motions."""
+        user = self.request.user
+        base = Motion.objects.all().select_related(
             'session', 'group', 'submitted_by'
         ).prefetch_related('parties', 'tags').order_by('-submitted_date')
+        if user.is_superuser or user.has_role_permission('motion.view'):
+            queryset = base
+        else:
+            group_ids = _get_user_accessible_group_ids(user)
+            queryset = base.filter(group__pk__in=group_ids) if group_ids else base.none()
         
         # Get filter form
         filter_form = MotionFilterForm(self.request.GET)
@@ -185,9 +206,23 @@ class MotionDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
     template_name = 'motion/motion_detail.html'
 
     def test_func(self):
-        """Check if user has permission to view Motion objects"""
-        return self.request.user.is_superuser or self.request.user.has_role_permission('motion.view')
-    
+        """Allow superuser, motion.view permission, or regular group members for motions of their group."""
+        user = self.request.user
+        if user.is_superuser or user.has_role_permission('motion.view'):
+            return True
+        motion_pk = self.kwargs.get('pk')
+        if motion_pk is None:
+            return False
+        try:
+            motion_pk = int(motion_pk)
+        except (TypeError, ValueError):
+            return False
+        group_id = Motion.objects.filter(pk=motion_pk).values_list('group_id', flat=True).first()
+        if group_id is None:
+            return False
+        group_ids = _get_user_accessible_group_ids(user)
+        return group_ids is not None and group_id in group_ids
+
     def get_queryset(self):
         """Prefetch related objects for better performance"""
         return Motion.objects.prefetch_related('interventions', 'parties', 'group_decisions')
@@ -351,8 +386,15 @@ class MotionDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             'rounds_count': len(vote_rounds)
         }
         
-        # Get comments (public only for non-authors)
-        if self.request.user.is_superuser or motion.submitted_by == self.request.user:
+        # Get comments: all for superuser, author, or regular group members of the motion's group; else public only
+        user = self.request.user
+        group_ids = _get_user_accessible_group_ids(user)
+        can_see_all_comments = (
+            user.is_superuser
+            or motion.submitted_by == user
+            or (motion.group_id and group_ids is not None and motion.group_id in group_ids)
+        )
+        if can_see_all_comments:
             context['comments'] = motion.comments.all()
         else:
             context['comments'] = motion.comments.filter(is_public=True)
@@ -374,8 +416,19 @@ class MotionCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     success_url = reverse_lazy('motion:motion-list')
 
     def test_func(self):
-        """Check if user has permission to create Motion objects"""
-        return self.request.user.is_superuser or self.request.user.has_role_permission('motion.create')
+        """Allow superuser, motion.create permission, or regular group members for the session's council."""
+        user = self.request.user
+        if user.is_superuser or user.has_role_permission('motion.create'):
+            return True
+        session_id = self.request.GET.get('session')
+        if session_id:
+            try:
+                council_id = Session.objects.filter(pk=session_id).values_list('council_id', flat=True).first()
+                if council_id is not None and council_id in _get_user_accessible_council_ids(user):
+                    return True
+            except (ValueError, TypeError):
+                pass
+        return False
 
     def get_form_kwargs(self):
         """Pass user to form for automatic group assignment"""
@@ -417,8 +470,22 @@ class MotionUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     success_url = reverse_lazy('motion:motion-list')
 
     def test_func(self):
-        """Check if user has permission to edit Motion objects"""
-        return self.request.user.is_superuser or self.request.user.has_role_permission('motion.edit')
+        """Allow superuser, motion.edit permission, or regular group members for motions of their group."""
+        user = self.request.user
+        if user.is_superuser or user.has_role_permission('motion.edit'):
+            return True
+        motion_pk = self.kwargs.get('pk')
+        if motion_pk is None:
+            return False
+        try:
+            motion_pk = int(motion_pk)
+        except (TypeError, ValueError):
+            return False
+        group_id = Motion.objects.filter(pk=motion_pk).values_list('group_id', flat=True).first()
+        if group_id is None:
+            return False
+        group_ids = _get_user_accessible_group_ids(user)
+        return group_ids is not None and group_id in group_ids
 
     def get_form_kwargs(self):
         """Pass user to form for automatic group assignment"""
@@ -594,11 +661,20 @@ def motion_vote_view(request, pk):
 
 
 @login_required
-@user_passes_test(is_superuser_or_has_permission('motion.comment'))
 def motion_comment_view(request, pk):
-    """View for adding comments to a motion"""
+    """View for adding comments to a motion. Access: superuser, motion.comment, or regular group members of the motion's group."""
     motion = get_object_or_404(Motion, pk=pk)
-    
+    user = request.user
+    group_ids = _get_user_accessible_group_ids(user)
+    can_comment = (
+        user.is_superuser
+        or user.has_role_permission('motion.comment')
+        or (motion.group_id and group_ids is not None and motion.group_id in group_ids)
+    )
+    if not can_comment:
+        from django.core.exceptions import PermissionDenied
+        raise PermissionDenied
+
     if request.method == 'POST':
         form = MotionCommentForm(request.POST, motion=motion, author=request.user)
         if form.is_valid():
@@ -615,11 +691,20 @@ def motion_comment_view(request, pk):
 
 
 @login_required
-@user_passes_test(is_superuser_or_has_permission('motion.attach'))
 def motion_attachment_view(request, pk):
-    """View for uploading attachments to a motion"""
+    """View for uploading attachments to a motion. Access: superuser, motion.attach, or regular group members of the motion's group."""
     motion = get_object_or_404(Motion, pk=pk)
-    
+    user = request.user
+    group_ids = _get_user_accessible_group_ids(user)
+    can_attach = (
+        user.is_superuser
+        or user.has_role_permission('motion.attach')
+        or (motion.group_id and group_ids is not None and motion.group_id in group_ids)
+    )
+    if not can_attach:
+        from django.core.exceptions import PermissionDenied
+        raise PermissionDenied
+
     if request.method == 'POST':
         form = MotionAttachmentForm(request.POST, request.FILES, motion=motion, uploaded_by=request.user)
         if form.is_valid():
@@ -1293,8 +1378,22 @@ class MotionExportPDFView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
     template_name = 'motion/motion_export_pdf.html'
 
     def test_func(self):
-        """Check if user has permission to export Motion objects"""
-        return self.request.user.is_superuser or self.request.user.has_role_permission('motion.view')
+        """Allow superuser, motion.view permission, or regular group members for motions of their group."""
+        user = self.request.user
+        if user.is_superuser or user.has_role_permission('motion.view'):
+            return True
+        motion_pk = self.kwargs.get('pk')
+        if motion_pk is None:
+            return False
+        try:
+            motion_pk = int(motion_pk)
+        except (TypeError, ValueError):
+            return False
+        group_id = Motion.objects.filter(pk=motion_pk).values_list('group_id', flat=True).first()
+        if group_id is None:
+            return False
+        group_ids = _get_user_accessible_group_ids(user)
+        return group_ids is not None and group_id in group_ids
 
     def get_context_data(self, **kwargs):
         """Add additional context data"""
@@ -1566,8 +1665,19 @@ class QuestionCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     success_url = reverse_lazy('question:question-list')
 
     def test_func(self):
-        """Check if user has permission to create Question objects"""
-        return self.request.user.is_superuser or self.request.user.has_role_permission('motion.create')
+        """Allow superuser, motion.create permission, or regular group members for the session's council."""
+        user = self.request.user
+        if user.is_superuser or user.has_role_permission('motion.create'):
+            return True
+        session_id = self.request.GET.get('session')
+        if session_id:
+            try:
+                council_id = Session.objects.filter(pk=session_id).values_list('council_id', flat=True).first()
+                if council_id is not None and council_id in _get_user_accessible_council_ids(user):
+                    return True
+            except (ValueError, TypeError):
+                pass
+        return False
 
     def get_form_kwargs(self):
         """Pass user to form for automatic group assignment"""

@@ -6,6 +6,27 @@ from .models import Role
 
 CustomUser = get_user_model()
 
+try:
+    from allauth.account.forms import ChangePasswordForm as AllauthChangePasswordForm
+except ImportError:
+    AllauthChangePasswordForm = None
+
+
+if AllauthChangePasswordForm:
+
+    class CustomChangePasswordForm(AllauthChangePasswordForm):
+        """Change password form; superusers can change password without entering current password."""
+
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            if self.user and self.user.is_superuser:
+                self.fields["oldpassword"].required = False
+
+        def clean_oldpassword(self):
+            if self.user and self.user.is_superuser:
+                return self.cleaned_data.get("oldpassword") or ""
+            return super().clean_oldpassword()
+
 
 class CustomAuthenticationForm(AuthenticationForm):
     """Custom authentication form that uses email instead of username"""
@@ -112,6 +133,57 @@ class CustomUserEditForm(UserChangeForm):
     class Meta:
         model = CustomUser
         fields = ('username', 'email', 'first_name', 'last_name', 'role')
+
+    def __init__(self, *args, allow_set_password=False, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.allow_set_password = allow_set_password
+        # Add Bootstrap classes to visible fields
+        for name, field in self.fields.items():
+            if hasattr(field.widget, 'attrs'):
+                field.widget.attrs.setdefault('class', '')
+                if 'form-control' not in field.widget.attrs['class']:
+                    field.widget.attrs['class'] = (field.widget.attrs['class'] + ' form-control').strip()
+                if field.widget.__class__.__name__ == 'Select':
+                    field.widget.attrs['class'] = field.widget.attrs['class'].replace('form-control', 'form-select')
+        if allow_set_password:
+            self.fields['password1'] = forms.CharField(
+                label=_('New password'),
+                widget=forms.PasswordInput(attrs={'class': 'form-control', 'autocomplete': 'new-password'}),
+                required=False,
+                help_text=_('Leave blank to keep the current password.'),
+            )
+            self.fields['password2'] = forms.CharField(
+                label=_('New password (again)'),
+                widget=forms.PasswordInput(attrs={'class': 'form-control', 'autocomplete': 'new-password'}),
+                required=False,
+            )
+            self.fields['password1'].widget.attrs['placeholder'] = _('New password')
+            self.fields['password2'].widget.attrs['placeholder'] = _('Confirm new password')
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if not self.allow_set_password:
+            return cleaned_data
+        password1 = cleaned_data.get('password1')
+        password2 = cleaned_data.get('password2')
+        if password1 or password2:
+            if password1 != password2:
+                self.add_error('password2', _("The two password fields didn't match."))
+            elif password1:
+                from django.contrib.auth import password_validation
+                try:
+                    password_validation.validate_password(password1, self.instance)
+                except forms.ValidationError as e:
+                    self.add_error('password1', e)
+        return cleaned_data
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        if self.allow_set_password and self.cleaned_data.get('password1'):
+            user.set_password(self.cleaned_data['password1'])
+        if commit:
+            user.save()
+        return user
 
 
 class RoleForm(forms.ModelForm):

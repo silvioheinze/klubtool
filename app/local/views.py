@@ -63,17 +63,38 @@ class LocalDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
     template_name = 'local/local_detail.html'
 
     def test_func(self):
-        """Check if user has permission to view Local objects"""
-        return self.request.user.is_superuser
+        """Allow superusers or group members whose group's party belongs to this local."""
+        if self.request.user.is_superuser:
+            return True
+        local_pk = self.kwargs.get('pk')
+        if local_pk is None:
+            return False
+        try:
+            local_pk = int(local_pk)
+        except (TypeError, ValueError):
+            return False
+        # User can access local if the local's council is in their accessible councils
+        council_id = Council.objects.filter(local_id=local_pk).values_list('pk', flat=True).first()
+        if council_id is None:
+            return False
+        return council_id in _get_user_accessible_council_ids(self.request.user)
 
     def get_context_data(self, **kwargs):
         """Add terms, parties, and sessions data to context"""
         context = super().get_context_data(**kwargs)
-        
+        # Show edit/add/delete buttons only to users who have access (same checks as Update/Create/Delete views)
+        context['can_edit_local'] = self.request.user.is_superuser
+        context['can_add_party'] = self.request.user.is_superuser
+        context['can_add_term'] = self.request.user.is_superuser
+        context['can_view_party'] = self.request.user.is_superuser
+        context['can_edit_party'] = self.request.user.is_superuser
+        context['can_delete_party'] = self.request.user.is_superuser
+        context['can_manage_terms'] = self.request.user.is_superuser  # View, Edit, Seats (TermDetailView, TermUpdateView, TermSeatDistributionView)
+
         # Get all active terms (not just those connected through seat distributions)
         # This allows users to see and configure terms even before creating parties
         context['terms'] = Term.objects.filter(is_active=True).order_by('-start_date')
-        
+
         context['parties'] = self.object.parties.filter(is_active=True).order_by('name')
         
         # Get the current term and its seat distribution
@@ -236,6 +257,23 @@ class CouncilListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
         return context
 
 
+def _get_user_accessible_council_ids(user):
+    """Return set of council PKs the user can access (via group membership: group's party belongs to local with that council)."""
+    if user.is_superuser:
+        return set(Council.objects.filter(is_active=True).values_list('pk', flat=True))
+    from group.models import GroupMember
+    return set(
+        GroupMember.objects.filter(
+            user=user,
+            is_active=True,
+            group__party__isnull=False,
+            group__party__local__isnull=False,
+        ).exclude(
+            group__party__local__council__isnull=True,
+        ).values_list('group__party__local__council__pk', flat=True).distinct()
+    )
+
+
 class CouncilDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
     """View for displaying a single Council object"""
     model = Council
@@ -243,12 +281,31 @@ class CouncilDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
     template_name = 'local/council_detail.html'
 
     def test_func(self):
-        """Check if user has permission to view Council objects"""
-        return self.request.user.is_superuser
+        """Allow superusers or users who are group members in a group whose party's local has this council."""
+        if self.request.user.is_superuser:
+            return True
+        council_pk = self.kwargs.get('pk')
+        if council_pk is None:
+            return False
+        try:
+            council_pk = int(council_pk)
+        except (TypeError, ValueError):
+            return False
+        return council_pk in _get_user_accessible_council_ids(self.request.user)
 
     def get_context_data(self, **kwargs):
         """Add sessions and committees data to context"""
         context = super().get_context_data(**kwargs)
+        # Show edit/add/export buttons only to users who have access (same checks as Update/Create/Export views)
+        context['can_edit_council'] = self.request.user.is_superuser
+        context['can_add_session'] = self.request.user.is_superuser
+        context['can_add_committee'] = self.request.user.is_superuser
+        context['can_export_committees_pdf'] = (
+            self.request.user.is_superuser
+            or self.request.user.has_role_permission('session.view')
+            or self.object.pk in _get_user_accessible_council_ids(self.request.user)
+        )
+
         # Get sessions for this council, youngest (most recent) date first
         context['sessions'] = self.object.sessions.filter(is_active=True).order_by('-scheduled_date')
         context['total_sessions'] = self.object.sessions.count()
@@ -773,15 +830,46 @@ class SessionDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
     template_name = 'local/session_detail.html'
 
     def test_func(self):
-        """Check if user has permission to view Session objects"""
-        return self.request.user.is_superuser
+        """Allow superusers or group members whose group's council is the session's council."""
+        if self.request.user.is_superuser:
+            return True
+        session_pk = self.kwargs.get('pk')
+        if session_pk is None:
+            return False
+        try:
+            session_pk = int(session_pk)
+        except (TypeError, ValueError):
+            return False
+        council_id = Session.objects.filter(pk=session_pk).values_list('council_id', flat=True).first()
+        if council_id is None:
+            return False
+        return council_id in _get_user_accessible_council_ids(self.request.user)
 
     def get_context_data(self, **kwargs):
         """Add motions and questions data to context"""
         from django.db.models import Case, When, IntegerField
         from motion.models import Question
-        
+
         context = super().get_context_data(**kwargs)
+        # Show edit/add buttons only to users who have access (same checks as Update/Invitation/Cancel/Minutes/Attachment views and motion/question create)
+        user = self.request.user
+        context['can_edit_session'] = user.is_superuser
+        context['can_add_invitation'] = user.is_superuser
+        context['can_cancel_session'] = user.is_superuser
+        context['can_add_minutes'] = user.is_superuser
+        context['can_attach_session'] = user.is_superuser
+        accessible_council_ids = _get_user_accessible_council_ids(user)
+        context['can_add_motion'] = (
+            user.is_superuser or user.has_role_permission('motion.create')
+            or self.object.council_id in accessible_council_ids
+        )
+        context['can_add_question'] = (
+            user.is_superuser or user.has_role_permission('motion.create')
+            or self.object.council_id in accessible_council_ids
+        )
+        # Show Export and Participants sidebar to superusers, group admins (via template), or regular group members of this session's council
+        context['can_see_export_and_participants'] = self.object.council_id in accessible_council_ids
+
         # Get all motions for this session
         # Order: regular motions by session_rank, then not_admitted motions at the end
         motions_queryset = self.object.motions.filter(is_active=True)
@@ -1032,8 +1120,21 @@ class SessionExportPDFView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
     template_name = 'local/session_export_pdf.html'
 
     def test_func(self):
-        """Check if user has permission to export Session objects"""
-        return self.request.user.is_superuser or self.request.user.has_role_permission('session.view')
+        """Allow superuser, session.view permission, or regular group members for the session's council."""
+        user = self.request.user
+        if user.is_superuser or user.has_role_permission('session.view'):
+            return True
+        session_pk = self.kwargs.get('pk')
+        if session_pk is None:
+            return False
+        try:
+            session_pk = int(session_pk)
+        except (TypeError, ValueError):
+            return False
+        council_id = Session.objects.filter(pk=session_pk).values_list('council_id', flat=True).first()
+        if council_id is None:
+            return False
+        return council_id in _get_user_accessible_council_ids(user)
 
     def get_context_data(self, **kwargs):
         """Add motions and questions data to context"""
@@ -1257,6 +1358,10 @@ def committee_meeting_export_ics(request, pk):
         can_export = CommitteeMember.objects.filter(
             user=request.user, committee_id=meeting.committee_id, is_active=True
         ).exists()
+    if not can_export and meeting.committee_id:
+        council_id = Committee.objects.filter(pk=meeting.committee_id).values_list('council_id', flat=True).first()
+        if council_id is not None and council_id in _get_user_accessible_council_ids(request.user):
+            can_export = True
     if not can_export:
         messages.error(request, _("You don't have permission to export this meeting."))
         return redirect('local:committee-meeting-detail', pk=pk)
@@ -1310,8 +1415,19 @@ class CouncilCommitteesExportPDFView(LoginRequiredMixin, UserPassesTestMixin, De
     template_name = 'local/council_committees_export_pdf.html'
 
     def test_func(self):
-        """Check if user has permission to export Council committees"""
-        return self.request.user.is_superuser or self.request.user.has_role_permission('session.view')
+        """Allow superusers, users with session.view, or group members whose group's council is this council."""
+        if self.request.user.is_superuser:
+            return True
+        if self.request.user.has_role_permission('session.view'):
+            return True
+        council_pk = self.kwargs.get('pk')
+        if council_pk is None:
+            return False
+        try:
+            council_pk = int(council_pk)
+        except (TypeError, ValueError):
+            return False
+        return council_pk in _get_user_accessible_council_ids(self.request.user)
 
     def get_context_data(self, **kwargs):
         """Add committees with members and substitute members to context"""
@@ -1686,12 +1802,20 @@ class CommitteeListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
     paginate_by = 20
 
     def test_func(self):
-        """Check if user has permission to view Committee objects"""
-        return self.request.user.is_superuser
+        """Allow superuser or any user who can access at least one council (via connected group)."""
+        if self.request.user.is_superuser:
+            return True
+        return bool(_get_user_accessible_council_ids(self.request.user))
 
     def get_queryset(self):
-        """Filter queryset based on search parameters"""
-        queryset = Committee.objects.all().select_related('council', 'council__local').order_by('name')
+        """Filter queryset: superusers see all committees; others see only committees of their connected councils."""
+        user = self.request.user
+        base = Committee.objects.all().select_related('council', 'council__local').order_by('name')
+        if user.is_superuser:
+            queryset = base
+        else:
+            council_ids = _get_user_accessible_council_ids(user)
+            queryset = base.filter(council_id__in=council_ids) if council_ids else base.none()
         
         # Filter by search query
         search_query = self.request.GET.get('search', '')
@@ -1712,7 +1836,7 @@ class CommitteeListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
         council_filter = self.request.GET.get('council', '')
         if council_filter:
             queryset = queryset.filter(council_id=council_filter)
-        
+
         return queryset
 
     def get_context_data(self, **kwargs):
@@ -1732,14 +1856,41 @@ class CommitteeDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
     template_name = 'local/committee_detail.html'
 
     def test_func(self):
-        """Check if user has permission to view Committee objects"""
-        return self.request.user.is_superuser
+        """Allow superuser or members of a group connected to the committee's council."""
+        if self.request.user.is_superuser:
+            return True
+        committee_pk = self.kwargs.get('pk')
+        if committee_pk is None:
+            return False
+        try:
+            committee_pk = int(committee_pk)
+        except (TypeError, ValueError):
+            return False
+        council_id = Committee.objects.filter(pk=committee_pk).values_list('council_id', flat=True).first()
+        if council_id is None:
+            return False
+        return council_id in _get_user_accessible_council_ids(self.request.user)
 
     def get_context_data(self, **kwargs):
         """Add committee members and motions data to context"""
         from django.db.models import Case, When, CharField, Value
-        
+        from group.models import GroupMember
+
         context = super().get_context_data(**kwargs)
+        user = self.request.user
+        # Permission flags: show edit/add buttons only to users who can access those views
+        context['can_edit_committee'] = user.is_superuser
+        context['can_add_committee_member'] = (
+            user.is_superuser
+            or GroupMember.objects.filter(
+                user=user,
+                is_active=True,
+                roles__name__in=['Leader', 'Deputy Leader'],
+            ).exists()
+        )
+        context['can_edit_committee_member'] = user.is_superuser
+        context['can_add_committee_meeting'] = user.is_superuser
+        context['can_edit_committee_meeting'] = user.is_superuser
         # Get active members for this committee with custom role ordering
         context['members'] = self.object.members.filter(is_active=True).select_related('user').annotate(
             role_order=Case(
@@ -1912,11 +2063,30 @@ class CommitteeMeetingDetailView(LoginRequiredMixin, UserPassesTestMixin, Detail
     template_name = 'local/committee_meeting_detail.html'
 
     def test_func(self):
-        return self.request.user.is_superuser
+        """Allow superuser or members of a group connected to the meeting's committee's council."""
+        if self.request.user.is_superuser:
+            return True
+        meeting_pk = self.kwargs.get('pk')
+        if meeting_pk is None:
+            return False
+        try:
+            meeting_pk = int(meeting_pk)
+        except (TypeError, ValueError):
+            return False
+        council_id = (
+            CommitteeMeeting.objects.filter(pk=meeting_pk)
+            .values_list('committee__council_id', flat=True)
+            .first()
+        )
+        if council_id is None:
+            return False
+        return council_id in _get_user_accessible_council_ids(self.request.user)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['committee'] = self.object.committee
+        # Show edit button only to users who can access CommitteeMeetingUpdateView
+        context['can_edit_committee_meeting'] = self.request.user.is_superuser
         # Participants: committee members who take part in the meeting (excluding substitute members)
         role_order = Case(
             When(role='chairperson', then=Value(1)),

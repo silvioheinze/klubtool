@@ -14,9 +14,11 @@
             </h1>
         </div>
         <div>
+            {% if can_edit_session %}
             <a href="{% url 'local:session-edit' session.pk %}" class="btn btn-primary">
                 <i class="bi bi-pencil"></i> {% trans "Edit" %}
             </a>
+            {% endif %}
             <a href="{% url 'local:council-detail' session.council.pk %}" class="btn btn-outline-secondary">
                 <i class="bi bi-arrow-left"></i> {% trans "Back to Council" %}
             </a>
@@ -80,17 +82,19 @@
                     {% if session.status != 'cancelled' %}
                         <div class="mt-3 pt-3 border-top">
                             <div class="d-flex flex-wrap gap-2">
-                                {% if session.status == 'scheduled' %}
+                                {% if session.status == 'scheduled' and can_add_invitation %}
                                     <a href="{% url 'local:session-invitation' session.pk %}" class="btn btn-warning btn-sm">
                                         <i class="bi bi-envelope-paper"></i> {% trans "Add invitation" %}
                                     </a>
                                 {% endif %}
                                 {% if session.status == 'scheduled' or session.status == 'invited' %}
+                                    {% if can_cancel_session %}
                                     <a href="{% url 'local:session-cancel' session.pk %}" class="btn btn-warning btn-sm">
                                         <i class="bi bi-x-circle"></i> {% trans "Cancel session" %}
                                     </a>
+                                    {% endif %}
                                 {% endif %}
-                                {% if session.status == 'completed' %}
+                                {% if session.status == 'completed' and can_add_minutes %}
                                     <a href="{% url 'local:session-minutes' session.pk %}" class="btn btn-warning btn-sm">
                                         <i class="bi bi-journal-text"></i> {% trans "Add minutes" %}
                                     </a>
@@ -113,9 +117,11 @@
                     <h5 class="mb-0">
                         <i class="bi bi-file-text"></i> {% trans "Session Motions" %}
                     </h5>
+                    {% if can_add_motion %}
                     <a href="{% url 'motion:motion-create' %}?session={{ session.pk }}" class="btn btn-sm btn-primary">
                         <i class="bi bi-plus-circle"></i> {% trans "Add" %}
                     </a>
+                    {% endif %}
                 </div>
                 <div class="card-body">
                     {% if motions %}
@@ -202,9 +208,11 @@
                     <h5 class="mb-0">
                         <i class="bi bi-question-circle"></i> {% trans "Session Questions" %}
                     </h5>
+                    {% if can_add_question %}
                     <a href="{% url 'question:question-create' %}?session={{ session.pk }}" class="btn btn-sm btn-primary">
                         <i class="bi bi-plus-circle"></i> {% trans "Add" %}
                     </a>
+                    {% endif %}
                 </div>
                 <div class="card-body">
                     {% if questions %}
@@ -295,9 +303,11 @@
                     <h5 class="mb-0">
                         <i class="bi bi-paperclip"></i> {% trans "Session Attachments" %}
                     </h5>
+                    {% if can_attach_session %}
                     <a href="{% url 'local:session-attach' session.pk %}" class="btn btn-sm btn-primary">
                         <i class="bi bi-upload"></i> {% trans "Upload File" %}
                     </a>
+                    {% endif %}
                 </div>
                 <div class="card-body">
                     {% if session.attachments.all %}
@@ -342,7 +352,7 @@
             </div>
         </div>
 
-        {% if user_group_admin_groups or user.is_superuser %}
+        {% if user_group_admin_groups or user.is_superuser or can_see_export_and_participants %}
         <div class="col-lg-4">
             <!-- Exports -->
             <div class="card">

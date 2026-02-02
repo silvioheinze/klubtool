@@ -30,6 +30,69 @@ def is_superuser_or_has_permission(permission):
         return wrapper
     return decorator
 
+
+def _get_group_calendar_events_for_month(group, year, month):
+    """Return list of calendar event dicts (group meetings + council sessions + committee meetings) for the given month."""
+    from datetime import date, timedelta
+    start = date(year, month, 1)
+    end = date(year, month + 1, 1) - timedelta(days=1) if month < 12 else date(year, 12, 31)
+    events = []
+    badge_label = (group.calendar_badge_name or '').strip() or _('Group meeting')
+    group_meetings = group.meetings.filter(
+        is_active=True,
+        scheduled_date__date__gte=start,
+        scheduled_date__date__lte=end,
+    ).order_by('scheduled_date')
+    for m in group_meetings:
+        events.append({
+            'date': m.scheduled_date,
+            'title': m.title or '',
+            'url': m.get_absolute_url(),
+            'type': 'group_meeting',
+            'badge_label': badge_label,
+        })
+    local = getattr(group.party, 'local', None)
+    if local:
+        try:
+            from local.models import Session, CommitteeMeeting
+            council = getattr(local, 'council', None)
+            if council:
+                council_sessions = Session.objects.filter(
+                    council=council,
+                    committee__isnull=True,
+                    is_active=True,
+                    scheduled_date__date__gte=start,
+                    scheduled_date__date__lte=end,
+                ).select_related('council').order_by('scheduled_date')
+                session_badge = (council.calendar_badge_name or '').strip() or _('Council')
+                for s in council_sessions:
+                    events.append({
+                        'date': s.scheduled_date,
+                        'title': s.title or '',
+                        'url': s.get_absolute_url(),
+                        'type': 'session',
+                        'badge_label': session_badge,
+                    })
+                committee_meetings = CommitteeMeeting.objects.filter(
+                    committee__council=council,
+                    is_active=True,
+                    scheduled_date__date__gte=start,
+                    scheduled_date__date__lte=end,
+                ).select_related('committee').order_by('scheduled_date')
+                for m in committee_meetings:
+                    events.append({
+                        'date': m.scheduled_date,
+                        'title': m.title or '',
+                        'url': m.get_absolute_url(),
+                        'type': 'committee_meeting',
+                        'badge_label': _('Committee'),
+                    })
+        except (ImportError, AttributeError):
+            pass
+    events.sort(key=lambda e: e['date'])
+    return events
+
+
 # Group Views
 class GroupListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
     model = Group
@@ -66,25 +129,86 @@ class GroupDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
     context_object_name = 'group'
 
     def test_func(self):
-        # Allow superusers, users with group.view permission, or group admins
+        # Allow superusers, users with group.view permission, group admins, or any active group member
         if self.request.user.is_superuser or self.request.user.has_role_permission('group.view'):
             return True
-        # Check if user is a group admin of this specific group
-        group = self.get_object()
-        return group.can_user_manage_group(self.request.user)
+        group_pk = self.kwargs.get('pk')
+        if group_pk is None:
+            return False
+        try:
+            group_pk = int(group_pk)
+        except (TypeError, ValueError):
+            return False
+        group = Group.objects.filter(pk=group_pk).first()
+        if not group:
+            return False
+        return (
+            group.can_user_manage_group(self.request.user)
+            or GroupMember.objects.filter(user=self.request.user, group=group, is_active=True).exists()
+        )
 
     def get_context_data(self, **kwargs):
-        from datetime import date, timedelta
         from pages.views import _build_month_calendar
 
         context = super().get_context_data(**kwargs)
+        user = self.request.user
+        group = self.object
+        # Permission flags: show edit/add buttons only to users who can access those views
+        context['can_edit_group'] = (
+            user.is_superuser
+            or user.has_role_permission('group.edit')
+            or group.can_user_manage_group(user)
+        )
+        context['can_add_meeting'] = user.is_superuser or group.can_user_manage_group(user)
+        is_member = GroupMember.objects.filter(user=user, group=group, is_active=True).exists()
+        context['can_export_calendar_pdf'] = (
+            user.is_superuser
+            or user.has_role_permission('group.view')
+            or group.can_user_manage_group(user)
+            or is_member
+        )
+        context['can_invite_member'] = user.is_superuser or group.can_user_manage_group(user)
+        context['can_add_member'] = user.is_superuser or user.has_role_permission('group.create')
+        context['can_view_member'] = (
+            user.is_superuser or user.has_role_permission('group.view')
+        )
+        context['can_edit_member'] = (
+            user.is_superuser
+            or user.has_role_permission('group.edit')
+            or group.can_user_manage_group(user)
+        )
+        context['can_manage_roles'] = user.is_superuser
         context['members'] = self.object.members.select_related('user').filter(is_active=True).order_by('user__first_name', 'user__last_name', 'user__username')
         context['active_members'] = context['members'].filter(is_active=True)
         
-        # Add meetings data
-        context['meetings'] = self.object.meetings.filter(is_active=True).order_by('-scheduled_date')[:6]
-        context['total_meetings'] = self.object.meetings.filter(is_active=True).count()
-        
+        # Add meetings data (paginated, 10 per page)
+        from django.core.paginator import Paginator
+        from django.http import QueryDict
+        meetings_qs = self.object.meetings.filter(is_active=True).order_by('-scheduled_date')
+        context['total_meetings'] = meetings_qs.count()
+        paginator = Paginator(meetings_qs, 10)
+        req_page = self.request.GET.get('meetings_page', '1')
+        try:
+            page_num = max(1, int(req_page))
+            page_num = min(page_num, paginator.num_pages or 1)
+        except (TypeError, ValueError):
+            page_num = 1
+        context['meetings_page'] = paginator.get_page(page_num)
+        detail_url = reverse('group:group-detail', kwargs={'pk': self.object.pk})
+
+        def _meetings_page_url(page_number):
+            q = QueryDict(mutable=True)
+            if self.request.GET.get('calendar_month'):
+                q['calendar_month'] = self.request.GET['calendar_month']
+            if self.request.GET.get('calendar_year'):
+                q['calendar_year'] = self.request.GET['calendar_year']
+            q['meetings_page'] = str(page_number)
+            return f'{detail_url}?{q.urlencode()}'
+
+        meetings_page = context['meetings_page']
+        context['meetings_prev_url'] = _meetings_page_url(meetings_page.previous_page_number()) if meetings_page.has_previous() else None
+        context['meetings_next_url'] = _meetings_page_url(meetings_page.next_page_number()) if meetings_page.has_next() else None
+
         # Add available roles for role management
         from user.models import Role
         context['available_roles'] = Role.objects.filter(is_active=True).order_by('name')
@@ -100,24 +224,7 @@ class GroupDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
                 cal_month, cal_year = now.month, now.year
         except (TypeError, ValueError):
             cal_month, cal_year = now.month, now.year
-        start = date(cal_year, cal_month, 1)
-        end = date(cal_year, cal_month + 1, 1) - timedelta(days=1) if cal_month < 12 else date(cal_year, 12, 31)
-        group_meetings = self.object.meetings.filter(
-            is_active=True,
-            scheduled_date__date__gte=start,
-            scheduled_date__date__lte=end,
-        ).order_by('scheduled_date')
-        badge_label = (self.object.calendar_badge_name or '').strip() or _('Group meeting')
-        events = [
-            {
-                'date': m.scheduled_date,
-                'title': m.title or '',
-                'url': m.get_absolute_url(),
-                'type': 'group_meeting',
-                'badge_label': badge_label,
-            }
-            for m in group_meetings
-        ]
+        events = _get_group_calendar_events_for_month(self.object, cal_year, cal_month)
         cal_month, cal_year, context['calendar_weeks'] = _build_month_calendar(events, cal_year, cal_month)
         context['calendar_month'] = cal_month
         context['calendar_year'] = cal_year
@@ -132,12 +239,85 @@ class GroupDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             next_month, next_year = 1, cal_year + 1
         else:
             next_month, next_year = cal_month + 1, cal_year
-        detail_url = reverse('group:group-detail', kwargs={'pk': self.object.pk})
         context['calendar_prev_url'] = f'{detail_url}?calendar_month={prev_month}&calendar_year={prev_year}'
         context['calendar_next_url'] = f'{detail_url}?calendar_month={next_month}&calendar_year={next_year}'
         context['calendar_today_url'] = f'{detail_url}?calendar_month={now.month}&calendar_year={now.year}'
-        
+        context['calendar_export_pdf_url'] = (
+            reverse('group:group-calendar-export-pdf', kwargs={'pk': self.object.pk})
+            + f'?calendar_year={cal_year}'
+        )
         return context
+
+    def get(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        context = self.get_context_data(object=self.object)
+        if request.GET.get('partial') == 'calendar':
+            if context.get('calendar_weeks') is not None:
+                return render(request, 'group/group_calendar_partial.html', context)
+            return HttpResponse(status=400)
+        if request.GET.get('partial') == 'meetings':
+            return render(request, 'group/group_meetings_list_partial.html', context)
+        return self.render_to_response(context)
+
+
+@login_required
+def group_calendar_export_pdf(request, pk):
+    """Export the group's calendar for the full year (sessions, committee meetings, group meetings) as PDF."""
+    group = get_object_or_404(Group, pk=pk)
+    is_member = GroupMember.objects.filter(user=request.user, group=group, is_active=True).exists()
+    if not (
+        request.user.is_superuser
+        or request.user.has_role_permission('group.view')
+        or group.can_user_manage_group(request.user)
+        or is_member
+    ):
+        messages.error(request, _("You don't have permission to access this page."))
+        return redirect('group:group-detail', pk=pk)
+    now = timezone.now()
+    req_year = request.GET.get('calendar_year')
+    try:
+        cal_year = int(req_year) if req_year else now.year
+        if cal_year < 2000 or cal_year > 2100:
+            cal_year = now.year
+    except (TypeError, ValueError):
+        cal_year = now.year
+    events = []
+    for month in range(1, 13):
+        events.extend(_get_group_calendar_events_for_month(group, cal_year, month))
+    events.sort(key=lambda e: e['date'])
+    try:
+        from weasyprint import HTML, CSS
+        context = {
+            'group': group,
+            'events': events,
+            'calendar_year': cal_year,
+        }
+        html_string = render_to_string('group/group_calendar_export_pdf.html', context)
+        html = HTML(string=html_string)
+        css = CSS(string='''
+            @page { size: A4; margin: 15mm; }
+            body { font-family: Arial, sans-serif; margin: 0; font-size: 10pt; }
+            .header { text-align: center; margin-bottom: 20px; }
+            .header h1 { font-size: 14pt; margin: 0 0 5px 0; }
+            .calendar-table { width: 100%; border-collapse: collapse; margin-top: 15px; page-break-inside: auto; }
+            .calendar-table thead { display: table-header-group; }
+            .calendar-table tbody tr { page-break-inside: avoid; }
+            .calendar-table th, .calendar-table td { border: 1px solid #333; padding: 8px; text-align: left; vertical-align: middle; }
+            .calendar-table th { background-color: #f2f2f2; font-weight: bold; }
+            .calendar-table td:first-child { width: 20%; white-space: nowrap; }
+            .calendar-table td:nth-child(2) { width: 80%; }
+            .no-events { text-align: center; color: #666; font-style: italic; margin: 40px 0; }
+            .footer { margin-top: 30px; padding-top: 15px; border-top: 1px solid #ddd; text-align: center; color: #666; font-size: 8pt; }
+        ''')
+        pdf = html.write_pdf(stylesheets=[css])
+        response = HttpResponse(pdf, content_type='application/pdf')
+        export_date = timezone.now().date().strftime('%Y-%m-%d')
+        filename = f'Klubkalender_{export_date}.pdf'
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        return response
+    except ImportError:
+        messages.error(request, _("PDF export is not available."))
+        return redirect('group:group-detail', pk=pk)
 
 class GroupCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     model = Group
@@ -373,12 +553,22 @@ class GroupMeetingListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
     paginate_by = 20
 
     def test_func(self):
-        """Check if user has permission to view GroupMeeting objects"""
-        return self.request.user.is_superuser
+        """Allow superuser or any user who is an active member of at least one group."""
+        if self.request.user.is_superuser:
+            return True
+        return GroupMember.objects.filter(user=self.request.user, is_active=True).exists()
 
     def get_queryset(self):
-        """Filter queryset based on search parameters"""
-        queryset = GroupMeeting.objects.all().select_related('group', 'created_by').order_by('-scheduled_date')
+        """Filter queryset: superusers see all meetings; others see only meetings of their groups."""
+        user = self.request.user
+        base = GroupMeeting.objects.all().select_related('group', 'created_by').order_by('-scheduled_date')
+        if user.is_superuser:
+            queryset = base
+        else:
+            user_group_ids = set(
+                GroupMember.objects.filter(user=user, is_active=True).values_list('group_id', flat=True).distinct()
+            )
+            queryset = base.filter(group_id__in=user_group_ids) if user_group_ids else base.none()
         
         # Filter by search query
         search_query = self.request.GET.get('search', '')
@@ -419,12 +609,23 @@ class GroupMeetingDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView
     template_name = 'group/meeting_detail.html'
 
     def test_func(self):
-        """Check if user has permission to view GroupMeeting objects"""
+        """Allow superuser, group managers, or any active member of the meeting's group."""
         if self.request.user.is_superuser:
             return True
-        # Check if user can manage the meeting's group
-        meeting = self.get_object()
-        return meeting.group.can_user_manage_group(self.request.user)
+        meeting_pk = self.kwargs.get('pk')
+        if meeting_pk is None:
+            return False
+        try:
+            meeting_pk = int(meeting_pk)
+        except (TypeError, ValueError):
+            return False
+        meeting = GroupMeeting.objects.filter(pk=meeting_pk).select_related('group').first()
+        if not meeting:
+            return False
+        return (
+            meeting.group.can_user_manage_group(self.request.user)
+            or GroupMember.objects.filter(user=self.request.user, group=meeting.group, is_active=True).exists()
+        )
 
     def get_context_data(self, **kwargs):
         """Add agenda items and minute items (when invited) to context"""
@@ -434,12 +635,18 @@ class GroupMeetingDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView
             context['minute_items'] = self.object.minute_items.filter(is_active=True).order_by('order')
         else:
             context['minute_items'] = []
-        # Check if user can manage the meeting's group
+        # Check if user can manage the meeting's group; all members can view meeting details
         user = self.request.user
         meeting_group = self.object.group
         can_manage = meeting_group.can_user_manage_group(user)
-        context['can_view_meeting_details'] = can_manage
+        is_member = GroupMember.objects.filter(user=user, group=meeting_group, is_active=True).exists()
+        context['can_view_meeting_details'] = can_manage or is_member
         context['can_send_invites'] = can_manage
+        context['can_edit_meeting'] = can_manage
+        context['can_manage_agenda'] = can_manage
+        context['can_manage_minutes'] = can_manage
+        context['can_cancel_meeting'] = can_manage
+        context['can_toggle_participation'] = can_manage
         
         # Add group members and participation data
         members = meeting_group.members.filter(is_active=True).select_related('user').order_by('user__last_name', 'user__first_name')
@@ -708,10 +915,23 @@ class GroupMeetingAgendaExportPDFView(LoginRequiredMixin, UserPassesTestMixin, D
     template_name = 'group/meeting_agenda_export_pdf.html'
 
     def test_func(self):
+        """Allow superuser, group managers, or any active member of the meeting's group."""
         if self.request.user.is_superuser:
             return True
-        meeting = self.get_object()
-        return meeting.group.can_user_manage_group(self.request.user)
+        meeting_pk = self.kwargs.get('pk')
+        if meeting_pk is None:
+            return False
+        try:
+            meeting_pk = int(meeting_pk)
+        except (TypeError, ValueError):
+            return False
+        meeting = GroupMeeting.objects.filter(pk=meeting_pk).select_related('group').first()
+        if not meeting:
+            return False
+        return (
+            meeting.group.can_user_manage_group(self.request.user)
+            or GroupMember.objects.filter(user=self.request.user, group=meeting.group, is_active=True).exists()
+        )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -758,10 +978,23 @@ class GroupMeetingMinutesExportPDFView(LoginRequiredMixin, UserPassesTestMixin, 
     template_name = 'group/meeting_minutes_export_pdf.html'
 
     def test_func(self):
+        """Allow superuser, group managers, or any active member of the meeting's group."""
         if self.request.user.is_superuser:
             return True
-        meeting = self.get_object()
-        return meeting.group.can_user_manage_group(self.request.user)
+        meeting_pk = self.kwargs.get('pk')
+        if meeting_pk is None:
+            return False
+        try:
+            meeting_pk = int(meeting_pk)
+        except (TypeError, ValueError):
+            return False
+        meeting = GroupMeeting.objects.filter(pk=meeting_pk).select_related('group').first()
+        if not meeting:
+            return False
+        return (
+            meeting.group.can_user_manage_group(self.request.user)
+            or GroupMember.objects.filter(user=self.request.user, group=meeting.group, is_active=True).exists()
+        )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

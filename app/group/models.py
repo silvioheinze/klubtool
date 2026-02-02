@@ -115,11 +115,6 @@ class GroupMember(models.Model):
 
 
 
-    @property
-    def is_board_member(self):
-        """Check if this member is a board member"""
-        return self.roles.filter(name='Board Member').exists()
-
     def has_role(self, role_name):
         """Check if this member has a specific role"""
         return self.roles.filter(name=role_name).exists()
@@ -129,8 +124,8 @@ class GroupMember(models.Model):
         return ', '.join([role.name for role in self.roles.all()])
 
     def get_primary_role(self):
-        """Get the primary role (Group Admin > Leader > Deputy Leader > Board Member > Member)"""
-        role_priority = ['Group Admin', 'Leader', 'Deputy Leader', 'Board Member', 'Member']
+        """Get the primary role (Group Admin > Leader > Deputy Leader > Member)"""
+        role_priority = ['Group Admin', 'Leader', 'Deputy Leader', 'Member']
         for role_name in role_priority:
             if self.has_role(role_name):
                 return role_name

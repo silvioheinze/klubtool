@@ -123,6 +123,20 @@ class AccessControlTestCase(TestCase):
             is_active=True
         )
         deputy_membership.roles.add(self.deputy_leader_role)
+
+        # Create plain group member (no Leader/Deputy/Admin) for testing member-level access
+        self.plain_member_user = User.objects.create_user(
+            username='member',
+            email='member@example.com',
+            password='memberpass123'
+        )
+        self.plain_member_membership = GroupMember.objects.create(
+            user=self.plain_member_user,
+            group=self.group,
+            is_active=True
+        )
+        member_role = Role.objects.get_or_create(name='Member')[0]
+        self.plain_member_membership.roles.add(member_role)
         
         # Create term and session for motion tests
         self.term = Term.objects.create(
@@ -477,6 +491,13 @@ class GroupAccessTests(AccessControlTestCase):
         self.client.login(username='deputy', password='deputypass123')
         response = self.client.get(reverse('group:group-detail', kwargs={'pk': self.group.pk}))
         self.assertEqual(response.status_code, 200)
+
+    def test_group_detail_view_plain_member_access(self):
+        """Test that plain group member (no leader/admin role) can view their group detail"""
+        self.client.login(username='member', password='memberpass123')
+        response = self.client.get(reverse('group:group-detail', kwargs={'pk': self.group.pk}))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.group.name)
     
     def test_group_create_view_superuser_access(self):
         """Test that superuser can create groups"""
@@ -544,6 +565,34 @@ class GroupAccessTests(AccessControlTestCase):
         response = self.client.get(reverse('group:group-delete', kwargs={'pk': self.group.pk}))
         self.assertEqual(response.status_code, 403)
 
+    def test_member_detail_view_superuser_access(self):
+        """Test that superuser can view member detail"""
+        leader_membership = GroupMember.objects.get(user=self.group_leader, group=self.group)
+        self.client.login(username='admin', password='adminpass123')
+        response = self.client.get(reverse('group:member-detail', kwargs={'pk': leader_membership.pk}))
+        self.assertEqual(response.status_code, 200)
+
+    def test_member_detail_view_role_user_with_group_view_access(self):
+        """Test that user with group.view permission can view member detail"""
+        leader_membership = GroupMember.objects.get(user=self.group_leader, group=self.group)
+        self.client.login(username='editor', password='editorpass123')
+        response = self.client.get(reverse('group:member-detail', kwargs={'pk': leader_membership.pk}))
+        self.assertEqual(response.status_code, 200)
+
+    def test_member_detail_view_regular_user_denied(self):
+        """Test that regular user cannot view member detail"""
+        leader_membership = GroupMember.objects.get(user=self.group_leader, group=self.group)
+        self.client.login(username='regular', password='regularpass123')
+        response = self.client.get(reverse('group:member-detail', kwargs={'pk': leader_membership.pk}))
+        self.assertEqual(response.status_code, 403)
+
+    def test_member_detail_view_group_leader_denied(self):
+        """Test that group leader cannot view member detail (requires group.view permission)"""
+        leader_membership = GroupMember.objects.get(user=self.group_leader, group=self.group)
+        self.client.login(username='leader', password='leaderpass123')
+        response = self.client.get(reverse('group:member-detail', kwargs={'pk': leader_membership.pk}))
+        self.assertEqual(response.status_code, 403)
+
 
 class LocalAccessTests(AccessControlTestCase):
     """Test access control for local/council/session views"""
@@ -602,6 +651,40 @@ class LocalAccessTests(AccessControlTestCase):
         response = self.client.get(reverse('local:council-detail', kwargs={'pk': self.council.pk}))
         self.assertEqual(response.status_code, 403)
 
+    def test_council_detail_view_group_member_access(self):
+        """Test that group member can view council detail for council connected to their group"""
+        # group_leader is member of self.group; self.group.party.local.council == self.council
+        self.client.login(username='leader', password='leaderpass123')
+        response = self.client.get(reverse('local:council-detail', kwargs={'pk': self.council.pk}))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.council.name)
+
+    def test_session_detail_view_group_member_access(self):
+        """Test that group member can view session detail for session of council connected to their group"""
+        self.client.login(username='leader', password='leaderpass123')
+        response = self.client.get(reverse('local:session-detail', kwargs={'pk': self.session.pk}))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.session.title)
+
+    def test_local_detail_view_superuser_access(self):
+        """Test that superuser can view local detail"""
+        self.client.login(username='admin', password='adminpass123')
+        response = self.client.get(reverse('local:local-detail', kwargs={'pk': self.local.pk}))
+        self.assertEqual(response.status_code, 200)
+
+    def test_local_detail_view_regular_user_denied(self):
+        """Test that regular user cannot view local detail"""
+        self.client.login(username='regular', password='regularpass123')
+        response = self.client.get(reverse('local:local-detail', kwargs={'pk': self.local.pk}))
+        self.assertEqual(response.status_code, 403)
+
+    def test_local_detail_view_group_member_access(self):
+        """Test that group member can view local detail for local connected to their group (via party)"""
+        self.client.login(username='leader', password='leaderpass123')
+        response = self.client.get(reverse('local:local-detail', kwargs={'pk': self.local.pk}))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.local.name)
+
 
 class GroupMeetingAccessTests(AccessControlTestCase):
     """Test access control for group meeting views"""
@@ -641,6 +724,13 @@ class GroupMeetingAccessTests(AccessControlTestCase):
         self.client.login(username='deputy', password='deputypass123')
         response = self.client.get(reverse('group:meeting-detail', kwargs={'pk': self.meeting.pk}))
         self.assertEqual(response.status_code, 200)
+
+    def test_meeting_detail_view_plain_member_access(self):
+        """Test that plain group member can view meeting detail"""
+        self.client.login(username='member', password='memberpass123')
+        response = self.client.get(reverse('group:meeting-detail', kwargs={'pk': self.meeting.pk}))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.meeting.title)
     
     def test_meeting_create_view_superuser_access(self):
         """Test that superuser can create meetings"""
@@ -671,6 +761,12 @@ class GroupMeetingAccessTests(AccessControlTestCase):
         self.client.login(username='leader', password='leaderpass123')
         response = self.client.get(reverse('group:meeting-edit', kwargs={'pk': self.meeting.pk}))
         self.assertEqual(response.status_code, 200)
+
+    def test_meeting_edit_view_plain_member_denied(self):
+        """Test that plain group member cannot edit meetings"""
+        self.client.login(username='member', password='memberpass123')
+        response = self.client.get(reverse('group:meeting-edit', kwargs={'pk': self.meeting.pk}))
+        self.assertEqual(response.status_code, 403)
     
     def test_meeting_delete_view_superuser_access(self):
         """Test that superuser can delete meetings"""
@@ -689,6 +785,12 @@ class GroupMeetingAccessTests(AccessControlTestCase):
         self.client.login(username='leader', password='leaderpass123')
         response = self.client.get(reverse('group:meeting-delete', kwargs={'pk': self.meeting.pk}))
         self.assertEqual(response.status_code, 200)
+
+    def test_meeting_delete_view_plain_member_denied(self):
+        """Test that plain group member cannot delete meetings"""
+        self.client.login(username='member', password='memberpass123')
+        response = self.client.get(reverse('group:meeting-delete', kwargs={'pk': self.meeting.pk}))
+        self.assertEqual(response.status_code, 403)
 
 
 class AnonymousUserAccessTests(AccessControlTestCase):

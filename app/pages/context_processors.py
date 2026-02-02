@@ -53,24 +53,8 @@ def group_memberships(request):
             
             context['user_leader_groups'] = leader_groups
             
-            # Create a combined, deduplicated list of all groups the user belongs to
-            # (combining leader groups and admin groups, removing duplicates)
-            seen_group_ids = set()
-            combined_groups = []
-            
-            # Add leader groups first
-            for membership in leader_groups:
-                if membership.group.pk not in seen_group_ids:
-                    seen_group_ids.add(membership.group.pk)
-                    combined_groups.append(membership)
-            
-            # Add admin groups (skip if already added as leader)
-            for membership in group_admin_groups:
-                if membership.group.pk not in seen_group_ids:
-                    seen_group_ids.add(membership.group.pk)
-                    combined_groups.append(membership)
-            
-            context['user_all_groups'] = combined_groups
+            # All groups the user belongs to (for topbar dropdown and next group meeting)
+            context['user_all_groups'] = list(group_memberships)
             
             # Get unique locals and councils from memberships
             locals_from_memberships = set()
@@ -108,10 +92,10 @@ def group_memberships(request):
                 ).order_by('scheduled_date').first()
                 context['next_session'] = next_session
             
-            # Get next group meeting (any future meeting) for user's groups
-            if combined_groups:
+            # Get next group meeting (any future meeting) for user's groups (all memberships)
+            if group_memberships:
                 from group.models import GroupMeeting
-                user_group_ids = [membership.group.pk for membership in combined_groups]
+                user_group_ids = [m.group.pk for m in group_memberships]
                 next_group_meeting = GroupMeeting.objects.filter(
                     group__pk__in=user_group_ids,
                     scheduled_date__gte=now,

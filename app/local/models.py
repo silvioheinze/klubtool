@@ -395,9 +395,9 @@ class TermSeatDistribution(models.Model):
 class Session(models.Model):
     """Model representing a council session"""
     SESSION_TYPE_CHOICES = [
-        ('regular', 'Regular Session'),
-        ('special', 'Special Session'),
-        ('inaugural', 'Inaugural Session'),
+        ('regular', _('Regular Session')),
+        ('special', _('Special Session')),
+        ('inaugural', _('Inaugural Session')),
     ]
     
     STATUS_CHOICES = [

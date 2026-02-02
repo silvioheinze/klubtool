@@ -13,9 +13,11 @@
                     <h1 class="mb-0"><i class="bi bi-calendar-event"></i> {{ meeting.title }}</h1>
                 </div>
                 <div class="d-flex gap-2">
+                    {% if can_edit_committee_meeting %}
                     <a href="{% url 'local:committee-meeting-edit' meeting.pk %}" class="btn btn-primary">
                         <i class="bi bi-pencil"></i> {% trans "Edit" %}
                     </a>
+                    {% endif %}
                     <a href="{% url 'local:committee-detail' meeting.committee.pk %}" class="btn btn-outline-secondary">
                         <i class="bi bi-arrow-left"></i> {% trans "Back to Committee" %}
                     </a>
