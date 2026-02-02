@@ -10,9 +10,11 @@ from django.core.mail import send_mail
 from django.conf import settings
 from django.template.loader import render_to_string
 from django.utils.translation import gettext_lazy as _
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
+from django.views.decorators.http import require_http_methods
 from django.utils import timezone
-from .models import Group, GroupMember, GroupMeeting, AgendaItem, MinuteItem
+import json
+from .models import Group, GroupMember, GroupMeeting, AgendaItem, MinuteItem, GroupMeetingParticipation
 from .forms import GroupForm, GroupFilterForm, GroupMemberForm, GroupMeetingForm, AgendaItemForm, MinuteItemForm, GroupInviteForm
 
 User = get_user_model()
@@ -438,7 +440,62 @@ class GroupMeetingDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView
         can_manage = meeting_group.can_user_manage_group(user)
         context['can_view_meeting_details'] = can_manage
         context['can_send_invites'] = can_manage
+        
+        # Add group members and participation data
+        members = meeting_group.members.filter(is_active=True).select_related('user').order_by('user__last_name', 'user__first_name')
+        context['group_members'] = members
+        
+        # Get participation records for this meeting
+        participations = {
+            p.member_id: p.is_present
+            for p in GroupMeetingParticipation.objects.filter(meeting=self.object).select_related('member')
+        }
+        context['participations'] = participations
+        # Count present members
+        context['total_present'] = sum(1 for is_present in participations.values() if is_present)
+        
         return context
+
+
+@login_required
+@require_http_methods(["POST"])
+def toggle_meeting_participation(request, meeting_pk, member_pk):
+    """AJAX view to toggle participation/presence of a member in a meeting"""
+    # Check permissions - user must be superuser or can manage the meeting's group
+    meeting = get_object_or_404(GroupMeeting, pk=meeting_pk)
+    if not (request.user.is_superuser or meeting.group.can_user_manage_group(request.user)):
+        return JsonResponse({'error': 'Permission denied'}, status=403)
+    
+    try:
+        member = get_object_or_404(GroupMember, pk=member_pk)
+        
+        # Verify member belongs to the meeting's group
+        if member.group_id != meeting.group_id:
+            return JsonResponse({'error': 'Member does not belong to this meeting\'s group'}, status=400)
+        
+        # Get or create participation record
+        participation, created = GroupMeetingParticipation.objects.get_or_create(
+            meeting=meeting,
+            member=member,
+            defaults={'is_present': True}
+        )
+        
+        # Toggle presence
+        participation.is_present = not participation.is_present
+        participation.save(update_fields=['is_present'])
+        
+        # Count total present
+        total_present = GroupMeetingParticipation.objects.filter(meeting=meeting, is_present=True).count()
+        total_members = meeting.group.members.filter(is_active=True).count()
+        
+        return JsonResponse({
+            'success': True,
+            'is_present': participation.is_present,
+            'total_present': total_present,
+            'total_members': total_members
+        })
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 
 
 @login_required

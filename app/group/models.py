@@ -290,9 +290,39 @@ class MinuteItem(models.Model):
         return level
 
 
+class GroupMeetingParticipation(models.Model):
+    """Model representing participation/presence of a group member in a meeting"""
+    meeting = models.ForeignKey(
+        GroupMeeting,
+        on_delete=models.CASCADE,
+        related_name='participations',
+        help_text="Group meeting"
+    )
+    member = models.ForeignKey(
+        GroupMember,
+        on_delete=models.CASCADE,
+        related_name='meeting_participations',
+        help_text="Group member"
+    )
+    is_present = models.BooleanField(default=True, help_text="Whether the member is present at the meeting")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ['meeting', 'member']
+        verbose_name = "Group Meeting Participation"
+        verbose_name_plural = "Group Meeting Participations"
+        ordering = ['member__user__last_name', 'member__user__first_name']
+
+    def __str__(self):
+        status = "Present" if self.is_present else "Absent"
+        return f"{self.member.user.get_full_name() or self.member.user.username} - {self.meeting.title} ({status})"
+
+
 # Register models for audit logging
 auditlog.register(Group)
 auditlog.register(GroupMember)
 auditlog.register(GroupMeeting)
 auditlog.register(AgendaItem)
 auditlog.register(MinuteItem)
+auditlog.register(GroupMeetingParticipation)
