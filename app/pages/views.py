@@ -96,8 +96,34 @@ class HomePageView(TemplateView):
                     context.get('councils_from_memberships', []),
                 )
                 context['personal_calendar_events'] = events
+                # Paginate the list (6 per page) for the personal calendar list
+                from django.core.paginator import Paginator
+                paginator = Paginator(events, 6)
+                req_page = self.request.GET.get('calendar_page', '1')
+                try:
+                    page_num = max(1, int(req_page))
+                    page_num = min(page_num, paginator.num_pages or 1)
+                except (TypeError, ValueError):
+                    page_num = 1
+                calendar_list_page = paginator.get_page(page_num)
+                context['calendar_list_page'] = calendar_list_page
+                # Prev/next URLs for list pagination (preserve calendar_month, calendar_year)
+                from django.http import QueryDict
+                from django.urls import reverse as reverse_url
+                def _calendar_list_page_url(page_number):
+                    q = QueryDict(mutable=True)
+                    if self.request.GET.get('calendar_month'):
+                        q['calendar_month'] = self.request.GET['calendar_month']
+                    if self.request.GET.get('calendar_year'):
+                        q['calendar_year'] = self.request.GET['calendar_year']
+                    q['calendar_page'] = str(page_number)
+                    return '{}?{}'.format(reverse_url('home'), q.urlencode())
+                context['calendar_list_prev_url'] = _calendar_list_page_url(calendar_list_page.previous_page_number()) if calendar_list_page.has_previous() else None
+                context['calendar_list_next_url'] = _calendar_list_page_url(calendar_list_page.next_page_number()) if calendar_list_page.has_next() else None
             except (ImportError, AttributeError):
                 context['personal_calendar_events'] = []
+                context['calendar_list_page'] = None
+                context['calendar_list_prev_url'] = context['calendar_list_next_url'] = None
             # Monthly calendar view: month grid (use GET params if valid, else current month)
             try:
                 events = context.get('personal_calendar_events', [])
@@ -141,6 +167,8 @@ class HomePageView(TemplateView):
                 context['calendar_today_day'] = None
         else:
             context['personal_calendar_events'] = []
+            context['calendar_list_page'] = None
+            context['calendar_list_prev_url'] = context['calendar_list_next_url'] = None
             context['calendar_month'] = context['calendar_year'] = None
             context['calendar_weeks'] = []
             context['calendar_month_name'] = ''
@@ -151,6 +179,11 @@ class HomePageView(TemplateView):
 
     def get(self, request, *args, **kwargs):
         context = self.get_context_data(**kwargs)
+        # Return only the calendar list fragment for AJAX list pagination
+        if request.GET.get('partial') == 'list':
+            if request.user.is_authenticated:
+                return render(request, 'pages/personal_calendar_list_partial.html', context)
+            return HttpResponse(status=400)
         # Return only the calendar fragment for AJAX month navigation (require partial=1 in URL)
         wants_partial = request.GET.get('partial') == '1'
         # Debug: log GET params and what month we built
@@ -184,12 +217,18 @@ def _get_personal_calendar_events(user, group_memberships, councils_from_members
     """Build list of calendar event dicts (council sessions + committee meetings + group meetings) for the user."""
     from datetime import timedelta
     from django.urls import reverse
-    from local.models import Session, CommitteeMeeting, CommitteeMember
+    from django.db.models import Q
+    from local.models import Session, CommitteeMeeting, CommitteeMember, CommitteeParticipationSubstitute, SessionExcuse
     from group.models import GroupMeeting
 
     user_council_ids = [c.pk for c in councils_from_memberships]
+    # Committees where user is a regular member (not substitute member); substitute-only membership does not show all meetings
     user_committee_ids = list(
-        CommitteeMember.objects.filter(user=user, is_active=True).values_list('committee_id', flat=True)
+        CommitteeMember.objects.filter(user=user, is_active=True).exclude(role='substitute_member').values_list('committee_id', flat=True)
+    )
+    # Committee meetings where user is marked as substitute (show these even if user is only substitute_member in that committee)
+    meeting_ids_where_user_is_substitute = list(
+        CommitteeParticipationSubstitute.objects.filter(substitute_member__user=user).values_list('committee_meeting_id', flat=True)
     )
     user_group_ids = [m.group_id for m in group_memberships]
 
@@ -207,7 +246,13 @@ def _get_personal_calendar_events(user, group_memberships, councils_from_members
             scheduled_date__gte=range_start,
             scheduled_date__lte=range_end,
         ).select_related('council', 'council__local').order_by('scheduled_date')
+        # Exclude sessions where the user has excused themselves
+        excused_session_ids = set(
+            SessionExcuse.objects.filter(user=user, session__in=council_sessions).values_list('session_id', flat=True)
+        )
         for s in council_sessions:
+            if s.pk in excused_session_ids:
+                continue
             badge_name = (s.council.calendar_badge_name or '').strip()
             calendar_events.append({
                 'date': s.scheduled_date,
@@ -222,12 +267,15 @@ def _get_personal_calendar_events(user, group_memberships, councils_from_members
                 'model': 'session',
             })
 
-    if user_committee_ids:
+    # Committee meetings: from committees where user is regular member, or meetings where user is set as substitute
+    if user_committee_ids or meeting_ids_where_user_is_substitute:
         committee_meetings = CommitteeMeeting.objects.filter(
-            committee_id__in=user_committee_ids,
             is_active=True,
             scheduled_date__gte=range_start,
             scheduled_date__lte=range_end,
+        ).filter(
+            (Q(committee_id__in=user_committee_ids) if user_committee_ids else Q(pk__in=[]))
+            | (Q(pk__in=meeting_ids_where_user_is_substitute) if meeting_ids_where_user_is_substitute else Q(pk__in=[]))
         ).select_related('committee').order_by('scheduled_date')
         for m in committee_meetings:
             calendar_events.append({
@@ -374,4 +422,68 @@ def personal_calendar_export_ics(request):
 
     response = HttpResponse(ics_file, content_type='text/calendar; charset=utf-8')
     response['Content-Disposition'] = 'attachment; filename="personal-calendar.ics"'
+    return response
+
+
+@login_required
+def personal_calendar_export_pdf(request):
+    """Export the user's personal calendar (council/committee sessions + group meetings) as PDF."""
+    try:
+        from django.template.loader import render_to_string
+        from django.http import HttpResponse
+        from weasyprint import HTML, CSS
+        from group.models import GroupMember
+        from local.models import Local, Council
+    except ImportError:
+        return redirect('home')
+
+    group_memberships = GroupMember.objects.filter(
+        user=request.user,
+        is_active=True,
+    ).select_related('group', 'group__party', 'group__party__local').order_by('group__name')
+
+    locals_from_memberships = set()
+    councils_from_memberships = set()
+    for membership in group_memberships:
+        if membership.group.party and membership.group.party.local:
+            locals_from_memberships.add(membership.group.party.local)
+            if getattr(membership.group.party.local, 'council', None):
+                councils_from_memberships.add(membership.group.party.local.council)
+    councils_from_memberships = sorted(councils_from_memberships, key=lambda x: x.name)
+
+    events = _get_personal_calendar_events(request.user, group_memberships, councils_from_memberships)
+
+    context = {
+        'events': events,
+        'user': request.user,
+    }
+    html_string = render_to_string('pages/personal_calendar_export_pdf.html', context)
+    html = HTML(string=html_string)
+    css = CSS(string='''
+        @page { size: A4; margin: 15mm; }
+        body { font-family: Arial, sans-serif; margin: 0; font-size: 10pt; }
+        .header { text-align: center; margin-bottom: 20px; }
+        .header h1 { font-size: 14pt; margin: 0 0 5px 0; }
+        .header p { font-size: 10pt; margin: 2px 0; }
+        .calendar-table { width: 100%; border-collapse: collapse; margin-top: 15px; page-break-inside: auto; }
+        .calendar-table thead { display: table-header-group; }
+        .calendar-table tbody tr { page-break-inside: avoid; }
+        .calendar-table th, .calendar-table td { border: 1px solid #333; padding: 8px; text-align: left; vertical-align: middle; }
+        .calendar-table th { background-color: #f2f2f2; font-weight: bold; }
+        .calendar-table td:first-child { width: 20%; white-space: nowrap; }
+        .calendar-table td:nth-child(2) { width: 80%; }
+        .no-events { text-align: center; color: #666; font-style: italic; margin: 40px 0; }
+        .footer { margin-top: 30px; padding-top: 15px; border-top: 1px solid #ddd; text-align: center; color: #666; font-size: 8pt; }
+    ''')
+    pdf = html.write_pdf(stylesheets=[css])
+    response = HttpResponse(pdf, content_type='application/pdf')
+    first = (request.user.first_name or '').strip()
+    last = (request.user.last_name or '').strip()
+    safe = lambda s: ''.join(c if c not in '\\/:*?"<>|' else '_' for c in s).replace(' ', '_')
+    if first or last:
+        name_part = f'{safe(first)}_{safe(last)}' if last else safe(first)
+    else:
+        name_part = safe(request.user.username or 'User')
+    filename = f'Kalender_{name_part}.pdf'
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
     return response

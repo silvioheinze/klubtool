@@ -18,6 +18,18 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "X-Generator: Poedit 3.8\n"
 
+#: templates/403.html
+msgid "Access denied"
+msgstr "Zugriff verweigert"
+
+#: templates/403.html
+msgid "You don't have permission to access this page."
+msgstr "Sie haben keine Berechtigung, auf diese Seite zuzugreifen."
+
+#: templates/403.html
+msgid "Go to home"
+msgstr "Zur Startseite"
+
 #: group/forms.py:62 templates/group/member_invite.html:32
 msgid "Email address"
 msgstr "E-Mail-Adresse"
@@ -582,7 +594,7 @@ msgstr "Einstellungen"
 #: templates/_base.html:114 templates/user/admin_settings.html:5
 #: templates/user/admin_settings.html:8
 msgid "Admin Settings"
-msgstr "Kontoeinstellungen"
+msgstr "Systeminstellungen"
 
 #: templates/_base.html:119 templates/user/role_form.html:98
 msgid "User Management"
@@ -1242,7 +1254,7 @@ msgstr "Beigetreten"
 #: templates/group/group_detail.html:93 templates/group/group_detail.html:239
 #: templates/group/member_detail.html:71 templates/user/list.html:67
 msgid "Group Admin"
-msgstr "Klubinformation"
+msgstr "Klub-Admin"
 
 #: templates/group/group_detail.html:97 templates/group/group_detail.html:243
 #: templates/group/member_detail.html:75 templates/group/member_form.html:227
@@ -1955,15 +1967,15 @@ msgstr "Rollenoptionen"
 
 #: templates/group/member_form.html:226
 msgid "Regular group member"
-msgstr ""
+msgstr "Normales Klubmitglied"
 
 #: templates/group/member_form.html:227
 msgid "Group leader with decision-making authority"
-msgstr ""
+msgstr "Klubobmann/-frau mit Entscheidungsbefugnis"
 
 #: templates/group/member_form.html:228
 msgid "Assistant to the group leader"
-msgstr ""
+msgstr "Stellvertretung des Klubobmanns/der Klubobfrau"
 
 #: templates/group/member_form.html:229
 msgid "Secretary"
@@ -2057,6 +2069,26 @@ msgstr "Persönlicher Kalender"
 #: templates/home.html:138
 msgid "Export (ICS)"
 msgstr "Exportiere Kalenderdatei"
+
+#: templates/home.html:141
+msgid "Export (PDF)"
+msgstr "Export (PDF)"
+
+#: templates/home.html:176
+msgid "Calendar list pagination"
+msgstr "Kalenderliste Paginierung"
+
+#: templates/home.html:179
+msgid "Page %(page)s of %(num_pages)s"
+msgstr "Seite %(page)s von %(num_pages)s"
+
+#: templates/home.html:183
+msgid "Previous page"
+msgstr "Vorherige Seite"
+
+#: templates/home.html:187
+msgid "Next page"
+msgstr "Nächste Seite"
 
 #: templates/home.html:167
 msgid ""
@@ -2888,7 +2920,7 @@ msgstr ""
 
 #: templates/local/local_detail.html:141
 msgid "Political Parties"
-msgstr ""
+msgstr "Politische Parteien"
 
 #: templates/local/local_detail.html:143
 msgid "Add Party"
@@ -2897,7 +2929,7 @@ msgstr ""
 #: templates/local/local_detail.html:154 templates/local/party_detail.html:47
 #: templates/local/party_form.html:249 templates/local/party_list.html:83
 msgid "Color"
-msgstr ""
+msgstr "Farbe"
 
 #: templates/local/local_detail.html:181 templates/local/party_detail.html:94
 #: templates/local/party_list.html:129
@@ -2918,7 +2950,7 @@ msgstr ""
 
 #: templates/local/local_detail.html:209
 msgid "Political Terms"
-msgstr ""
+msgstr "Amtsperiode"
 
 #: templates/local/local_detail.html:211
 msgid "Add Term"
@@ -3071,7 +3103,7 @@ msgstr ""
 
 #: templates/local/party_detail.html:30 templates/local/party_form.html:235
 msgid "Party Information"
-msgstr ""
+msgstr "Parteinformation"
 
 #: templates/local/party_detail.html:76 templates/local/party_form.html:250
 msgid "Logo"
@@ -3245,6 +3277,18 @@ msgstr "Zurück zur Bezirksvertretung"
 #: templates/local/session_form.html:57
 msgid "Session Details"
 msgstr "Sitzungsdetails"
+
+#: local/models.py
+msgid "Regular Session"
+msgstr "Ordentliche Sitzung"
+
+#: local/models.py
+msgid "Special Session"
+msgstr "Außerordentliche Sitzung"
+
+#: local/models.py
+msgid "Inaugural Session"
+msgstr "Konstituierende Sitzung"
 
 #: templates/local/session_detail.html:85
 msgid "Add invitation"
@@ -4596,6 +4640,38 @@ msgstr "Benutzer bearbeiten"
 #: templates/user/edit.html:26
 msgid "Save"
 msgstr "Speichern"
+
+#: templates/user/edit.html:95
+msgid "Set new password"
+msgstr "Neues Passwort setzen"
+
+#: templates/user/edit.html:97
+msgid "Leave both fields blank to keep the current password."
+msgstr "Beide Felder leer lassen, um das aktuelle Passwort beizubehalten."
+
+#: templates/user/edit.html:135
+msgid "Back to user list"
+msgstr "Zurück zur Benutzerliste"
+
+#: user/forms.py
+msgid "New password"
+msgstr "Neues Passwort"
+
+#: user/forms.py
+msgid "New password (again)"
+msgstr "Neues Passwort (wiederholen)"
+
+#: user/forms.py
+msgid "Leave blank to keep the current password."
+msgstr "Leer lassen, um das aktuelle Passwort beizubehalten."
+
+#: user/forms.py
+msgid "Confirm new password"
+msgstr "Neues Passwort bestätigen"
+
+#: user/forms.py
+msgid "The two password fields didn't match."
+msgstr "Die beiden Passwortfelder stimmen nicht überein."
 
 #: templates/user/email/email_confirmation_message.txt:5
 #, python-format

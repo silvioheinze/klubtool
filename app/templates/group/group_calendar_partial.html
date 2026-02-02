@@ -1,0 +1,46 @@
+{% load i18n %}
+<div id="group-calendar-partial-response"
+     data-prev-url="{{ calendar_prev_url }}"
+     data-next-url="{{ calendar_next_url }}"
+     data-export-pdf-url="{{ calendar_export_pdf_url }}"
+     data-title="{% trans 'Monthly calendar' %} – {{ calendar_month_name }} {{ calendar_year }}">
+    <div class="table-responsive">
+        <table class="table table-bordered mb-0 small calendar-month-table" role="grid">
+            <thead>
+                <tr class="text-center">
+                    <th scope="col" style="width:14%">{% trans "Mon" %}</th>
+                    <th scope="col" style="width:14%">{% trans "Tue" %}</th>
+                    <th scope="col" style="width:14%">{% trans "Wed" %}</th>
+                    <th scope="col" style="width:14%">{% trans "Thu" %}</th>
+                    <th scope="col" style="width:14%">{% trans "Fri" %}</th>
+                    <th scope="col" style="width:14%">{% trans "Sat" %}</th>
+                    <th scope="col" style="width:14%">{% trans "Sun" %}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for week in calendar_weeks %}
+                    <tr role="row">
+                        {% for day_cell in week %}
+                            <td class="calendar-day align-top p-2 {% if day_cell and calendar_today_day == day_cell.day %}calendar-day-today{% endif %}{% if day_cell and day_cell.events %} calendar-day-has-events{% endif %}" role="gridcell">
+                                {% if day_cell %}
+                                    <span class="calendar-day-num fw-bold">{{ day_cell.day }}</span>
+                                    {% if day_cell.events %}
+                                    <div class="calendar-day-events-source d-none" aria-hidden="true">
+                                        {% for event in day_cell.events %}
+                                            <div class="calendar-popup-event">
+                                                <span class="badge bg-success me-1">{{ event.badge_label }}</span>
+                                                <a href="{{ event.url }}" class="text-decoration-none">{{ event.title }}</a>
+                                                <small class="text-muted ms-1">{{ event.date|time:"H:i" }}</small>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+                        {% endfor %}
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>

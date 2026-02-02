@@ -21,9 +21,11 @@
                     <h1 class="mb-0"><i class="bi bi-calendar-event"></i> {{ meeting.title }}</h1>
                 </div>
                 <div class="d-flex gap-2">
+                    {% if can_edit_meeting %}
                     <a href="{% url 'group:meeting-edit' meeting.pk %}" class="btn btn-primary">
                         <i class="bi bi-pencil"></i> {% trans "Edit" %}
                     </a>
+                    {% endif %}
                     <a href="{% url 'group:group-detail' meeting.group.pk %}" class="btn btn-outline-secondary">
                         <i class="bi bi-arrow-left"></i> {% trans "Back to Group" %}
                     </a>
@@ -97,7 +99,7 @@
                                         </button>
                                     </form>
                                 {% endif %}
-                                {% if meeting.status == 'invited' %}
+                                {% if meeting.status == 'invited' and can_cancel_meeting %}
                                     <a href="{% url 'group:meeting-cancel' meeting.pk %}" class="btn btn-warning btn-sm">
                                         <i class="bi bi-x-circle"></i> {% trans "Cancel meeting" %}
                                     </a>
@@ -117,7 +119,7 @@
             <div class="card mt-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="bi bi-list-ul"></i> {% trans "Agenda" %}</h5>
-                    {% if meeting.status == 'scheduled' %}
+                    {% if meeting.status == 'scheduled' and can_manage_agenda %}
                     <div>
                         <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addAgendaItemModal">
                             <i class="bi bi-plus-circle"></i> {% trans "Add" %}
@@ -127,24 +129,24 @@
                 </div>
                 <div class="card-body">
                     {% if agenda_items %}
-                        <div class="table-responsive" id="agenda-table-wrap" data-meeting-status="{{ meeting.status }}">
+                        <div class="table-responsive" id="agenda-table-wrap" data-meeting-status="{{ meeting.status }}" data-can-manage-agenda="{% if can_manage_agenda %}true{% else %}false{% endif %}">
                             <table class="table table-hover">
                                 <thead>
                                     <tr>
-                                        {% if meeting.status == 'scheduled' %}
+                                        {% if meeting.status == 'scheduled' and can_manage_agenda %}
                                         <th style="width: 30px;"><i class="bi bi-grip-vertical"></i></th>
                                         {% endif %}
                                         <th style="width: 50px;">#</th>
                                         <th>{% trans "Title" %}</th>
-                                        {% if meeting.status == 'scheduled' %}
+                                        {% if meeting.status == 'scheduled' and can_manage_agenda %}
                                         <th style="width: 120px;">{% trans "Actions" %}</th>
                                         {% endif %}
                                     </tr>
                                 </thead>
                                 <tbody id="agenda-sortable">
                                     {% for item in agenda_items %}
-                                        <tr class="agenda-item" data-item-id="{{ item.pk }}" data-order="{{ item.order }}" data-parent="{{ item.parent_item.pk|default:'' }}" {% if meeting.status == 'scheduled' %}style="cursor: move;"{% endif %}>
-                                            {% if meeting.status == 'scheduled' %}
+                                        <tr class="agenda-item" data-item-id="{{ item.pk }}" data-order="{{ item.order }}" data-parent="{{ item.parent_item.pk|default:'' }}" {% if meeting.status == 'scheduled' and can_manage_agenda %}style="cursor: move;"{% endif %}>
+                                            {% if meeting.status == 'scheduled' and can_manage_agenda %}
                                             <td class="text-muted"><i class="bi bi-grip-vertical"></i></td>
                                             {% endif %}
                                             <td class="text-center fw-bold"><span class="agenda-number"></span></td>
@@ -157,7 +159,7 @@
                                                     <span class="d-none agenda-item-description"></span>
                                                 {% endif %}
                                             </td>
-                                            {% if meeting.status == 'scheduled' %}
+                                            {% if meeting.status == 'scheduled' and can_manage_agenda %}
                                             <td>
                                                 <div class="btn-group btn-group-sm">
                                                     <button type="button" class="btn btn-outline-primary btn-sm" onclick="editAgendaItem({{ item.pk }})" title="{% trans 'Edit' %}">
@@ -192,11 +194,13 @@
             <div class="card mt-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="bi bi-journal-text"></i> {% trans "Meeting Minutes" %}</h5>
+                    {% if can_manage_minutes %}
                     <div>
                         <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addMinuteItemModal">
                             <i class="bi bi-plus-circle"></i> {% trans "Add" %}
                         </button>
                     </div>
+                    {% endif %}
                 </div>
                 <div class="card-body">
                     {% if minute_items %}
@@ -206,7 +210,9 @@
                                     <tr>
                                         <th style="width: 50px;">#</th>
                                         <th>{% trans "Title" %}</th>
+                                        {% if can_manage_minutes %}
                                         <th style="width: 120px;">{% trans "Actions" %}</th>
+                                        {% endif %}
                                     </tr>
                                 </thead>
                                 <tbody id="minutes-sortable">
@@ -220,6 +226,7 @@
                                                     <div class="minute-item-description-display text-muted small mt-1">{{ item.description|sanitize_richtext }}</div>
                                                 {% endif %}
                                             </td>
+                                            {% if can_manage_minutes %}
                                             <td>
                                                 <div class="btn-group btn-group-sm">
                                                     <button type="button" class="btn btn-outline-primary btn-sm" onclick="editMinuteItem({{ item.pk }})" title="{% trans 'Edit' %}">
@@ -230,6 +237,7 @@
                                                     </button>
                                                 </div>
                                             </td>
+                                            {% endif %}
                                         </tr>
                                     {% endfor %}
                                 </tbody>
@@ -281,6 +289,7 @@
                                 <li class="list-group-item px-0">
                                     <div class="d-flex justify-content-between align-items-center">
                                         <span>{{ member.user.get_full_name|default:member.user.username }}</span>
+                                        {% if can_toggle_participation %}
                                         <div class="form-check form-switch">
                                             <input 
                                                 class="form-check-input participation-toggle" 
@@ -294,6 +303,11 @@
                                                 {% trans "Present" %}
                                             </label>
                                         </div>
+                                        {% else %}
+                                        <span class="badge {% if participations %}{% if participations|get_item:member.pk %}bg-success{% else %}bg-secondary{% endif %}{% else %}bg-secondary{% endif %}">
+                                            {% if participations %}{% if participations|get_item:member.pk %}{% trans "Present" %}{% else %}{% trans "Absent" %}{% endif %}{% else %}{% trans "Absent" %}{% endif %}
+                                        </span>
+                                        {% endif %}
                                     </div>
                                 </li>
                             {% endfor %}
@@ -619,7 +633,8 @@ document.addEventListener('DOMContentLoaded', function() {
         updateAgendaNumbers();
         var agendaWrap = document.getElementById('agenda-table-wrap');
         var meetingScheduled = agendaWrap && agendaWrap.getAttribute('data-meeting-status') === 'scheduled';
-        if (meetingScheduled) {
+        var canManageAgenda = agendaWrap && agendaWrap.getAttribute('data-can-manage-agenda') === 'true';
+        if (meetingScheduled && canManageAgenda) {
         Sortable.create(agendaTable, {
             handle: '.bi-grip-vertical',
             animation: 150,

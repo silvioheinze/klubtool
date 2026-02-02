@@ -11,11 +11,13 @@
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h1><i class="bi bi-people"></i> {{ group.name }}</h1>
+                {% if can_edit_group %}
                 <div>
                     <a href="{% url 'group:group-edit' group.pk %}" class="btn btn-primary">
                         <i class="bi bi-pencil"></i> {% trans "Edit" %}
                     </a>
                 </div>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -61,47 +63,73 @@
                         <div class="card-header d-flex justify-content-between align-items-center">
                             <h5 class="mb-0"><i class="bi bi-calendar-event"></i> {% trans "Group Meetings" %}</h5>
                             <div>
+                                {% if can_add_meeting %}
                                 <a href="{% url 'group:meeting-create' %}?group={{ group.pk }}" class="btn btn-primary btn-sm">
                                     <i class="bi bi-plus-circle"></i> {% trans "Add" %}
                                 </a>
+                                {% endif %}
                             </div>
                         </div>
                         <div class="card-body">
-                            {% if meetings %}
-                                <ul class="list-group list-group-flush" style="column-count: 2; column-gap: 1.5rem;">
-                                    {% for meeting in meetings %}
-                                        <li class="list-group-item d-flex justify-content-between align-items-center" style="break-inside: avoid;">
-                                            <a href="{% url 'group:meeting-detail' meeting.pk %}" class="text-decoration-none">{{ meeting.title }}</a>
-                                            {% if meeting.status == 'scheduled' %}
-                                                <span class="badge bg-primary rounded-pill">{% trans "Scheduled" %}</span>
-                                            {% elif meeting.status == 'invited' %}
-                                                <span class="badge bg-info rounded-pill">{% trans "Invited" %}</span>
-                                            {% elif meeting.status == 'cancelled' %}
-                                                <span class="badge bg-danger rounded-pill">{% trans "Cancelled" %}</span>
+                            <div id="group-meetings-list-container">
+                                {% if meetings_page and meetings_page.object_list %}
+                                    <ul class="list-group list-group-flush" style="column-count: 2; column-gap: 1.5rem;">
+                                        {% for meeting in meetings_page.object_list %}
+                                            <li class="list-group-item d-flex justify-content-between align-items-center" style="break-inside: avoid;">
+                                                <a href="{% url 'group:meeting-detail' meeting.pk %}" class="text-decoration-none">{{ meeting.title }}</a>
+                                                {% if meeting.status == 'scheduled' %}
+                                                    <span class="badge bg-primary rounded-pill">{% trans "Scheduled" %}</span>
+                                                {% elif meeting.status == 'invited' %}
+                                                    <span class="badge bg-info rounded-pill">{% trans "Invited" %}</span>
+                                                {% elif meeting.status == 'cancelled' %}
+                                                    <span class="badge bg-danger rounded-pill">{% trans "Cancelled" %}</span>
+                                                {% endif %}
+                                            </li>
+                                        {% endfor %}
+                                    </ul>
+                                    {% if meetings_page.has_previous or meetings_page.has_next %}
+                                    <nav class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top group-meetings-pagination" aria-label="{% trans 'Meetings list pagination' %}">
+                                        <span class="text-muted small">
+                                            {% blocktrans with page=meetings_page.number num_pages=meetings_page.paginator.num_pages %}Page {{ page }} of {{ num_pages }}{% endblocktrans %}
+                                        </span>
+                                        <div class="btn-group btn-group-sm">
+                                            {% if meetings_prev_url %}
+                                            <a href="{{ meetings_prev_url }}" class="btn btn-outline-secondary group-meetings-pagination-link" aria-label="{% trans 'Previous page' %}"><i class="bi bi-chevron-left"></i></a>
+                                            {% else %}
+                                            <span class="btn btn-outline-secondary disabled" aria-disabled="true"><i class="bi bi-chevron-left"></i></span>
                                             {% endif %}
-                                        </li>
-                                    {% endfor %}
-                                </ul>
-                                {% if total_meetings > 6 %}
-                                    <div class="text-center mt-3">
-                                        <p class="text-muted">
-                                            {% trans "Showing" %} {{ meetings|length }} {% trans "of" %} {{ total_meetings }} {% trans "meetings" %}
-                                        </p>
-                                        <a href="{% url 'group:meeting-list' %}?group={{ group.pk }}" class="btn btn-outline-primary">
-                                            <i class="bi bi-calendar-event"></i> {% trans "View All Meetings" %}
+                                            {% if meetings_next_url %}
+                                            <a href="{{ meetings_next_url }}" class="btn btn-outline-secondary group-meetings-pagination-link" aria-label="{% trans 'Next page' %}"><i class="bi bi-chevron-right"></i></a>
+                                            {% else %}
+                                            <span class="btn btn-outline-secondary disabled" aria-disabled="true"><i class="bi bi-chevron-right"></i></span>
+                                            {% endif %}
+                                        </div>
+                                    </nav>
+                                    {% endif %}
+                                {% elif meetings_page and not meetings_page.object_list %}
+                                    <div class="text-center py-4">
+                                        <i class="bi bi-calendar-event fs-1 text-muted"></i>
+                                        <h6 class="mt-3">{% trans "No Meetings found" %}</h6>
+                                        <p class="text-muted">{% trans "Add meetings to this group to get started." %}</p>
+                                        {% if can_add_meeting %}
+                                        <a href="{% url 'group:meeting-create' %}?group={{ group.pk }}" class="btn btn-primary">
+                                            <i class="bi bi-plus-circle"></i> {% trans "Add Meeting" %}
                                         </a>
+                                        {% endif %}
+                                    </div>
+                                {% else %}
+                                    <div class="text-center py-4">
+                                        <i class="bi bi-calendar-event fs-1 text-muted"></i>
+                                        <h6 class="mt-3">{% trans "No Meetings found" %}</h6>
+                                        <p class="text-muted">{% trans "Add meetings to this group to get started." %}</p>
+                                        {% if can_add_meeting %}
+                                        <a href="{% url 'group:meeting-create' %}?group={{ group.pk }}" class="btn btn-primary">
+                                            <i class="bi bi-plus-circle"></i> {% trans "Add Meeting" %}
+                                        </a>
+                                        {% endif %}
                                     </div>
                                 {% endif %}
-                            {% else %}
-                                <div class="text-center py-4">
-                                    <i class="bi bi-calendar-event fs-1 text-muted"></i>
-                                    <h6 class="mt-3">{% trans "No Meetings found" %}</h6>
-                                    <p class="text-muted">{% trans "Add meetings to this group to get started." %}</p>
-                                    <a href="{% url 'group:meeting-create' %}?group={{ group.pk }}" class="btn btn-primary">
-                                        <i class="bi bi-plus-circle"></i> {% trans "Add Meeting" %}
-                                    </a>
-                                </div>
-                            {% endif %}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -111,8 +139,13 @@
                      {% if calendar_next_url %}data-next-url="{{ calendar_next_url }}"{% endif %}
                      data-detail-url="{% url 'group:group-detail' group.pk %}">
                     <div class="card h-100">
-                        <div class="card-header">
-                            <h5 class="mb-0"><i class="bi bi-calendar3"></i> {% trans "Monthly calendar" %} – {{ calendar_month_name }} {{ calendar_year }}</h5>
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0" id="group-calendar-month-title"><i class="bi bi-calendar3"></i> {% trans "Monthly calendar" %} – {{ calendar_month_name }} {{ calendar_year }}</h5>
+                            {% if can_export_calendar_pdf %}
+                            <a href="{{ calendar_export_pdf_url }}" id="group-calendar-export-pdf-link" class="btn btn-sm btn-outline-primary" aria-label="{% trans 'Export (PDF)' %}">
+                                <i class="bi bi-file-pdf"></i> {% trans "Export (PDF)" %}
+                            </a>
+                            {% endif %}
                         </div>
                         <div class="card-body position-relative" id="group-calendar-card-body">
                             <div id="group-calendar-month-content" aria-live="polite">
@@ -163,13 +196,13 @@
                         </div>
                         {% if calendar_weeks and calendar_prev_url and calendar_next_url %}
                         <div class="card-footer d-flex justify-content-center gap-1 flex-wrap">
-                            <a href="{{ calendar_prev_url }}" class="btn btn-sm btn-outline-secondary" aria-label="{% trans 'Previous month' %}">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="group-calendar-prev-month" aria-label="{% trans 'Previous month' %}">
                                 <i class="bi bi-chevron-left"></i> {% trans "Previous month" %}
-                            </a>
-                            <a href="{{ calendar_today_url }}" class="btn btn-sm btn-outline-secondary" aria-label="{% trans 'Current month' %}">{% trans "Today" %}</a>
-                            <a href="{{ calendar_next_url }}" class="btn btn-sm btn-outline-secondary" aria-label="{% trans 'Next month' %}">
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="group-calendar-today-month" aria-label="{% trans 'Current month' %}">{% trans "Today" %}</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="group-calendar-next-month" aria-label="{% trans 'Next month' %}">
                                 {% trans "Next month" %} <i class="bi bi-chevron-right"></i>
-                            </a>
+                            </button>
                         </div>
                         {% endif %}
                     </div>
@@ -186,12 +219,16 @@
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="bi bi-person-lines-fill"></i> {% trans "Group members" %}</h5>
                     <div class="d-flex gap-1">
+                        {% if can_invite_member %}
                         <a href="{% url 'group:group-invite-member' group.pk %}" class="btn btn-sm btn-outline-primary">
                             <i class="bi bi-envelope-plus"></i> {% trans "Invite member" %}
                         </a>
+                        {% endif %}
+                        {% if can_add_member %}
                         <a href="{% url 'group:member-create' %}?group={{ group.pk }}" class="btn btn-sm btn-primary">
                             <i class="bi bi-plus-circle"></i> {% trans "Add" %}
                         </a>
+                        {% endif %}
                     </div>
                 </div>
                 <div class="card-body">
@@ -227,11 +264,6 @@
                                                         <span class="badge bg-info me-1">
                                                             <i class="bi bi-star-half"></i> {% trans "Deputy Leader" %}
                                                         </span>
-                                                    
-                                                    {% elif role.name == 'Board Member' %}
-                                                        <span class="badge bg-dark me-1">
-                                                            <i class="bi bi-people"></i> {% trans "Board Member" %}
-                                                        </span>
                                                     {% else %}
                                                         <span class="badge bg-secondary me-1">{{ role.name }}</span>
                                                     {% endif %}
@@ -242,13 +274,17 @@
                                             <td>{{ member.joined_date|date:"M d, Y" }}</td>
                                             <td>
                                                 <div class="btn-group" role="group">
+                                                    {% if can_view_member %}
                                                     <a href="{% url 'group:member-detail' member.pk %}" class="btn btn-sm btn-outline-info">
                                                         <i class="bi bi-eye"></i>
                                                     </a>
+                                                    {% endif %}
+                                                    {% if can_edit_member %}
                                                     <a href="{% url 'group:member-edit' member.pk %}" class="btn btn-sm btn-outline-primary">
                                                         <i class="bi bi-pencil"></i>
                                                     </a>
-                                                    {% if user.is_superuser %}
+                                                    {% endif %}
+                                                    {% if can_manage_roles %}
                                                         <button type="button" class="btn btn-sm btn-outline-success" 
                                                                 onclick="openRoleManagement('{{ member.pk }}', '{{ member.user.get_full_name|default:member.user.username }}', '{{ member.get_roles_display }}')"
                                                                 title="{% trans 'Manage Roles' %}">
@@ -268,12 +304,16 @@
                             <h6 class="mt-3">{% trans "No Members found" %}</h6>
                             <p class="text-muted">{% trans "Add members to this group to get started." %}</p>
                             <div class="d-flex gap-2 justify-content-center flex-wrap">
+                                {% if can_invite_member %}
                                 <a href="{% url 'group:group-invite-member' group.pk %}" class="btn btn-outline-primary">
                                     <i class="bi bi-envelope-plus"></i> {% trans "Invite member" %}
                                 </a>
+                                {% endif %}
+                                {% if can_add_member %}
                                 <a href="{% url 'group:member-create' %}?group={{ group.pk }}" class="btn btn-primary">
                                     <i class="bi bi-plus-circle"></i> {% trans "Add Member" %}
                                 </a>
+                                {% endif %}
                             </div>
                         </div>
                     {% endif %}
@@ -323,11 +363,6 @@
                                                 <span class="badge bg-info">
                                                     <i class="bi bi-star-half"></i> {% trans "Deputy Leader" %}
                                                 </span>
-
-                                            {% elif role.name == 'Board Member' %}
-                                                <span class="badge bg-dark">
-                                                    <i class="bi bi-people"></i> {% trans "Board Member" %}
-                                                </span>
                                             {% else %}
                                                 <span class="badge bg-secondary">{{ role.name }}</span>
                                             {% endif %}
@@ -376,9 +411,6 @@ function openRoleManagement(memberId, memberName, currentRoles) {
                 return '<span class="badge bg-primary me-1"><i class="bi bi-star"></i> Leader</span>';
             } else if (role.includes('Deputy Leader')) {
                 return '<span class="badge bg-info me-1"><i class="bi bi-star-half"></i> Deputy Leader</span>';
-
-            } else if (role.includes('Board Member')) {
-                return '<span class="badge bg-dark me-1"><i class="bi bi-people"></i> Board Member</span>';
             } else {
                 return '<span class="badge bg-secondary me-1">' + role + '</span>';
             }
@@ -389,6 +421,113 @@ function openRoleManagement(memberId, memberName, currentRoles) {
     
     new bootstrap.Modal(document.getElementById('roleManagementModal')).show();
 }
+
+/* Group meetings list: AJAX pagination */
+(function() {
+    var listContainer = document.getElementById('group-meetings-list-container');
+    if (listContainer) {
+        listContainer.addEventListener('click', function(e) {
+            var link = e.target.closest('a.group-meetings-pagination-link');
+            if (!link || !link.href) return;
+            e.preventDefault();
+            var url = link.getAttribute('href');
+            var sep = url.indexOf('?') !== -1 ? '&' : '?';
+            var ajaxUrl = url + sep + 'partial=meetings';
+            listContainer.style.opacity = '0.6';
+            listContainer.style.pointerEvents = 'none';
+            fetch(ajaxUrl, { headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' })
+                .then(function(res) { return res.ok ? res.text() : Promise.reject(new Error('Request failed')); })
+                .then(function(html) {
+                    listContainer.innerHTML = html;
+                    if (window.history && window.history.pushState) {
+                        window.history.pushState({}, '', url);
+                    }
+                })
+                .catch(function() {
+                    window.location.href = url;
+                })
+                .finally(function() {
+                    listContainer.style.opacity = '';
+                    listContainer.style.pointerEvents = '';
+                });
+        });
+    }
+})();
+
+/* Group calendar: AJAX month navigation */
+(function() {
+    var container = document.getElementById('group-calendar-container');
+    var contentEl = document.getElementById('group-calendar-month-content');
+    var titleEl = document.getElementById('group-calendar-month-title');
+    var prevBtn = document.getElementById('group-calendar-prev-month');
+    var nextBtn = document.getElementById('group-calendar-next-month');
+    var todayBtn = document.getElementById('group-calendar-today-month');
+    var detailUrl = container && container.getAttribute('data-detail-url');
+
+    function appendPartialParam(url) {
+        if (!url) return url;
+        return url + (url.indexOf('?') !== -1 ? '&' : '?') + 'partial=calendar';
+    }
+
+    function loadMonth(url) {
+        if (!url || !contentEl || !container) return;
+        var ajaxUrl = appendPartialParam(url);
+        container.setAttribute('aria-busy', 'true');
+        fetch(ajaxUrl, { headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin', cache: 'no-store' })
+            .then(function(res) {
+                if (!res.ok) throw new Error('Calendar load failed');
+                return res.text();
+            })
+            .then(function(html) {
+                var wrap = document.createElement('div');
+                wrap.innerHTML = html.trim();
+                var partial = wrap.querySelector('#group-calendar-partial-response');
+                if (partial) {
+                    contentEl.innerHTML = partial.innerHTML;
+                    var newTitle = partial.getAttribute('data-title');
+                    if (newTitle && titleEl) titleEl.innerHTML = '<i class="bi bi-calendar3"></i> ' + newTitle;
+                    var prev = partial.getAttribute('data-prev-url');
+                    var next = partial.getAttribute('data-next-url');
+                    if (prev) container.setAttribute('data-prev-url', prev);
+                    if (next) container.setAttribute('data-next-url', next);
+                    var exportPdfUrl = partial.getAttribute('data-export-pdf-url');
+                    if (exportPdfUrl) {
+                        var exportLink = document.getElementById('group-calendar-export-pdf-link');
+                        if (exportLink) exportLink.href = exportPdfUrl;
+                    }
+                    if (history.replaceState) history.replaceState(null, '', url);
+                } else {
+                    window.location.href = url;
+                }
+            })
+            .catch(function() {
+                window.location.href = url;
+            })
+            .finally(function() {
+                container.removeAttribute('aria-busy');
+            });
+    }
+
+    if (prevBtn && container) {
+        prevBtn.addEventListener('click', function() {
+            var url = container.getAttribute('data-prev-url');
+            if (url) loadMonth(url);
+        });
+    }
+    if (nextBtn && container) {
+        nextBtn.addEventListener('click', function() {
+            var url = container.getAttribute('data-next-url');
+            if (url) loadMonth(url);
+        });
+    }
+    if (todayBtn && detailUrl) {
+        todayBtn.addEventListener('click', function() {
+            var now = new Date();
+            var url = detailUrl + '?calendar_month=' + (now.getMonth() + 1) + '&calendar_year=' + now.getFullYear();
+            loadMonth(url);
+        });
+    }
+})();
 
 /* Group calendar: hover popup for days with events */
 (function() {

@@ -11,11 +11,13 @@
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h1><i class="bi bi-building"></i> {{ council.name }}</h1>
+                {% if can_edit_council %}
                 <div>
                     <a href="{% url 'local:council-edit' council.pk %}" class="btn btn-primary">
                         <i class="bi bi-pencil"></i> {% trans "Edit" %}
                     </a>
                 </div>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -129,11 +131,13 @@
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="bi bi-calendar-event"></i> {% trans "Council Sessions" %}</h5>
+                    {% if can_add_session %}
                     <div>
                         <a href="{% url 'local:session-create' %}?council={{ council.pk }}" class="btn btn-primary btn-sm">
                             <i class="bi bi-plus-circle"></i> {% trans "Add" %}
                         </a>
                     </div>
+                    {% endif %}
                 </div>
                 <div class="card-body">
                     {% if sessions %}
@@ -183,9 +187,11 @@
                             <i class="bi bi-calendar-event fs-1 text-muted"></i>
                             <h6 class="mt-3">{% trans "No Sessions found" %}</h6>
                             <p class="text-muted">{% trans "Create council sessions to manage meetings and events." %}</p>
+                            {% if can_add_session %}
                             <a href="{% url 'local:session-create' %}?council={{ council.pk }}" class="btn btn-primary">
                                 <i class="bi bi-plus-circle"></i> {% trans "Create First Session" %}
                             </a>
+                            {% endif %}
                         </div>
                     {% endif %}
                 </div>
@@ -200,14 +206,16 @@
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="bi bi-people"></i> {% trans "Council Committees" %}</h5>
                     <div>
-                        {% if committees %}
+                        {% if committees and can_export_committees_pdf %}
                             <a href="{% url 'local:council-committees-export-pdf' council.pk %}" class="btn btn-outline-primary btn-sm me-2">
                                 <i class="bi bi-file-pdf"></i> {% trans "Export PDF" %}
                             </a>
                         {% endif %}
+                        {% if can_add_committee %}
                         <a href="{% url 'local:committee-create' %}?council={{ council.pk }}" class="btn btn-primary btn-sm">
                             <i class="bi bi-plus-circle"></i> {% trans "Add" %}
                         </a>
+                        {% endif %}
                     </div>
                 </div>
                 <div class="card-body">
@@ -254,9 +262,11 @@
                         <div class="text-center py-4">
                             <i class="bi bi-people fs-1 text-muted"></i>
                             <h6 class="mt-3">{% trans "No Committees found" %}</h6>
+                            {% if can_add_committee %}
                             <a href="{% url 'local:committee-create' %}?council={{ council.pk }}" class="btn btn-primary">
                                 <i class="bi bi-plus-circle"></i> {% trans "Create First Committee" %}
                             </a>
+                            {% endif %}
                         </div>
                     {% endif %}
                 </div>

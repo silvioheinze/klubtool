@@ -12,9 +12,11 @@
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h1><i class="bi bi-people"></i> {{ committee.name }}</h1>
                 <div class="d-flex gap-2">
+                    {% if can_edit_committee %}
                     <a href="{% url 'local:committee-edit' committee.pk %}" class="btn btn-primary">
                         <i class="bi bi-pencil"></i> {% trans "Edit" %}
                     </a>
+                    {% endif %}
                     <a href="{% url 'local:council-detail' committee.council.pk %}" class="btn btn-outline-secondary">
                         <i class="bi bi-arrow-left"></i> {% trans "Back" %}
                     </a>
@@ -88,7 +90,7 @@
                     <h5 class="mb-0"><i class="bi bi-person-lines-fill"></i> {% trans "Committee Members" context committee_type_label %}</h5>
                     {% endwith %}
                     <div>
-                        {% if user.is_superuser or user_leader_groups %}
+                        {% if can_add_committee_member %}
                             <a href="{% url 'local:committee-member-create' %}?committee={{ committee.pk }}" class="btn btn-sm btn-primary">
                                 <i class="bi bi-person-plus"></i> {% trans "Add" %}
                             </a>
@@ -121,11 +123,15 @@
                                                 {{ member.joined_date|date:"M d, Y" }}
                                             </td>
                                             <td>
+                                                {% if can_edit_committee_member %}
                                                 <div class="btn-group" role="group">
                                                     <a href="{% url 'local:committee-member-edit' member.pk %}" class="btn btn-sm btn-outline-primary" title="{% trans 'Edit Member' %}">
                                                         <i class="bi bi-pencil"></i> {% trans 'Edit' %}
                                                     </a>
                                                 </div>
+                                                {% else %}
+                                                <span class="text-muted">-</span>
+                                                {% endif %}
                                             </td>
                                         </tr>
                                     {% endfor %}
@@ -138,9 +144,11 @@
                             <i class="bi bi-person-lines-fill fs-1 text-muted"></i>
                             <h6 class="mt-3">{% trans "No Members found" %}</h6>
                             <p class="text-muted">{% trans "Add committee members to start organizing the committee work." %}</p>
+                            {% if can_add_committee_member %}
                             <a href="{% url 'local:committee-member-create' %}?committee={{ committee.pk }}" class="btn btn-primary">
                                 <i class="bi bi-person-plus"></i> {% trans "Add First Member" %}
                             </a>
+                            {% endif %}
                         </div>
                     {% endif %}
                 </div>
@@ -157,9 +165,11 @@
                     <h5 class="mb-0"><i class="bi bi-calendar-event"></i> {% trans "Committee Meetings" context committee_type_label %}</h5>
                     {% endwith %}
                     <div>
+                        {% if can_add_committee_meeting %}
                         <a href="{% url 'local:committee-meeting-create' committee.pk %}" class="btn btn-sm btn-primary">
                             <i class="bi bi-plus-circle"></i> {% trans "Add" %}
                         </a>
+                        {% endif %}
                     </div>
                 </div>
                 <div class="card-body">
@@ -203,9 +213,11 @@
                                                     <a href="{% url 'local:committee-meeting-detail' meeting.pk %}" class="btn btn-sm btn-outline-info" title="{% trans 'View Details' %}">
                                                         <i class="bi bi-eye"></i>
                                                     </a>
+                                                    {% if can_edit_committee_meeting %}
                                                     <a href="{% url 'local:committee-meeting-edit' meeting.pk %}" class="btn btn-sm btn-outline-primary" title="{% trans 'Edit Meeting' %}">
                                                         <i class="bi bi-pencil"></i>
                                                     </a>
+                                                    {% endif %}
                                                 </div>
                                             </td>
                                         </tr>
@@ -218,9 +230,11 @@
                             <i class="bi bi-calendar-event fs-1 text-muted"></i>
                             <h6 class="mt-3">{% trans "No Meetings found" %}</h6>
                             <p class="text-muted">{% trans "Create committee meetings to organize sessions." %}</p>
+                            {% if can_add_committee_meeting %}
                             <a href="{% url 'local:committee-meeting-create' committee.pk %}" class="btn btn-primary">
                                 <i class="bi bi-plus-circle"></i> {% trans "Create First Meeting" %}
                             </a>
+                            {% endif %}
                         </div>
                     {% endif %}
                 </div>

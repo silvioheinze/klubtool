@@ -123,6 +123,14 @@ class UsersUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     def get_success_url(self):
         return reverse_lazy('user-list')
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        # Allow admins to set a new password for the user being edited
+        kwargs['allow_set_password'] = (
+            self.request.user.is_superuser or self.request.user.has_role_permission('user.edit')
+        )
+        return kwargs
+
     def test_func(self):
         # Allow access if user is superuser or has user.edit permission
         return self.request.user.is_superuser or self.request.user.has_role_permission('user.edit')

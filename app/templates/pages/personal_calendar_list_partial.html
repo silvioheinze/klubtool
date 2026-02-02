@@ -1,0 +1,48 @@
+{% load i18n %}
+{% if calendar_list_page and calendar_list_page.object_list %}
+<div class="list-group list-group-flush">
+    {% for event in calendar_list_page.object_list %}
+    <div class="list-group-item d-flex justify-content-between align-items-start">
+        <a href="{{ event.url }}" class="list-group-item-action text-decoration-none text-body me-2 flex-grow-1">
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <span class="fw-bold">{{ event.title }}</span>
+                {% if event.type == 'council_session' %}
+                <span class="badge bg-primary">{{ event.badge_label }}</span>
+                {% elif event.type == 'committee_meeting' or event.type == 'committee_session' %}
+                <span class="badge bg-info">{{ event.badge_label }}</span>
+                {% elif event.type == 'group_meeting' %}
+                <span class="badge bg-success">{{ event.badge_label }}</span>
+                {% endif %}
+            </div>
+            <small class="text-muted">{{ event.subtitle }}{% if event.location %} · {{ event.location }}{% endif %}</small>
+        </a>
+        <div class="d-flex align-items-center gap-2 flex-shrink-0">
+            <small class="text-nowrap text-muted">{{ event.date|date:"d.m.Y H:i" }}</small>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% if calendar_list_page.has_previous or calendar_list_page.has_next %}
+<nav class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top calendar-list-pagination" aria-label="{% trans 'Calendar list pagination' %}">
+    <span class="text-muted small">
+        {% blocktrans with page=calendar_list_page.number num_pages=calendar_list_page.paginator.num_pages %}Page {{ page }} of {{ num_pages }}{% endblocktrans %}
+    </span>
+    <div class="btn-group btn-group-sm">
+        {% if calendar_list_prev_url %}
+        <a href="{{ calendar_list_prev_url }}" class="btn btn-outline-secondary calendar-list-pagination-link" aria-label="{% trans 'Previous page' %}"><i class="bi bi-chevron-left"></i></a>
+        {% else %}
+        <span class="btn btn-outline-secondary disabled" aria-disabled="true"><i class="bi bi-chevron-left"></i></span>
+        {% endif %}
+        {% if calendar_list_next_url %}
+        <a href="{{ calendar_list_next_url }}" class="btn btn-outline-secondary calendar-list-pagination-link" aria-label="{% trans 'Next page' %}"><i class="bi bi-chevron-right"></i></a>
+        {% else %}
+        <span class="btn btn-outline-secondary disabled" aria-disabled="true"><i class="bi bi-chevron-right"></i></span>
+        {% endif %}
+    </div>
+</nav>
+{% endif %}
+{% elif calendar_list_page and not calendar_list_page.object_list %}
+<p class="text-muted mb-0">{% trans "No upcoming sessions or group meetings. Sessions from your councils and committees, and meetings from your groups, will appear here." %}</p>
+{% else %}
+<p class="text-muted mb-0">{% trans "No upcoming sessions or group meetings. Sessions from your councils and committees, and meetings from your groups, will appear here." %}</p>
+{% endif %}
