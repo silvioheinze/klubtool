@@ -1,7 +1,7 @@
 from django import forms
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
-from .models import Local, Council, Committee, CommitteeMeeting, CommitteeMeetingAttachment, CommitteeMember, Session, Term, Party, TermSeatDistribution, SessionAttachment
+from .models import Local, Council, Committee, CommitteeMeeting, CommitteeMeetingAttachment, CommitteeMember, CommitteeParticipationSubstitute, Session, Term, Party, TermSeatDistribution, SessionAttachment
 
 
 class LocalForm(forms.ModelForm):
@@ -629,3 +629,27 @@ class CommitteeMeetingAttachmentForm(forms.ModelForm):
         if commit:
             instance.save()
         return instance
+
+
+class CommitteeParticipationSubstituteForm(forms.Form):
+    """Form for selecting a substitute member for a committee meeting (for the current user)."""
+    substitute_member = forms.ModelChoiceField(
+        queryset=CommitteeMember.objects.none(),
+        required=False,
+        empty_label=_("— None / Clear —"),
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        label=_("Substitute member"),
+    )
+
+    def __init__(self, *args, committee=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if committee:
+            self.fields['substitute_member'].queryset = (
+                committee.members
+                .filter(is_active=True, role='substitute_member')
+                .order_by('user__last_name', 'user__first_name')
+            )
+            # Show user full name in dropdown
+            def label_from_instance(obj):
+                return obj.user.get_full_name() or obj.user.username
+            self.fields['substitute_member'].label_from_instance = label_from_instance

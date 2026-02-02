@@ -1,9 +1,9 @@
-from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView, FormView
+from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView, FormView, View
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.urls import reverse_lazy, reverse
-from django.db.models import Q, Prefetch
+from django.db.models import Q, Prefetch, Case, When, Value, IntegerField
 from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
 from django.http import JsonResponse, HttpResponse
@@ -11,8 +11,8 @@ from django.views.decorators.http import require_http_methods
 from django.utils.translation import gettext_lazy as _
 import json
 
-from .models import Local, Term, Council, TermSeatDistribution, Party, Session, Committee, CommitteeMeeting, CommitteeMeetingAttachment, CommitteeMember, SessionAttachment, SessionPresence
-from .forms import LocalForm, LocalFilterForm, CouncilForm, CouncilFilterForm, TermForm, TermFilterForm, CouncilNameForm, TermSeatDistributionForm, PartyForm, PartyFilterForm, SessionForm, SessionFilterForm, CommitteeForm, CommitteeFilterForm, CommitteeMeetingForm, CommitteeMemberForm, CommitteeMemberFilterForm, SessionAttachmentForm, CommitteeMeetingAttachmentForm, SessionInvitationForm, SessionMinutesForm
+from .models import Local, Term, Council, TermSeatDistribution, Party, Session, Committee, CommitteeMeeting, CommitteeMeetingAttachment, CommitteeMember, CommitteeParticipationSubstitute, SessionAttachment, SessionPresence
+from .forms import LocalForm, LocalFilterForm, CouncilForm, CouncilFilterForm, TermForm, TermFilterForm, CouncilNameForm, TermSeatDistributionForm, PartyForm, PartyFilterForm, SessionForm, SessionFilterForm, CommitteeForm, CommitteeFilterForm, CommitteeMeetingForm, CommitteeMemberForm, CommitteeMemberFilterForm, SessionAttachmentForm, CommitteeMeetingAttachmentForm, SessionInvitationForm, SessionMinutesForm, CommitteeParticipationSubstituteForm
 
 
 class LocalListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
@@ -1841,7 +1841,84 @@ class CommitteeMeetingDetailView(LoginRequiredMixin, UserPassesTestMixin, Detail
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['committee'] = self.object.committee
+        # Participants: committee members who take part in the meeting (excluding substitute members)
+        role_order = Case(
+            When(role='chairperson', then=Value(1)),
+            When(role='vice_chairperson', then=Value(2)),
+            When(role='member', then=Value(3)),
+            default=Value(4),
+            output_field=IntegerField(),
+        )
+        participants = list(
+            self.object.committee.members
+            .filter(is_active=True)
+            .exclude(role='substitute_member')
+            .order_by(role_order, 'user__last_name', 'user__first_name')
+        )
+        context['participants'] = participants
+        # Map participant member pk -> substitute_member (CommitteeMember) for this meeting
+        substitute_map = {
+            s.member_id: s.substitute_member
+            for s in CommitteeParticipationSubstitute.objects.filter(
+                committee_meeting=self.object
+            ).select_related('substitute_member', 'substitute_member__user')
+        }
+        context['participants_with_substitute'] = [(m, substitute_map.get(m.pk)) for m in participants]
+        # Substitute form for current user (only if they are a participant)
+        my_participant = next((p for p in participants if p.user_id == self.request.user.pk), None)
+        existing_sub = None
+        if my_participant:
+            existing_sub = CommitteeParticipationSubstitute.objects.filter(
+                committee_meeting=self.object, member=my_participant
+            ).first()
+        context['substitute_form'] = CommitteeParticipationSubstituteForm(
+            committee=self.object.committee,
+            initial={'substitute_member': existing_sub.substitute_member_id} if existing_sub else None,
+        )
+        context['my_participant'] = my_participant
         return context
+
+
+class CommitteeMeetingSetSubstituteView(LoginRequiredMixin, View):
+    """View to set or clear a substitute for the current user at a committee meeting (POST only)."""
+    http_method_names = ['get', 'post']
+
+    def get(self, request, pk):
+        return redirect('local:committee-meeting-detail', pk=pk)
+
+    def post(self, request, pk):
+        meeting = get_object_or_404(CommitteeMeeting, pk=pk)
+        if not request.user.is_superuser:
+            messages.error(request, _('Permission denied.'))
+            return redirect('local:committee-meeting-detail', pk=pk)
+        member_pk = request.POST.get('member')
+        if not member_pk:
+            messages.error(request, _('Invalid request.'))
+            return redirect('local:committee-meeting-detail', pk=pk)
+        member = get_object_or_404(CommitteeMember, pk=member_pk)
+        if member.committee_id != meeting.committee_id or member.user_id != request.user.pk or member.role == 'substitute_member':
+            messages.error(request, _('You can only set a substitute for yourself as a regular committee member.'))
+            return redirect('local:committee-meeting-detail', pk=pk)
+        form = CommitteeParticipationSubstituteForm(request.POST, committee=meeting.committee)
+        if not form.is_valid():
+            err = next(iter(form.errors.values()), [_('Invalid selection.')])
+            messages.error(request, err[0] if err else _('Invalid selection.'))
+            return redirect('local:committee-meeting-detail', pk=pk)
+        substitute_member = form.cleaned_data.get('substitute_member')
+        if substitute_member:
+            if substitute_member.committee_id != meeting.committee_id or substitute_member.role != 'substitute_member':
+                messages.error(request, _('Invalid substitute member.'))
+                return redirect('local:committee-meeting-detail', pk=pk)
+            CommitteeParticipationSubstitute.objects.update_or_create(
+                committee_meeting=meeting, member=member,
+                defaults={'substitute_member': substitute_member},
+            )
+            messages.success(request, _('Substitute set: %(name)s will attend in your place.') % {'name': substitute_member.user.get_full_name() or substitute_member.user.username})
+        else:
+            deleted_count, _by_model = CommitteeParticipationSubstitute.objects.filter(committee_meeting=meeting, member=member).delete()
+            if deleted_count:
+                messages.success(request, _('Substitute cleared.'))
+        return redirect('local:committee-meeting-detail', pk=pk)
 
 
 class CommitteeMeetingUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):

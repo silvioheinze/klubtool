@@ -145,7 +145,69 @@
                     </div>
                 </div>
             </div>
+
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-people"></i> {% trans "Participants" %}</h5>
+                </div>
+                <div class="card-body">
+                    {% if participants_with_substitute %}
+                        <ul class="list-group list-group-flush">
+                            {% for member, substitute in participants_with_substitute %}
+                                <li class="list-group-item px-0">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span>{% if substitute %}{{ substitute.user.get_full_name|default:substitute.user.username }}{% else %}{{ member.user.get_full_name|default:member.user.username }}{% endif %}</span>
+                                        <span class="d-flex align-items-center gap-1">
+                                            <span class="badge bg-secondary">{% if substitute %}{{ substitute.get_role_display }}{% else %}{{ member.get_role_display }}{% endif %}</span>
+                                            {% if member == my_participant %}
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#setSubstituteModal" title="{% trans 'Set substitute' %}">
+                                                {% trans "Substitute" %}
+                                            </button>
+                                            {% endif %}
+                                        </span>
+                                    </div>
+                                    {% if substitute %}
+                                    <small class="text-muted d-block mt-1">{% trans "In place of" %}: {{ member.user.get_full_name|default:member.user.username }}</small>
+                                    {% endif %}
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="text-muted mb-0">{% trans "No committee members (excluding substitutes)." %}</p>
+                    {% endif %}
+                </div>
+            </div>
         </div>
     </div>
 </div>
+
+{% if my_participant %}
+<!-- Set substitute modal -->
+<div class="modal fade" id="setSubstituteModal" tabindex="-1" aria-labelledby="setSubstituteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="setSubstituteModalLabel">{% trans "Set substitute" %}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{% url 'local:committee-meeting-set-substitute' meeting.pk %}">
+                {% csrf_token %}
+                <input type="hidden" name="member" value="{{ my_participant.pk }}">
+                <div class="modal-body">
+                    <p class="text-muted small">{% trans "Select a substitute member who will attend this meeting in your place." %}</p>
+                    {{ substitute_form.substitute_member.label_tag }}
+                    {{ substitute_form.substitute_member }}
+                    {% if substitute_form.substitute_member.errors %}
+                        <div class="invalid-feedback d-block">{{ substitute_form.substitute_member.errors }}</div>
+                    {% endif %}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
+                    <button type="submit" class="btn btn-primary">{% trans "Save" %}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
 {% endblock content %}
