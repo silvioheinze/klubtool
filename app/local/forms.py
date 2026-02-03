@@ -480,7 +480,7 @@ class CommitteeMeetingForm(forms.ModelForm):
             committee = self.cleaned_data.get('committee')
             scheduled_date = self.cleaned_data.get('scheduled_date')
             if committee and scheduled_date:
-                self.instance.title = f"{committee.name} {scheduled_date.strftime('%d.%m.%Y %H:%M')}"
+                self.instance.title = f"{committee.name} {scheduled_date.strftime('%d.%m.%Y')}"
             self.instance.is_active = True
         return super().save(commit=commit)
 
