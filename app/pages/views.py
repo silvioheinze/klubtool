@@ -215,7 +215,6 @@ class DocumentationPageView(TemplateView):
 
 def _get_personal_calendar_events(user, group_memberships, councils_from_memberships):
     """Build list of calendar event dicts (council sessions + committee meetings + group meetings) for the user."""
-    from datetime import timedelta
     from django.urls import reverse
     from django.db.models import Q
     from local.models import Session, CommitteeMeeting, CommitteeMember, CommitteeParticipationSubstitute, SessionExcuse
@@ -233,8 +232,6 @@ def _get_personal_calendar_events(user, group_memberships, councils_from_members
     user_group_ids = [m.group_id for m in group_memberships]
 
     now = timezone.now()
-    range_start = now - timedelta(days=7)
-    range_end = now + timedelta(days=60)
 
     calendar_events = []
 
@@ -243,8 +240,7 @@ def _get_personal_calendar_events(user, group_memberships, councils_from_members
             council_id__in=user_council_ids,
             committee__isnull=True,
             is_active=True,
-            scheduled_date__gte=range_start,
-            scheduled_date__lte=range_end,
+            scheduled_date__gte=now,
         ).select_related('council', 'council__local').order_by('scheduled_date')
         # Exclude sessions where the user has excused themselves
         excused_session_ids = set(
@@ -271,8 +267,7 @@ def _get_personal_calendar_events(user, group_memberships, councils_from_members
     if user_committee_ids or meeting_ids_where_user_is_substitute:
         committee_meetings = CommitteeMeeting.objects.filter(
             is_active=True,
-            scheduled_date__gte=range_start,
-            scheduled_date__lte=range_end,
+            scheduled_date__gte=now,
         ).filter(
             (Q(committee_id__in=user_committee_ids) if user_committee_ids else Q(pk__in=[]))
             | (Q(pk__in=meeting_ids_where_user_is_substitute) if meeting_ids_where_user_is_substitute else Q(pk__in=[]))
@@ -295,8 +290,7 @@ def _get_personal_calendar_events(user, group_memberships, councils_from_members
         group_meetings = GroupMeeting.objects.filter(
             group_id__in=user_group_ids,
             is_active=True,
-            scheduled_date__gte=range_start,
-            scheduled_date__lte=range_end,
+            scheduled_date__gte=now,
         ).select_related('group').order_by('scheduled_date')
         for m in group_meetings:
             badge_name = (m.group.calendar_badge_name or '').strip()
