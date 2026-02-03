@@ -246,6 +246,10 @@ class GroupDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             reverse('group:group-calendar-export-pdf', kwargs={'pk': self.object.pk})
             + f'?calendar_year={cal_year}'
         )
+        context['group_meetings_export_pdf_url'] = (
+            reverse('group:group-meetings-export-pdf', kwargs={'pk': self.object.pk})
+            + f'?calendar_year={cal_year}'
+        )
         return context
 
     def get(self, request, *args, **kwargs):
@@ -318,6 +322,69 @@ def group_calendar_export_pdf(request, pk):
     except ImportError:
         messages.error(request, _("PDF export is not available."))
         return redirect('group:group-detail', pk=pk)
+
+
+@login_required
+def group_meetings_export_pdf(request, pk):
+    """Export only the group's meetings (no council sessions, no committee meetings) as PDF for a year."""
+    group = get_object_or_404(Group, pk=pk)
+    is_member = GroupMember.objects.filter(user=request.user, group=group, is_active=True).exists()
+    if not (
+        request.user.is_superuser
+        or request.user.has_role_permission('group.view')
+        or group.can_user_manage_group(request.user)
+        or is_member
+    ):
+        messages.error(request, _("You don't have permission to access this page."))
+        return redirect('group:group-detail', pk=pk)
+    now = timezone.now()
+    req_year = request.GET.get('calendar_year')
+    try:
+        cal_year = int(req_year) if req_year else now.year
+        if cal_year < 2000 or cal_year > 2100:
+            cal_year = now.year
+    except (TypeError, ValueError):
+        cal_year = now.year
+    meetings = group.meetings.filter(
+        is_active=True,
+        scheduled_date__year=cal_year,
+    ).order_by('scheduled_date')
+    events = [{'date': m.scheduled_date, 'title': m.title or ''} for m in meetings]
+    try:
+        from weasyprint import HTML, CSS
+        context = {
+            'group': group,
+            'events': events,
+            'calendar_year': cal_year,
+        }
+        html_string = render_to_string('group/group_meetings_export_pdf.html', context)
+        html = HTML(string=html_string)
+        css = CSS(string='''
+            @page { size: A4; margin: 15mm; }
+            body { font-family: Arial, sans-serif; margin: 0; font-size: 10pt; }
+            .header { text-align: center; margin-bottom: 20px; }
+            .header h1 { font-size: 14pt; margin: 0 0 5px 0; }
+            .calendar-table { width: 100%; border-collapse: collapse; margin-top: 15px; page-break-inside: auto; }
+            .calendar-table thead { display: table-header-group; }
+            .calendar-table tbody tr { page-break-inside: avoid; }
+            .calendar-table th, .calendar-table td { border: 1px solid #333; padding: 8px; text-align: left; vertical-align: middle; }
+            .calendar-table th { background-color: #f2f2f2; font-weight: bold; }
+            .calendar-table td:first-child { width: 20%; white-space: nowrap; }
+            .calendar-table td:nth-child(2) { width: 80%; }
+            .no-events { text-align: center; color: #666; font-style: italic; margin: 40px 0; }
+            .footer { margin-top: 30px; padding-top: 15px; border-top: 1px solid #ddd; text-align: center; color: #666; font-size: 8pt; }
+        ''')
+        pdf = html.write_pdf(stylesheets=[css])
+        response = HttpResponse(pdf, content_type='application/pdf')
+        export_date = timezone.now().date().strftime('%Y-%m-%d')
+        safe_name = "".join(c if c.isalnum() or c in ' -_' else '_' for c in group.name)[:50]
+        filename = f'Group_meetings_{safe_name.strip() or group.pk}_{export_date}.pdf'
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        return response
+    except ImportError:
+        messages.error(request, _("PDF export is not available."))
+        return redirect('group:group-detail', pk=pk)
+
 
 class GroupCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     model = Group
@@ -797,6 +864,76 @@ def meeting_export_ics(request, pk):
     filename = f"meeting_{meeting.pk}_{meeting.title.replace(' ', '_')}.ics"
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
     
+    return response
+
+
+@login_required
+def group_meetings_export_ics(request, pk):
+    """Export all group meetings of a group as one ICS calendar file."""
+    group = get_object_or_404(Group, pk=pk)
+    is_member = GroupMember.objects.filter(user=request.user, group=group, is_active=True).exists()
+    if not (
+        request.user.is_superuser
+        or request.user.has_role_permission('group.view')
+        or group.can_user_manage_group(request.user)
+        or is_member
+    ):
+        messages.error(request, _("You don't have permission to access this page."))
+        return redirect('group:group-detail', pk=pk)
+
+    def escape_ics_text(text):
+        if not text:
+            return ""
+        text = str(text)
+        text = text.replace('\\', '\\\\')
+        text = text.replace(',', '\\,')
+        text = text.replace(';', '\\;')
+        text = text.replace('\n', '\\n')
+        return text
+
+    meetings = group.meetings.filter(is_active=True).order_by('scheduled_date')
+    lines = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "PRODID:-//Klubtool//Group Meetings//EN",
+        "CALSCALE:GREGORIAN",
+        "METHOD:PUBLISH",
+    ]
+    for meeting in meetings:
+        dtstart = meeting.scheduled_date
+        if not timezone.is_aware(dtstart):
+            dtstart = timezone.make_aware(dtstart)
+        dtstart_utc = dtstart.astimezone(timezone.UTC)
+        dtend_utc = dtstart_utc + timezone.timedelta(hours=1)
+        dtstart_str = dtstart_utc.strftime('%Y%m%dT%H%M%SZ')
+        dtend_str = dtend_utc.strftime('%Y%m%dT%H%M%SZ')
+        uid = f"group-meeting-{meeting.pk}@{request.get_host()}"
+        created = meeting.created_at
+        if not timezone.is_aware(created):
+            created = timezone.make_aware(created)
+        dtstamp_str = created.astimezone(timezone.UTC).strftime('%Y%m%dT%H%M%SZ')
+        meeting_url = request.build_absolute_uri(reverse('group:meeting-detail', args=[meeting.pk]))
+        event_lines = [
+            "BEGIN:VEVENT",
+            f"UID:{uid}",
+            f"DTSTART:{dtstart_str}",
+            f"DTEND:{dtend_str}",
+            f"SUMMARY:{escape_ics_text(meeting.title)}",
+            f"DTSTAMP:{dtstamp_str}",
+            f"URL:{meeting_url}",
+        ]
+        if meeting.description:
+            event_lines.append(f"DESCRIPTION:{escape_ics_text(meeting.description)}")
+        if meeting.location:
+            event_lines.append(f"LOCATION:{escape_ics_text(meeting.location)}")
+        event_lines.extend(["STATUS:CONFIRMED", "SEQUENCE:0", "END:VEVENT"])
+        lines.extend(event_lines)
+    lines.append("END:VCALENDAR")
+    ics_file = "\r\n".join(lines)
+    response = HttpResponse(ics_file, content_type='text/calendar; charset=utf-8')
+    safe_name = "".join(c if c.isalnum() or c in ' -_' else '_' for c in group.name)[:50]
+    filename = f"group_meetings_{safe_name.strip() or group.pk}.ics"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
     return response
 
 
