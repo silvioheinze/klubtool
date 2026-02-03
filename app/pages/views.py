@@ -284,7 +284,7 @@ def _get_personal_calendar_events(user, group_memberships, councils_from_members
                 'url': m.get_absolute_url(),
                 'ics_export_url': reverse('local:committee-meeting-export-ics', args=[m.pk]),
                 'type': 'committee_meeting',
-                'badge_label': _('Committee'),
+                'badge_label': m.committee.get_committee_type_display(),
                 'subtitle': m.committee.name,
                 'location': getattr(m, 'location', '') or '',
                 'pk': m.pk,
