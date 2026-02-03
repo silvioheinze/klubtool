@@ -1,7 +1,8 @@
 from django.contrib.auth import get_user_model
-from django.test import TestCase, Client
+from django.test import TestCase, Client, override_settings
 from django.urls import reverse, resolve
 from django.core.exceptions import ValidationError
+from django.core import mail
 from django.utils import translation
 from django.contrib import messages
 from django.template.loader import render_to_string
@@ -710,6 +711,95 @@ class EmailConfirmationTemplateTests(TestCase):
         self.assertIn('btn btn-warning', template_content)
         self.assertIn('bi bi-exclamation-triangle', template_content)
         self.assertIn('Request New Confirmation Email', template_content)
+
+
+@override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
+class AdminAndWelcomeEmailTests(TestCase):
+    """Test that admin test email and welcome email views send emails."""
+
+    def setUp(self):
+        self.client = Client()
+        self.superuser = User.objects.create_superuser(
+            username='admin',
+            email='admin@example.com',
+            password='adminpass123',
+        )
+        mail.outbox.clear()
+
+    def test_send_test_email_sends_email(self):
+        """POST to admin-settings with send_test_email sends one email to the current user."""
+        self.client.login(username='admin', password='adminpass123')
+        response = self.client.post(
+            reverse('admin-settings'),
+            {'send_test_email': '1'},
+            follow=False,
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(len(mail.outbox), 1)
+        msg = mail.outbox[0]
+        self.assertEqual(msg.to, ['admin@example.com'])
+        self.assertIn('Klubtool', msg.subject)
+        self.assertIn('admin@example.com', msg.body)
+        self.assertIn('Klubtool', msg.body)
+
+    def test_send_welcome_email_sends_email(self):
+        """GET to send-welcome-email for user with email and no last_login sends one email."""
+        target = User.objects.create_user(
+            username='newuser',
+            email='newuser@example.com',
+            password='unused',
+        )
+        self.assertIsNone(target.last_login)
+        self.client.login(username='admin', password='adminpass123')
+        mail.outbox.clear()
+        response = self.client.get(
+            reverse('user-send-welcome-email', kwargs={'user_id': target.pk}),
+            follow=False,
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(len(mail.outbox), 1)
+        msg = mail.outbox[0]
+        self.assertEqual(msg.to, ['newuser@example.com'])
+        self.assertIn('Klubtool', msg.subject)
+        self.assertIn('newuser@example.com', msg.body or '')
+
+
+@override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
+class PasswordResetEmailTests(TestCase):
+    """Test that password recovery (reset) flow sends an email with reset link."""
+
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(
+            username='resettest',
+            email='resettest@example.com',
+            password='originalpass123',
+        )
+        mail.outbox.clear()
+
+    def test_password_reset_request_sends_email(self):
+        """POST to account_reset_password with valid email sends one password reset email."""
+        url = reverse('account_reset_password')
+        response = self.client.post(url, {'email': self.user.email}, follow=False)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(len(mail.outbox), 1)
+        msg = mail.outbox[0]
+        self.assertEqual(msg.to, [self.user.email])
+        subject_lower = msg.subject.lower()
+        self.assertTrue(
+            'reset' in subject_lower or 'passwort' in subject_lower or 'password' in subject_lower,
+            f'Subject should mention password reset, got: {msg.subject}',
+        )
+        body = msg.body or ''
+        html = getattr(msg, 'alternatives', None)
+        if html:
+            body += ' '.join(alt[0] for alt in html)
+        body_lower = body.lower()
+        self.assertTrue(
+            'reset' in body_lower or 'passwort' in body_lower or 'password' in body_lower,
+            'Body should mention password reset',
+        )
+        self.assertIn('password/reset/key', body, 'Body should contain reset link')
 
 
 class UserConfirmDeleteTemplateTests(TestCase):

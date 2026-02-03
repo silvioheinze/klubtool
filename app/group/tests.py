@@ -1,6 +1,8 @@
-from django.test import TestCase, Client
+from django.test import TestCase, Client, override_settings
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
+from django.core import mail
+from django.urls import reverse
 from django.utils import timezone
 from django import forms
 from datetime import datetime, timedelta
@@ -1486,3 +1488,90 @@ class GroupMeetingICSExportTests(TestCase):
         self.assertIn('Meeting\\, with\\; special\\\\ characters', content)
         self.assertIn('Location\\, with\\; commas', content)
         self.assertIn('Description\\nwith\\nnewlines', content)
+
+
+@override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
+class GroupInviteMemberEmailTests(TestCase):
+    """Test that invite_member view sends an invitation email."""
+
+    def setUp(self):
+        self.client = Client()
+        User = get_user_model()
+        self.superuser = User.objects.create_superuser(
+            username='admin',
+            email='admin@example.com',
+            password='adminpass123',
+        )
+        self.local = Local.objects.create(name='Test Local', code='TL', description='Test')
+        self.party = Party.objects.create(name='Test Party', local=self.local)
+        self.group = Group.objects.create(name='Test Group', party=self.party)
+        mail.outbox.clear()
+
+    def test_invite_member_sends_email(self):
+        """POST with valid email sends one email with signup link and group name."""
+        self.client.login(username='admin', password='adminpass123')
+        url = reverse('group:group-invite-member', kwargs={'pk': self.group.pk})
+        response = self.client.post(url, {'email': 'newuser@example.com'}, follow=False)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(len(mail.outbox), 1)
+        msg = mail.outbox[0]
+        self.assertEqual(msg.to, ['newuser@example.com'])
+        self.assertIn(self.group.name, msg.subject)
+        self.assertIn('signup', msg.body.lower() or '')
+        self.assertIn(self.group.name, msg.body)
+
+
+@override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
+class GroupSendMeetingInvitesEmailTests(TestCase):
+    """Test that send_meeting_invites view sends meeting invite emails to group members."""
+
+    def setUp(self):
+        self.client = Client()
+        User = get_user_model()
+        self.leader_role = Role.objects.get_or_create(name='Leader')[0]
+        self.superuser = User.objects.create_superuser(
+            username='admin',
+            email='admin@example.com',
+            password='adminpass123',
+        )
+        self.member_user = User.objects.create_user(
+            username='member1',
+            email='member1@example.com',
+            password='pass123',
+        )
+        self.local = Local.objects.create(name='Test Local', code='TL', description='Test')
+        self.party = Party.objects.create(name='Test Party', local=self.local)
+        self.group = Group.objects.create(name='Test Group', party=self.party)
+        leader_membership = GroupMember.objects.create(
+            user=self.superuser,
+            group=self.group,
+            is_active=True,
+        )
+        leader_membership.roles.add(self.leader_role)
+        member_membership = GroupMember.objects.create(
+            user=self.member_user,
+            group=self.group,
+            is_active=True,
+        )
+        member_membership.roles.add(Role.objects.get_or_create(name='Member')[0])
+        self.meeting = GroupMeeting.objects.create(
+            group=self.group,
+            title='Test Meeting',
+            scheduled_date=timezone.now() + timedelta(days=1),
+            status='scheduled',
+            created_by=self.superuser,
+        )
+        mail.outbox.clear()
+
+    def test_send_meeting_invites_sends_emails(self):
+        """Sending meeting invites sends one email per member with an email address."""
+        self.client.login(username='admin', password='adminpass123')
+        url = reverse('group:meeting-send-invites', kwargs={'pk': self.meeting.pk})
+        response = self.client.post(url, {}, follow=False)
+        self.assertEqual(response.status_code, 302)
+        self.assertGreaterEqual(len(mail.outbox), 1)
+        recipients = {msg.to[0] for msg in mail.outbox}
+        self.assertIn('member1@example.com', recipients)
+        for msg in mail.outbox:
+            self.assertIn(self.meeting.title, msg.subject)
+            self.assertIn(self.meeting.title, msg.body)
