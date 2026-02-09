@@ -69,8 +69,8 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'user.middleware.UserLanguageMiddleware',  # Custom language middleware - must be after auth
-    'django.middleware.locale.LocaleMiddleware',  # After our custom middleware
+    'django.middleware.locale.LocaleMiddleware',
+    'user.middleware.UserLanguageMiddleware',  # Custom language middleware - must be after auth and locale
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'allauth.account.middleware.AccountMiddleware',
@@ -87,6 +87,7 @@ TEMPLATES = [
             'context_processors': [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
+                'django.template.context_processors.i18n',
                 'django.contrib.messages.context_processors.messages',
                 'pages.context_processors.group_memberships',
             ],

@@ -17,5 +17,7 @@ class UserLanguageMiddleware(MiddlewareMixin):
                 request.session['django_language'] = user_language
                 # Activate the language for this request
                 translation.activate(user_language)
+                # Set LANGUAGE_CODE on request for other middleware/templates
+                request.LANGUAGE_CODE = user_language
         
         return None
