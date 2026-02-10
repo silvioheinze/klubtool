@@ -358,7 +358,7 @@ class AdminSettingsView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         context['user'] = self.request.user
         # Add email backend info for display
-        context['email_backend'] = settings.EMAIL_BACKEND.split('.')[-1] if hasattr(settings, 'EMAIL_BACKEND') else 'Not configured'
+        context['email_backend'] = settings.EMAIL_BACKEND.split('.')[-2] if hasattr(settings, 'EMAIL_BACKEND') else 'Not configured'
         return context
 
 
