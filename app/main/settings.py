@@ -205,8 +205,7 @@ ACCOUNT_LOGOUT_REDIRECT_URL = '/'
 ACCOUNT_LOGIN_REDIRECT_URL = '/'
 
 # Email settings (for allauth)
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'  # For development
-# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'  # For production
+EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
 
 API_URL = ''
 
