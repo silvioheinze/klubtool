@@ -126,33 +126,72 @@ klubtool/
 │   ├── main/                     # Main Django project
 │   │   ├── settings.py          # Django settings
 │   │   ├── urls.py              # Main URL configuration
-│   │   └── wsgi.py              # WSGI configuration
-│   ├── pages/                   # Pages app
+│   │   ├── wsgi.py              # WSGI configuration
+│   │   ├── asgi.py              # ASGI configuration
+│   │   ├── enums.py             # Shared enumerations
+│   │   └── logging_filters.py   # Logging configuration
+│   ├── pages/                   # Pages app (home, calendar, documentation)
 │   │   ├── views.py             # Page views
-│   │   └── urls.py              # Page URLs
+│   │   ├── urls.py              # Page URLs
+│   │   ├── context_processors.py # Template context
+│   │   └── models.py            # Page models
 │   ├── user/                    # User management app
 │   │   ├── models.py            # Custom user model
 │   │   ├── views.py             # User views
 │   │   ├── forms.py             # User forms
-│   │   └── urls.py              # User URLs
+│   │   ├── urls.py              # User URLs
+│   │   ├── adapters.py          # django-allauth adapters
+│   │   └── middleware.py        # User middleware
+│   ├── group/                   # Political group/party management
+│   │   ├── models.py            # Groups, members, meetings
+│   │   ├── views.py             # Group views
+│   │   ├── forms.py             # Group forms
+│   │   ├── urls.py              # Group URLs
+│   │   └── templatetags/        # Group template tags
+│   ├── local/                   # Local council/committee management
+│   │   ├── models.py            # Locals, councils, committees, sessions
+│   │   ├── views.py             # Local views
+│   │   ├── forms.py             # Local forms
+│   │   └── urls.py              # Local URLs
+│   ├── motion/                  # Motions and questions
+│   │   ├── models.py            # Motions, votes, questions
+│   │   ├── views.py             # Motion views
+│   │   ├── forms.py             # Motion forms
+│   │   ├── urls.py              # Motion URLs
+│   │   ├── question_urls.py     # Question-specific URLs
+│   │   └── templatetags/        # Motion template tags
 │   ├── static/                  # Static files
-│   │   ├── css/                 # CSS files
+│   │   ├── css/                 # CSS files (Bootstrap, custom-colors, base)
 │   │   ├── js/                  # JavaScript files
-│   │   └── img/                 # Images
+│   │   ├── fonts/               # Font files
+│   │   └── robots.txt           # Robots configuration
 │   ├── templates/               # HTML templates
-│   │   ├── _base.html          # Base template
-│   │   ├── home.html           # Home page
+│   │   ├── _base.html           # Base template
+│   │   ├── home.html            # Home page
 │   │   ├── documentation.html  # Documentation page
-│   │   └── help.html           # Help page
-│   └── manage.py               # Django management script
+│   │   ├── help.html            # Help page
+│   │   ├── account/             # django-allauth templates
+│   │   ├── group/               # Group app templates
+│   │   ├── local/               # Local app templates
+│   │   ├── motion/              # Motion app templates
+│   │   ├── pages/               # Pages app templates
+│   │   └── user/                # User app templates
+│   ├── locale/                  # Translations (i18n)
+│   │   └── de/LC_MESSAGES/      # German translations
+│   ├── media/                   # User-uploaded files
+│   └── manage.py                # Django management script
+├── .github/                     # GitHub configuration
+│   └── workflows/               # GitHub Actions
+│       └── docker-build.yml     # Docker build workflow
 ├── nginx/                       # Nginx configuration
-│   ├── Dockerfile              # Nginx Dockerfile
-│   └── nginx.conf              # Nginx configuration
-├── docker compose.yml          # Docker Compose configuration
-├── Dockerfile                  # Django application Dockerfile
-├── requirements.txt            # Python dependencies
-├── env.example                 # Environment variables example
-└── README.md                   # This file
+│   ├── Dockerfile               # Nginx Dockerfile
+│   └── nginx.conf               # Nginx configuration
+├── docker-compose.yml           # Docker Compose configuration
+├── docker-compose.prod.yml      # Production Docker Compose overrides
+├── Dockerfile                   # Django application Dockerfile
+├── requirements.txt             # Python dependencies
+├── env.example                  # Environment variables example
+└── README.md                    # This file
 ```
 
 ## 🔧 Configuration
