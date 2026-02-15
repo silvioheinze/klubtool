@@ -442,53 +442,6 @@ docker compose exec app python manage.py collectstatic --noinput
 docker compose exec app python manage.py findstatic css/bootstrap.min.css
 ```
 
-## 📝 API Documentation
-
-The application includes a basic API structure. API endpoints are configured in the main URL configuration.
-
-### API Configuration
-
-- **Base URL**: Configured via `API_URL` setting
-- **Authentication**: Token-based authentication (can be extended)
-- **Documentation**: Available at `/documentation/`
-
-## 🐛 Troubleshooting
-
-### Common Issues
-
-1. **Static Files Not Loading**
-   ```bash
-   # Rebuild containers and collect static files
-   docker compose down
-   docker compose up --build -d
-   docker compose exec app python manage.py collectstatic --noinput
-   ```
-
-2. **Database Connection Issues**
-   ```bash
-   # Check database health
-   docker compose ps
-   docker compose logs db
-   ```
-
-3. **Permission Issues**
-   ```bash
-   # Fix file permissions
-   sudo chown -R $USER:$USER .
-   ```
-
-### Logs
-
-```bash
-# View all logs
-docker compose logs
-
-# View specific service logs
-docker compose logs app
-docker compose logs nginx
-docker compose logs db
-```
-
 ## 🤝 Contributing
 
 1. Fork the repository
@@ -500,27 +453,3 @@ docker compose logs db
 ## 📄 License
 
 This project is licensed under the European Union Public Licence v. 1.2 (EUPL-1.2) - see the [LICENSE](LICENSE) file for details.
-
-## 🆘 Support
-
-For support and questions:
-
-1. Check the [documentation](http://localhost/documentation/)
-2. Review the [help section](http://localhost/help/)
-3. Open an issue on GitHub
-
-## 🔄 Updates
-
-To update the application:
-
-```bash
-# Pull latest changes
-git pull origin main
-
-# Rebuild and restart
-docker compose down
-docker compose up --build -d
-
-# Run migrations
-docker compose exec app python manage.py migrate
-```
