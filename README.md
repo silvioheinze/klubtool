@@ -126,33 +126,72 @@ klubtool/
 │   ├── main/                     # Main Django project
 │   │   ├── settings.py          # Django settings
 │   │   ├── urls.py              # Main URL configuration
-│   │   └── wsgi.py              # WSGI configuration
-│   ├── pages/                   # Pages app
+│   │   ├── wsgi.py              # WSGI configuration
+│   │   ├── asgi.py              # ASGI configuration
+│   │   ├── enums.py             # Shared enumerations
+│   │   └── logging_filters.py   # Logging configuration
+│   ├── pages/                   # Pages app (home, calendar, documentation)
 │   │   ├── views.py             # Page views
-│   │   └── urls.py              # Page URLs
+│   │   ├── urls.py              # Page URLs
+│   │   ├── context_processors.py # Template context
+│   │   └── models.py            # Page models
 │   ├── user/                    # User management app
 │   │   ├── models.py            # Custom user model
 │   │   ├── views.py             # User views
 │   │   ├── forms.py             # User forms
-│   │   └── urls.py              # User URLs
+│   │   ├── urls.py              # User URLs
+│   │   ├── adapters.py          # django-allauth adapters
+│   │   └── middleware.py        # User middleware
+│   ├── group/                   # Political group/party management
+│   │   ├── models.py            # Groups, members, meetings
+│   │   ├── views.py             # Group views
+│   │   ├── forms.py             # Group forms
+│   │   ├── urls.py              # Group URLs
+│   │   └── templatetags/        # Group template tags
+│   ├── local/                   # Local council/committee management
+│   │   ├── models.py            # Locals, councils, committees, sessions
+│   │   ├── views.py             # Local views
+│   │   ├── forms.py             # Local forms
+│   │   └── urls.py              # Local URLs
+│   ├── motion/                  # Motions and questions
+│   │   ├── models.py            # Motions, votes, questions
+│   │   ├── views.py             # Motion views
+│   │   ├── forms.py             # Motion forms
+│   │   ├── urls.py              # Motion URLs
+│   │   ├── question_urls.py     # Question-specific URLs
+│   │   └── templatetags/        # Motion template tags
 │   ├── static/                  # Static files
-│   │   ├── css/                 # CSS files
+│   │   ├── css/                 # CSS files (Bootstrap, custom-colors, base)
 │   │   ├── js/                  # JavaScript files
-│   │   └── img/                 # Images
+│   │   ├── fonts/               # Font files
+│   │   └── robots.txt           # Robots configuration
 │   ├── templates/               # HTML templates
-│   │   ├── _base.html          # Base template
-│   │   ├── home.html           # Home page
+│   │   ├── _base.html           # Base template
+│   │   ├── home.html            # Home page
 │   │   ├── documentation.html  # Documentation page
-│   │   └── help.html           # Help page
-│   └── manage.py               # Django management script
+│   │   ├── help.html            # Help page
+│   │   ├── account/             # django-allauth templates
+│   │   ├── group/               # Group app templates
+│   │   ├── local/               # Local app templates
+│   │   ├── motion/              # Motion app templates
+│   │   ├── pages/               # Pages app templates
+│   │   └── user/                # User app templates
+│   ├── locale/                  # Translations (i18n)
+│   │   └── de/LC_MESSAGES/      # German translations
+│   ├── media/                   # User-uploaded files
+│   └── manage.py                # Django management script
+├── .github/                     # GitHub configuration
+│   └── workflows/               # GitHub Actions
+│       └── docker-build.yml     # Docker build workflow
 ├── nginx/                       # Nginx configuration
-│   ├── Dockerfile              # Nginx Dockerfile
-│   └── nginx.conf              # Nginx configuration
-├── docker compose.yml          # Docker Compose configuration
-├── Dockerfile                  # Django application Dockerfile
-├── requirements.txt            # Python dependencies
-├── env.example                 # Environment variables example
-└── README.md                   # This file
+│   ├── Dockerfile               # Nginx Dockerfile
+│   └── nginx.conf               # Nginx configuration
+├── docker-compose.yml           # Docker Compose configuration
+├── docker-compose.prod.yml      # Production Docker Compose overrides
+├── Dockerfile                   # Django application Dockerfile
+├── requirements.txt             # Python dependencies
+├── env.example                  # Environment variables example
+└── README.md                    # This file
 ```
 
 ## 🔧 Configuration
@@ -197,24 +236,24 @@ docker compose up -d
 
 ### Importing Database Dump
 
-To import a SQL dump file (e.g., `pgsql_antragstool_db_20251119-030000.sql.gz`) into the database:
+To import a SQL dump file (e.g., `pgsql_klubtool_db_20251119-030000.sql.gz`) into the database:
 
 **Option 1: Import into existing database (may show errors if tables already exist)**
 ```bash
-gunzip -c pgsql_antragstool_db_20251119-030000.sql.gz | docker compose exec -T db psql -U antragstooluser -d antragstool
+gunzip -c pgsql_klubtool_db_20251119-030000.sql.gz | docker compose exec -T db psql -U klubtooluser -d klubtool
 ```
 
 **Option 2: Fresh import (drops and recreates database - WARNING: This will delete all existing data)**
 ```bash
 # Drop and recreate the database
-docker compose exec db psql -U antragstooluser -d postgres -c "DROP DATABASE IF EXISTS antragstool;"
-docker compose exec db psql -U antragstooluser -d postgres -c "CREATE DATABASE antragstool;"
+docker compose exec db psql -U klubtooluser -d postgres -c "DROP DATABASE IF EXISTS klubtool;"
+docker compose exec db psql -U klubtooluser -d postgres -c "CREATE DATABASE klubtool;"
 
 # Import the dump
-gunzip -c pgsql_antragstool_db_20251119-030000.sql.gz | docker compose exec -T db psql -U antragstooluser -d antragstool
+gunzip -c pgsql_klubtool_db_20251119-030000.sql.gz | docker compose exec -T db psql -U klubtooluser -d klubtool
 ```
 
-**Note:** Replace `pgsql_antragstool_db_20251119-030000.sql.gz` with your actual dump filename.
+**Note:** Replace `pgsql_klubtool_db_20251119-030000.sql.gz` with your actual dump filename.
 
 ### Translation Commands
 
@@ -403,53 +442,6 @@ docker compose exec app python manage.py collectstatic --noinput
 docker compose exec app python manage.py findstatic css/bootstrap.min.css
 ```
 
-## 📝 API Documentation
-
-The application includes a basic API structure. API endpoints are configured in the main URL configuration.
-
-### API Configuration
-
-- **Base URL**: Configured via `API_URL` setting
-- **Authentication**: Token-based authentication (can be extended)
-- **Documentation**: Available at `/documentation/`
-
-## 🐛 Troubleshooting
-
-### Common Issues
-
-1. **Static Files Not Loading**
-   ```bash
-   # Rebuild containers and collect static files
-   docker compose down
-   docker compose up --build -d
-   docker compose exec app python manage.py collectstatic --noinput
-   ```
-
-2. **Database Connection Issues**
-   ```bash
-   # Check database health
-   docker compose ps
-   docker compose logs db
-   ```
-
-3. **Permission Issues**
-   ```bash
-   # Fix file permissions
-   sudo chown -R $USER:$USER .
-   ```
-
-### Logs
-
-```bash
-# View all logs
-docker compose logs
-
-# View specific service logs
-docker compose logs app
-docker compose logs nginx
-docker compose logs db
-```
-
 ## 🤝 Contributing
 
 1. Fork the repository
@@ -460,28 +452,4 @@ docker compose logs db
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🆘 Support
-
-For support and questions:
-
-1. Check the [documentation](http://localhost/documentation/)
-2. Review the [help section](http://localhost/help/)
-3. Open an issue on GitHub
-
-## 🔄 Updates
-
-To update the application:
-
-```bash
-# Pull latest changes
-git pull origin main
-
-# Rebuild and restart
-docker compose down
-docker compose up --build -d
-
-# Run migrations
-docker compose exec app python manage.py migrate
-```
+This project is licensed under the European Union Public Licence v. 1.2 (EUPL-1.2) - see the [LICENSE](LICENSE) file for details.
