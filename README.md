@@ -236,24 +236,24 @@ docker compose up -d
 
 ### Importing Database Dump
 
-To import a SQL dump file (e.g., `pgsql_antragstool_db_20251119-030000.sql.gz`) into the database:
+To import a SQL dump file (e.g., `pgsql_klubtool_db_20251119-030000.sql.gz`) into the database:
 
 **Option 1: Import into existing database (may show errors if tables already exist)**
 ```bash
-gunzip -c pgsql_antragstool_db_20251119-030000.sql.gz | docker compose exec -T db psql -U antragstooluser -d antragstool
+gunzip -c pgsql_klubtool_db_20251119-030000.sql.gz | docker compose exec -T db psql -U klubtooluser -d klubtool
 ```
 
 **Option 2: Fresh import (drops and recreates database - WARNING: This will delete all existing data)**
 ```bash
 # Drop and recreate the database
-docker compose exec db psql -U antragstooluser -d postgres -c "DROP DATABASE IF EXISTS antragstool;"
-docker compose exec db psql -U antragstooluser -d postgres -c "CREATE DATABASE antragstool;"
+docker compose exec db psql -U klubtooluser -d postgres -c "DROP DATABASE IF EXISTS klubtool;"
+docker compose exec db psql -U klubtooluser -d postgres -c "CREATE DATABASE klubtool;"
 
 # Import the dump
-gunzip -c pgsql_antragstool_db_20251119-030000.sql.gz | docker compose exec -T db psql -U antragstooluser -d antragstool
+gunzip -c pgsql_klubtool_db_20251119-030000.sql.gz | docker compose exec -T db psql -U klubtooluser -d klubtool
 ```
 
-**Note:** Replace `pgsql_antragstool_db_20251119-030000.sql.gz` with your actual dump filename.
+**Note:** Replace `pgsql_klubtool_db_20251119-030000.sql.gz` with your actual dump filename.
 
 ### Translation Commands
 
@@ -499,7 +499,7 @@ docker compose logs db
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the European Union Public Licence v. 1.2 (EUPL-1.2) - see the [LICENSE](LICENSE) file for details.
 
 ## 🆘 Support
 
