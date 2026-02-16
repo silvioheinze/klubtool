@@ -15,13 +15,15 @@ def _escape_ics_text(text):
     return text
 
 
-def get_personal_calendar_events(user, group_memberships, councils_from_memberships, subscription_feed=False):
+def get_personal_calendar_events(user, group_memberships, councils_from_memberships, for_export=False):
     """
     Build list of calendar event dicts (council sessions + committee meetings + group meetings) for the user.
 
-    When subscription_feed=True:
-    - Includes events from the past 30 days (for sync of cancellations)
-    - Adds 'cancelled' flag for events with status=cancelled (Session, GroupMeeting)
+    When for_export=True (ICS export and subscription feed):
+    - Includes events from the past 30 days (so re-import/sync can communicate cancellations)
+    - Includes cancelled events (Session, GroupMeeting) with STATUS:CANCELLED
+    When for_export=False (home page display):
+    - Future events only, excludes cancelled
     """
     from django.urls import reverse
     from django.db.models import Q
@@ -41,20 +43,21 @@ def get_personal_calendar_events(user, group_memberships, councils_from_membersh
     user_group_ids = [m.group_id for m in group_memberships]
 
     now = timezone.now()
-    if subscription_feed:
-        date_threshold = now - timedelta(days=30)
-    else:
-        date_threshold = now
+    date_threshold = now - timedelta(days=30) if for_export else now
 
     calendar_events = []
 
     if user_council_ids:
-        council_sessions = Session.objects.filter(
+        council_filter = Session.objects.filter(
             council_id__in=user_council_ids,
             committee__isnull=True,
-            is_active=True,
             scheduled_date__gte=date_threshold,
-        ).select_related('council', 'council__local').order_by('scheduled_date')
+        )
+        if for_export:
+            council_filter = council_filter.filter(Q(is_active=True) | Q(status='cancelled'))
+        else:
+            council_filter = council_filter.filter(is_active=True)
+        council_sessions = council_filter.select_related('council', 'council__local').order_by('scheduled_date')
 
         excused_session_ids = set(
             SessionExcuse.objects.filter(user=user, session__in=council_sessions).values_list('session_id', flat=True)
@@ -101,19 +104,15 @@ def get_personal_calendar_events(user, group_memberships, councils_from_membersh
             })
 
     if user_group_ids:
-        if subscription_feed:
-            group_meetings = GroupMeeting.objects.filter(
-                group_id__in=user_group_ids,
-                scheduled_date__gte=date_threshold,
-            ).filter(
-                Q(is_active=True) | Q(status='cancelled')
-            ).select_related('group').order_by('scheduled_date')
+        group_filter = GroupMeeting.objects.filter(
+            group_id__in=user_group_ids,
+            scheduled_date__gte=date_threshold,
+        )
+        if for_export:
+            group_filter = group_filter.filter(Q(is_active=True) | Q(status='cancelled'))
         else:
-            group_meetings = GroupMeeting.objects.filter(
-                group_id__in=user_group_ids,
-                is_active=True,
-                scheduled_date__gte=date_threshold,
-            ).select_related('group').order_by('scheduled_date')
+            group_filter = group_filter.filter(is_active=True)
+        group_meetings = group_filter.select_related('group').order_by('scheduled_date')
 
         for m in group_meetings:
             badge_name = (m.group.calendar_badge_name or '').strip()
@@ -178,6 +177,7 @@ def build_personal_calendar_ics(events, request, host=None):
         if url_abs:
             lines.append(f"URL:{url_abs}")
         lines.append(f"DTSTAMP:{now_utc.strftime('%Y%m%dT%H%M%SZ')}")
+        lines.append("SEQUENCE:1" if cancelled else "SEQUENCE:0")
         lines.append("STATUS:CANCELLED" if cancelled else "STATUS:CONFIRMED")
         lines.append("END:VEVENT")
 

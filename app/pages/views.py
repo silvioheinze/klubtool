@@ -213,10 +213,10 @@ class DocumentationPageView(TemplateView):
         return context
 
 
-def _get_personal_calendar_events(user, group_memberships, councils_from_memberships):
-    """Build list of calendar event dicts for the user. Wrapper for display/export (no past events, no cancelled)."""
+def _get_personal_calendar_events(user, group_memberships, councils_from_memberships, for_export=False):
+    """Build list of calendar event dicts for the user. for_export=True includes past 30 days and cancelled events."""
     from .calendar_utils import get_personal_calendar_events
-    events = get_personal_calendar_events(user, group_memberships, councils_from_memberships, subscription_feed=False)
+    events = get_personal_calendar_events(user, group_memberships, councils_from_memberships, for_export=for_export)
     # Ensure 'cancelled' key for backward compatibility with code that may not expect it
     for e in events:
         e.setdefault('cancelled', False)
@@ -275,7 +275,7 @@ def personal_calendar_export_ics(request):
                 councils_from_memberships.add(membership.group.party.local.council)
     councils_from_memberships = sorted(councils_from_memberships, key=lambda x: x.name)
 
-    events = _get_personal_calendar_events(request.user, group_memberships, councils_from_memberships)
+    events = _get_personal_calendar_events(request.user, group_memberships, councils_from_memberships, for_export=True)
 
     from .calendar_utils import build_personal_calendar_ics
     ics_file = build_personal_calendar_ics(events, request)
@@ -323,7 +323,7 @@ def calendar_subscription_feed(request, token):
                     councils_from_memberships.append(local.council)
         councils_from_memberships = sorted(set(councils_from_memberships), key=lambda x: x.name)
 
-        events = get_personal_calendar_events(user, group_memberships, councils_from_memberships, subscription_feed=True)
+        events = get_personal_calendar_events(user, group_memberships, councils_from_memberships, for_export=True)
         ics_content = build_personal_calendar_ics(events, request)
         cache.set(cache_key, ics_content, cache_ttl)
 
@@ -361,7 +361,7 @@ def personal_calendar_export_pdf(request):
                 councils_from_memberships.add(membership.group.party.local.council)
     councils_from_memberships = sorted(councils_from_memberships, key=lambda x: x.name)
 
-    events = _get_personal_calendar_events(request.user, group_memberships, councils_from_memberships)
+    events = _get_personal_calendar_events(request.user, group_memberships, councils_from_memberships, for_export=True)
 
     context = {
         'events': events,
