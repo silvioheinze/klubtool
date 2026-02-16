@@ -19,7 +19,7 @@ from allauth.account.views import ConfirmEmailView as AllauthConfirmEmailView
 from allauth.account.models import EmailConfirmation
 
 from .forms import CustomUserCreationForm, CustomUserEditForm, RoleForm, RoleFilterForm, CustomAuthenticationForm, LanguageSelectionForm, UserSettingsForm, AdminUserCreationForm
-from .models import Role
+from .models import Role, CalendarSubscriptionToken
 
 CustomUser = get_user_model()
 
@@ -98,9 +98,17 @@ def SettingsView(request):
                 messages.success(request, f"Settings updated successfully. Language changed to {language_display}")
                 return redirect('user-settings')
         
+        # Calendar subscription: check if user has active token, and if we have a new URL in session
+        has_subscription = CalendarSubscriptionToken.objects.filter(
+            user=request.user, is_active=True
+        ).exists()
+        new_subscription_url = request.session.pop('calendar_subscription_url', None)
+
         context = {
             'user': request.user,
             'settings_form': settings_form,
+            'has_calendar_subscription': has_subscription,
+            'new_calendar_subscription_url': new_subscription_url,
         }
         return render(request, "user/settings.html", context)
     else:
@@ -112,6 +120,24 @@ def SettingsView(request):
                 login(request, user)
                 return redirect("home")
         return render(request, "user/login.html", {"form": form})
+
+
+@login_required
+def calendar_subscription_create(request):
+    """Create or reset calendar subscription token. Redirects to settings with new URL in session."""
+    import secrets
+    import hashlib
+    from django.urls import reverse
+    from .models import CalendarSubscriptionToken
+    CalendarSubscriptionToken.objects.filter(user=request.user).update(is_active=False)
+    raw_token = secrets.token_urlsafe(48)
+    token_hash = hashlib.sha256(raw_token.encode('utf-8')).hexdigest()
+    CalendarSubscriptionToken.objects.create(user=request.user, token_hash=token_hash)
+    scheme = 'https' if request.is_secure() else 'http'
+    url = f"{scheme}://{request.get_host()}{reverse('calendar-subscription-feed', kwargs={'token': raw_token})}"
+    request.session['calendar_subscription_url'] = url
+    messages.success(request, _("Your calendar subscription link has been created. Copy it below and add it to your calendar app. If you lose it, use Reset to generate a new one."))
+    return redirect('user-settings')
 
 
 class UsersUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):

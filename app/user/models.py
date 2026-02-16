@@ -1,3 +1,6 @@
+import hashlib
+import secrets
+
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -117,6 +120,56 @@ class CustomUser(AbstractUser):
     def is_group_admin_anywhere(self):
         """Check if user is a group admin of any group"""
         return self.get_group_admin_groups().exists()
+
+
+def _hash_token(token: str) -> str:
+    """Hash a subscription token for storage and lookup."""
+    return hashlib.sha256(token.encode('utf-8')).hexdigest()
+
+
+class CalendarSubscriptionToken(models.Model):
+    """Token for calendar subscription feed. Allows unauthenticated access to user's personal calendar via URL."""
+
+    user = models.ForeignKey(
+        'user.CustomUser',
+        on_delete=models.CASCADE,
+        related_name='calendar_subscription_tokens',
+    )
+    token_hash = models.CharField(max_length=64, unique=True, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_used_at = models.DateTimeField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = _('Calendar subscription token')
+        verbose_name_plural = _('Calendar subscription tokens')
+
+    def __str__(self):
+        return f"Calendar subscription for {self.user}"
+
+    @classmethod
+    def create_token(cls, user):
+        """Create a new token and return (instance, raw_token)."""
+        raw = secrets.token_urlsafe(48)
+        token_hash = _hash_token(raw)
+        inst = cls.objects.create(user=user, token_hash=token_hash)
+        return inst, raw
+
+    @classmethod
+    def lookup(cls, raw_token):
+        """Look up token by raw value. Returns CalendarSubscriptionToken or None."""
+        if not raw_token:
+            return None
+        token_hash = _hash_token(raw_token)
+        return cls.objects.filter(
+            token_hash=token_hash,
+            is_active=True,
+        ).select_related('user').first()
+
+    def update_last_used(self):
+        """Update last_used_at (call on each subscription fetch)."""
+        from django.utils import timezone
+        CalendarSubscriptionToken.objects.filter(pk=self.pk).update(last_used_at=timezone.now())
 
 
 # Register models for audit logging

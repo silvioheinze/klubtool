@@ -168,6 +168,15 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# Caching (for calendar subscription feed and similar)
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'klubtool-default',
+    }
+}
+CALENDAR_SUBSCRIPTION_CACHE_TTL = int(os.environ.get('CALENDAR_SUBSCRIPTION_CACHE_TTL', 900))  # 15 min
+
 # Custom User Model
 AUTH_USER_MODEL = 'user.CustomUser'
 
