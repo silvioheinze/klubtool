@@ -535,16 +535,15 @@ class GroupMeetingFormTests(TestCase):
         self.assertTrue(form.is_valid())
     
     def test_group_meeting_form_required_fields(self):
-        """Test GroupMeetingForm with missing required fields"""
+        """Test GroupMeetingForm with missing required fields (title is hidden on create)"""
         form_data = {
-            'title': '',  # Required field missing
-            'scheduled_date': '2025-12-31 14:00:00',
+            'scheduled_date': '',  # Required field missing
             'group': self.group.pk
         }
         
         form = GroupMeetingForm(data=form_data)
         self.assertFalse(form.is_valid())
-        self.assertIn('title', form.errors)
+        self.assertIn('scheduled_date', form.errors)
     
     def test_group_meeting_form_with_group_parameter(self):
         """Test GroupMeetingForm with group parameter in initial data"""

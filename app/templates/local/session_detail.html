@@ -76,6 +76,12 @@
                                         <span class="text-muted">{% trans "Not specified" %}</span>
                                     {% endif %}
                                 </dd>
+                                {% if session.committee %}
+                                <dt class="col-sm-4">{% trans "Committee" %}</dt>
+                                <dd class="col-sm-8">
+                                    <a href="{% url 'local:committee-detail' session.committee.pk %}">{{ session.committee.name }}</a>
+                                </dd>
+                                {% endif %}
                             </dl>
                         </div>
                     </div>
