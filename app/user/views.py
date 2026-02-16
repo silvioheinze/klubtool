@@ -446,7 +446,8 @@ def send_welcome_email(request, user_id):
 
 class CustomConfirmEmailView(AllauthConfirmEmailView):
     """Custom email confirmation view that logs the user in after confirmation"""
-    
+    template_name = "account/email_confirm.html"
+
     def get(self, *args, **kwargs):
         """Handle GET request for email confirmation"""
         response = super().get(*args, **kwargs)
