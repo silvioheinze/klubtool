@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Tag, Motion, MotionVote, MotionComment, MotionAttachment, MotionStatus, Question, QuestionStatus, QuestionAttachment
+from .models import Tag, Motion, MotionVote, MotionComment, MotionAttachment, MotionStatus, Inquiry, InquiryStatus, InquiryAttachment
 
 
 @admin.register(Tag)
@@ -168,18 +168,18 @@ class MotionStatusAdmin(admin.ModelAdmin):
     )
 
 
-@admin.register(QuestionStatus)
-class QuestionStatusAdmin(admin.ModelAdmin):
-    """Admin configuration for QuestionStatus model"""
-    list_display = ['question', 'status', 'changed_by', 'changed_at']
-    list_filter = ['status', 'changed_at', 'question__status']
-    search_fields = ['question__title', 'changed_by__username', 'reason']
+@admin.register(InquiryStatus)
+class InquiryStatusAdmin(admin.ModelAdmin):
+    """Admin configuration for InquiryStatus model"""
+    list_display = ['inquiry', 'status', 'changed_by', 'changed_at']
+    list_filter = ['status', 'changed_at', 'inquiry__status']
+    search_fields = ['inquiry__title', 'changed_by__username', 'reason']
     readonly_fields = ['changed_at']
     date_hierarchy = 'changed_at'
     
     fieldsets = (
         ('Status Change Information', {
-            'fields': ('question', 'status', 'committee', 'changed_by', 'reason')
+            'fields': ('inquiry', 'status', 'committee', 'changed_by', 'reason')
         }),
         ('Timestamps', {
             'fields': ('changed_at',),
@@ -188,9 +188,9 @@ class QuestionStatusAdmin(admin.ModelAdmin):
     )
 
 
-@admin.register(Question)
-class QuestionAdmin(admin.ModelAdmin):
-    """Admin configuration for Question model"""
+@admin.register(Inquiry)
+class InquiryAdmin(admin.ModelAdmin):
+    """Admin configuration for Inquiry model"""
     list_display = [
         'title', 'status', 'group', 'session', 
         'submitted_by', 'submitted_date', 'supporting_parties_count'
@@ -227,18 +227,18 @@ class QuestionAdmin(admin.ModelAdmin):
     supporting_parties_count.short_description = 'Supporting Parties'
 
 
-@admin.register(QuestionAttachment)
-class QuestionAttachmentAdmin(admin.ModelAdmin):
-    """Admin configuration for QuestionAttachment model"""
-    list_display = ['filename', 'question', 'file_type', 'uploaded_by', 'uploaded_at']
-    list_filter = ['file_type', 'uploaded_at', 'question__status']
-    search_fields = ['filename', 'question__title', 'uploaded_by__username', 'description']
+@admin.register(InquiryAttachment)
+class InquiryAttachmentAdmin(admin.ModelAdmin):
+    """Admin configuration for InquiryAttachment model"""
+    list_display = ['filename', 'inquiry', 'file_type', 'uploaded_by', 'uploaded_at']
+    list_filter = ['file_type', 'uploaded_at', 'inquiry__status']
+    search_fields = ['filename', 'inquiry__title', 'uploaded_by__username', 'description']
     readonly_fields = ['uploaded_at']
     date_hierarchy = 'uploaded_at'
     
     fieldsets = (
         ('Attachment Information', {
-            'fields': ('question', 'file', 'filename', 'file_type', 'description')
+            'fields': ('inquiry', 'file', 'filename', 'file_type', 'description')
         }),
         ('Upload Information', {
             'fields': ('uploaded_by', 'uploaded_at'),

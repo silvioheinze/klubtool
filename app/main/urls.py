@@ -43,7 +43,7 @@ urlpatterns = [
     path('local/', include('local.urls')),
     path('group/', include(('group.urls', 'group'))),
     path('motions/', include('motion.urls')),
-    path('questions/', include('motion.question_urls')),
+    path('inquiries/', include('motion.inquiry_urls')),
 ]
 
 # Serve static and media files during development

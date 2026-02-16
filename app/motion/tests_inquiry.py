@@ -4,16 +4,16 @@ from django.utils import timezone
 from django.urls import reverse
 from datetime import timedelta
 
-from .forms import QuestionForm
-from .models import Question
+from .forms import InquiryForm
+from .models import Inquiry
 from local.models import Local, Council, Session, Term, Party
 from group.models import Group
 
 User = get_user_model()
 
 
-class QuestionFormTests(TestCase):
-    """Test cases for QuestionForm"""
+class InquiryFormTests(TestCase):
+    """Test cases for InquiryForm"""
     
     def setUp(self):
         """Set up test data"""
@@ -65,39 +65,39 @@ class QuestionFormTests(TestCase):
             group=self.group
         )
     
-    def test_question_form_valid_data(self):
-        """Test QuestionForm with valid data"""
+    def test_inquiry_form_valid_data(self):
+        """Test InquiryForm with valid data"""
         form_data = {
-            'title': 'Test Question',
-            'text': 'This is a test question',
+            'title': 'Test Inquiry',
+            'text': 'This is a test inquiry',
             'status': 'draft',
             'session': self.session.pk,
             'group': self.group.pk,
             'parties': [self.party.pk]
         }
         
-        form = QuestionForm(data=form_data, user=self.user)
+        form = InquiryForm(data=form_data, user=self.user)
         self.assertTrue(form.is_valid())
     
-    def test_question_form_required_fields(self):
-        """Test QuestionForm with missing required fields"""
+    def test_inquiry_form_required_fields(self):
+        """Test InquiryForm with missing required fields"""
         form_data = {
             'title': '',  # Required field missing
-            'text': 'This is a test question',
+            'text': 'This is a test inquiry',
         }
         
-        form = QuestionForm(data=form_data, user=self.user)
+        form = InquiryForm(data=form_data, user=self.user)
         self.assertFalse(form.is_valid())
         self.assertIn('title', form.errors)
     
-    def test_question_form_initial_status(self):
-        """Test that QuestionForm sets initial status to draft"""
-        form = QuestionForm(user=self.user)
+    def test_inquiry_form_initial_status(self):
+        """Test that InquiryForm sets initial status to draft"""
+        form = InquiryForm(user=self.user)
         self.assertEqual(form.fields['status'].initial, 'draft')
     
-    def test_question_form_group_field_hidden(self):
-        """Test that QuestionForm hides group field"""
-        form = QuestionForm(user=self.user)
+    def test_inquiry_form_group_field_hidden(self):
+        """Test that InquiryForm hides group field"""
+        form = InquiryForm(user=self.user)
         # Group field should be hidden
         self.assertEqual(form.fields['group'].widget.__class__.__name__, 'HiddenInput')
         self.assertIsNotNone(form.fields['group'].queryset)
@@ -105,8 +105,8 @@ class QuestionFormTests(TestCase):
         self.assertIsNotNone(form.fields['group'].initial)
 
 
-class QuestionListViewTests(TestCase):
-    """Test cases for QuestionListView"""
+class InquiryListViewTests(TestCase):
+    """Test cases for InquiryListView"""
     
     def setUp(self):
         """Set up test data"""
@@ -156,34 +156,34 @@ class QuestionListViewTests(TestCase):
             is_active=True
         )
         
-        self.question = Question.objects.create(
-            title='Test Question',
-            text='Test question text',
+        self.inquiry = Inquiry.objects.create(
+            title='Test Inquiry',
+            text='Test inquiry text',
             session=self.session,
             group=self.group,
             submitted_by=self.superuser,
             status='submitted'
         )
     
-    def test_question_list_view_superuser_access(self):
-        """Test that superuser can view question list"""
+    def test_inquiry_list_view_superuser_access(self):
+        """Test that superuser can view inquiry list"""
         self.client.login(username='admin', password='adminpass123')
-        response = self.client.get(reverse('question:question-list'))
+        response = self.client.get(reverse('inquiry:inquiry-list'))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Test Question')
+        self.assertContains(response, 'Test Inquiry')
     
-    def test_question_list_view_template_used(self):
-        """Test that question list view uses correct template"""
+    def test_inquiry_list_view_template_used(self):
+        """Test that inquiry list view uses correct template"""
         self.client.login(username='admin', password='adminpass123')
-        response = self.client.get(reverse('question:question-list'))
-        self.assertTemplateUsed(response, 'motion/question_list.html')
+        response = self.client.get(reverse('inquiry:inquiry-list'))
+        self.assertTemplateUsed(response, 'motion/inquiry_list.html')
     
-    def test_question_list_view_filters_by_status(self):
-        """Test that question list view filters by status"""
-        # Create another question with different status
-        Question.objects.create(
-            title='Draft Question',
-            text='Draft question text',
+    def test_inquiry_list_view_filters_by_status(self):
+        """Test that inquiry list view filters by status"""
+        # Create another inquiry with different status
+        Inquiry.objects.create(
+            title='Draft Inquiry',
+            text='Draft inquiry text',
             session=self.session,
             group=self.group,
             submitted_by=self.superuser,
@@ -191,14 +191,14 @@ class QuestionListViewTests(TestCase):
         )
         
         self.client.login(username='admin', password='adminpass123')
-        response = self.client.get(reverse('question:question-list') + '?status=submitted')
+        response = self.client.get(reverse('inquiry:inquiry-list') + '?status=submitted')
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Test Question')
-        self.assertNotContains(response, 'Draft Question')
+        self.assertContains(response, 'Test Inquiry')
+        self.assertNotContains(response, 'Draft Inquiry')
     
-    def test_question_list_view_filters_by_session(self):
-        """Test that question list view filters by session"""
-        # Create another session and question
+    def test_inquiry_list_view_filters_by_session(self):
+        """Test that inquiry list view filters by session"""
+        # Create another session and inquiry
         session2 = Session.objects.create(
             title='Test Session 2',
             council=self.council,
@@ -207,9 +207,9 @@ class QuestionListViewTests(TestCase):
             is_active=True
         )
         
-        Question.objects.create(
-            title='Question in Session 2',
-            text='Question text',
+        Inquiry.objects.create(
+            title='Inquiry in Session 2',
+            text='Inquiry text',
             session=session2,
             group=self.group,
             submitted_by=self.superuser,
@@ -217,14 +217,14 @@ class QuestionListViewTests(TestCase):
         )
         
         self.client.login(username='admin', password='adminpass123')
-        response = self.client.get(reverse('question:question-list') + f'?session={self.session.pk}')
+        response = self.client.get(reverse('inquiry:inquiry-list') + f'?session={self.session.pk}')
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Test Question')
-        self.assertNotContains(response, 'Question in Session 2')
+        self.assertContains(response, 'Test Inquiry')
+        self.assertNotContains(response, 'Inquiry in Session 2')
 
 
-class QuestionDetailViewTests(TestCase):
-    """Test cases for QuestionDetailView"""
+class InquiryDetailViewTests(TestCase):
+    """Test cases for InquiryDetailView"""
     
     def setUp(self):
         """Set up test data"""
@@ -274,48 +274,48 @@ class QuestionDetailViewTests(TestCase):
             is_active=True
         )
         
-        self.question = Question.objects.create(
-            title='Test Question',
-            text='Test question text',
+        self.inquiry = Inquiry.objects.create(
+            title='Test Inquiry',
+            text='Test inquiry text',
             session=self.session,
             group=self.group,
             submitted_by=self.superuser,
             status='submitted'
         )
     
-    def test_question_detail_view_superuser_access(self):
-        """Test that superuser can view question detail"""
+    def test_inquiry_detail_view_superuser_access(self):
+        """Test that superuser can view inquiry detail"""
         self.client.login(username='admin', password='adminpass123')
-        response = self.client.get(reverse('question:question-detail', kwargs={'pk': self.question.pk}))
+        response = self.client.get(reverse('inquiry:inquiry-detail', kwargs={'pk': self.inquiry.pk}))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Test Question')
-        self.assertContains(response, 'Test question text')
+        self.assertContains(response, 'Test Inquiry')
+        self.assertContains(response, 'Test inquiry text')
     
-    def test_question_detail_view_template_used(self):
-        """Test that question detail view uses correct template"""
+    def test_inquiry_detail_view_template_used(self):
+        """Test that inquiry detail view uses correct template"""
         self.client.login(username='admin', password='adminpass123')
-        response = self.client.get(reverse('question:question-detail', kwargs={'pk': self.question.pk}))
-        self.assertTemplateUsed(response, 'motion/question_detail.html')
+        response = self.client.get(reverse('inquiry:inquiry-detail', kwargs={'pk': self.inquiry.pk}))
+        self.assertTemplateUsed(response, 'motion/inquiry_detail.html')
     
-    def test_question_detail_view_displays_parties(self):
-        """Test that question detail view displays supporting parties"""
-        self.question.parties.add(self.party)
+    def test_inquiry_detail_view_displays_parties(self):
+        """Test that inquiry detail view displays supporting parties"""
+        self.inquiry.parties.add(self.party)
         self.client.login(username='admin', password='adminpass123')
-        response = self.client.get(reverse('question:question-detail', kwargs={'pk': self.question.pk}))
+        response = self.client.get(reverse('inquiry:inquiry-detail', kwargs={'pk': self.inquiry.pk}))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Test Party')
     
-    def test_question_detail_view_displays_interventions(self):
-        """Test that question detail view displays interventions"""
-        self.question.interventions.add(self.superuser)
+    def test_inquiry_detail_view_displays_interventions(self):
+        """Test that inquiry detail view displays interventions"""
+        self.inquiry.interventions.add(self.superuser)
         self.client.login(username='admin', password='adminpass123')
-        response = self.client.get(reverse('question:question-detail', kwargs={'pk': self.question.pk}))
+        response = self.client.get(reverse('inquiry:inquiry-detail', kwargs={'pk': self.inquiry.pk}))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Wortmeldung')
 
 
-class QuestionCreateViewTests(TestCase):
-    """Test cases for QuestionCreateView"""
+class InquiryCreateViewTests(TestCase):
+    """Test cases for InquiryCreateView"""
     
     def setUp(self):
         """Set up test data"""
@@ -366,61 +366,61 @@ class QuestionCreateViewTests(TestCase):
             is_active=True
         )
     
-    def test_question_create_redirects_to_session_detail(self):
-        """Test that question creation redirects to session detail page"""
+    def test_inquiry_create_redirects_to_session_detail(self):
+        """Test that inquiry creation redirects to session detail page"""
         self.client.login(username='admin', password='adminpass123')
         
-        # Create question data
-        question_data = {
-            'title': 'Test Question',
-            'text': 'Test question text',
+        # Create inquiry data
+        inquiry_data = {
+            'title': 'Test Inquiry',
+            'text': 'Test inquiry text',
             'status': 'draft',
             'session': self.session.pk,
             'group': self.group.pk,
             'parties': []
         }
         
-        # Submit question creation form
-        response = self.client.post(reverse('question:question-create'), question_data)
+        # Submit inquiry creation form
+        response = self.client.post(reverse('inquiry:inquiry-create'), inquiry_data)
         
         # Should redirect to session detail page
         self.assertEqual(response.status_code, 302)
         self.assertRedirects(response, reverse('local:session-detail', kwargs={'pk': self.session.pk}))
         
-        # Check that question was created
-        self.assertTrue(Question.objects.filter(title='Test Question', session=self.session).exists())
+        # Check that inquiry was created
+        self.assertTrue(Inquiry.objects.filter(title='Test Inquiry', session=self.session).exists())
     
-    def test_question_create_with_session_parameter(self):
-        """Test that question creation works with session parameter in URL"""
+    def test_inquiry_create_with_session_parameter(self):
+        """Test that inquiry creation works with session parameter in URL"""
         self.client.login(username='admin', password='adminpass123')
         
-        # Create question data
-        question_data = {
-            'title': 'Test Question',
-            'text': 'Test question text',
+        # Create inquiry data
+        inquiry_data = {
+            'title': 'Test Inquiry',
+            'text': 'Test inquiry text',
             'status': 'draft',
             'session': self.session.pk,
             'group': self.group.pk,
             'parties': []
         }
         
-        # Submit question creation form with session parameter
-        response = self.client.post(f"{reverse('question:question-create')}?session={self.session.pk}", question_data)
+        # Submit inquiry creation form with session parameter
+        response = self.client.post(f"{reverse('inquiry:inquiry-create')}?session={self.session.pk}", inquiry_data)
         
         # Should redirect to session detail page
         self.assertEqual(response.status_code, 302)
         self.assertRedirects(response, reverse('local:session-detail', kwargs={'pk': self.session.pk}))
         
-        # Check that question was created with the correct session
-        question = Question.objects.get(title='Test Question')
-        self.assertEqual(question.session, self.session)
+        # Check that inquiry was created with the correct session
+        inquiry = Inquiry.objects.get(title='Test Inquiry')
+        self.assertEqual(inquiry.session, self.session)
     
-    def test_question_create_form_with_session_parameter_shows_session_info(self):
-        """Test that question create form shows session information when session parameter is provided"""
+    def test_inquiry_create_form_with_session_parameter_shows_session_info(self):
+        """Test that inquiry create form shows session information when session parameter is provided"""
         self.client.login(username='admin', password='adminpass123')
         
         # Get the form page with session parameter
-        response = self.client.get(f"{reverse('question:question-create')}?session={self.session.pk}")
+        response = self.client.get(f"{reverse('inquiry:inquiry-create')}?session={self.session.pk}")
         
         self.assertEqual(response.status_code, 200)
         # Check that the form contains session information
@@ -429,46 +429,46 @@ class QuestionCreateViewTests(TestCase):
         # Check that the session field is hidden (value should be present)
         self.assertContains(response, f'value="{self.session.pk}"')
     
-    def test_question_create_form_without_session_parameter_shows_select(self):
-        """Test that question create form shows session select when no session parameter is provided"""
+    def test_inquiry_create_form_without_session_parameter_shows_select(self):
+        """Test that inquiry create form shows session select when no session parameter is provided"""
         self.client.login(username='admin', password='adminpass123')
         
         # Get the form page without session parameter
-        response = self.client.get(reverse('question:question-create'))
+        response = self.client.get(reverse('inquiry:inquiry-create'))
         
         self.assertEqual(response.status_code, 200)
         # Check that the form contains session select field
         self.assertContains(response, 'form-select')
     
-    def test_question_create_template_used(self):
-        """Test that question create view uses correct template"""
+    def test_inquiry_create_template_used(self):
+        """Test that inquiry create view uses correct template"""
         self.client.login(username='admin', password='adminpass123')
-        response = self.client.get(reverse('question:question-create'))
+        response = self.client.get(reverse('inquiry:inquiry-create'))
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'motion/question_form.html')
+        self.assertTemplateUsed(response, 'motion/inquiry_form.html')
     
-    def test_question_create_sets_submitted_by(self):
-        """Test that question creation sets submitted_by to current user"""
+    def test_inquiry_create_sets_submitted_by(self):
+        """Test that inquiry creation sets submitted_by to current user"""
         self.client.login(username='admin', password='adminpass123')
         
-        question_data = {
-            'title': 'Test Question',
-            'text': 'Test question text',
+        inquiry_data = {
+            'title': 'Test Inquiry',
+            'text': 'Test inquiry text',
             'status': 'draft',
             'session': self.session.pk,
             'group': self.group.pk,
             'parties': []
         }
         
-        response = self.client.post(reverse('question:question-create'), question_data)
+        response = self.client.post(reverse('inquiry:inquiry-create'), inquiry_data)
         self.assertEqual(response.status_code, 302)
         
-        question = Question.objects.get(title='Test Question')
-        self.assertEqual(question.submitted_by, self.superuser)
+        inquiry = Inquiry.objects.get(title='Test Inquiry')
+        self.assertEqual(inquiry.submitted_by, self.superuser)
 
 
-class QuestionUpdateViewTests(TestCase):
-    """Test cases for QuestionUpdateView"""
+class InquiryUpdateViewTests(TestCase):
+    """Test cases for InquiryUpdateView"""
     
     def setUp(self):
         """Set up test data"""
@@ -518,53 +518,53 @@ class QuestionUpdateViewTests(TestCase):
             is_active=True
         )
         
-        self.question = Question.objects.create(
-            title='Test Question',
-            text='Test question text',
+        self.inquiry = Inquiry.objects.create(
+            title='Test Inquiry',
+            text='Test inquiry text',
             session=self.session,
             group=self.group,
             submitted_by=self.superuser,
             status='draft'
         )
     
-    def test_question_update_view_superuser_access(self):
-        """Test that superuser can access question update view"""
+    def test_inquiry_update_view_superuser_access(self):
+        """Test that superuser can access inquiry update view"""
         self.client.login(username='admin', password='adminpass123')
-        response = self.client.get(reverse('question:question-edit', kwargs={'pk': self.question.pk}))
+        response = self.client.get(reverse('inquiry:inquiry-edit', kwargs={'pk': self.inquiry.pk}))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Test Question')
+        self.assertContains(response, 'Test Inquiry')
     
-    def test_question_update_redirects_to_detail(self):
-        """Test that question update redirects to question detail page"""
+    def test_inquiry_update_redirects_to_detail(self):
+        """Test that inquiry update redirects to inquiry detail page"""
         self.client.login(username='admin', password='adminpass123')
         
-        question_data = {
-            'title': 'Updated Question',
-            'text': 'Updated question text',
+        inquiry_data = {
+            'title': 'Updated Inquiry',
+            'text': 'Updated inquiry text',
             'status': 'draft',
             'session': self.session.pk,
             'group': self.group.pk,
             'parties': []
         }
         
-        response = self.client.post(reverse('question:question-edit', kwargs={'pk': self.question.pk}), question_data)
+        response = self.client.post(reverse('inquiry:inquiry-edit', kwargs={'pk': self.inquiry.pk}), inquiry_data)
         self.assertEqual(response.status_code, 302)
-        self.assertRedirects(response, reverse('question:question-detail', kwargs={'pk': self.question.pk}))
+        self.assertRedirects(response, reverse('inquiry:inquiry-detail', kwargs={'pk': self.inquiry.pk}))
         
-        # Check that question was updated
-        self.question.refresh_from_db()
-        self.assertEqual(self.question.title, 'Updated Question')
+        # Check that inquiry was updated
+        self.inquiry.refresh_from_db()
+        self.assertEqual(self.inquiry.title, 'Updated Inquiry')
     
-    def test_question_update_template_used(self):
-        """Test that question update view uses correct template"""
+    def test_inquiry_update_template_used(self):
+        """Test that inquiry update view uses correct template"""
         self.client.login(username='admin', password='adminpass123')
-        response = self.client.get(reverse('question:question-edit', kwargs={'pk': self.question.pk}))
+        response = self.client.get(reverse('inquiry:inquiry-edit', kwargs={'pk': self.inquiry.pk}))
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'motion/question_form.html')
+        self.assertTemplateUsed(response, 'motion/inquiry_form.html')
 
 
-class QuestionDeleteViewTests(TestCase):
-    """Test cases for QuestionDeleteView"""
+class InquiryDeleteViewTests(TestCase):
+    """Test cases for InquiryDeleteView"""
     
     def setUp(self):
         """Set up test data"""
@@ -614,43 +614,43 @@ class QuestionDeleteViewTests(TestCase):
             is_active=True
         )
         
-        self.question = Question.objects.create(
-            title='Test Question',
-            text='Test question text',
+        self.inquiry = Inquiry.objects.create(
+            title='Test Inquiry',
+            text='Test inquiry text',
             session=self.session,
             group=self.group,
             submitted_by=self.superuser,
             status='draft'
         )
     
-    def test_question_delete_view_superuser_access(self):
-        """Test that superuser can access question delete view"""
+    def test_inquiry_delete_view_superuser_access(self):
+        """Test that superuser can access inquiry delete view"""
         self.client.login(username='admin', password='adminpass123')
-        response = self.client.get(reverse('question:question-delete', kwargs={'pk': self.question.pk}))
+        response = self.client.get(reverse('inquiry:inquiry-delete', kwargs={'pk': self.inquiry.pk}))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Test Question')
+        self.assertContains(response, 'Test Inquiry')
     
-    def test_question_delete_template_used(self):
-        """Test that question delete view uses correct template"""
+    def test_inquiry_delete_template_used(self):
+        """Test that inquiry delete view uses correct template"""
         self.client.login(username='admin', password='adminpass123')
-        response = self.client.get(reverse('question:question-delete', kwargs={'pk': self.question.pk}))
+        response = self.client.get(reverse('inquiry:inquiry-delete', kwargs={'pk': self.inquiry.pk}))
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'motion/question_confirm_delete.html')
+        self.assertTemplateUsed(response, 'motion/inquiry_confirm_delete.html')
     
-    def test_question_delete_actually_deletes(self):
-        """Test that question delete actually deletes the question"""
+    def test_inquiry_delete_actually_deletes(self):
+        """Test that inquiry delete actually deletes the inquiry"""
         self.client.login(username='admin', password='adminpass123')
         
-        question_pk = self.question.pk
-        response = self.client.post(reverse('question:question-delete', kwargs={'pk': self.question.pk}))
+        inquiry_pk = self.inquiry.pk
+        response = self.client.post(reverse('inquiry:inquiry-delete', kwargs={'pk': self.inquiry.pk}))
         
         self.assertEqual(response.status_code, 302)
-        self.assertFalse(Question.objects.filter(pk=question_pk).exists())
+        self.assertFalse(Inquiry.objects.filter(pk=inquiry_pk).exists())
     
-    def test_question_delete_redirects_to_list(self):
-        """Test that question delete redirects to question list"""
+    def test_inquiry_delete_redirects_to_list(self):
+        """Test that inquiry delete redirects to inquiry list"""
         self.client.login(username='admin', password='adminpass123')
-        response = self.client.post(reverse('question:question-delete', kwargs={'pk': self.question.pk}))
+        response = self.client.post(reverse('inquiry:inquiry-delete', kwargs={'pk': self.inquiry.pk}))
         self.assertEqual(response.status_code, 302)
-        self.assertRedirects(response, reverse('question:question-list'))
+        self.assertRedirects(response, reverse('inquiry:inquiry-list'))
 

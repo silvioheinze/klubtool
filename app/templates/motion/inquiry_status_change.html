@@ -2,7 +2,7 @@
 {% load i18n %}
 
 {% block title %}
-    {% trans "Change Status" %} - {{ question.title }}
+    {% trans "Change Status" %} - {{ inquiry.title }}
 {% endblock title %}
 
 {% block content %}
@@ -11,13 +11,13 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h1 class="h3 mb-0">
-                <i class="bi bi-arrow-repeat"></i> {% trans "Change Question Status" %}
+                <i class="bi bi-arrow-repeat"></i> {% trans "Change Inquiry Status" %}
             </h1>
-            <p class="text-muted">{{ question.title }}</p>
+            <p class="text-muted">{{ inquiry.title }}</p>
         </div>
         <div>
-            <a href="{% url 'question:question-detail' question.pk %}" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left"></i> {% trans "Back to Question" %}
+            <a href="{% url 'inquiry:inquiry-detail' inquiry.pk %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> {% trans "Back to Inquiry" %}
             </a>
         </div>
     </div>
@@ -32,29 +32,29 @@
                 <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="me-3">
-                            {% if question.status == 'draft' %}
+                            {% if inquiry.status == 'draft' %}
                                 <span class="badge bg-secondary">{% trans "Draft" %}</span>
-                            {% elif question.status == 'submitted' %}
+                            {% elif inquiry.status == 'submitted' %}
                                 <span class="badge bg-primary">{% trans "Submitted" %}</span>
-                            {% elif question.status == 'refer_to_committee' %}
+                            {% elif inquiry.status == 'refer_to_committee' %}
                                 <span class="badge bg-info">{% trans "Refer to Committee" %}</span>
-                            {% elif question.status == 'approved' %}
+                            {% elif inquiry.status == 'approved' %}
                                 <span class="badge bg-success">{% trans "Approved" %}</span>
-                            {% elif question.status == 'rejected' %}
+                            {% elif inquiry.status == 'rejected' %}
                                 <span class="badge bg-danger">{% trans "Rejected" %}</span>
-                            {% elif question.status == 'answered' %}
+                            {% elif inquiry.status == 'answered' %}
                                 <span class="badge bg-success">{% trans "Answered" %}</span>
-                            {% elif question.status == 'withdrawn' %}
+                            {% elif inquiry.status == 'withdrawn' %}
                                 <span class="badge bg-warning">{% trans "Withdrawn" %}</span>
-                            {% elif question.status == 'not_admitted' %}
+                            {% elif inquiry.status == 'not_admitted' %}
                                 <span class="badge bg-dark">{% trans "Nicht zugelassen" %}</span>
                             {% endif %}
                         </div>
                         <div>
-                            {% if question.status_history.first %}
-                                {{ question.status_history.first.changed_at|date:"d.m.Y H:i" }}
-                                {% if question.status_history.first.changed_by %}
-                                    {% trans "by" %} {{ question.status_history.first.changed_by.get_full_name|default:question.status_history.first.changed_by.username }}
+                            {% if inquiry.status_history.first %}
+                                {{ inquiry.status_history.first.changed_at|date:"d.m.Y H:i" }}
+                                {% if inquiry.status_history.first.changed_by %}
+                                    {% trans "by" %} {{ inquiry.status_history.first.changed_by.get_full_name|default:inquiry.status_history.first.changed_by.username }}
                                 {% endif %}
                             {% else %}
                                 <small class="text-muted">{% trans "No status history" %}</small>
@@ -101,7 +101,7 @@
                         </div>
 
                         <div class="d-flex justify-content-between">
-                            <a href="{% url 'question:question-detail' question.pk %}" class="btn btn-outline-secondary">
+                            <a href="{% url 'inquiry:inquiry-detail' inquiry.pk %}" class="btn btn-outline-secondary">
                                 <i class="bi bi-x"></i> {% trans "Cancel" %}
                             </a>
                             <button type="submit" class="btn btn-primary">
@@ -113,14 +113,14 @@
             </div>
 
             <!-- Status History Preview -->
-            {% if question.status_history.all %}
+            {% if inquiry.status_history.all %}
                 <div class="card mt-4">
                     <div class="card-header">
                         <h5 class="mb-0">{% trans "Status History" %}</h5>
                     </div>
                     <div class="card-body">
                         <div class="timeline">
-                            {% for status_entry in question.status_history.all|slice:":5" %}
+                            {% for status_entry in inquiry.status_history.all|slice:":5" %}
                                 <div class="timeline-item mb-3">
                                     <div class="d-flex align-items-start">
                                         <div class="flex-shrink-0">
@@ -180,9 +180,9 @@
                                 </div>
                             {% endfor %}
                         </div>
-                        {% if question.status_history.count > 5 %}
+                        {% if inquiry.status_history.count > 5 %}
                             <div class="text-center mt-3">
-                                <a href="{% url 'question:question-detail' question.pk %}" class="btn btn-sm btn-outline-primary">
+                                <a href="{% url 'inquiry:inquiry-detail' inquiry.pk %}" class="btn btn-sm btn-outline-primary">
                                     {% trans "View all status history" %}
                                 </a>
                             </div>

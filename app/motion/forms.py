@@ -3,7 +3,7 @@ from django.contrib.auth import get_user_model
 from django.forms import BaseFormSet, formset_factory
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
-from .models import Motion, MotionVote, MotionComment, MotionAttachment, MotionStatus, MotionGroupDecision, Question, QuestionStatus, QuestionAttachment, Tag
+from .models import Motion, MotionVote, MotionComment, MotionAttachment, MotionStatus, MotionGroupDecision, Inquiry, InquiryStatus, InquiryAttachment, Tag
 from local.models import Session, Party, Committee
 from group.models import Group, GroupMember
 
@@ -253,11 +253,11 @@ class MotionForm(forms.ModelForm):
         return instance
 
 
-class QuestionForm(forms.ModelForm):
-    """Form for creating and editing Question objects"""
+class InquiryForm(forms.ModelForm):
+    """Form for creating and editing Inquiry objects"""
     
     class Meta:
-        model = Question
+        model = Inquiry
         fields = [
             'title', 'text', 'answer', 'status',
             'session', 'group', 'parties', 'interventions', 'tags'
@@ -284,7 +284,7 @@ class QuestionForm(forms.ModelForm):
         # Replace tags field with custom TagsField
         self.fields['tags'] = TagsField()
         
-        # Set initial value if editing existing question
+        # Set initial value if editing existing inquiry
         if self.instance and self.instance.pk:
             self.fields['tags'].initial = ', '.join([tag.name for tag in self.instance.tags.all()])
         
@@ -317,9 +317,9 @@ class QuestionForm(forms.ModelForm):
             except Session.DoesNotExist:
                 pass
         
-        # Filter interventions to only show users from the question's group
+        # Filter interventions to only show users from the inquiry's group
         if self.instance and self.instance.pk and self.instance.group:
-            # Editing existing question - filter by the question's group
+            # Editing existing inquiry - filter by the inquiry's group
             group = self.instance.group
             group_member_users = User.objects.filter(
                 group_memberships__group=group,
@@ -327,7 +327,7 @@ class QuestionForm(forms.ModelForm):
             ).distinct()
             self.fields['interventions'].queryset = group_member_users
         elif 'group' in self.initial or 'group' in self.data:
-            # Creating new question with group set
+            # Creating new inquiry with group set
             group_id = self.initial.get('group') or self.data.get('group')
             if group_id:
                 try:
@@ -392,7 +392,7 @@ class QuestionForm(forms.ModelForm):
                     "The selected group must belong to a party in the same local district as the session's council."
                 )
         
-        # Validate that interventions are from the question's group
+        # Validate that interventions are from the inquiry's group
         interventions = cleaned_data.get('interventions', [])
         if group and interventions:
             group_member_users = User.objects.filter(
@@ -402,7 +402,7 @@ class QuestionForm(forms.ModelForm):
             invalid_users = [user for user in interventions if user not in group_member_users]
             if invalid_users:
                 raise forms.ValidationError(
-                    f"All interventions must be members of the question's group. Invalid users: {', '.join([u.username for u in invalid_users])}"
+                    f"All interventions must be members of the inquiry's group. Invalid users: {', '.join([u.username for u in invalid_users])}"
                 )
         
         return cleaned_data
@@ -469,8 +469,8 @@ class MotionFilterForm(forms.Form):
     )
 
 
-class QuestionFilterForm(forms.Form):
-    """Form for filtering questions in the question list view"""
+class InquiryFilterForm(forms.Form):
+    """Form for filtering inquiries in the inquiry list view"""
     search = forms.CharField(
         required=False,
         widget=forms.TextInput(attrs={
@@ -479,7 +479,7 @@ class QuestionFilterForm(forms.Form):
         })
     )
     status = forms.ChoiceField(
-        choices=[('', 'All Statuses')] + Question.STATUS_CHOICES,
+        choices=[('', 'All Statuses')] + Inquiry.STATUS_CHOICES,
         required=False,
         widget=forms.Select(attrs={'class': 'form-select'})
     )
@@ -953,11 +953,11 @@ class MotionAttachmentForm(forms.ModelForm):
         return instance
 
 
-class QuestionAttachmentForm(forms.ModelForm):
-    """Form for uploading attachments to questions"""
+class InquiryAttachmentForm(forms.ModelForm):
+    """Form for uploading attachments to inquiries"""
     
     class Meta:
-        model = QuestionAttachment
+        model = InquiryAttachment
         fields = ['file', 'file_type', 'description']
         widgets = {
             'file': forms.FileInput(attrs={'class': 'form-control'}),
@@ -966,7 +966,7 @@ class QuestionAttachmentForm(forms.ModelForm):
         }
     
     def __init__(self, *args, **kwargs):
-        self.question = kwargs.pop('question', None)
+        self.inquiry = kwargs.pop('inquiry', None)
         self.uploaded_by = kwargs.pop('uploaded_by', None)
         super().__init__(*args, **kwargs)
     
@@ -988,8 +988,8 @@ class QuestionAttachmentForm(forms.ModelForm):
     
     def save(self, commit=True):
         instance = super().save(commit=False)
-        if self.question:
-            instance.question = self.question
+        if self.inquiry:
+            instance.inquiry = self.inquiry
         if self.uploaded_by:
             instance.uploaded_by = self.uploaded_by
         
@@ -1175,19 +1175,19 @@ class MotionStatusForm(forms.ModelForm):
         return instance
 
 
-class QuestionStatusForm(forms.ModelForm):
-    """Form for changing question status"""
+class InquiryStatusForm(forms.ModelForm):
+    """Form for changing inquiry status"""
     
     committee = forms.ModelChoiceField(
         queryset=Committee.objects.filter(is_active=True),
         required=False,
         empty_label="Select a committee...",
         widget=forms.Select(attrs={'class': 'form-select'}),
-        help_text="Select the committee to refer this question to"
+        help_text="Select the committee to refer this inquiry to"
     )
     
     class Meta:
-        model = QuestionStatus
+        model = InquiryStatus
         fields = ['status', 'committee', 'reason']
         widgets = {
             'status': forms.Select(attrs={'class': 'form-select'}),
@@ -1200,14 +1200,14 @@ class QuestionStatusForm(forms.ModelForm):
         }
     
     def __init__(self, *args, **kwargs):
-        self.question = kwargs.pop('question', None)
+        self.inquiry = kwargs.pop('inquiry', None)
         self.changed_by = kwargs.pop('changed_by', None)
         super().__init__(*args, **kwargs)
         
-        # Filter committees to only show those from the same council as the question's session
-        if self.question and self.question.session and self.question.session.council:
+        # Filter committees to only show those from the same council as the inquiry's session
+        if self.inquiry and self.inquiry.session and self.inquiry.session.council:
             self.fields['committee'].queryset = Committee.objects.filter(
-                council=self.question.session.council,
+                council=self.inquiry.session.council,
                 is_active=True
             )
     
@@ -1219,76 +1219,15 @@ class QuestionStatusForm(forms.ModelForm):
         # If status is 'refer_to_committee', committee is required
         if status == 'refer_to_committee' and not committee:
             raise forms.ValidationError({
-                'committee': 'A committee must be selected when referring a question to committee.'
+                'committee': 'A committee must be selected when referring an inquiry to committee.'
             })
         
         return cleaned_data
     
     def save(self, commit=True):
         instance = super().save(commit=False)
-        if self.question:
-            instance.question = self.question
-        if self.changed_by:
-            instance.changed_by = self.changed_by
-        
-        if commit:
-            instance.save()
-        return instance
-
-
-class QuestionStatusForm(forms.ModelForm):
-    """Form for changing question status"""
-    
-    committee = forms.ModelChoiceField(
-        queryset=Committee.objects.filter(is_active=True),
-        required=False,
-        empty_label="Select a committee...",
-        widget=forms.Select(attrs={'class': 'form-select'}),
-        help_text="Select the committee to refer this question to"
-    )
-    
-    class Meta:
-        model = QuestionStatus
-        fields = ['status', 'committee', 'reason']
-        widgets = {
-            'status': forms.Select(attrs={'class': 'form-select'}),
-            'committee': forms.Select(attrs={'class': 'form-select'}),
-            'reason': forms.Textarea(attrs={
-                'class': 'form-control',
-                'rows': 3,
-                'placeholder': 'Reason for the status change...'
-            }),
-        }
-    
-    def __init__(self, *args, **kwargs):
-        self.question = kwargs.pop('question', None)
-        self.changed_by = kwargs.pop('changed_by', None)
-        super().__init__(*args, **kwargs)
-        
-        # Filter committees to only show those from the same council as the question's session
-        if self.question and self.question.session and self.question.session.council:
-            self.fields['committee'].queryset = Committee.objects.filter(
-                council=self.question.session.council,
-                is_active=True
-            )
-    
-    def clean(self):
-        cleaned_data = super().clean()
-        status = cleaned_data.get('status')
-        committee = cleaned_data.get('committee')
-        
-        # If status is 'refer_to_committee', committee is required
-        if status == 'refer_to_committee' and not committee:
-            raise forms.ValidationError({
-                'committee': 'A committee must be selected when referring a question to committee.'
-            })
-        
-        return cleaned_data
-    
-    def save(self, commit=True):
-        instance = super().save(commit=False)
-        if self.question:
-            instance.question = self.question
+        if self.inquiry:
+            instance.inquiry = self.inquiry
         if self.changed_by:
             instance.changed_by = self.changed_by
         

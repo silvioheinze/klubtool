@@ -10,8 +10,8 @@ from django.core.paginator import Paginator
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
-from .models import Motion, MotionVote, MotionComment, MotionAttachment, MotionStatus, MotionGroupDecision, Question, QuestionStatus, QuestionAttachment
-from .forms import MotionForm, MotionFilterForm, MotionVoteForm, MotionVoteFormSetFactory, MotionVoteTypeForm, MotionCommentForm, MotionAttachmentForm, MotionStatusForm, MotionGroupDecisionForm, QuestionForm, QuestionFilterForm, QuestionStatusForm, QuestionAttachmentForm
+from .models import Motion, MotionVote, MotionComment, MotionAttachment, MotionStatus, MotionGroupDecision, Inquiry, InquiryStatus, InquiryAttachment
+from .forms import MotionForm, MotionFilterForm, MotionVoteForm, MotionVoteFormSetFactory, MotionVoteTypeForm, MotionCommentForm, MotionAttachmentForm, MotionStatusForm, MotionGroupDecisionForm, InquiryForm, InquiryFilterForm, InquiryStatusForm, InquiryAttachmentForm
 from user.models import CustomUser
 from local.models import Session, Party
 from local.views import _get_user_accessible_council_ids
@@ -66,16 +66,16 @@ def is_leader_or_deputy_leader(user, motion):
         return False
 
 
-def can_change_question_status(user, question):
-    """Check if user can change question status (superuser, group admin, leader, or deputy leader)"""
+def can_change_inquiry_status(user, inquiry):
+    """Check if user can change inquiry status (superuser, group admin, leader, or deputy leader)"""
     if user.is_superuser:
         return True
     
-    if not question.group:
+    if not inquiry.group:
         return False
     
     # Check if user is a group admin
-    if question.group.has_group_admin(user):
+    if inquiry.group.has_group_admin(user):
         return True
     
     # Check if user is a leader or deputy leader
@@ -87,7 +87,7 @@ def can_change_question_status(user, question):
         
         membership = GroupMember.objects.filter(
             user=user,
-            group=question.group,
+            group=inquiry.group,
             is_active=True,
             roles__in=[leader_role, deputy_leader_role]
         ).first()
@@ -1539,26 +1539,26 @@ class MotionExportPDFView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         return response
 
 
-# Question Views
-class QuestionListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
-    """View for listing Question objects"""
-    model = Question
-    context_object_name = 'questions'
-    template_name = 'motion/question_list.html'
+# Inquiry Views
+class InquiryListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
+    """View for listing Inquiry objects"""
+    model = Inquiry
+    context_object_name = 'inquiries'
+    template_name = 'motion/inquiry_list.html'
     paginate_by = 20
 
     def test_func(self):
-        """Check if user has permission to view Question objects"""
+        """Check if user has permission to view Inquiry objects"""
         return self.request.user.is_superuser or self.request.user.has_role_permission('motion.view')
 
     def get_queryset(self):
         """Filter queryset based on search parameters"""
-        queryset = Question.objects.filter(is_active=True).select_related(
+        queryset = Inquiry.objects.filter(is_active=True).select_related(
             'session', 'group', 'submitted_by'
         ).prefetch_related('parties', 'tags').order_by('-submitted_date')
         
         # Get filter form
-        filter_form = QuestionFilterForm(self.request.GET)
+        filter_form = InquiryFilterForm(self.request.GET)
         
         if filter_form.is_valid():
             # Filter by search query
@@ -1595,17 +1595,17 @@ class QuestionListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
     def get_context_data(self, **kwargs):
         """Add filter form to context"""
         context = super().get_context_data(**kwargs)
-        context['filter_form'] = QuestionFilterForm(self.request.GET)
+        context['filter_form'] = InquiryFilterForm(self.request.GET)
         
-        # Get tag counts for word cloud (from all questions, not just filtered)
+        # Get tag counts for word cloud (from all inquiries, not just filtered)
         from .models import Tag
         from django.db.models import Count
-        # Get all tags used in questions, with their counts
+        # Get all tags used in inquiries, with their counts
         tag_counts = Tag.objects.filter(
-            questions__isnull=False,
+            inquiries__isnull=False,
             is_active=True
         ).annotate(
-            count=Count('questions', distinct=True)
+            count=Count('inquiries', distinct=True)
         ).order_by('-count', 'name')
         context['tag_counts'] = tag_counts
         
@@ -1621,48 +1621,48 @@ class QuestionListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
         return context
 
 
-class QuestionDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
-    """View for displaying a single Question object"""
-    model = Question
-    context_object_name = 'question'
-    template_name = 'motion/question_detail.html'
+class InquiryDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
+    """View for displaying a single Inquiry object"""
+    model = Inquiry
+    context_object_name = 'inquiry'
+    template_name = 'motion/inquiry_detail.html'
 
     def test_func(self):
-        """Check if user has permission to view Question objects"""
+        """Check if user has permission to view Inquiry objects"""
         return self.request.user.is_superuser or self.request.user.has_role_permission('motion.view')
 
     def get_queryset(self):
-        return Question.objects.prefetch_related('interventions', 'parties', 'group', 'attachments')
+        return Inquiry.objects.prefetch_related('interventions', 'parties', 'group', 'attachments')
     
     def get_context_data(self, **kwargs):
         """Add additional context data"""
         context = super().get_context_data(**kwargs)
-        question = self.object
+        inquiry = self.object
         
         # Add attachment form
-        context['attachment_form'] = QuestionAttachmentForm(question=question, uploaded_by=self.request.user)
+        context['attachment_form'] = InquiryAttachmentForm(inquiry=inquiry, uploaded_by=self.request.user)
         
         # Add status change form
-        context['status_form'] = QuestionStatusForm(question=question, changed_by=self.request.user)
+        context['status_form'] = InquiryStatusForm(inquiry=inquiry, changed_by=self.request.user)
         
         # Add permission check for status changes
-        context['can_change_status'] = can_change_question_status(self.request.user, question)
+        context['can_change_status'] = can_change_inquiry_status(self.request.user, inquiry)
         
         # Get attachments
-        context['attachments'] = question.attachments.all().order_by('-uploaded_at')
+        context['attachments'] = inquiry.attachments.all().order_by('-uploaded_at')
         
         # Get status history
-        context['status_history'] = question.status_history.all()
+        context['status_history'] = inquiry.status_history.all()
         
         return context
 
 
-class QuestionCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
-    """View for creating a new Question object"""
-    model = Question
-    form_class = QuestionForm
-    template_name = 'motion/question_form.html'
-    success_url = reverse_lazy('question:question-list')
+class InquiryCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
+    """View for creating a new Inquiry object"""
+    model = Inquiry
+    form_class = InquiryForm
+    template_name = 'motion/inquiry_form.html'
+    success_url = reverse_lazy('inquiry:inquiry-list')
 
     def test_func(self):
         """Allow superuser, motion.create permission, or regular group members for the session's council."""
@@ -1698,7 +1698,7 @@ class QuestionCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
         return initial
 
     def get_success_url(self):
-        """Redirect to session detail page after successful question creation"""
+        """Redirect to session detail page after successful inquiry creation"""
         if hasattr(self.object, 'session') and self.object.session:
             return reverse('local:session-detail', kwargs={'pk': self.object.session.pk})
         return super().get_success_url()
@@ -1707,19 +1707,19 @@ class QuestionCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
         """Set submitted_by and display success message"""
         form.instance.submitted_by = self.request.user
         response = super().form_valid(form)
-        messages.success(self.request, f"Question '{form.instance.title}' created successfully.")
+        messages.success(self.request, f"Inquiry '{form.instance.title}' created successfully.")
         return response
 
 
-class QuestionUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
-    """View for updating an existing Question object"""
-    model = Question
-    form_class = QuestionForm
-    template_name = 'motion/question_form.html'
-    success_url = reverse_lazy('question:question-list')
+class InquiryUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
+    """View for updating an existing Inquiry object"""
+    model = Inquiry
+    form_class = InquiryForm
+    template_name = 'motion/inquiry_form.html'
+    success_url = reverse_lazy('inquiry:inquiry-list')
 
     def test_func(self):
-        """Check if user has permission to edit Question objects"""
+        """Check if user has permission to edit Inquiry objects"""
         return self.request.user.is_superuser or self.request.user.has_role_permission('motion.edit')
 
     def get_form_kwargs(self):
@@ -1729,36 +1729,36 @@ class QuestionUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
         return kwargs
 
     def get_success_url(self):
-        """Redirect to question detail page after successful update"""
-        return reverse('question:question-detail', kwargs={'pk': self.object.pk})
+        """Redirect to inquiry detail page after successful update"""
+        return reverse('inquiry:inquiry-detail', kwargs={'pk': self.object.pk})
 
     def form_valid(self, form):
         """Display success message on form validation"""
         response = super().form_valid(form)
-        messages.success(self.request, f"Question '{form.instance.title}' updated successfully.")
+        messages.success(self.request, f"Inquiry '{form.instance.title}' updated successfully.")
         return response
 
 
-class QuestionDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
-    """View for deleting a Question object"""
-    model = Question
-    template_name = 'motion/question_confirm_delete.html'
-    success_url = reverse_lazy('question:question-list')
+class InquiryDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
+    """View for deleting an Inquiry object"""
+    model = Inquiry
+    template_name = 'motion/inquiry_confirm_delete.html'
+    success_url = reverse_lazy('inquiry:inquiry-list')
 
     def test_func(self):
-        """Check if user has permission to delete Question objects"""
-        question = self.get_object()
+        """Check if user has permission to delete Inquiry objects"""
+        inquiry = self.get_object()
         
-        # Superusers can delete any question
+        # Superusers can delete any inquiry
         if self.request.user.is_superuser:
             return True
         
-        # Users can delete their own questions
-        if question.submitted_by == self.request.user:
+        # Users can delete their own inquiries
+        if inquiry.submitted_by == self.request.user:
             return True
         
-        # Group admins can delete questions from their groups
-        if question.group:
+        # Group admins can delete inquiries from their groups
+        if inquiry.group:
             from group.models import GroupMember
             from user.models import Role
             
@@ -1768,7 +1768,7 @@ class QuestionDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
                 
                 membership = GroupMember.objects.filter(
                     user=self.request.user,
-                    group=question.group,
+                    group=inquiry.group,
                     is_active=True,
                     roles__in=[leader_role, deputy_leader_role]
                 ).first()
@@ -1782,44 +1782,44 @@ class QuestionDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
 
     def delete(self, request, *args, **kwargs):
         """Display success message on deletion"""
-        question_obj = self.get_object()
-        messages.success(request, f"Question '{question_obj.title}' deleted successfully.")
+        inquiry_obj = self.get_object()
+        messages.success(request, f"Inquiry '{inquiry_obj.title}' deleted successfully.")
         return super().delete(request, *args, **kwargs)
 
 
 @login_required
 @user_passes_test(is_superuser_or_has_permission('motion.attach'))
-def question_attachment_view(request, pk):
-    """View for uploading attachments to a question"""
-    question = get_object_or_404(Question, pk=pk)
+def inquiry_attachment_view(request, pk):
+    """View for uploading attachments to an inquiry"""
+    inquiry = get_object_or_404(Inquiry, pk=pk)
     
     if request.method == 'POST':
-        form = QuestionAttachmentForm(request.POST, request.FILES, question=question, uploaded_by=request.user)
+        form = InquiryAttachmentForm(request.POST, request.FILES, inquiry=inquiry, uploaded_by=request.user)
         if form.is_valid():
             form.save()
             messages.success(request, "Attachment uploaded successfully.")
-            return redirect('question:question-detail', pk=pk)
+            return redirect('inquiry:inquiry-detail', pk=pk)
     else:
-        form = QuestionAttachmentForm(question=question, uploaded_by=request.user)
+        form = InquiryAttachmentForm(inquiry=inquiry, uploaded_by=request.user)
     
-    return render(request, 'motion/question_attachment.html', {
-        'question': question,
+    return render(request, 'motion/inquiry_attachment.html', {
+        'inquiry': inquiry,
         'form': form
     })
 
 
 @login_required
-def question_status_change_view(request, pk):
-    """View for changing question status"""
-    question = get_object_or_404(Question, pk=pk)
+def inquiry_status_change_view(request, pk):
+    """View for changing inquiry status"""
+    inquiry = get_object_or_404(Inquiry, pk=pk)
     
     # Check permissions
-    if not can_change_question_status(request.user, question):
-        messages.error(request, "You don't have permission to change the status of this question.")
-        return redirect('question:question-detail', pk=pk)
+    if not can_change_inquiry_status(request.user, inquiry):
+        messages.error(request, "You don't have permission to change the status of this inquiry.")
+        return redirect('inquiry:inquiry-detail', pk=pk)
     
     if request.method == 'POST':
-        form = QuestionStatusForm(request.POST, question=question, changed_by=request.user)
+        form = InquiryStatusForm(request.POST, inquiry=inquiry, changed_by=request.user)
         
         if form.is_valid():
             # Get the new status
@@ -1828,40 +1828,40 @@ def question_status_change_view(request, pk):
             committee = form.cleaned_data.get('committee')
             
             # Set attributes for the save method to use
-            question._status_changed_by = request.user
-            question._status_change_reason = reason
-            question._status_committee = committee
+            inquiry._status_changed_by = request.user
+            inquiry._status_change_reason = reason
+            inquiry._status_committee = committee
             
-            # Update the question status
-            question.status = new_status
+            # Update the inquiry status
+            inquiry.status = new_status
             
-            # Save the question (this will trigger the save method which creates the status history entry)
-            question.save()
+            # Save the inquiry (this will trigger the save method which creates the status history entry)
+            inquiry.save()
             
-            messages.success(request, f"Question status changed to '{question.get_status_display()}'.")
-            return redirect('question:question-detail', pk=pk)
+            messages.success(request, f"Inquiry status changed to '{inquiry.get_status_display()}'.")
+            return redirect('inquiry:inquiry-detail', pk=pk)
     else:
-        form = QuestionStatusForm(question=question, changed_by=request.user)
+        form = InquiryStatusForm(inquiry=inquiry, changed_by=request.user)
     
-    return render(request, 'motion/question_status_change.html', {
-        'question': question,
+    return render(request, 'motion/inquiry_status_change.html', {
+        'inquiry': inquiry,
         'form': form
     })
 
 
 @login_required
 @user_passes_test(lambda u: u.is_superuser)
-def question_status_delete_view(request, question_pk, status_pk):
-    """View for deleting a question status entry (superuser only)"""
-    question = get_object_or_404(Question, pk=question_pk)
-    status_entry = get_object_or_404(QuestionStatus, pk=status_pk, question=question)
+def inquiry_status_delete_view(request, inquiry_pk, status_pk):
+    """View for deleting an inquiry status entry (superuser only)"""
+    inquiry = get_object_or_404(Inquiry, pk=inquiry_pk)
+    status_entry = get_object_or_404(InquiryStatus, pk=status_pk, inquiry=inquiry)
     
     if request.method == 'POST':
         status_entry.delete()
         messages.success(request, "Status entry deleted successfully.")
-        return redirect('question:question-detail', pk=question_pk)
+        return redirect('inquiry:inquiry-detail', pk=inquiry_pk)
     
-    return render(request, 'motion/question_status_confirm_delete.html', {
-        'question': question,
+    return render(request, 'motion/inquiry_status_confirm_delete.html', {
+        'inquiry': inquiry,
         'status_entry': status_entry
     })
