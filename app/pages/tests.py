@@ -4,7 +4,7 @@ from django.urls import reverse, resolve
 from django.utils import timezone
 from datetime import timedelta
 
-from .views import HomePageView, personal_calendar_export_ics
+from .views import HomePageView, personal_calendar_export_ics, calendar_subscription_feed
 from local.models import Local, Council, Session, Term, Party
 from group.models import Group, GroupMember, GroupMeeting
 from motion.models import Motion
@@ -422,3 +422,84 @@ class PersonalCalendarExportIcsTests(TestCase):
         """Calendar export URL resolves to personal_calendar_export_ics view."""
         match = resolve('/calendar/export.ics')
         self.assertEqual(match.func, personal_calendar_export_ics)
+
+
+class CalendarSubscriptionFeedTests(TestCase):
+    """Tests for calendar subscription feed (token-based WebCal)."""
+
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(
+            username='subuser',
+            email='sub@example.com',
+            password='testpass123',
+        )
+        self.local = Local.objects.create(
+            name='Sub Local',
+            code='SL',
+            description='Sub local',
+            is_active=True,
+        )
+        self.council, _ = Council.objects.get_or_create(
+            local=self.local,
+            defaults={'name': 'Sub Council', 'is_active': True},
+        )
+        self.term = Term.objects.create(
+            name='Sub Term',
+            start_date=timezone.now().date(),
+            end_date=timezone.now().date() + timedelta(days=365),
+            is_active=True,
+        )
+        self.party = Party.objects.create(
+            name='Sub Party',
+            local=self.local,
+            is_active=True,
+        )
+        self.group = Group.objects.create(
+            name='Sub Group',
+            party=self.party,
+            is_active=True,
+        )
+        GroupMember.objects.create(
+            user=self.user,
+            group=self.group,
+            is_active=True,
+        )
+        GroupMeeting.objects.create(
+            group=self.group,
+            title='Sub Meeting',
+            scheduled_date=timezone.now() + timedelta(days=7),
+            is_active=True,
+        )
+        from user.models import CalendarSubscriptionToken
+        _, self.raw_token = CalendarSubscriptionToken.create_token(self.user)
+
+    def test_subscription_valid_token_returns_200(self):
+        """Valid token returns 200 and calendar content."""
+        response = self.client.get(
+            reverse('calendar-subscription-feed', kwargs={'token': self.raw_token})
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.get('Content-Type'),
+            'text/calendar; charset=utf-8',
+        )
+        content = response.content.decode('utf-8')
+        self.assertIn('BEGIN:VCALENDAR', content)
+        self.assertIn('BEGIN:VEVENT', content)
+        self.assertIn('Sub Meeting', content)
+
+    def test_subscription_invalid_token_returns_403(self):
+        """Invalid token returns 403."""
+        response = self.client.get(
+            reverse('calendar-subscription-feed', kwargs={'token': 'invalid-token-xyz'})
+        )
+        self.assertEqual(response.status_code, 403)
+
+    def test_subscription_content_disposition_inline(self):
+        """Subscription uses inline (not attachment) for calendar apps."""
+        response = self.client.get(
+            reverse('calendar-subscription-feed', kwargs={'token': self.raw_token})
+        )
+        cd = response.get('Content-Disposition', '')
+        self.assertIn('inline', cd)

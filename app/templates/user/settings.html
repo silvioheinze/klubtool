@@ -68,6 +68,44 @@
     </div>
 </div>
 
+<!-- Calendar Subscription -->
+<div class="card mb-4" id="calendar-subscription">
+    <div class="card-header">
+        <h3 class="mb-0">
+            <i class="bi bi-calendar-event me-2"></i>
+            {% trans "Calendar Subscription" %}
+        </h3>
+    </div>
+    <div class="card-body">
+        <p class="text-muted mb-3">
+            {% trans "Subscribe to your personal calendar to automatically sync changes (dates, locations, cancellations) with Google Calendar, Apple Calendar, or Outlook. One-time setup across all devices." %}
+        </p>
+        {% if new_calendar_subscription_url %}
+        <div class="alert alert-success mb-3">
+            <label class="form-label fw-bold">{% trans "Your subscription URL (copy and add to your calendar app):" %}</label>
+            <div class="input-group">
+                <input type="text" class="form-control font-monospace" id="calendar-subscription-url" readonly value="{{ new_calendar_subscription_url }}">
+                <button type="button" class="btn btn-outline-primary" data-bs-toggle="tooltip" title="{% trans 'Copy to clipboard' %}" onclick="navigator.clipboard.writeText(document.getElementById('calendar-subscription-url').value); this.classList.replace('btn-outline-primary','btn-success'); this.innerHTML='<i class=\'bi bi-check\'></i>'; setTimeout(()=>{this.classList.replace('btn-success','btn-outline-primary'); this.innerHTML='<i class=\'bi bi-clipboard\'></i>';}, 2000);">
+                    <i class="bi bi-clipboard"></i>
+                </button>
+            </div>
+            <small class="text-muted d-block mt-2">{% trans "Keep this link private. If it is compromised, use Reset below." %}</small>
+        </div>
+        {% endif %}
+        <a class="btn {% if has_calendar_subscription %}btn-outline-warning{% else %}btn-outline-primary{% endif %}" href="{% url 'calendar-subscription-create' %}">
+            <i class="bi bi-{% if has_calendar_subscription %}arrow-repeat{% else %}plus-lg{% endif %} me-2"></i>
+            {% if has_calendar_subscription %}
+            {% trans "Reset subscription link" %}
+            {% else %}
+            {% trans "Create subscription link" %}
+            {% endif %}
+        </a>
+        <p class="text-muted small mt-2 mb-0">
+            {% trans "Resetting creates a new link and invalidates the old one. Calendar apps may take several hours to refresh." %}
+        </p>
+    </div>
+</div>
+
 <!-- Change Password -->
 <div class="card mb-4">
     <div class="card-header">

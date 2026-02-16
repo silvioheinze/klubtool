@@ -6,6 +6,16 @@ class AccountsConfig(AppConfig):
     name = 'user'
     
     def ready(self):
+        from django.db.models.signals import post_save
+        from django.dispatch import receiver
+        from django.contrib.auth import get_user_model
+        from .models import CalendarSubscriptionToken
+
+        @receiver(post_save, sender=get_user_model())
+        def invalidate_calendar_tokens_on_user_deactivation(sender, instance, **kwargs):
+            if not instance.is_active:
+                CalendarSubscriptionToken.objects.filter(user=instance).update(is_active=False)
+
         from django.contrib import admin
         from django.contrib.auth import get_user_model
         from django.contrib.auth.models import User

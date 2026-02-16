@@ -214,101 +214,13 @@ class DocumentationPageView(TemplateView):
 
 
 def _get_personal_calendar_events(user, group_memberships, councils_from_memberships):
-    """Build list of calendar event dicts (council sessions + committee meetings + group meetings) for the user."""
-    from django.urls import reverse
-    from django.db.models import Q
-    from local.models import Session, CommitteeMeeting, CommitteeMember, CommitteeParticipationSubstitute, SessionExcuse
-    from group.models import GroupMeeting
-
-    user_council_ids = [c.pk for c in councils_from_memberships]
-    # Committees where user is a regular member (not substitute member); substitute-only membership does not show all meetings
-    user_committee_ids = list(
-        CommitteeMember.objects.filter(user=user, is_active=True).exclude(role='substitute_member').values_list('committee_id', flat=True)
-    )
-    # Committee meetings where user is marked as substitute (show these even if user is only substitute_member in that committee)
-    meeting_ids_where_user_is_substitute = list(
-        CommitteeParticipationSubstitute.objects.filter(substitute_member__user=user).values_list('committee_meeting_id', flat=True)
-    )
-    user_group_ids = [m.group_id for m in group_memberships]
-
-    now = timezone.now()
-
-    calendar_events = []
-
-    if user_council_ids:
-        council_sessions = Session.objects.filter(
-            council_id__in=user_council_ids,
-            committee__isnull=True,
-            is_active=True,
-            scheduled_date__gte=now,
-        ).select_related('council', 'council__local').order_by('scheduled_date')
-        # Exclude sessions where the user has excused themselves
-        excused_session_ids = set(
-            SessionExcuse.objects.filter(user=user, session__in=council_sessions).values_list('session_id', flat=True)
-        )
-        for s in council_sessions:
-            if s.pk in excused_session_ids:
-                continue
-            badge_name = (s.council.calendar_badge_name or '').strip()
-            calendar_events.append({
-                'date': s.scheduled_date,
-                'title': s.title,
-                'url': s.get_absolute_url(),
-                'ics_export_url': reverse('local:session-export-ics', args=[s.pk]),
-                'type': 'council_session',
-                'badge_label': badge_name or _('Council'),
-                'subtitle': s.council.name,
-                'location': getattr(s, 'location', '') or '',
-                'pk': s.pk,
-                'model': 'session',
-            })
-
-    # Committee meetings: from committees where user is regular member, or meetings where user is set as substitute
-    if user_committee_ids or meeting_ids_where_user_is_substitute:
-        committee_meetings = CommitteeMeeting.objects.filter(
-            is_active=True,
-            scheduled_date__gte=now,
-        ).filter(
-            (Q(committee_id__in=user_committee_ids) if user_committee_ids else Q(pk__in=[]))
-            | (Q(pk__in=meeting_ids_where_user_is_substitute) if meeting_ids_where_user_is_substitute else Q(pk__in=[]))
-        ).select_related('committee').order_by('scheduled_date')
-        for m in committee_meetings:
-            calendar_events.append({
-                'date': m.scheduled_date,
-                'title': m.title,
-                'url': m.get_absolute_url(),
-                'ics_export_url': reverse('local:committee-meeting-export-ics', args=[m.pk]),
-                'type': 'committee_meeting',
-                'badge_label': m.committee.get_committee_type_display(),
-                'subtitle': m.committee.name,
-                'location': getattr(m, 'location', '') or '',
-                'pk': m.pk,
-                'model': 'committeemeeting',
-            })
-
-    if user_group_ids:
-        group_meetings = GroupMeeting.objects.filter(
-            group_id__in=user_group_ids,
-            is_active=True,
-            scheduled_date__gte=now,
-        ).select_related('group').order_by('scheduled_date')
-        for m in group_meetings:
-            badge_name = (m.group.calendar_badge_name or '').strip()
-            calendar_events.append({
-                'date': m.scheduled_date,
-                'title': m.title,
-                'url': m.get_absolute_url(),
-                'ics_export_url': reverse('group:meeting-export-ics', args=[m.pk]),
-                'type': 'group_meeting',
-                'badge_label': badge_name or _('Group meeting'),
-                'subtitle': m.group.name,
-                'location': getattr(m, 'location', '') or '',
-                'pk': m.pk,
-                'model': 'groupmeeting',
-            })
-
-    calendar_events.sort(key=lambda e: e['date'])
-    return calendar_events
+    """Build list of calendar event dicts for the user. Wrapper for display/export (no past events, no cancelled)."""
+    from .calendar_utils import get_personal_calendar_events
+    events = get_personal_calendar_events(user, group_memberships, councils_from_memberships, subscription_feed=False)
+    # Ensure 'cancelled' key for backward compatibility with code that may not expect it
+    for e in events:
+        e.setdefault('cancelled', False)
+    return events
 
 
 def _build_month_calendar(events, year=None, month=None):
@@ -340,14 +252,6 @@ def _build_month_calendar(events, year=None, month=None):
     return month, year, calendar_weeks
 
 
-def _escape_ics_text(text):
-    if not text:
-        return ""
-    text = str(text)
-    text = text.replace('\\', '\\\\').replace(',', '\\,').replace(';', '\\;').replace('\n', '\\n')
-    return text
-
-
 @login_required
 def personal_calendar_export_ics(request):
     """Export the user's personal calendar (council/committee sessions + group meetings) as ICS."""
@@ -373,49 +277,61 @@ def personal_calendar_export_ics(request):
 
     events = _get_personal_calendar_events(request.user, group_memberships, councils_from_memberships)
 
-    # Build ICS
-    lines = [
-        "BEGIN:VCALENDAR",
-        "VERSION:2.0",
-        "PRODID:-//Klubtool//Personal Calendar//EN",
-        "CALSCALE:GREGORIAN",
-        "METHOD:PUBLISH",
-    ]
-
-    for event in events:
-        dt = event['date']
-        if not timezone.is_aware(dt):
-            dt = timezone.make_aware(dt)
-        dt_utc = dt.astimezone(timezone.UTC)
-        dtend_utc = dt_utc + timezone.timedelta(hours=1)
-        dtstart_str = dt_utc.strftime('%Y%m%dT%H%M%SZ')
-        dtend_str = dtend_utc.strftime('%Y%m%dT%H%M%SZ')
-        uid = f"{event['model']}-{event['pk']}@{request.get_host()}"
-        summary = _escape_ics_text(event['title'])
-        desc = _escape_ics_text(event.get('subtitle', ''))
-        loc = _escape_ics_text(event.get('location', ''))
-        url_abs = request.build_absolute_uri(event['url']) if event.get('url') else ''
-
-        lines.append("BEGIN:VEVENT")
-        lines.append(f"UID:{uid}")
-        lines.append(f"DTSTART:{dtstart_str}")
-        lines.append(f"DTEND:{dtend_str}")
-        lines.append(f"SUMMARY:{summary}")
-        if desc:
-            lines.append(f"DESCRIPTION:{desc}")
-        if loc:
-            lines.append(f"LOCATION:{loc}")
-        if url_abs:
-            lines.append(f"URL:{url_abs}")
-        lines.append(f"DTSTAMP:{timezone.now().astimezone(timezone.UTC).strftime('%Y%m%dT%H%M%SZ')}")
-        lines.append("STATUS:CONFIRMED")
-        lines.append("END:VEVENT")
-
-    lines.append("END:VCALENDAR")
-    ics_file = "\r\n".join(lines)
+    from .calendar_utils import build_personal_calendar_ics
+    ics_file = build_personal_calendar_ics(events, request)
 
     response = HttpResponse(ics_file, content_type='text/calendar; charset=utf-8')
     response['Content-Disposition'] = 'attachment; filename="personal-calendar.ics"'
+    return response
+
+
+def calendar_subscription_feed(request, token):
+    """
+    Calendar subscription feed (WebCal). Token-based auth; no login required.
+    Returns personal calendar ICS. Access control verified on every request.
+    Cached for successful responses to handle high-frequency polling.
+    """
+    from django.core.exceptions import PermissionDenied
+    from django.core.cache import cache
+    from django.conf import settings
+    from user.models import CalendarSubscriptionToken
+    from group.models import GroupMember
+    from .calendar_utils import get_personal_calendar_events, build_personal_calendar_ics
+
+    subscription = CalendarSubscriptionToken.lookup(token)
+    if not subscription:
+        raise PermissionDenied("Invalid or expired subscription link.")
+
+    user = subscription.user
+    if not user.is_active:
+        raise PermissionDenied("Subscription no longer active.")
+
+    cache_ttl = getattr(settings, 'CALENDAR_SUBSCRIPTION_CACHE_TTL', 900)
+    cache_key = f"calendar_sub:{subscription.token_hash}"
+    ics_content = cache.get(cache_key)
+    if ics_content is None:
+        group_memberships = GroupMember.objects.filter(
+            user=user,
+            is_active=True,
+        ).select_related('group', 'group__party', 'group__party__local').order_by('group__name')
+
+        councils_from_memberships = []
+        for membership in group_memberships:
+            if membership.group.party and getattr(membership.group.party, 'local', None):
+                local = membership.group.party.local
+                if getattr(local, 'council', None):
+                    councils_from_memberships.append(local.council)
+        councils_from_memberships = sorted(set(councils_from_memberships), key=lambda x: x.name)
+
+        events = get_personal_calendar_events(user, group_memberships, councils_from_memberships, subscription_feed=True)
+        ics_content = build_personal_calendar_ics(events, request)
+        cache.set(cache_key, ics_content, cache_ttl)
+
+    subscription.update_last_used()
+
+    response = HttpResponse(ics_content, content_type='text/calendar; charset=utf-8')
+    response['Content-Disposition'] = 'inline; filename="personal-calendar.ics"'
+    response['X-Content-Type-Options'] = 'nosniff'
     return response
 
 

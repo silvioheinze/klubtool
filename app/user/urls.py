@@ -2,10 +2,10 @@ from django.urls import path, include
 from django.shortcuts import redirect
 
 from user.views import (
-    AccountDeleteView, SettingsView, SignupPageView, 
-    UsersUpdateView, UsersListView, RoleListView, RoleCreateView, 
+    AccountDeleteView, SettingsView, SignupPageView,
+    UsersUpdateView, UsersListView, RoleListView, RoleCreateView,
     RoleUpdateView, RoleDeleteView, AdminUserCreateView, AdminSettingsView,
-    send_welcome_email, CustomConfirmEmailView
+    send_welcome_email, CustomConfirmEmailView, calendar_subscription_create,
 )
 
 
@@ -17,6 +17,7 @@ urlpatterns = [
     # User Management
     path('delete/', AccountDeleteView.as_view(), name='user-delete'),
     path('settings/', SettingsView, name='user-settings'),
+    path('settings/calendar-subscription/create/', calendar_subscription_create, name='calendar-subscription-create'),
     path("signup/", SignupPageView.as_view(), name="user-signup"),
     path('list/', UsersListView.as_view(), name='user-list'),
     path('edit/<int:user_id>/', UsersUpdateView.as_view(), name='user-edit'),
