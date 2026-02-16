@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-02-16 16:26+0100\n"
-"PO-Revision-Date: 2026-02-16 17:45+0100\n"
+"PO-Revision-Date: 2026-02-16 20:38+0100\n"
 "Last-Translator: Silvio Heinze <s.heinze@dataplexity.eu>\n"
 "Language-Team: \n"
 "Language: de_CH@informal\n"
@@ -758,7 +758,7 @@ msgstr "Nächste Klubsitzung"
 #: templates/_base.html:114 templates/user/admin_settings.html:5
 #: templates/user/admin_settings.html:8
 msgid "Admin Settings"
-msgstr "Systeminstellungen"
+msgstr "Systemeinstellungen"
 
 #: templates/_base.html:119 templates/user/role_form.html:98
 msgid "User Management"
