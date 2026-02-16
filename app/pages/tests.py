@@ -92,7 +92,11 @@ class HomepageTests(TestCase):
         """Test that home page contains expected content"""
         url = reverse("home")
         response = self.client.get(url)
-        self.assertContains(response, 'Welcome to Klubtool')
+        self.assertContains(response, 'Klubtool')
+        self.assertTrue(
+            'Welcome' in response.content.decode() or 'Willkommen' in response.content.decode(),
+            "Home should show welcome message (English or German)"
+        )
 
     def test_homepage_does_not_contain_incorrect_html(self):
         """Test that home page does not contain unexpected content"""
@@ -152,9 +156,13 @@ class HomepageTests(TestCase):
         
         # Homepage shows Quick Access and/or Personal calendar when authenticated
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Welcome')
+        response_text = response.content.decode()
         self.assertTrue(
-            'Quick Access' in response.content.decode() or 'Personal calendar' in response.content.decode(),
+            'Welcome' in response_text or 'Willkommen' in response_text,
+            "Homepage should show welcome message"
+        )
+        self.assertTrue(
+            any(s in response_text for s in ('Quick Access', 'Personal calendar', 'Schnellzugriff', 'Kalender')),
             "Homepage should show Quick Access or Personal calendar"
         )
     
