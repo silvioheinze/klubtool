@@ -423,6 +423,24 @@ class PersonalCalendarExportIcsTests(TestCase):
         match = resolve('/calendar/export.ics')
         self.assertEqual(match.func, personal_calendar_export_ics)
 
+    def test_ics_export_includes_cancelled_events_with_status_cancelled(self):
+        """Cancelled group meetings are included with STATUS:CANCELLED and SEQUENCE:1."""
+        cancelled_meeting = GroupMeeting.objects.create(
+            group=self.group,
+            title='Cancelled Meeting',
+            scheduled_date=timezone.now() + timedelta(days=3),
+            is_active=True,
+            status='cancelled',
+        )
+        self.client.login(username='calendaruser', password='testpass123')
+        response = self.client.get(reverse('personal-calendar-export-ics'))
+        content = response.content.decode('utf-8')
+        self.assertIn('Cancelled Meeting', content)
+        self.assertIn(f'groupmeeting-{cancelled_meeting.pk}@', content)
+        # STATUS:CANCELLED and SEQUENCE tell calendar apps to remove the event on re-import
+        self.assertIn('STATUS:CANCELLED', content)
+        self.assertIn('SEQUENCE:1', content)
+
 
 class CalendarSubscriptionFeedTests(TestCase):
     """Tests for calendar subscription feed (token-based WebCal)."""
