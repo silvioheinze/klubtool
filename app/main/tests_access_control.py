@@ -18,7 +18,7 @@ from datetime import timedelta
 from user.models import Role
 from local.models import Local, Council, Session, Term, Party, Committee
 from group.models import Group, GroupMember, GroupMeeting
-from motion.models import Motion, Question
+from motion.models import Motion, Inquiry
 
 User = get_user_model()
 
@@ -164,9 +164,9 @@ class AccessControlTestCase(TestCase):
             status='draft'
         )
         
-        self.question = Question.objects.create(
-            title='Test Question',
-            text='Test question text',
+        self.inquiry = Inquiry.objects.create(
+            title='Test Inquiry',
+            text='Test inquiry text',
             session=self.session,
             group=self.group,
             submitted_by=self.regular_user,
@@ -347,89 +347,89 @@ class MotionAccessTests(AccessControlTestCase):
         self.assertEqual(response.status_code, 403)
 
 
-class QuestionAccessTests(AccessControlTestCase):
-    """Test access control for question views"""
+class InquiryAccessTests(AccessControlTestCase):
+    """Test access control for inquiry views"""
     
-    def test_question_list_view_superuser_access(self):
-        """Test that superuser can view question list"""
+    def test_inquiry_list_view_superuser_access(self):
+        """Test that superuser can view inquiry list"""
         self.client.login(username='admin', password='adminpass123')
-        response = self.client.get(reverse('question:question-list'))
+        response = self.client.get(reverse('inquiry:inquiry-list'))
         self.assertEqual(response.status_code, 200)
     
-    def test_question_list_view_regular_user_denied(self):
-        """Test that regular user without permission cannot view question list"""
+    def test_inquiry_list_view_regular_user_denied(self):
+        """Test that regular user without permission cannot view inquiry list"""
         self.client.login(username='regular', password='regularpass123')
-        response = self.client.get(reverse('question:question-list'))
+        response = self.client.get(reverse('inquiry:inquiry-list'))
         self.assertEqual(response.status_code, 403)
     
-    def test_question_list_view_role_user_with_permission_access(self):
-        """Test that user with motion.view permission can view question list"""
+    def test_inquiry_list_view_role_user_with_permission_access(self):
+        """Test that user with motion.view permission can view inquiry list"""
         self.client.login(username='editor', password='editorpass123')
-        response = self.client.get(reverse('question:question-list'))
+        response = self.client.get(reverse('inquiry:inquiry-list'))
         self.assertEqual(response.status_code, 200)
     
-    def test_question_detail_view_superuser_access(self):
-        """Test that superuser can view question detail"""
+    def test_inquiry_detail_view_superuser_access(self):
+        """Test that superuser can view inquiry detail"""
         self.client.login(username='admin', password='adminpass123')
-        response = self.client.get(reverse('question:question-detail', kwargs={'pk': self.question.pk}))
+        response = self.client.get(reverse('inquiry:inquiry-detail', kwargs={'pk': self.inquiry.pk}))
         self.assertEqual(response.status_code, 200)
     
-    def test_question_detail_view_regular_user_denied(self):
-        """Test that regular user without permission cannot view question detail"""
+    def test_inquiry_detail_view_regular_user_denied(self):
+        """Test that regular user without permission cannot view inquiry detail"""
         self.client.login(username='regular', password='regularpass123')
-        response = self.client.get(reverse('question:question-detail', kwargs={'pk': self.question.pk}))
+        response = self.client.get(reverse('inquiry:inquiry-detail', kwargs={'pk': self.inquiry.pk}))
         self.assertEqual(response.status_code, 403)
     
-    def test_question_detail_view_role_user_with_permission_access(self):
-        """Test that user with motion.view permission can view question detail"""
+    def test_inquiry_detail_view_role_user_with_permission_access(self):
+        """Test that user with motion.view permission can view inquiry detail"""
         self.client.login(username='editor', password='editorpass123')
-        response = self.client.get(reverse('question:question-detail', kwargs={'pk': self.question.pk}))
+        response = self.client.get(reverse('inquiry:inquiry-detail', kwargs={'pk': self.inquiry.pk}))
         self.assertEqual(response.status_code, 200)
     
-    def test_question_create_view_superuser_access(self):
-        """Test that superuser can create questions"""
+    def test_inquiry_create_view_superuser_access(self):
+        """Test that superuser can create inquiries"""
         self.client.login(username='admin', password='adminpass123')
-        response = self.client.get(reverse('question:question-create'))
+        response = self.client.get(reverse('inquiry:inquiry-create'))
         self.assertEqual(response.status_code, 200)
     
-    def test_question_create_view_regular_user_denied(self):
-        """Test that regular user without permission cannot create questions"""
+    def test_inquiry_create_view_regular_user_denied(self):
+        """Test that regular user without permission cannot create inquiries"""
         self.client.login(username='regular', password='regularpass123')
-        response = self.client.get(reverse('question:question-create'))
+        response = self.client.get(reverse('inquiry:inquiry-create'))
         self.assertEqual(response.status_code, 403)
     
-    def test_question_create_view_role_user_with_permission_access(self):
-        """Test that user with motion.create permission can create questions"""
+    def test_inquiry_create_view_role_user_with_permission_access(self):
+        """Test that user with motion.create permission can create inquiries"""
         self.client.login(username='editor', password='editorpass123')
-        response = self.client.get(reverse('question:question-create'))
+        response = self.client.get(reverse('inquiry:inquiry-create'))
         self.assertEqual(response.status_code, 200)
     
-    def test_question_edit_view_superuser_access(self):
-        """Test that superuser can edit questions"""
+    def test_inquiry_edit_view_superuser_access(self):
+        """Test that superuser can edit inquiries"""
         self.client.login(username='admin', password='adminpass123')
-        response = self.client.get(reverse('question:question-edit', kwargs={'pk': self.question.pk}))
+        response = self.client.get(reverse('inquiry:inquiry-edit', kwargs={'pk': self.inquiry.pk}))
         self.assertEqual(response.status_code, 200)
     
-    def test_question_edit_view_regular_user_denied(self):
-        """Test that regular user without permission cannot edit questions"""
+    def test_inquiry_edit_view_regular_user_denied(self):
+        """Test that regular user without permission cannot edit inquiries"""
         self.client.login(username='regular', password='regularpass123')
-        response = self.client.get(reverse('question:question-edit', kwargs={'pk': self.question.pk}))
+        response = self.client.get(reverse('inquiry:inquiry-edit', kwargs={'pk': self.inquiry.pk}))
         self.assertEqual(response.status_code, 403)
     
-    def test_question_edit_view_role_user_with_permission_access(self):
-        """Test that user with motion.edit permission can edit questions"""
+    def test_inquiry_edit_view_role_user_with_permission_access(self):
+        """Test that user with motion.edit permission can edit inquiries"""
         self.client.login(username='editor', password='editorpass123')
-        response = self.client.get(reverse('question:question-edit', kwargs={'pk': self.question.pk}))
+        response = self.client.get(reverse('inquiry:inquiry-edit', kwargs={'pk': self.inquiry.pk}))
         self.assertEqual(response.status_code, 200)
     
-    def test_question_delete_view_superuser_access(self):
-        """Test that superuser can delete questions"""
+    def test_inquiry_delete_view_superuser_access(self):
+        """Test that superuser can delete inquiries"""
         self.client.login(username='admin', password='adminpass123')
-        response = self.client.get(reverse('question:question-delete', kwargs={'pk': self.question.pk}))
+        response = self.client.get(reverse('inquiry:inquiry-delete', kwargs={'pk': self.inquiry.pk}))
         self.assertEqual(response.status_code, 200)
     
-    def test_question_delete_view_regular_user_denied(self):
-        """Test that regular user cannot delete questions (unless they submitted it)"""
+    def test_inquiry_delete_view_regular_user_denied(self):
+        """Test that regular user cannot delete inquiries (unless they submitted it)"""
         # Test with a different user
         other_user = User.objects.create_user(
             username='other',
@@ -437,7 +437,7 @@ class QuestionAccessTests(AccessControlTestCase):
             password='otherpass123'
         )
         self.client.login(username='other', password='otherpass123')
-        response = self.client.get(reverse('question:question-delete', kwargs={'pk': self.question.pk}))
+        response = self.client.get(reverse('inquiry:inquiry-delete', kwargs={'pk': self.inquiry.pk}))
         self.assertEqual(response.status_code, 403)
 
 

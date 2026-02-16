@@ -3,17 +3,17 @@
 {% load static %}
 {% load humanize %}
 
-{% block title %}{% trans "Questions" %}{% endblock title %}
+{% block title %}{% trans "Inquiries" %}{% endblock title %}
 
 {% block content %}
 <div class="container mt-4">
     <div class="row">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1><i class="bi bi-question-circle"></i> {% trans "Questions" %}</h1>
+                <h1><i class="bi bi-question-circle"></i> {% trans "Inquiries" %}</h1>
                 <div>
-                    <a href="{% url 'question:question-create' %}" class="btn btn-primary">
-                        <i class="bi bi-plus-circle"></i> {% trans "Create Question" %}
+                    <a href="{% url 'inquiry:inquiry-create' %}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i> {% trans "Create Inquiry" %}
                     </a>
                 </div>
             </div>
@@ -46,7 +46,7 @@
                     <button type="submit" class="btn btn-primary">
                         <i class="bi bi-search"></i> {% trans "Search" %}
                     </button>
-                    <a href="{% url 'question:question-list' %}" class="btn btn-outline-secondary">
+                    <a href="{% url 'inquiry:inquiry-list' %}" class="btn btn-outline-secondary">
                         <i class="bi bi-arrow-clockwise"></i> {% trans "Clear" %}
                     </a>
                 </div>
@@ -127,7 +127,7 @@
                             <button type="submit" class="btn btn-primary">
                                 <i class="bi bi-search"></i> {% trans "Apply Filters" %}
                             </button>
-                            <a href="{% url 'question:question-list' %}" class="btn btn-outline-secondary">
+                            <a href="{% url 'inquiry:inquiry-list' %}" class="btn btn-outline-secondary">
                                 <i class="bi bi-arrow-clockwise"></i> {% trans "Clear All" %}
                             </a>
                         </div>
@@ -140,10 +140,10 @@
         <div class="col-md-9">
             <div class="card">
                 <div class="card-header">
-                    <h5 class="mb-0"><i class="bi bi-list"></i> {% trans "Questions" %}</h5>
+                    <h5 class="mb-0"><i class="bi bi-list"></i> {% trans "Inquiries" %}</h5>
                 </div>
                 <div class="card-body">
-                    {% if questions %}
+                    {% if inquiries %}
                         <div class="table-responsive">
                             <table class="table table-striped table-hover">
                                 <thead>
@@ -155,18 +155,18 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {% for question in questions %}
+                                    {% for inquiry in inquiries %}
                                         <tr>
                                             <td>
                                                 <strong>
-                                                    <a href="{% url 'question:question-detail' question.pk %}">
-                                                        {{ question.title }}
+                                                    <a href="{% url 'inquiry:inquiry-detail' inquiry.pk %}">
+                                                        {{ inquiry.title }}
                                                     </a>
                                                 </strong>
                                             </td>
                                             <td>
-                                                {% if question.parties.exists %}
-                                                    {% for party in question.parties.all %}
+                                                {% if inquiry.parties.exists %}
+                                                    {% for party in inquiry.parties.all %}
                                                         <span class="badge me-1" style="background-color: {{ party.color }}; color: white;">{{ party.short_name|default:party.name }}</span>
                                                     {% endfor %}
                                                 {% else %}
@@ -174,30 +174,30 @@
                                                 {% endif %}
                                             </td>
                                             <td>
-                                                {% if question.status == 'draft' %}
+                                                {% if inquiry.status == 'draft' %}
                                                     <span class="badge bg-secondary">{% trans "Draft" %}</span>
-                                                {% elif question.status == 'submitted' %}
+                                                {% elif inquiry.status == 'submitted' %}
                                                     <span class="badge bg-primary">{% trans "Submitted" %}</span>
-                                                {% elif question.status == 'refer_to_committee' %}
+                                                {% elif inquiry.status == 'refer_to_committee' %}
                                                     <span class="badge bg-info">{% trans "Refer to Committee" %}</span>
-                                                {% elif question.status == 'approved' %}
+                                                {% elif inquiry.status == 'approved' %}
                                                     <span class="badge bg-success">{% trans "Approved" %}</span>
-                                                {% elif question.status == 'rejected' %}
+                                                {% elif inquiry.status == 'rejected' %}
                                                     <span class="badge bg-danger">{% trans "Rejected" %}</span>
-                                                {% elif question.status == 'answered' %}
+                                                {% elif inquiry.status == 'answered' %}
                                                     <span class="badge bg-success">{% trans "Answered" %}</span>
-                                                {% elif question.status == 'withdrawn' %}
+                                                {% elif inquiry.status == 'withdrawn' %}
                                                     <span class="badge bg-warning">{% trans "Withdrawn" %}</span>
-                                                {% elif question.status == 'not_admitted' %}
+                                                {% elif inquiry.status == 'not_admitted' %}
                                                     <span class="badge bg-dark">{% trans "Nicht zugelassen" %}</span>
                                                 {% endif %}
                                             </td>
                                             <td>
-                                                {% if question.session %}
-                                                    <a href="{% url 'local:session-detail' question.session.pk %}">
-                                                        {{ question.session.title }}
+                                                {% if inquiry.session %}
+                                                    <a href="{% url 'local:session-detail' inquiry.session.pk %}">
+                                                        {{ inquiry.session.title }}
                                                     </a>
-                                                    <br><small class="text-muted">{{ question.session.scheduled_date|date:"M d, Y" }}</small>
+                                                    <br><small class="text-muted">{{ inquiry.session.scheduled_date|date:"M d, Y" }}</small>
                                                 {% else %}
                                                     <span class="text-muted">{% trans "No session" %}</span>
                                                 {% endif %}
@@ -210,7 +210,7 @@
 
                         <!-- Pagination -->
                         {% if is_paginated %}
-                            <nav aria-label="{% trans 'Question pagination' %}">
+                            <nav aria-label="{% trans 'Inquiry pagination' %}">
                                 <ul class="pagination justify-content-center">
                                     {% if page_obj.has_previous %}
                                         <li class="page-item">
@@ -249,10 +249,10 @@
                     {% else %}
                         <div class="text-center py-4">
                             <i class="bi bi-question-circle fs-1 text-muted"></i>
-                            <h6 class="mt-3">{% trans "No questions found" %}</h6>
-                            <p class="text-muted">{% trans "Create questions to manage council inquiries." %}</p>
-                            <a href="{% url 'question:question-create' %}" class="btn btn-primary">
-                                <i class="bi bi-plus-circle"></i> {% trans "Create First Question" %}
+                            <h6 class="mt-3">{% trans "No inquiries found" %}</h6>
+                            <p class="text-muted">{% trans "Create inquiries to manage council inquiries." %}</p>
+                            <a href="{% url 'inquiry:inquiry-create' %}" class="btn btn-primary">
+                                <i class="bi bi-plus-circle"></i> {% trans "Create First Inquiry" %}
                             </a>
                         </div>
                     {% endif %}

@@ -9,7 +9,7 @@ User = get_user_model()
 
 
 class Tag(models.Model):
-    """Model representing a tag for categorizing motions and questions"""
+    """Model representing a tag for categorizing motions and inquiries"""
     name = models.CharField(max_length=50, unique=True, help_text="Name of the tag")
     slug = models.SlugField(max_length=50, unique=True, help_text="URL-friendly version of the tag name")
     color = models.CharField(max_length=7, default='#007bff', help_text="Color code for the tag (hex format)")
@@ -503,8 +503,8 @@ class MotionGroupDecision(models.Model):
         return f"{self.motion.title} - {self.get_decision_display()} ({self.decision_time.strftime('%d.%m.%Y %H:%M')})"
 
 
-class Question(models.Model):
-    """Model representing a question (Anfrage) in a council session"""
+class Inquiry(models.Model):
+    """Model representing an inquiry (Anfrage) in a council session"""
     
     STATUS_CHOICES = [
         ('draft', _('Draft')),
@@ -518,60 +518,60 @@ class Question(models.Model):
     ]
     
     # Basic Information
-    title = models.CharField(max_length=200, help_text="Title of the question")
-    text = models.TextField(blank=True, help_text="Detailed text of the question")
-    answer = models.TextField(blank=True, help_text="Answer to the question")
+    title = models.CharField(max_length=200, help_text="Title of the inquiry")
+    text = models.TextField(blank=True, help_text="Detailed text of the inquiry")
+    answer = models.TextField(blank=True, help_text="Answer to the inquiry")
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
     
     # Relationships
-    session = models.ForeignKey(Session, on_delete=models.CASCADE, related_name='questions', help_text="Session where this question will be presented")
-    group = models.ForeignKey(Group, on_delete=models.CASCADE, related_name='questions', help_text="Group asking this question")
-    parties = models.ManyToManyField(Party, related_name='questions', blank=True, help_text="Parties supporting this question")
-    interventions = models.ManyToManyField(User, related_name='question_interventions', blank=True, help_text=_("Wortmeldung: Users from the corresponding group who can speak in session"))
-    tags = models.ManyToManyField('Tag', related_name='questions', blank=True, help_text="Tags for categorizing this question")
+    session = models.ForeignKey(Session, on_delete=models.CASCADE, related_name='inquiries', help_text="Session where this inquiry will be presented")
+    group = models.ForeignKey(Group, on_delete=models.CASCADE, related_name='inquiries', help_text="Group asking this inquiry")
+    parties = models.ManyToManyField(Party, related_name='inquiries', blank=True, help_text="Parties supporting this inquiry")
+    interventions = models.ManyToManyField(User, related_name='inquiry_interventions', blank=True, help_text=_("Wortmeldung: Users from the corresponding group who can speak in session"))
+    tags = models.ManyToManyField('Tag', related_name='inquiries', blank=True, help_text="Tags for categorizing this inquiry")
     
     # Metadata
-    submitted_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='submitted_questions')
+    submitted_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='submitted_inquiries')
     submitted_date = models.DateTimeField(auto_now_add=True)
     last_modified = models.DateTimeField(auto_now=True)
     is_active = models.BooleanField(default=True)
-    session_rank = models.PositiveIntegerField(default=0, help_text="Rank/order of this question within its session")
+    session_rank = models.PositiveIntegerField(default=0, help_text="Rank/order of this inquiry within its session")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
     class Meta:
         ordering = ['-submitted_date']
-        verbose_name = "Question"
-        verbose_name_plural = "Questions"
+        verbose_name = "Inquiry"
+        verbose_name_plural = "Inquiries"
     
     def __str__(self):
         return f"{self.title} - {self.group.name}"
     
     def get_absolute_url(self):
         from django.urls import reverse
-        return reverse('question:question-detail', args=[str(self.pk)])
+        return reverse('inquiry:inquiry-detail', args=[str(self.pk)])
     
     @property
     def supporting_parties_count(self):
-        """Number of parties supporting this question"""
+        """Number of parties supporting this inquiry"""
         return self.parties.count()
     
     @property
     def can_be_edited(self):
-        """Check if question can still be edited"""
-        return True  # Questions can be edited regardless of status
+        """Check if inquiry can still be edited"""
+        return True  # Inquiries can be edited regardless of status
     
     def can_be_deleted_by(self, user):
-        """Check if a user can delete this question"""
-        # Superusers can delete any question
+        """Check if a user can delete this inquiry"""
+        # Superusers can delete any inquiry
         if user.is_superuser:
             return True
         
-        # Users can delete their own questions
+        # Users can delete their own inquiries
         if self.submitted_by == user:
             return True
         
-        # Group admins can delete questions from their groups
+        # Group admins can delete inquiries from their groups
         if self.group:
             from group.models import GroupMember
             from user.models import Role
@@ -581,7 +581,7 @@ class Question(models.Model):
                 leader_role = Role.objects.get(name='Leader')
                 deputy_leader_role = Role.objects.get(name='Deputy Leader')
                 
-                # Check if user has these roles in the question's group
+                # Check if user has these roles in the inquiry's group
                 membership = GroupMember.objects.filter(
                     user=user,
                     group=self.group,
@@ -604,43 +604,43 @@ class Question(models.Model):
         """Override save to track status changes"""
         if self.pk:  # Only for existing instances
             try:
-                old_instance = Question.objects.get(pk=self.pk)
+                old_instance = Inquiry.objects.get(pk=self.pk)
                 if old_instance.status != self.status:
                     # Status has changed, create a status history entry
-                    QuestionStatus.objects.create(
-                        question=self,
+                    InquiryStatus.objects.create(
+                        inquiry=self,
                         status=self.status,
                         committee=getattr(self, '_status_committee', None),
                         changed_by=getattr(self, '_status_changed_by', None),
                         reason=getattr(self, '_status_change_reason', '')
                     )
-            except Question.DoesNotExist:
+            except Inquiry.DoesNotExist:
                 pass
         
         super().save(*args, **kwargs)
 
 
-class QuestionStatus(models.Model):
-    """Model representing status changes for questions"""
+class InquiryStatus(models.Model):
+    """Model representing status changes for inquiries"""
     
-    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name='status_history')
-    status = models.CharField(max_length=20, choices=Question.STATUS_CHOICES)
-    committee = models.ForeignKey('local.Committee', on_delete=models.SET_NULL, null=True, blank=True, related_name='question_status_changes', help_text="Committee when status is 'refer_to_committee'")
-    changed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='question_status_changes')
+    inquiry = models.ForeignKey(Inquiry, on_delete=models.CASCADE, related_name='status_history')
+    status = models.CharField(max_length=20, choices=Inquiry.STATUS_CHOICES)
+    committee = models.ForeignKey('local.Committee', on_delete=models.SET_NULL, null=True, blank=True, related_name='inquiry_status_changes', help_text="Committee when status is 'refer_to_committee'")
+    changed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='inquiry_status_changes')
     changed_at = models.DateTimeField(auto_now_add=True)
     reason = models.TextField(blank=True, help_text="Reason for the status change")
     
     class Meta:
         ordering = ['-changed_at']
-        verbose_name = "Question Status"
-        verbose_name_plural = "Question Statuses"
+        verbose_name = "Inquiry Status"
+        verbose_name_plural = "Inquiry Statuses"
     
     def __str__(self):
-        return f"{self.question.title} - {self.get_status_display()} ({self.changed_at.strftime('%d.%m.%Y %H:%M')})"
+        return f"{self.inquiry.title} - {self.get_status_display()} ({self.changed_at.strftime('%d.%m.%Y %H:%M')})"
 
 
-class QuestionAttachment(models.Model):
-    """Model representing file attachments for questions"""
+class InquiryAttachment(models.Model):
+    """Model representing file attachments for inquiries"""
     
     ATTACHMENT_TYPE_CHOICES = [
         ('document', 'Document'),
@@ -650,21 +650,21 @@ class QuestionAttachment(models.Model):
         ('other', 'Other'),
     ]
     
-    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name='attachments')
-    file = models.FileField(upload_to='question_attachments/%Y/%m/%d/')
+    inquiry = models.ForeignKey(Inquiry, on_delete=models.CASCADE, related_name='attachments')
+    file = models.FileField(upload_to='inquiry_attachments/%Y/%m/%d/')
     filename = models.CharField(max_length=255)
     file_type = models.CharField(max_length=20, choices=ATTACHMENT_TYPE_CHOICES, default='document')
     description = models.TextField(blank=True)
-    uploaded_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='question_attachments')
+    uploaded_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='inquiry_attachments')
     uploaded_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:
         ordering = ['-uploaded_at']
-        verbose_name = "Question Attachment"
-        verbose_name_plural = "Question Attachments"
+        verbose_name = "Inquiry Attachment"
+        verbose_name_plural = "Inquiry Attachments"
     
     def __str__(self):
-        return f"{self.filename} - {self.question.title}"
+        return f"{self.filename} - {self.inquiry.title}"
 
 
 # Register models for audit logging
@@ -675,6 +675,6 @@ auditlog.register(MotionComment)
 auditlog.register(MotionAttachment)
 auditlog.register(MotionStatus)
 auditlog.register(MotionGroupDecision)
-auditlog.register(Question)
-auditlog.register(QuestionStatus)
-auditlog.register(QuestionAttachment)
+auditlog.register(Inquiry)
+auditlog.register(InquiryStatus)
+auditlog.register(InquiryAttachment)

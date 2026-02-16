@@ -846,12 +846,12 @@ class SessionDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         return council_id in _get_user_accessible_council_ids(self.request.user)
 
     def get_context_data(self, **kwargs):
-        """Add motions and questions data to context"""
+        """Add motions and inquiries data to context"""
         from django.db.models import Case, When, IntegerField
-        from motion.models import Question
+        from motion.models import Inquiry
 
         context = super().get_context_data(**kwargs)
-        # Show edit/add buttons only to users who have access (same checks as Update/Invitation/Cancel/Minutes/Attachment views and motion/question create)
+        # Show edit/add buttons only to users who have access (same checks as Update/Invitation/Cancel/Minutes/Attachment views and motion/inquiry create)
         user = self.request.user
         context['can_edit_session'] = user.is_superuser
         context['can_add_invitation'] = user.is_superuser
@@ -863,7 +863,7 @@ class SessionDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             user.is_superuser or user.has_role_permission('motion.create')
             or self.object.council_id in accessible_council_ids
         )
-        context['can_add_question'] = (
+        context['can_add_inquiry'] = (
             user.is_superuser or user.has_role_permission('motion.create')
             or self.object.council_id in accessible_council_ids
         )
@@ -882,13 +882,13 @@ class SessionDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         ).order_by('status_order', 'session_rank', '-submitted_date')
         context['total_motions'] = self.object.motions.count()
         
-        # Get all questions for this session
+        # Get all inquiries for this session
         # Order by session_rank (then by submitted_date as fallback)
-        context['questions'] = Question.objects.filter(
+        context['inquiries'] = Inquiry.objects.filter(
             session=self.object,
             is_active=True
         ).select_related('group', 'submitted_by').prefetch_related('parties', 'interventions').order_by('session_rank', '-submitted_date')
-        context['total_questions'] = context['questions'].count()
+        context['total_inquiries'] = context['inquiries'].count()
         
         # Get presence tracking data
         session = self.object
@@ -1137,8 +1137,8 @@ class SessionExportPDFView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         return council_id in _get_user_accessible_council_ids(user)
 
     def get_context_data(self, **kwargs):
-        """Add motions and questions data to context"""
-        from motion.models import MotionGroupDecision, Question
+        """Add motions and inquiries data to context"""
+        from motion.models import MotionGroupDecision, Inquiry
         
         context = super().get_context_data(**kwargs)
         # Get all motions for this session with prefetched parties, group_decisions, and interventions
@@ -1159,15 +1159,15 @@ class SessionExportPDFView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         ).order_by('session_rank', '-submitted_date')
         context['total_motions'] = self.object.motions.count()
         
-        # Get all questions for this session
-        context['questions'] = Question.objects.filter(
+        # Get all inquiries for this session
+        context['inquiries'] = Inquiry.objects.filter(
             session=self.object,
             is_active=True
         ).prefetch_related(
             'parties',
             'interventions'
         ).order_by('session_rank', '-submitted_date')
-        context['total_questions'] = context['questions'].count()
+        context['total_inquiries'] = context['inquiries'].count()
         return context
 
     def render_to_response(self, context, **response_kwargs):
@@ -1660,9 +1660,9 @@ def update_motion_order(request, session_pk):
 
 @login_required
 @require_http_methods(["POST"])
-def update_question_order(request, session_pk):
-    """AJAX view to update the order/rank of questions in a session"""
-    from motion.models import Question
+def update_inquiry_order(request, session_pk):
+    """AJAX view to update the order/rank of inquiries in a session"""
+    from motion.models import Inquiry
     
     # Check permissions - user must be superuser or have session view permission
     if not (request.user.is_superuser or request.user.has_role_permission('session.view')):
@@ -1671,19 +1671,19 @@ def update_question_order(request, session_pk):
     try:
         session = get_object_or_404(Session, pk=session_pk)
         data = json.loads(request.body)
-        question_orders = data.get('question_orders', [])
+        inquiry_orders = data.get('inquiry_orders', [])
         
-        # Update each question's session_rank
-        for order_data in question_orders:
-            question_id = order_data.get('question_id')
+        # Update each inquiry's session_rank
+        for order_data in inquiry_orders:
+            inquiry_id = order_data.get('inquiry_id')
             rank = order_data.get('rank')
             
-            if question_id and rank is not None:
+            if inquiry_id and rank is not None:
                 try:
-                    question = Question.objects.get(pk=question_id, session=session)
-                    question.session_rank = rank
-                    question.save(update_fields=['session_rank'])
-                except Question.DoesNotExist:
+                    inquiry = Inquiry.objects.get(pk=inquiry_id, session=session)
+                    inquiry.session_rank = rank
+                    inquiry.save(update_fields=['session_rank'])
+                except Inquiry.DoesNotExist:
                     continue
         
         return JsonResponse({'success': True})

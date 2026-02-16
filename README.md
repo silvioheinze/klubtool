@@ -260,12 +260,6 @@ gunzip -c pgsql_klubtool_db_20251119-030000.sql.gz | docker compose exec -T db p
 The application supports internationalization (i18n) with Django's translation framework.
 
 ```bash
-# Extract translatable strings and create/update .po files
-docker compose exec app python manage.py makemessages -l de
-
-# Compile .po files into .mo files (required for translations to work)
-docker compose exec app python manage.py compilemessages
-
 # Extract strings for all languages
 docker compose exec app python manage.py makemessages -a
 

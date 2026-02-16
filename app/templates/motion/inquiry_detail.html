@@ -3,7 +3,7 @@
 {% load static %}
 
 {% block title %}
-    {{ question.title }} - {% trans "Question Details" %}
+    {{ inquiry.title }} - {% trans "Inquiry Details" %}
 {% endblock title %}
 
 {% block content %}
@@ -12,27 +12,27 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h1 class="h3 mb-0">
-                <i class="bi bi-question-circle"></i> {{ question.title }}
+                <i class="bi bi-inquiry-circle"></i> {{ inquiry.title }}
             </h1>
         </div>
         <div>
-            {% if question.can_be_edited %}
-                <a href="{% url 'question:question-edit' question.pk %}" class="btn btn-primary">
+            {% if inquiry.can_be_edited %}
+                <a href="{% url 'inquiry:inquiry-edit' inquiry.pk %}" class="btn btn-primary">
                     <i class="bi bi-pencil"></i> {% trans "Edit" %}
                 </a>
             {% endif %}
-            {% if user.is_superuser or question.submitted_by == user %}
-                <a href="{% url 'question:question-delete' question.pk %}" class="btn btn-outline-danger">
+            {% if user.is_superuser or inquiry.submitted_by == user %}
+                <a href="{% url 'inquiry:inquiry-delete' inquiry.pk %}" class="btn btn-outline-danger">
                     <i class="bi bi-trash"></i> {% trans "Delete" %}
                 </a>
             {% endif %}
-            {% if question.session %}
-                <a href="{% url 'local:session-detail' question.session.pk %}" class="btn btn-outline-secondary">
+            {% if inquiry.session %}
+                <a href="{% url 'local:session-detail' inquiry.session.pk %}" class="btn btn-outline-secondary">
                     <i class="bi bi-arrow-left"></i> {% trans "Back to Session" %}
                 </a>
             {% else %}
-                <a href="{% url 'question:question-list' %}" class="btn btn-outline-secondary">
-                    <i class="bi bi-arrow-left"></i> {% trans "Back to Questions" %}
+                <a href="{% url 'inquiry:inquiry-list' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> {% trans "Back to Inquirys" %}
                 </a>
             {% endif %}
         </div>
@@ -40,22 +40,22 @@
 
     <div class="row">
         <div class="col-lg-8">
-            <!-- Question Information -->
+            <!-- Inquiry Information -->
             <div class="card">
                 <div class="card-header">
-                    <h5 class="mb-0">{% trans "Question Information" %}</h5>
+                    <h5 class="mb-0">{% trans "Inquiry Information" %}</h5>
                 </div>
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-6">
                             <dl class="row">
                                 <dt class="col-sm-4">{% trans "Title" %}</dt>
-                                <dd class="col-sm-8"><strong>{{ question.title }}</strong></dd>
+                                <dd class="col-sm-8"><strong>{{ inquiry.title }}</strong></dd>
                                 
-                                {% if question.tags.exists %}
+                                {% if inquiry.tags.exists %}
                                     <dt class="col-sm-4">{% trans "Tags" %}</dt>
                                     <dd class="col-sm-8">
-                                        {% for tag in question.tags.all %}
+                                        {% for tag in inquiry.tags.all %}
                                             <span class="badge" style="background-color: {{ tag.color }};">{{ tag.name }}</span>
                                         {% endfor %}
                                     </dd>
@@ -66,9 +66,9 @@
                             <dl class="row">
                                 <dt class="col-sm-4">{% trans "Group" %}</dt>
                                 <dd class="col-sm-8">
-                                    {% if question.group %}
-                                        <a href="{% url 'group:group-detail' question.group.pk %}">
-                                            {{ question.group.name }}
+                                    {% if inquiry.group %}
+                                        <a href="{% url 'group:group-detail' inquiry.group.pk %}">
+                                            {{ inquiry.group.name }}
                                         </a>
                                     {% else %}
                                         <span class="text-muted">{% trans "Not assigned" %}</span>
@@ -77,9 +77,9 @@
                                 
                                 <dt class="col-sm-4">{% trans "Session" %}</dt>
                                 <dd class="col-sm-8">
-                                    {% if question.session %}
-                                        <a href="{% url 'local:session-detail' question.session.pk %}">
-                                            {{ question.session.title }}
+                                    {% if inquiry.session %}
+                                        <a href="{% url 'local:session-detail' inquiry.session.pk %}">
+                                            {{ inquiry.session.title }}
                                         </a>
                                     {% else %}
                                         <span class="text-muted">{% trans "Not assigned" %}</span>
@@ -88,21 +88,21 @@
                                 
                                 <dt class="col-sm-4">{% trans "Status" %}</dt>
                                 <dd class="col-sm-8">
-                                    {% if question.status == 'draft' %}
+                                    {% if inquiry.status == 'draft' %}
                                         <span class="badge bg-secondary">{% trans "Draft" %}</span>
-                                    {% elif question.status == 'submitted' %}
+                                    {% elif inquiry.status == 'submitted' %}
                                         <span class="badge bg-primary">{% trans "Submitted" %}</span>
-                                    {% elif question.status == 'refer_to_committee' %}
+                                    {% elif inquiry.status == 'refer_to_committee' %}
                                         <span class="badge bg-info">{% trans "Refer to Committee" %}</span>
-                                    {% elif question.status == 'approved' %}
+                                    {% elif inquiry.status == 'approved' %}
                                         <span class="badge bg-success">{% trans "Approved" %}</span>
-                                    {% elif question.status == 'rejected' %}
+                                    {% elif inquiry.status == 'rejected' %}
                                         <span class="badge bg-danger">{% trans "Rejected" %}</span>
-                                    {% elif question.status == 'answered' %}
+                                    {% elif inquiry.status == 'answered' %}
                                         <span class="badge bg-success">{% trans "Answered" %}</span>
-                                    {% elif question.status == 'withdrawn' %}
+                                    {% elif inquiry.status == 'withdrawn' %}
                                         <span class="badge bg-warning">{% trans "Withdrawn" %}</span>
-                                    {% elif question.status == 'not_admitted' %}
+                                    {% elif inquiry.status == 'not_admitted' %}
                                         <span class="badge bg-dark">{% trans "Nicht zugelassen" %}</span>
                                     {% endif %}
                                 </dd>
@@ -110,23 +110,23 @@
                         </div>
                     </div>
                     
-                    {% if question.text %}
+                    {% if inquiry.text %}
                         <hr>
-                        <h6 class="fw-bold">{% trans "Question Text" %}</h6>
-                        <p>{{ question.text|linebreaks }}</p>
+                        <h6 class="fw-bold">{% trans "Inquiry Text" %}</h6>
+                        <p>{{ inquiry.text|linebreaks }}</p>
                     {% endif %}
                     
-                    {% if question.answer %}
+                    {% if inquiry.answer %}
                         <hr>
                         <h6 class="fw-bold">{% trans "Answer" %}</h6>
-                        <p>{{ question.answer|linebreaks }}</p>
+                        <p>{{ inquiry.answer|linebreaks }}</p>
                     {% endif %}
                     
-                    {% if question.parties.exists %}
+                    {% if inquiry.parties.exists %}
                         <hr>
                         <h6><i class="bi bi-people"></i> {% trans "Supporting Parties" %}</h6>
                         <div class="row">
-                            {% for party in question.parties.all %}
+                            {% for party in inquiry.parties.all %}
                                 <div class="col-md-6 col-lg-4 mb-2">
                                     <span class="badge bg-primary me-2" style="background-color: {{ party.color }} !important;">
                                         {{ party.name }}
@@ -136,11 +136,11 @@
                         </div>
                     {% endif %}
                     
-                    {% if question.interventions.exists %}
+                    {% if inquiry.interventions.exists %}
                         <hr>
                         <h6><i class="bi bi-megaphone"></i> {% trans "Wortmeldung" %}</h6>
                         <div class="row">
-                            {% for user in question.interventions.all %}
+                            {% for user in inquiry.interventions.all %}
                                 <div class="col-md-6 col-lg-4 mb-2">
                                     <span class="badge bg-info me-2">
                                         {{ user.get_full_name|default:user.username }}
@@ -156,7 +156,7 @@
             <div class="card mt-3">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">{% trans "Files" %}</h5>
-                    <a href="{% url 'question:question-attach' question.pk %}" class="btn btn-sm btn-primary">
+                    <a href="{% url 'inquiry:inquiry-attach' inquiry.pk %}" class="btn btn-sm btn-primary">
                         <i class="bi bi-upload"></i> {% trans "Upload File" %}
                     </a>
                 </div>
@@ -212,18 +212,18 @@
                     <dl class="row mb-0">
                         <dt class="col-sm-5">{% trans "Submitted by" %}</dt>
                         <dd class="col-sm-7">
-                            {% if question.submitted_by %}
-                                {{ question.submitted_by.get_full_name|default:question.submitted_by.username }}
+                            {% if inquiry.submitted_by %}
+                                {{ inquiry.submitted_by.get_full_name|default:inquiry.submitted_by.username }}
                             {% else %}
                                 <span class="text-muted">{% trans "Unknown" %}</span>
                             {% endif %}
                         </dd>
                         
                         <dt class="col-sm-5">{% trans "Submitted date" %}</dt>
-                        <dd class="col-sm-7">{{ question.submitted_date|date:"d.m.Y H:i" }}</dd>
+                        <dd class="col-sm-7">{{ inquiry.submitted_date|date:"d.m.Y H:i" }}</dd>
                         
                         <dt class="col-sm-5">{% trans "Last modified" %}</dt>
-                        <dd class="col-sm-7">{{ question.last_modified|date:"d.m.Y H:i" }}</dd>
+                        <dd class="col-sm-7">{{ inquiry.last_modified|date:"d.m.Y H:i" }}</dd>
                     </dl>
                 </div>
             </div>
@@ -233,7 +233,7 @@
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">{% trans "Status History" %}</h5>
                     {% if can_change_status %}
-                        <a href="{% url 'question:question-status-change' question.pk %}" class="btn btn-sm btn-primary">
+                        <a href="{% url 'inquiry:inquiry-status-change' inquiry.pk %}" class="btn btn-sm btn-primary">
                             <i class="bi bi-plus-circle"></i> {% trans "Change Status" %}
                         </a>
                     {% endif %}
@@ -285,7 +285,7 @@
                                                 <div class="d-flex align-items-center gap-2">
                                                     <small class="text-muted">{{ status_entry.changed_at|date:"d.m.Y H:i" }}</small>
                                                     {% if user.is_superuser %}
-                                                        <a href="{% url 'question:question-status-delete' question.pk status_entry.pk %}" 
+                                                        <a href="{% url 'inquiry:inquiry-status-delete' inquiry.pk status_entry.pk %}" 
                                                            class="btn btn-sm btn-outline-danger" 
                                                            title="{% trans 'Delete status entry' %}">
                                                             <i class="bi bi-x"></i>

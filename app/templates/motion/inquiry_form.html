@@ -4,9 +4,9 @@
 
 {% block title %}
     {% if object %}
-        {% trans "Edit Question" %} - {{ object.title }}
+        {% trans "Edit Inquiry" %} - {{ object.title }}
     {% else %}
-        {% trans "Create Question" %}
+        {% trans "Create Inquiry" %}
     {% endif %}
 {% endblock title %}
 
@@ -19,9 +19,9 @@
                     <h5 class="mb-0">
                         <i class="bi bi-question-circle"></i>
                         {% if object %}
-                            {% trans "Edit Question" %}
+                            {% trans "Edit Inquiry" %}
                         {% else %}
-                            {% trans "Create Question" %}
+                            {% trans "Create Inquiry" %}
                         {% endif %}
                     </h5>
                 </div>
@@ -45,7 +45,7 @@
 
                         <div class="mb-3">
                             <label for="{{ form.text.id_for_label }}" class="form-label">
-                                {% trans "Question Text" %} <span class="text-danger">*</span>
+                                {% trans "Inquiry Text" %} <span class="text-danger">*</span>
                             </label>
                             {{ form.text }}
                             {% if form.text.errors %}
@@ -167,7 +167,7 @@
                         <div class="d-flex justify-content-between mt-4">
                             {% if object %}
                                 {# When editing, link to question detail #}
-                                <a href="{% url 'question:question-detail' object.pk %}" class="btn btn-secondary">
+                                <a href="{% url 'inquiry:question-detail' object.pk %}" class="btn btn-secondary">
                                     <i class="bi bi-x-circle"></i> {% trans "Cancel" %}
                                 </a>
                             {% else %}
@@ -177,7 +177,7 @@
                                         <i class="bi bi-x-circle"></i> {% trans "Cancel" %}
                                     </a>
                                 {% else %}
-                            <a href="{% url 'question:question-list' %}" class="btn btn-secondary">
+                            <a href="{% url 'inquiry:question-list' %}" class="btn btn-secondary">
                                 <i class="bi bi-x-circle"></i> {% trans "Cancel" %}
                             </a>
                                 {% endif %}
@@ -185,9 +185,9 @@
                             <button type="submit" class="btn btn-primary">
                                 <i class="bi bi-check-circle"></i>
                                 {% if object %}
-                                    {% trans "Update Question" %}
+                                    {% trans "Update Inquiry" %}
                                 {% else %}
-                                    {% trans "Create Question" %}
+                                    {% trans "Create Inquiry" %}
                                 {% endif %}
                             </button>
                         </div>
@@ -204,7 +204,7 @@
                 <div class="card-body">
                     <ul class="list-unstyled">
                         <li><strong>{% trans "Title" %}:</strong> {% trans "Enter a clear, descriptive title for the question." %}</li>
-                        <li><strong>{% trans "Question Text" %}:</strong> {% trans "Provide the detailed text and content of the question." %}</li>
+                        <li><strong>{% trans "Inquiry Text" %}:</strong> {% trans "Provide the detailed text and content of the question." %}</li>
                         <li><strong>{% trans "Answer" %}:</strong> {% trans "Provide the answer to the question (optional)." %}</li>
                         <li><strong>{% trans "Session" %}:</strong> {% trans "Select the council session where this question will be presented." %}</li>
                         <li><strong>{% trans "Supporting Parties" %}:</strong> {% trans "Select parties that support this question (optional)." %}</li>
