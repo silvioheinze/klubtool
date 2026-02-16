@@ -1548,15 +1548,25 @@ class InquiryListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
     paginate_by = 20
 
     def test_func(self):
-        """Check if user has permission to view Inquiry objects"""
-        return self.request.user.is_superuser or self.request.user.has_role_permission('motion.view')
+        """Allow superuser, motion.view permission, or regular group members (see inquiries of their groups)."""
+        user = self.request.user
+        if user.is_superuser or user.has_role_permission('motion.view'):
+            return True
+        group_ids = _get_user_accessible_group_ids(user)
+        return group_ids is not None and len(group_ids) > 0
 
     def get_queryset(self):
-        """Filter queryset based on search parameters"""
-        queryset = Inquiry.objects.filter(is_active=True).select_related(
+        """Filter queryset based on search parameters and access: group members see only their groups' inquiries."""
+        user = self.request.user
+        base = Inquiry.objects.filter(is_active=True).select_related(
             'session', 'group', 'submitted_by'
         ).prefetch_related('parties', 'tags').order_by('-submitted_date')
-        
+        if user.is_superuser or user.has_role_permission('motion.view'):
+            queryset = base
+        else:
+            group_ids = _get_user_accessible_group_ids(user)
+            queryset = base.filter(group__pk__in=group_ids) if group_ids else base.none()
+
         # Get filter form
         filter_form = InquiryFilterForm(self.request.GET)
         
@@ -1569,34 +1579,34 @@ class InquiryListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
                     Q(text__icontains=search_query) |
                     Q(group__name__icontains=search_query)
                 )
-            
+
             # Filter by status
             status = filter_form.cleaned_data.get('status')
             if status:
                 queryset = queryset.filter(status=status)
-            
+
             # Filter by session
             session = filter_form.cleaned_data.get('session')
             if session:
                 queryset = queryset.filter(session=session)
-            
+
             # Filter by party
             party = filter_form.cleaned_data.get('party')
             if party:
                 queryset = queryset.filter(parties=party)
-            
+
             # Filter by tags
             tags = filter_form.cleaned_data.get('tags')
             if tags:
                 queryset = queryset.filter(tags__in=tags).distinct()
-        
+
         return queryset
 
     def get_context_data(self, **kwargs):
         """Add filter form to context"""
         context = super().get_context_data(**kwargs)
         context['filter_form'] = InquiryFilterForm(self.request.GET)
-        
+
         # Get tag counts for word cloud (from all inquiries, not just filtered)
         from .models import Tag
         from django.db.models import Count
@@ -1617,7 +1627,10 @@ class InquiryListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
             except (ValueError, TypeError):
                 pass
         context['selected_tag_ids'] = selected_tag_ids
-        
+
+        # Add user to context for permission checks in template
+        context['user'] = self.request.user
+
         return context
 
 
@@ -1628,8 +1641,22 @@ class InquiryDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
     template_name = 'motion/inquiry_detail.html'
 
     def test_func(self):
-        """Check if user has permission to view Inquiry objects"""
-        return self.request.user.is_superuser or self.request.user.has_role_permission('motion.view')
+        """Allow superuser, motion.view permission, or regular group members for inquiries of their group."""
+        user = self.request.user
+        if user.is_superuser or user.has_role_permission('motion.view'):
+            return True
+        inquiry_pk = self.kwargs.get('pk')
+        if inquiry_pk is None:
+            return False
+        try:
+            inquiry_pk = int(inquiry_pk)
+        except (TypeError, ValueError):
+            return False
+        group_id = Inquiry.objects.filter(pk=inquiry_pk).values_list('group_id', flat=True).first()
+        if group_id is None:
+            return False
+        group_ids = _get_user_accessible_group_ids(user)
+        return group_ids is not None and group_id in group_ids
 
     def get_queryset(self):
         return Inquiry.objects.prefetch_related('interventions', 'parties', 'group', 'attachments')
@@ -1719,8 +1746,22 @@ class InquiryUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     success_url = reverse_lazy('inquiry:inquiry-list')
 
     def test_func(self):
-        """Check if user has permission to edit Inquiry objects"""
-        return self.request.user.is_superuser or self.request.user.has_role_permission('motion.edit')
+        """Allow superuser, motion.edit permission, or regular group members for inquiries of their group."""
+        user = self.request.user
+        if user.is_superuser or user.has_role_permission('motion.edit'):
+            return True
+        inquiry_pk = self.kwargs.get('pk')
+        if inquiry_pk is None:
+            return False
+        try:
+            inquiry_pk = int(inquiry_pk)
+        except (TypeError, ValueError):
+            return False
+        group_id = Inquiry.objects.filter(pk=inquiry_pk).values_list('group_id', flat=True).first()
+        if group_id is None:
+            return False
+        group_ids = _get_user_accessible_group_ids(user)
+        return group_ids is not None and group_id in group_ids
 
     def get_form_kwargs(self):
         """Pass user to form for automatic group assignment"""
@@ -1788,11 +1829,20 @@ class InquiryDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
 
 
 @login_required
-@user_passes_test(is_superuser_or_has_permission('motion.attach'))
 def inquiry_attachment_view(request, pk):
-    """View for uploading attachments to an inquiry"""
+    """View for uploading attachments to an inquiry. Access: superuser, motion.attach, or regular group members of the inquiry's group."""
     inquiry = get_object_or_404(Inquiry, pk=pk)
-    
+    user = request.user
+    group_ids = _get_user_accessible_group_ids(user)
+    can_attach = (
+        user.is_superuser
+        or user.has_role_permission('motion.attach')
+        or (inquiry.group_id and group_ids is not None and inquiry.group_id in group_ids)
+    )
+    if not can_attach:
+        from django.core.exceptions import PermissionDenied
+        raise PermissionDenied
+
     if request.method == 'POST':
         form = InquiryAttachmentForm(request.POST, request.FILES, inquiry=inquiry, uploaded_by=request.user)
         if form.is_valid():

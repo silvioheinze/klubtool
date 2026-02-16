@@ -346,6 +346,32 @@ class MotionAccessTests(AccessControlTestCase):
         response = self.client.get(reverse('motion:motion-delete', kwargs={'pk': self.motion.pk}))
         self.assertEqual(response.status_code, 403)
 
+    def test_motion_list_view_group_member_access(self):
+        """Test that group member can view motion list (their group's motions)"""
+        self.client.login(username='member', password='memberpass123')
+        response = self.client.get(reverse('motion:motion-list'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.motion.title)
+
+    def test_motion_detail_view_group_member_access(self):
+        """Test that group member can view motion detail of their group"""
+        self.client.login(username='member', password='memberpass123')
+        response = self.client.get(reverse('motion:motion-detail', kwargs={'pk': self.motion.pk}))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.motion.title)
+
+    def test_motion_edit_view_group_member_access(self):
+        """Test that group member can edit motions of their group"""
+        self.client.login(username='member', password='memberpass123')
+        response = self.client.get(reverse('motion:motion-edit', kwargs={'pk': self.motion.pk}))
+        self.assertEqual(response.status_code, 200)
+
+    def test_motion_attach_view_group_member_access(self):
+        """Test that group member can attach files to motions of their group"""
+        self.client.login(username='member', password='memberpass123')
+        response = self.client.get(reverse('motion:motion-attach', kwargs={'pk': self.motion.pk}))
+        self.assertEqual(response.status_code, 200)
+
 
 class InquiryAccessTests(AccessControlTestCase):
     """Test access control for inquiry views"""
@@ -439,6 +465,40 @@ class InquiryAccessTests(AccessControlTestCase):
         self.client.login(username='other', password='otherpass123')
         response = self.client.get(reverse('inquiry:inquiry-delete', kwargs={'pk': self.inquiry.pk}))
         self.assertEqual(response.status_code, 403)
+
+    def test_inquiry_list_view_group_member_access(self):
+        """Test that group member can view inquiry list (their group's inquiries)"""
+        self.client.login(username='member', password='memberpass123')
+        response = self.client.get(reverse('inquiry:inquiry-list'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.inquiry.title)
+
+    def test_inquiry_detail_view_group_member_access(self):
+        """Test that group member can view inquiry detail of their group"""
+        self.client.login(username='member', password='memberpass123')
+        response = self.client.get(reverse('inquiry:inquiry-detail', kwargs={'pk': self.inquiry.pk}))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.inquiry.title)
+
+    def test_inquiry_edit_view_group_member_access(self):
+        """Test that group member can edit inquiries of their group"""
+        self.client.login(username='member', password='memberpass123')
+        response = self.client.get(reverse('inquiry:inquiry-edit', kwargs={'pk': self.inquiry.pk}))
+        self.assertEqual(response.status_code, 200)
+
+    def test_inquiry_attach_view_group_member_access(self):
+        """Test that group member can attach files to inquiries of their group"""
+        self.client.login(username='member', password='memberpass123')
+        response = self.client.get(reverse('inquiry:inquiry-attach', kwargs={'pk': self.inquiry.pk}))
+        self.assertEqual(response.status_code, 200)
+
+    def test_inquiry_create_view_group_member_access(self):
+        """Test that group member can create inquiries for session of their council"""
+        self.client.login(username='member', password='memberpass123')
+        response = self.client.get(
+            reverse('inquiry:inquiry-create') + f'?session={self.session.pk}'
+        )
+        self.assertEqual(response.status_code, 200)
 
 
 class GroupAccessTests(AccessControlTestCase):
@@ -806,6 +866,12 @@ class AnonymousUserAccessTests(AccessControlTestCase):
     def test_motion_list_view_anonymous_denied(self):
         """Test that anonymous user cannot access motion list"""
         response = self.client.get(reverse('motion:motion-list'))
+        # Should redirect to login
+        self.assertEqual(response.status_code, 302)
+
+    def test_inquiry_list_view_anonymous_denied(self):
+        """Test that anonymous user cannot access inquiry list"""
+        response = self.client.get(reverse('inquiry:inquiry-list'))
         # Should redirect to login
         self.assertEqual(response.status_code, 302)
     
