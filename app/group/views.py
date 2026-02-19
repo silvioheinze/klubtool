@@ -14,8 +14,8 @@ from django.http import HttpResponse, JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.utils import timezone
 import json
-from .models import Group, GroupMember, GroupMeeting, AgendaItem, MinuteItem, GroupMeetingParticipation
-from .forms import GroupForm, GroupFilterForm, GroupMemberForm, GroupMeetingForm, AgendaItemForm, MinuteItemForm, GroupInviteForm
+from .models import Group, GroupMember, GroupMeeting, GroupEvent, GroupEventParticipation, AgendaItem, MinuteItem, GroupMeetingParticipation
+from .forms import GroupForm, GroupFilterForm, GroupMemberForm, GroupMeetingForm, GroupEventForm, AgendaItemForm, MinuteItemForm, GroupInviteForm
 
 User = get_user_model()
 
@@ -50,6 +50,20 @@ def _get_group_calendar_events_for_month(group, year, month):
             'url': m.get_absolute_url(),
             'type': 'group_meeting',
             'badge_label': badge_label,
+        })
+    # Party events (group events)
+    group_events = group.events.filter(
+        is_active=True,
+        scheduled_date__date__gte=start,
+        scheduled_date__date__lte=end,
+    ).order_by('scheduled_date')
+    for e in group_events:
+        events.append({
+            'date': e.scheduled_date,
+            'title': e.title or '',
+            'url': e.get_absolute_url(),
+            'type': 'group_event',
+            'badge_label': _('Party event'),
         })
     local = getattr(group.party, 'local', None)
     if local:
@@ -160,6 +174,7 @@ class GroupDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             or group.can_user_manage_group(user)
         )
         context['can_add_meeting'] = user.is_superuser or group.can_user_manage_group(user)
+        context['can_add_event'] = user.is_superuser or group.can_user_manage_group(user)
         is_member = GroupMember.objects.filter(user=user, group=group, is_active=True).exists()
         context['can_export_calendar_pdf'] = (
             user.is_superuser
@@ -249,6 +264,11 @@ class GroupDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['group_meetings_export_pdf_url'] = (
             reverse('group:group-meetings-export-pdf', kwargs={'pk': self.object.pk})
             + f'?calendar_year={cal_year}'
+        )
+        # Upcoming party events (preview for group detail)
+        context['upcoming_events'] = (
+            self.object.events.filter(is_active=True, scheduled_date__gte=now)
+            .order_by('scheduled_date')[:5]
         )
         return context
 
@@ -1043,6 +1063,287 @@ class GroupMeetingDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView
         meeting_obj = self.get_object()
         messages.success(request, f"Meeting '{meeting_obj.title}' deleted successfully.")
         return super().delete(request, *args, **kwargs)
+
+
+# Group Event (Party Event) Views
+class GroupEventListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
+    """List party events for a group"""
+    model = GroupEvent
+    context_object_name = 'events'
+    template_name = 'group/event_list.html'
+    paginate_by = 20
+
+    def test_func(self):
+        group_pk = self.kwargs.get('group_pk')
+        group = get_object_or_404(Group, pk=group_pk)
+        if self.request.user.is_superuser or group.can_user_manage_group(self.request.user):
+            return True
+        return GroupMember.objects.filter(user=self.request.user, group=group, is_active=True).exists()
+
+    def get_queryset(self):
+        group_pk = self.kwargs.get('group_pk')
+        return GroupEvent.objects.filter(group_id=group_pk, is_active=True).select_related('group', 'created_by').order_by('-scheduled_date')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['group'] = get_object_or_404(Group, pk=self.kwargs['group_pk'])
+        context['can_add_event'] = context['group'].can_user_manage_group(self.request.user) or self.request.user.is_superuser
+        now = timezone.now()
+        req_month = self.request.GET.get('calendar_month')
+        req_year = self.request.GET.get('calendar_year')
+        try:
+            cal_month = int(req_month) if req_month else now.month
+            cal_year = int(req_year) if req_year else now.year
+            if cal_month < 1 or cal_month > 12:
+                cal_month = now.month
+            if cal_year < 2000 or cal_year > 2100:
+                cal_year = now.year
+        except (TypeError, ValueError):
+            cal_month, cal_year = now.month, now.year
+        context['calendar_weeks'] = _build_event_list_calendar(
+            context['group'], cal_year, cal_month
+        )
+        context['calendar_month'] = cal_month
+        context['calendar_year'] = cal_year
+        return context
+
+
+def _build_event_list_calendar(group, year, month):
+    """Build calendar weeks for event list page (reuse group calendar logic)."""
+    from datetime import date, timedelta
+    import calendar as cal_mod
+    start = date(year, month, 1)
+    if month == 12:
+        end = date(year, 12, 31)
+    else:
+        end = date(year, month + 1, 1) - timedelta(days=1)
+    events = _get_group_calendar_events_for_month(group, year, month)
+    events_by_day = {}
+    for e in events:
+        d = e['date'].date() if hasattr(e['date'], 'date') else e['date']
+        events_by_day.setdefault(d, []).append(e)
+    first_weekday = cal_mod.weekday(year, month, 1)
+    start_offset = (first_weekday - 0) % 7
+    days_in_month = cal_mod.monthrange(year, month)[1]
+    weeks = []
+    day_num = 1
+    week = []
+    for _ in range(start_offset):
+        week.append(None)
+    while day_num <= days_in_month:
+        d = date(year, month, day_num)
+        cell_events = events_by_day.get(d, [])
+        week.append({'day': day_num, 'events': cell_events})
+        if len(week) == 7:
+            weeks.append(week)
+            week = []
+        day_num += 1
+    if week:
+        while len(week) < 7:
+            week.append(None)
+        weeks.append(week)
+    return weeks
+
+
+class GroupEventCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
+    """Create a party event"""
+    model = GroupEvent
+    form_class = GroupEventForm
+    template_name = 'group/event_form.html'
+
+    def test_func(self):
+        group_pk = self.kwargs.get('group_pk')
+        group = get_object_or_404(Group, pk=group_pk)
+        return self.request.user.is_superuser or group.can_user_manage_group(self.request.user)
+
+    def get_initial(self):
+        initial = super().get_initial()
+        initial['group'] = self.kwargs.get('group_pk')
+        return initial
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['group'] = get_object_or_404(Group, pk=self.kwargs['group_pk'])
+        return context
+
+    def form_valid(self, form):
+        form.instance.created_by = self.request.user
+        if not form.instance.group_id:
+            form.instance.group = get_object_or_404(Group, pk=self.kwargs['group_pk'])
+        messages.success(self.request, _("Event '%(title)s' created successfully.") % {'title': form.instance.title})
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse('group:event-list', kwargs={'group_pk': self.object.group.pk})
+
+
+class GroupEventDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
+    """Detail view for a party event"""
+    model = GroupEvent
+    context_object_name = 'event'
+    template_name = 'group/event_detail.html'
+
+    def test_func(self):
+        event = self.get_object()
+        if self.request.user.is_superuser:
+            return True
+        return GroupMember.objects.filter(
+            user=self.request.user, group=event.group, is_active=True
+        ).exists()
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        event = self.object
+        context['can_edit_event'] = (
+            self.request.user.is_superuser or event.group.can_user_manage_group(self.request.user)
+        )
+        attending = GroupEventParticipation.objects.filter(
+            event=event, will_attend=True
+        ).select_related('member__user').order_by('member__user__last_name', 'member__user__first_name')
+        context['attending_members'] = attending
+        context['attending_count'] = attending.count()
+        member = GroupMember.objects.filter(
+            user=self.request.user, group=event.group, is_active=True
+        ).first()
+        context['user_member'] = member
+        if member:
+            part = GroupEventParticipation.objects.filter(event=event, member=member).first()
+            context['user_will_attend'] = part.will_attend if part else False
+        else:
+            context['user_will_attend'] = False
+        return context
+
+
+class GroupEventUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
+    """Update a party event"""
+    model = GroupEvent
+    form_class = GroupEventForm
+    template_name = 'group/event_form.html'
+    context_object_name = 'event'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['group'] = self.object.group
+        return context
+
+    def test_func(self):
+        event = self.get_object()
+        return (
+            self.request.user.is_superuser
+            or event.group.can_user_manage_group(self.request.user)
+            or event.created_by_id == self.request.user.pk
+        )
+
+    def get_success_url(self):
+        return reverse('group:event-detail', kwargs={'pk': self.object.pk})
+
+    def form_valid(self, form):
+        messages.success(self.request, _("Event '%(title)s' updated successfully.") % {'title': form.instance.title})
+        return super().form_valid(form)
+
+
+class GroupEventDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
+    """Delete a party event"""
+    model = GroupEvent
+    template_name = 'group/event_confirm_delete.html'
+    context_object_name = 'event'
+
+    def test_func(self):
+        event = self.get_object()
+        return (
+            self.request.user.is_superuser
+            or event.group.can_user_manage_group(self.request.user)
+            or event.created_by_id == self.request.user.pk
+        )
+
+    def get_success_url(self):
+        return reverse('group:event-list', kwargs={'group_pk': self.object.group.pk})
+
+    def delete(self, request, *args, **kwargs):
+        event = self.get_object()
+        messages.success(request, _("Event '%(title)s' deleted successfully.") % {'title': event.title})
+        return super().delete(request, *args, **kwargs)
+
+
+@login_required
+@require_http_methods(["POST"])
+def event_attend(request, pk):
+    """RSVP: set will_attend=True for the current user. Redirect back to event detail."""
+    event = get_object_or_404(GroupEvent, pk=pk)
+    member = GroupMember.objects.filter(
+        user=request.user, group=event.group, is_active=True
+    ).first()
+    if not member:
+        messages.error(request, _("You must be a group member to RSVP."))
+        return redirect('group:event-detail', pk=pk)
+    will_attend = request.POST.get('will_attend') == '1'
+    part, created = GroupEventParticipation.objects.get_or_create(
+        event=event, member=member, defaults={'will_attend': will_attend}
+    )
+    part.will_attend = will_attend
+    part.save(update_fields=['will_attend', 'updated_at'])
+    if will_attend:
+        messages.success(request, _("You are marked as attending this event."))
+    else:
+        messages.info(request, _("You are marked as not attending."))
+    return redirect('group:event-detail', pk=pk)
+
+
+@login_required
+def event_export_ics(request, pk):
+    """Export a single group event as ICS."""
+    event = get_object_or_404(GroupEvent, pk=pk)
+    is_member = GroupMember.objects.filter(
+        user=request.user, group=event.group, is_active=True
+    ).exists()
+    if not (
+        request.user.is_superuser
+        or event.group.can_user_manage_group(request.user)
+        or is_member
+    ):
+        messages.error(request, _("You don't have permission to access this page."))
+        return redirect('group:event-detail', pk=pk)
+    dtstart = event.scheduled_date
+    if not timezone.is_aware(dtstart):
+        dtstart = timezone.make_aware(dtstart)
+    dtstart_utc = dtstart.astimezone(timezone.UTC)
+    dtend_utc = dtstart_utc + timezone.timedelta(hours=1)
+    dtstart_str = dtstart_utc.strftime('%Y%m%dT%H%M%SZ')
+    dtend_str = dtend_utc.strftime('%Y%m%dT%H%M%SZ')
+    uid = f"group-event-{event.pk}@{request.get_host()}"
+
+    def escape_ics_text(text):
+        if not text:
+            return ""
+        text = str(text).replace('\\', '\\\\').replace(',', '\\,').replace(';', '\\;').replace('\n', '\\n')
+        return text
+
+    ics_content = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "PRODID:-//Klubtool//Group Event//EN",
+        "CALSCALE:GREGORIAN",
+        "METHOD:PUBLISH",
+        "BEGIN:VEVENT",
+        f"UID:{uid}",
+        f"DTSTART:{dtstart_str}",
+        f"DTEND:{dtend_str}",
+        f"SUMMARY:{escape_ics_text(event.title)}",
+    ]
+    if event.description:
+        ics_content.append(f"DESCRIPTION:{escape_ics_text(event.description)}")
+    if event.location:
+        ics_content.append(f"LOCATION:{escape_ics_text(event.location)}")
+    created = event.created_at
+    if not timezone.is_aware(created):
+        created = timezone.make_aware(created)
+    ics_content.append(f"DTSTAMP:{created.astimezone(timezone.UTC).strftime('%Y%m%dT%H%M%SZ')}")
+    ics_content.append(f"URL:{request.build_absolute_uri(reverse('group:event-detail', args=[event.pk]))}")
+    ics_content.extend(["STATUS:CONFIRMED", "SEQUENCE:0", "END:VEVENT", "END:VCALENDAR"])
+    response = HttpResponse("\r\n".join(ics_content), content_type='text/calendar; charset=utf-8')
+    safe_title = "".join(c if c.isalnum() or c in ' -_' else '_' for c in event.title)[:50]
+    response['Content-Disposition'] = f'attachment; filename="event_{event.pk}_{safe_title.strip()}.ics"'
+    return response
 
 
 class GroupMeetingAgendaExportPDFView(LoginRequiredMixin, UserPassesTestMixin, DetailView):

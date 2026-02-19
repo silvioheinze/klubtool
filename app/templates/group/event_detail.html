@@ -1,0 +1,116 @@
+{% extends "_base.html" %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}{{ event.title }} - {% trans "Event Details" %}{% endblock title %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="mb-0"><i class="bi bi-calendar-event"></i> {{ event.title }}</h1>
+                    <p class="text-muted mb-0"><a href="{% url 'group:group-detail' event.group.pk %}">{{ event.group.name }}</a></p>
+                </div>
+                <div class="d-flex gap-2">
+                    {% if can_edit_event %}
+                    <a href="{% url 'group:event-edit' event.pk %}" class="btn btn-primary">
+                        <i class="bi bi-pencil"></i> {% trans "Edit" %}
+                    </a>
+                    <a href="{% url 'group:event-delete' event.pk %}" class="btn btn-outline-danger" onclick="return confirm('{% trans "Are you sure you want to delete this event?" %}');">
+                        <i class="bi bi-trash"></i> {% trans "Delete" %}
+                    </a>
+                    {% endif %}
+                    <a href="{% url 'group:event-list' event.group.pk %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> {% trans "Back to Events" %}
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">{% trans "Event Information" %}</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-3">{% trans "Date & Time" %}</dt>
+                        <dd class="col-sm-9">
+                            {{ event.scheduled_date|date:"M d, Y H:i" }}
+                            {% if event.is_upcoming %}
+                                <br><small class="text-success">{% trans "Upcoming" %}</small>
+                            {% else %}
+                                <br><small class="text-muted">{% trans "Past event" %}</small>
+                            {% endif %}
+                        </dd>
+                        {% if event.location %}
+                        <dt class="col-sm-3">{% trans "Location" %}</dt>
+                        <dd class="col-sm-9">{{ event.location }}</dd>
+                        {% endif %}
+                    </dl>
+                    {% if event.description %}
+                    <hr>
+                    <h6>{% trans "Description" %}</h6>
+                    <p>{{ event.description|linebreaks }}</p>
+                    {% endif %}
+
+                    {% if user_member and event.is_upcoming %}
+                    <hr>
+                    <h6>{% trans "Your RSVP" %}</h6>
+                    <form method="post" action="{% url 'group:event-attend' event.pk %}" class="d-flex gap-2">
+                        {% csrf_token %}
+                        <input type="hidden" name="will_attend" value="1">
+                        <button type="submit" class="btn {% if user_will_attend %}btn-success{% else %}btn-outline-success{% endif %}">
+                            <i class="bi bi-check-circle"></i> {% trans "I will attend" %}
+                        </button>
+                    </form>
+                    <form method="post" action="{% url 'group:event-attend' event.pk %}" class="d-inline">
+                        {% csrf_token %}
+                        <input type="hidden" name="will_attend" value="0">
+                        <button type="submit" class="btn {% if not user_will_attend %}btn-secondary{% else %}btn-outline-secondary{% endif %}">
+                            <i class="bi bi-x-circle"></i> {% trans "I will not attend" %}
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if attending_members %}
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-people"></i> {% trans "Attending" %} ({{ attending_count }})</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        {% for part in attending_members %}
+                        <li class="list-group-item px-0">
+                            {{ part.member.user.get_full_name|default:part.member.user.username }}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">{% trans "Actions" %}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'group:event-export-ics' event.pk %}" class="btn btn-outline-primary">
+                            <i class="bi bi-calendar-plus"></i> {% trans "Download Calendar" %}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

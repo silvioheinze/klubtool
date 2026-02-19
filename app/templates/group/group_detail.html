@@ -56,6 +56,37 @@
                 </div>
             </div>
 
+            <!-- Party Events Section -->
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0"><i class="bi bi-party-popper"></i> {% trans "Party events" %}</h5>
+                            {% if can_add_event %}
+                            <a href="{% url 'group:event-create' group.pk %}" class="btn btn-primary btn-sm">
+                                <i class="bi bi-plus-circle"></i> {% trans "Add" %}
+                            </a>
+                            {% endif %}
+                        </div>
+                        <div class="card-body">
+                            <a href="{% url 'group:event-list' group.pk %}" class="text-decoration-none fw-semibold">{% trans "View all party events" %}</a>
+                            {% if upcoming_events %}
+                                <ul class="list-group list-group-flush mt-2 mb-0">
+                                    {% for event in upcoming_events %}
+                                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                        <a href="{% url 'group:event-detail' event.pk %}">{{ event.title }}</a>
+                                        <small class="text-muted">{{ event.scheduled_date|date:"M d, Y H:i" }}</small>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                            {% else %}
+                                <p class="text-muted mb-0 mt-2">{% trans "No upcoming party events." %}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Group Meetings Section + Monthly Calendar -->
             <div class="row mt-4">
                 <div class="col-lg-6 mb-4 mb-lg-0">

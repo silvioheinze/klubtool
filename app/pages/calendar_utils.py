@@ -28,7 +28,7 @@ def get_personal_calendar_events(user, group_memberships, councils_from_membersh
     from django.urls import reverse
     from django.db.models import Q
     from local.models import Session, CommitteeMeeting, CommitteeMember, CommitteeParticipationSubstitute, SessionExcuse
-    from group.models import GroupMeeting
+    from group.models import GroupMeeting, GroupEventParticipation
 
     user_council_ids = [c.pk for c in councils_from_memberships]
     user_committee_ids = list(
@@ -129,6 +129,29 @@ def get_personal_calendar_events(user, group_memberships, councils_from_membersh
                 'model': 'groupmeeting',
                 'cancelled': getattr(m, 'status', None) == 'cancelled',
             })
+
+    # Party events: only where user RSVP'd will_attend=True
+    attending_events = GroupEventParticipation.objects.filter(
+        member__user=user,
+        will_attend=True,
+        event__is_active=True,
+        event__scheduled_date__gte=date_threshold,
+    ).select_related('event', 'event__group').order_by('event__scheduled_date')
+    for part in attending_events:
+        e = part.event
+        calendar_events.append({
+            'date': e.scheduled_date,
+            'title': e.title,
+            'url': e.get_absolute_url(),
+            'ics_export_url': reverse('group:event-export-ics', args=[e.pk]),
+            'type': 'group_event',
+            'badge_label': _('Party event'),
+            'subtitle': e.group.name,
+            'location': getattr(e, 'location', '') or '',
+            'pk': e.pk,
+            'model': 'groupevent',
+            'cancelled': False,
+        })
 
     calendar_events.sort(key=lambda e: e['date'])
     return calendar_events

@@ -1,0 +1,127 @@
+{% extends "_base.html" %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}{% blocktrans with group=group.name %}Party Events – {{ group }}{% endblocktrans %}{% endblock title %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1><i class="bi bi-calendar-event"></i> {% trans "Party Events" %} – {{ group.name }}</h1>
+                <div>
+                    <a href="{% url 'group:group-detail' group.pk %}" class="btn btn-outline-secondary me-2">
+                        <i class="bi bi-arrow-left"></i> {% trans "Back to Group" %}
+                    </a>
+                    {% if can_add_event %}
+                    <a href="{% url 'group:event-create' group.pk %}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i> {% trans "Add Event" %}
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-6 mb-4 mb-lg-0">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">{% trans "Upcoming Events" %}</h5>
+                </div>
+                <div class="card-body">
+                    {% if events %}
+                        <ul class="list-group list-group-flush">
+                            {% for event in events %}
+                                <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                    <div>
+                                        <a href="{% url 'group:event-detail' event.pk %}" class="text-decoration-none fw-semibold">{{ event.title }}</a>
+                                        <br><small class="text-muted">{{ event.scheduled_date|date:"M d, Y H:i" }}</small>
+                                    </div>
+                                    {% if event.is_past %}
+                                        <span class="badge bg-secondary">{% trans "Past" %}</span>
+                                    {% else %}
+                                        <span class="badge bg-success">{% trans "Upcoming" %}</span>
+                                    {% endif %}
+                                </li>
+                            {% endfor %}
+                        </ul>
+                        {% if is_paginated %}
+                        <nav class="mt-3 pt-3 border-top" aria-label="{% trans 'Event pagination' %}">
+                            <ul class="pagination justify-content-center mb-0">
+                                {% if page_obj.has_previous %}
+                                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if calendar_month %}&calendar_month={{ calendar_month }}{% endif %}{% if calendar_year %}&calendar_year={{ calendar_year }}{% endif %}">{% trans "Previous" %}</a></li>
+                                {% endif %}
+                                <li class="page-item disabled"><span class="page-link">{% trans "Page" %} {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span></li>
+                                {% if page_obj.has_next %}
+                                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{% if calendar_month %}&calendar_month={{ calendar_month }}{% endif %}{% if calendar_year %}&calendar_year={{ calendar_year }}{% endif %}">{% trans "Next" %}</a></li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="bi bi-calendar-event fs-1 text-muted"></i>
+                            <h6 class="mt-3">{% trans "No events" %}</h6>
+                            <p class="text-muted">{% trans "No party events yet." %}</p>
+                            {% if can_add_event %}
+                            <a href="{% url 'group:event-create' group.pk %}" class="btn btn-primary">
+                                <i class="bi bi-plus-circle"></i> {% trans "Add Event" %}
+                            </a>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-calendar3"></i> {{ calendar_month }}/{{ calendar_year }}</h5>
+                    <div class="btn-group btn-group-sm">
+                        <a href="?calendar_month={% if calendar_month == 1 %}12{% else %}{{ calendar_month|add:'-1' }}{% endif %}&calendar_year={% if calendar_month == 1 %}{{ calendar_year|add:'-1' }}{% else %}{{ calendar_year }}{% endif %}" class="btn btn-outline-secondary"><i class="bi bi-chevron-left"></i></a>
+                        <a href="?calendar_month={% now 'n' %}&calendar_year={% now 'Y' %}" class="btn btn-outline-secondary">{% trans "Today" %}</a>
+                        <a href="?calendar_month={% if calendar_month == 12 %}1{% else %}{{ calendar_month|add:"1" }}{% endif %}&calendar_year={% if calendar_month == 12 %}{{ calendar_year|add:"1" }}{% else %}{{ calendar_year }}{% endif %}" class="btn btn-outline-secondary"><i class="bi bi-chevron-right"></i></a>
+                    </div>
+                </div>
+                <div class="card-body p-2">
+                    {% if calendar_weeks %}
+                    <div class="table-responsive">
+                        <table class="table table-bordered mb-0 small">
+                            <thead>
+                                <tr class="text-center">
+                                    <th>{% trans "Mon" %}</th><th>{% trans "Tue" %}</th><th>{% trans "Wed" %}</th><th>{% trans "Thu" %}</th><th>{% trans "Fri" %}</th><th>{% trans "Sat" %}</th><th>{% trans "Sun" %}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for week in calendar_weeks %}
+                                <tr>
+                                    {% for day_cell in week %}
+                                    <td class="align-top p-1">
+                                        {% if day_cell %}
+                                            <span class="fw-bold">{{ day_cell.day }}</span>
+                                            {% if day_cell.events %}
+                                            <div class="mt-1">
+                                                {% for ev in day_cell.events %}
+                                                <a href="{{ ev.url }}" class="d-block small text-decoration-none" title="{{ ev.title }}">{{ ev.title|truncatewords:3 }}</a>
+                                                {% endfor %}
+                                            </div>
+                                            {% endif %}
+                                        {% endif %}
+                                    </td>
+                                    {% endfor %}
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted mb-0">{% trans "Calendar not available." %}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

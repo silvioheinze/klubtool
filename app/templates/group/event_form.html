@@ -1,0 +1,124 @@
+{% extends "_base.html" %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}
+    {% if event %}
+        {% trans "Edit Event" %}
+    {% else %}
+        {% trans "Add Event" %}
+    {% endif %}
+{% endblock title %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1>
+                    <i class="bi bi-calendar-event"></i>
+                    {% if event %}
+                        {% trans "Edit Party Event" %}
+                    {% else %}
+                        {% trans "Add Party Event" %}
+                    {% endif %}
+                </h1>
+                <div>
+                    {% if event %}
+                        <a href="{% url 'group:event-detail' event.pk %}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> {% trans "Back to Event" %}
+                        </a>
+                    {% elif group %}
+                        <a href="{% url 'group:event-list' group.pk %}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> {% trans "Back to Events" %}
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        {% if event %}
+                            {% trans "Edit Event" %}
+                        {% else %}
+                            {% trans "Add New Event" %}
+                        {% endif %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.title.id_for_label }}" class="form-label">{{ form.title.label }} {% if form.title.field.required %}<span class="text-danger">*</span>{% endif %}</label>
+                                    {{ form.title }}
+                                    {% if form.title.errors %}<div class="invalid-feedback d-block">{% for error in form.title.errors %}{{ error }}{% endfor %}</div>{% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.scheduled_date.id_for_label }}" class="form-label">{{ form.scheduled_date.label }} {% if form.scheduled_date.field.required %}<span class="text-danger">*</span>{% endif %}</label>
+                                    {{ form.scheduled_date }}
+                                    {% if form.scheduled_date.errors %}<div class="invalid-feedback d-block">{% for error in form.scheduled_date.errors %}{{ error }}{% endfor %}</div>{% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.location.id_for_label }}" class="form-label">{{ form.location.label }}</label>
+                            {{ form.location }}
+                            {% if form.location.errors %}<div class="invalid-feedback d-block">{% for error in form.location.errors %}{{ error }}{% endfor %}</div>{% endif %}
+                        </div>
+
+                        {% if form.group in form.visible_fields %}
+                        <div class="mb-3">
+                            <label for="{{ form.group.id_for_label }}" class="form-label">{{ form.group.label }}</label>
+                            {{ form.group }}
+                            {% if form.group.errors %}<div class="invalid-feedback d-block">{% for error in form.group.errors %}{{ error }}{% endfor %}</div>{% endif %}
+                        </div>
+                        {% elif group %}
+                        <div class="mb-3">
+                            <label class="form-label">{% trans "Group" %}</label>
+                            <div class="form-control-plaintext"><strong>{{ group.name }}</strong></div>
+                            {{ form.group }}
+                        </div>
+                        {% endif %}
+
+                        <div class="mb-3">
+                            <label for="{{ form.description.id_for_label }}" class="form-label">{{ form.description.label }}</label>
+                            {{ form.description }}
+                            {% if form.description.errors %}<div class="invalid-feedback d-block">{% for error in form.description.errors %}{{ error }}{% endfor %}</div>{% endif %}
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                {% if event %}
+                                    <a href="{% url 'group:event-detail' event.pk %}" class="btn btn-secondary">{% trans "Cancel" %}</a>
+                                    <a href="{% url 'group:event-delete' event.pk %}" class="btn btn-danger ms-2" onclick="return confirm('{% trans "Are you sure you want to delete this event?" %}');">{% trans "Delete" %}</a>
+                                {% elif group %}
+                                    <a href="{% url 'group:event-list' group.pk %}" class="btn btn-secondary">{% trans "Cancel" %}</a>
+                                {% endif %}
+                            </div>
+                            <button type="submit" class="btn btn-primary">
+                                {% if event %}{% trans "Update Event" %}{% else %}{% trans "Create Event" %}{% endif %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

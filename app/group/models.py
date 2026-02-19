@@ -285,6 +285,80 @@ class MinuteItem(models.Model):
         return level
 
 
+class GroupEvent(models.Model):
+    """Political party event for a group. Lighter than GroupMeeting: no agenda/minutes. Members RSVP to attend."""
+    group = models.ForeignKey(
+        Group,
+        on_delete=models.CASCADE,
+        related_name='events',
+        help_text="Group the event belongs to",
+    )
+    title = models.CharField(max_length=200, help_text="Title of the event")
+    scheduled_date = models.DateTimeField(help_text="Date and time of the event")
+    location = models.CharField(max_length=300, blank=True, help_text="Location or place of the event")
+    description = models.TextField(blank=True, help_text="Optional description or details")
+    is_active = models.BooleanField(default=True, help_text="Whether the event is currently active")
+    created_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='created_group_events',
+        help_text="User who created the event",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['scheduled_date']
+        verbose_name = "Group Event"
+        verbose_name_plural = "Group Events"
+
+    def __str__(self):
+        return f"{self.title} - {self.group.name} ({self.scheduled_date.strftime('%Y-%m-%d %H:%M')})"
+
+    def get_absolute_url(self):
+        from django.urls import reverse
+        return reverse('group:event-detail', args=[str(self.pk)])
+
+    @property
+    def is_past(self):
+        return self.scheduled_date < timezone.now()
+
+    @property
+    def is_upcoming(self):
+        return self.scheduled_date > timezone.now()
+
+
+class GroupEventParticipation(models.Model):
+    """RSVP: whether a group member will attend a party event. Events appear in personal calendar only if will_attend=True."""
+    event = models.ForeignKey(
+        GroupEvent,
+        on_delete=models.CASCADE,
+        related_name='participations',
+        help_text="Event",
+    )
+    member = models.ForeignKey(
+        GroupMember,
+        on_delete=models.CASCADE,
+        related_name='event_participations',
+        help_text="Group member",
+    )
+    will_attend = models.BooleanField(default=False, help_text="Whether the member will attend")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ['event', 'member']
+        verbose_name = "Group Event Participation"
+        verbose_name_plural = "Group Event Participations"
+        ordering = ['member__user__last_name', 'member__user__first_name']
+
+    def __str__(self):
+        status = "Attending" if self.will_attend else "Not attending"
+        return f"{self.member.user.get_full_name() or self.member.user.username} - {self.event.title} ({status})"
+
+
 class GroupMeetingParticipation(models.Model):
     """Model representing participation/presence of a group member in a meeting"""
     meeting = models.ForeignKey(
@@ -318,6 +392,8 @@ class GroupMeetingParticipation(models.Model):
 auditlog.register(Group)
 auditlog.register(GroupMember)
 auditlog.register(GroupMeeting)
+auditlog.register(GroupEvent)
+auditlog.register(GroupEventParticipation)
 auditlog.register(AgendaItem)
 auditlog.register(MinuteItem)
 auditlog.register(GroupMeetingParticipation)
