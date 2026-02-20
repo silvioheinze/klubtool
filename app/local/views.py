@@ -2110,7 +2110,6 @@ class CommitteeMeetingDetailView(LoginRequiredMixin, UserPassesTestMixin, Detail
             ).select_related('substitute_member', 'substitute_member__user')
         }
         context['participants_with_substitute'] = [(m, substitute_map.get(m.pk)) for m in participants]
-        # Substitute form for current user (only if they are a participant)
         my_participant = next((p for p in participants if p.user_id == self.request.user.pk), None)
         existing_sub = None
         if my_participant:
@@ -2125,8 +2124,17 @@ class CommitteeMeetingDetailView(LoginRequiredMixin, UserPassesTestMixin, Detail
         return context
 
 
+def _can_user_set_substitute_for_member(user, member):
+    """Check if user can set a substitute for this committee member. Only superuser or the member themselves."""
+    if user.is_superuser:
+        return True
+    if member.role == 'substitute_member':
+        return False
+    return member.user_id == user.pk
+
+
 class CommitteeMeetingSetSubstituteView(LoginRequiredMixin, View):
-    """View to set or clear a substitute for the current user at a committee meeting (POST only)."""
+    """View to set or clear a substitute. Members can only set their own substitute; superusers can set for anyone."""
     http_method_names = ['get', 'post']
 
     def get(self, request, pk):
@@ -2134,16 +2142,16 @@ class CommitteeMeetingSetSubstituteView(LoginRequiredMixin, View):
 
     def post(self, request, pk):
         meeting = get_object_or_404(CommitteeMeeting, pk=pk)
-        if not request.user.is_superuser:
-            messages.error(request, _('Permission denied.'))
-            return redirect('local:committee-meeting-detail', pk=pk)
         member_pk = request.POST.get('member')
         if not member_pk:
             messages.error(request, _('Invalid request.'))
             return redirect('local:committee-meeting-detail', pk=pk)
         member = get_object_or_404(CommitteeMember, pk=member_pk)
-        if member.committee_id != meeting.committee_id or member.user_id != request.user.pk or member.role == 'substitute_member':
-            messages.error(request, _('You can only set a substitute for yourself as a regular committee member.'))
+        if member.committee_id != meeting.committee_id:
+            messages.error(request, _('Invalid request.'))
+            return redirect('local:committee-meeting-detail', pk=pk)
+        if not _can_user_set_substitute_for_member(request.user, member):
+            messages.error(request, _('Permission denied.'))
             return redirect('local:committee-meeting-detail', pk=pk)
         form = CommitteeParticipationSubstituteForm(request.POST, committee=meeting.committee)
         if not form.is_valid():
