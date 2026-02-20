@@ -4,7 +4,7 @@ from django.contrib.auth import get_user_model
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 import bleach
-from .models import Group, GroupMember, GroupMeeting, AgendaItem, MinuteItem
+from .models import Group, GroupMember, GroupMeeting, GroupEvent, AgendaItem, MinuteItem
 from local.models import Party
 from user.models import Role
 
@@ -84,6 +84,39 @@ class GroupMemberFilterForm(forms.Form):
         self.fields['group'].queryset = Group.objects.filter(is_active=True)
         # Filter to only show active roles
         self.fields['role'].queryset = Role.objects.filter(is_active=True)
+
+
+class GroupEventForm(forms.ModelForm):
+    """Form for creating and editing group (party) events"""
+    class Meta:
+        model = GroupEvent
+        fields = ['title', 'scheduled_date', 'location', 'description', 'group']
+        widgets = {
+            'title': forms.TextInput(attrs={'class': 'form-control'}),
+            'scheduled_date': forms.DateTimeInput(
+                attrs={'class': 'form-control', 'type': 'datetime-local'},
+                format='%Y-%m-%dT%H:%M',
+            ),
+            'location': forms.TextInput(attrs={'class': 'form-control'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['scheduled_date'].input_formats = ['%Y-%m-%dT%H:%M', '%Y-%m-%d %H:%M:%S', '%Y-%m-%d %H:%M']
+        group_id = self.initial.get('group') or self.data.get('group')
+        if not group_id and self.instance and self.instance.pk:
+            group_id = self.instance.group_id
+        if group_id:
+            self.fields['group'].widget = forms.HiddenInput()
+            self.fields['group'].initial = group_id
+        self.fields['group'].queryset = Group.objects.filter(is_active=True)
+
+    def clean_scheduled_date(self):
+        value = self.cleaned_data.get('scheduled_date')
+        if value and timezone.is_naive(value):
+            return timezone.make_aware(value, timezone.get_current_timezone())
+        return value
 
 
 class GroupMeetingForm(forms.ModelForm):

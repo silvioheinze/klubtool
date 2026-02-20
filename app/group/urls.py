@@ -3,6 +3,8 @@ from .views import (
     GroupListView, GroupDetailView, GroupCreateView, GroupUpdateView, GroupDeleteView,
     GroupMemberDetailView, GroupMemberCreateView, GroupMemberUpdateView, GroupMemberDeleteView,
     GroupMeetingListView, GroupMeetingDetailView, GroupMeetingCreateView, GroupMeetingUpdateView, GroupMeetingDeleteView, GroupMeetingCancelView, GroupMeetingAgendaExportPDFView, GroupMeetingMinutesExportPDFView,
+    GroupEventListView, GroupEventCreateView, GroupEventDetailView, GroupEventUpdateView, GroupEventDeleteView,
+    event_attend, event_export_ics,
     AgendaItemCreateView, AgendaItemDetailView, AgendaItemUpdateView, AgendaItemDeleteView,
     AgendaItemCreateAjaxView, AgendaItemUpdateAjaxView, AgendaItemUpdateOrderAjaxView,
     MinuteItemCreateAjaxView, MinuteItemUpdateAjaxView, MinuteItemDeleteView,
@@ -24,6 +26,15 @@ urlpatterns = [
     path('<int:pk>/edit/', GroupUpdateView.as_view(), name='group-edit'),
     path('<int:pk>/delete/', GroupDeleteView.as_view(), name='group-delete'),
     path('<int:pk>/invite-member/', invite_member, name='group-invite-member'),
+
+    # Group Event (Party Event) URLs
+    path('<int:group_pk>/events/', GroupEventListView.as_view(), name='event-list'),
+    path('<int:group_pk>/events/create/', GroupEventCreateView.as_view(), name='event-create'),
+    path('events/<int:pk>/', GroupEventDetailView.as_view(), name='event-detail'),
+    path('events/<int:pk>/edit/', GroupEventUpdateView.as_view(), name='event-edit'),
+    path('events/<int:pk>/delete/', GroupEventDeleteView.as_view(), name='event-delete'),
+    path('events/<int:pk>/attend/', event_attend, name='event-attend'),
+    path('events/<int:pk>/export-ics/', event_export_ics, name='event-export-ics'),
     
     # Group Member URLs
     path('members/create/', GroupMemberCreateView.as_view(), name='member-create'),
