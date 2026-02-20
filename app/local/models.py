@@ -201,10 +201,10 @@ class CommitteeMeetingAttachment(models.Model):
     """Model representing file attachments for committee meetings"""
 
     ATTACHMENT_TYPE_CHOICES = [
-        ('agenda', 'Agenda'),
-        ('budget', 'Budget'),
-        ('invitation', 'Invitation'),
-        ('other', 'Other'),
+        ('agenda', _('Agenda')),
+        ('invitation', _('Invitation')),
+        ('minutes', _('Minutes')),
+        ('other', _('Other')),
     ]
 
     committee_meeting = models.ForeignKey(
@@ -443,16 +443,17 @@ class SessionAttachment(models.Model):
     """Model representing file attachments for sessions"""
     
     ATTACHMENT_TYPE_CHOICES = [
-        ('agenda', 'Agenda'),
-        ('budget', 'Budget'),
-        ('invitation', 'Invitation'),
-        ('other', 'Other'),
+        ('agenda', _('Agenda')),
+        ('budget', _('Budget')),
+        ('invitation', _('Invitation')),
+        ('minutes', _('Minutes')),
+        ('other', _('Other')),
     ]
     
     session = models.ForeignKey(Session, on_delete=models.CASCADE, related_name='attachments')
     file = models.FileField(upload_to='session_attachments/%Y/%m/%d/')
     filename = models.CharField(max_length=255)
-    file_type = models.CharField(max_length=20, choices=ATTACHMENT_TYPE_CHOICES, default='document')
+    file_type = models.CharField(max_length=20, choices=ATTACHMENT_TYPE_CHOICES, default='other')
     description = models.TextField(blank=True)
     uploaded_by = models.ForeignKey('user.CustomUser', on_delete=models.CASCADE, related_name='session_attachments')
     uploaded_at = models.DateTimeField(auto_now_add=True)
