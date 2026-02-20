@@ -81,7 +81,7 @@
                     <h5 class="mb-0">
                         <i class="bi bi-paperclip"></i> {% trans "Meeting Attachments" %}
                     </h5>
-                    {% if user.is_superuser %}
+                    {% if can_edit_committee_meeting %}
                     <a href="{% url 'local:committee-meeting-attach' meeting.pk %}" class="btn btn-sm btn-primary">
                         <i class="bi bi-upload"></i> {% trans "Upload File" %}
                     </a>
