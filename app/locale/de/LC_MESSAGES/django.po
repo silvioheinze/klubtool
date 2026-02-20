@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-02-20 22:32+0100\n"
+"POT-Creation-Date: 2026-02-20 22:51+0100\n"
 "PO-Revision-Date: 2026-02-16 20:38+0100\n"
 "Last-Translator: Silvio Heinze <s.heinze@dataplexity.eu>\n"
 "Language-Team: \n"
@@ -94,7 +94,7 @@ msgstr ""
 "Protokolle können nur geändert werden, wenn der Status der Besprechung "
 "„eingeladen“ ist."
 
-#: group/views.py:1547 group/views.py:1576 local/views.py:2138
+#: group/views.py:1547 group/views.py:1576 local/views.py:2161
 msgid "Permission denied."
 msgstr "Zugriff verweigert."
 
@@ -189,18 +189,18 @@ msgstr "Ersatzmitglied"
 msgid "Agenda"
 msgstr "Tagesordnung"
 
-#: local/models.py:205 local/models.py:447
+#: local/models.py:205 local/models.py:448
 msgid "Invitation"
 msgstr "Einladung"
 
-#: local/models.py:206 local/models.py:448
+#: local/models.py:206 local/models.py:449
 #: templates/group/meeting_minutes_export_pdf.html:8
 #: templates/group/meeting_minutes_export_pdf.html:13
 #: templates/local/session_minutes_form.html:36
 msgid "Minutes"
 msgstr "Protokoll"
 
-#: local/models.py:207 local/models.py:449
+#: local/models.py:207 local/models.py:450
 msgid "Other"
 msgstr "Sonstiges"
 
@@ -287,23 +287,27 @@ msgstr "Außerordentliche Sitzung"
 msgid "Inaugural Session"
 msgstr "Konstituierende Sitzung"
 
-#: local/models.py:498
+#: local/models.py:447
+msgid "Budget"
+msgstr ""
+
+#: local/models.py:499
 msgid "Council session"
 msgstr "Bezirksvertretungssitzung"
 
-#: local/models.py:504
+#: local/models.py:505
 msgid "User who excused themselves"
 msgstr "Benutzer, die sich entschuldigt haben"
 
-#: local/models.py:506
+#: local/models.py:507
 msgid "Optional reason or note"
 msgstr "Optionaler Grund oder Anmerkung"
 
-#: local/models.py:513
+#: local/models.py:514
 msgid "Session excuse"
 msgstr "Entschuldigung für die Sitzung"
 
-#: local/models.py:514
+#: local/models.py:515
 msgid "Session excuses"
 msgstr "Entschuldigungen für die Sitzung"
 
@@ -332,66 +336,59 @@ msgstr "Sie haben keine Berechtigung, Mitglieder in diese Gruppe einzuladen."
 msgid "Committee meeting '%(title)s' created successfully."
 msgstr ""
 
-#: local/views.py:2142
+#: local/views.py:2154 local/views.py:2158
 msgid "Invalid request."
 msgstr "Ungültige Anfrage."
 
-#: local/views.py:2146
-msgid ""
-"You can only set a substitute for yourself as a regular committee member."
-msgstr ""
-"Du kannst nur für dich selbst als reguläres Ausschussmitglied eine "
-"Vertretung festlegen."
-
-#: local/views.py:2150 local/views.py:2151
+#: local/views.py:2165 local/views.py:2166
 msgid "Invalid selection."
 msgstr ""
 
-#: local/views.py:2156
+#: local/views.py:2171
 msgid "Invalid substitute member."
 msgstr "Ungültiges Stellvertreter-Mitglied."
 
-#: local/views.py:2162
+#: local/views.py:2177
 #, python-format
 msgid "Substitute set: %(name)s will attend in your place."
 msgstr "Vertretung festgelegt: %(name)s nimmt an deiner Stelle teil."
 
-#: local/views.py:2166
+#: local/views.py:2181
 msgid "Substitute cleared."
 msgstr "Vertretung entfernt."
 
-#: local/views.py:2197
+#: local/views.py:2212
 #, python-format
 msgid "Committee meeting '%(title)s' updated successfully."
 msgstr ""
 
-#: local/views.py:2218
+#: local/views.py:2233
 #, python-format
 msgid "Committee meeting '%(title)s' deleted successfully."
 msgstr ""
 
-#: local/views.py:2404
+#: local/views.py:2419
 msgid "Invitation can only be added when the session is scheduled."
 msgstr ""
 "Eine Einladung kann nur hinzugefügt werden, wenn die Sitzung geplant ist."
 
-#: local/views.py:2432
+#: local/views.py:2447
 msgid "Invitation uploaded and session status set to Invited."
 msgstr "Einladung hochgeladen und Sitzungsstatus auf „Eingeladen“ gesetzt."
 
-#: local/views.py:2448
+#: local/views.py:2463
 msgid "Only scheduled or invited sessions can be cancelled."
 msgstr "Nur geplante oder eingeladene Sitzungen können storniert werden."
 
-#: local/views.py:2456
+#: local/views.py:2471
 msgid "Session has been cancelled."
 msgstr "Die Sitzung wurde abgesagt."
 
-#: local/views.py:2474
+#: local/views.py:2489
 msgid "Minutes can only be added for completed sessions."
 msgstr "Protokolle können nur für abgeschlossene Sitzungen hinzugefügt werden."
 
-#: local/views.py:2493
+#: local/views.py:2508
 msgid "Minutes saved successfully."
 msgstr "Protokoll erfolgreich gespeichert."
 
@@ -2997,8 +2994,15 @@ msgid "No committee members (excluding substitutes)."
 msgstr "Keine Ausschussmitglieder (ohne Stellvertreter)."
 
 #: templates/local/committee_meeting_detail.html:199
-msgid "Select a substitute member who will attend this meeting in your place."
+#, fuzzy
+#| msgid ""
+#| "Select a substitute member who will attend this meeting in your place."
+msgid ""
+"Select a substitute member who will attend this meeting in place of the "
+"participant."
 msgstr ""
+"Wählen Sie ein Ersatzmitglied, das diese Sitzung anstelle des Teilnehmers "
+"besuchen wird."
 "Wähle ein Stellvertreter-Mitglied, das an deiner Stelle an der Sitzung "
 "teilnimmt."
 
@@ -5735,6 +5739,12 @@ msgstr "Deine E-Mail-Adresse wurde bestätigt und du bist nun angemeldet."
 #: user/views.py:484
 msgid "Your email has been confirmed."
 msgstr "Deine E-Mail-Adresse wurde bestätigt."
+
+#~ msgid ""
+#~ "You can only set a substitute for yourself as a regular committee member."
+#~ msgstr ""
+#~ "Du kannst nur für dich selbst als reguläres Ausschussmitglied eine "
+#~ "Vertretung festlegen."
 
 #~ msgid "Export (ICS)"
 #~ msgstr "Exportiere Kalenderdatei"
