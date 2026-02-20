@@ -2911,7 +2911,7 @@ msgstr ""
 #: templates/motion/motion_attachment.html:47
 #: templates/motion/motion_attachment.html:94
 msgid "File Type"
-msgstr "Antragstyp"
+msgstr "Dateityp"
 
 #: templates/local/committee_meeting_attachment_form.html:73
 #: templates/local/session_attachment_form.html:74
