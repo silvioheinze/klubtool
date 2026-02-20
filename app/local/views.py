@@ -2085,8 +2085,8 @@ class CommitteeMeetingDetailView(LoginRequiredMixin, UserPassesTestMixin, Detail
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['committee'] = self.object.committee
-        # Show edit button only to users who can access CommitteeMeetingUpdateView
-        context['can_edit_committee_meeting'] = self.request.user.is_superuser
+        # Show edit button to superusers or group leaders of groups that have members on this committee
+        context['can_edit_committee_meeting'] = _can_user_edit_committee_meeting(self.request.user, self.object)
         # Participants: committee members who take part in the meeting (excluding substitute members)
         role_order = Case(
             When(role='chairperson', then=Value(1)),
@@ -2133,6 +2133,30 @@ def _can_user_set_substitute_for_member(user, member):
     return member.user_id == user.pk
 
 
+def _can_user_edit_committee_meeting(user, meeting):
+    """Check if user can edit this committee meeting. Superuser or group leader of a group that has a member on this committee."""
+    if user.is_superuser:
+        return True
+    from group.models import GroupMember
+    committee_user_ids = meeting.committee.members.filter(
+        is_active=True
+    ).values_list('user_id', flat=True).distinct()
+    if not committee_user_ids:
+        return False
+    leader_group_ids = GroupMember.objects.filter(
+        user=user, is_active=True
+    ).filter(
+        roles__name__in=['Group Admin', 'Leader', 'Deputy Leader']
+    ).values_list('group_id', flat=True).distinct()
+    if not leader_group_ids:
+        return False
+    return GroupMember.objects.filter(
+        group_id__in=leader_group_ids,
+        user_id__in=committee_user_ids,
+        is_active=True
+    ).exists()
+
+
 class CommitteeMeetingSetSubstituteView(LoginRequiredMixin, View):
     """View to set or clear a substitute. Members can only set their own substitute; superusers can set for anyone."""
     http_method_names = ['get', 'post']
@@ -2176,14 +2200,14 @@ class CommitteeMeetingSetSubstituteView(LoginRequiredMixin, View):
 
 
 class CommitteeMeetingUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
-    """View for updating a CommitteeMeeting."""
+    """View for updating a CommitteeMeeting. Allowed for superuser or group leaders of groups that have members on this committee."""
     model = CommitteeMeeting
     form_class = CommitteeMeetingForm
     context_object_name = 'meeting'
     template_name = 'local/committee_meeting_form.html'
 
     def test_func(self):
-        return self.request.user.is_superuser
+        return _can_user_edit_committee_meeting(self.request.user, self.get_object())
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
@@ -2503,14 +2527,15 @@ class SessionMinutesUpdateView(LoginRequiredMixin, UserPassesTestMixin, FormView
 
 
 class CommitteeMeetingAttachmentView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
-    """View for uploading attachments to committee meetings"""
+    """View for uploading attachments to committee meetings. Allowed for superuser or group leaders."""
     model = CommitteeMeetingAttachment
     form_class = CommitteeMeetingAttachmentForm
     template_name = 'local/committee_meeting_attachment_form.html'
 
     def test_func(self):
         """Check if user has permission to upload committee meeting attachments"""
-        return self.request.user.is_superuser
+        meeting = get_object_or_404(CommitteeMeeting, pk=self.kwargs['committee_meeting_pk'])
+        return _can_user_edit_committee_meeting(self.request.user, meeting)
 
     def get_committee_meeting(self):
         """Get the committee meeting from URL parameter"""
