@@ -225,6 +225,10 @@ msgstr "Stellv. Vorsitzende/r"
 msgid "Member"
 msgstr "Mitglied"
 
+#: templates/group/group_detail.html
+msgid "Party member"
+msgstr "Parteimitglied"
+
 #: local/models.py:247
 msgid "Substitute Member"
 msgstr "Ersatzmitglied"
