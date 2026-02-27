@@ -527,9 +527,9 @@ class SessionAttachmentForm(forms.ModelForm):
     def clean_file(self):
         file = self.cleaned_data.get('file')
         if file:
-            # Check file size (max 10MB)
-            if file.size > 10 * 1024 * 1024:
-                raise forms.ValidationError("File size must be under 10MB.")
+            # Check file size (max 50MB)
+            if file.size > 50 * 1024 * 1024:
+                raise forms.ValidationError("File size must be under 50MB.")
             
             # Check file extension
             allowed_extensions = ['.pdf', '.doc', '.docx', '.txt', '.jpg', '.jpeg', '.png', '.gif', '.xls', '.xlsx', '.ppt', '.pptx']
@@ -572,8 +572,8 @@ class SessionInvitationForm(forms.Form):
         import os
         file = self.cleaned_data.get('file')
         if file:
-            if file.size > 10 * 1024 * 1024:
-                raise forms.ValidationError("File size must be under 10MB.")
+            if file.size > 50 * 1024 * 1024:
+                raise forms.ValidationError("File size must be under 50MB.")
             ext = os.path.splitext(file.name)[1].lower()
             if ext != '.pdf':
                 raise forms.ValidationError("Only PDF files are allowed for the invitation.")
@@ -608,8 +608,8 @@ class CommitteeMeetingAttachmentForm(forms.ModelForm):
     def clean_file(self):
         file = self.cleaned_data.get('file')
         if file:
-            if file.size > 10 * 1024 * 1024:
-                raise forms.ValidationError("File size must be under 10MB.")
+            if file.size > 50 * 1024 * 1024:
+                raise forms.ValidationError("File size must be under 50MB.")
             import os
             allowed_extensions = ['.pdf', '.doc', '.docx', '.txt', '.jpg', '.jpeg', '.png', '.gif', '.xls', '.xlsx', '.ppt', '.pptx']
             ext = os.path.splitext(file.name)[1].lower()
