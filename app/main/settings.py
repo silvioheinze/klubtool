@@ -163,6 +163,10 @@ STATICFILES_DIRS = [
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
+# File upload limits (50MB for committee meeting attachments and other uploads)
+DATA_UPLOAD_MAX_MEMORY_SIZE = 52 * 1024 * 1024  # 52MB (allows 50MB file + form overhead)
+FILE_UPLOAD_MAX_MEMORY_SIZE = 52 * 1024 * 1024  # 52MB
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/6.0/ref/settings/#default-auto-field
 
