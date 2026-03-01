@@ -1,8 +1,10 @@
-from django.test import TestCase, Client
+from django.test import TestCase, Client, override_settings
 from django.urls import reverse
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.template.loader import get_template
 from django.template import Context
+from django.core.mail import get_connection, send_mail
 import os
 import re
 
@@ -307,3 +309,71 @@ class CustomColorsTests(TestCase):
             "CSS should contain footer or dark section styling"
         )
         self.assertIn('var(--bs-primary)', css_content, "CSS should use primary variable")
+
+
+class EmailSettingsTests(TestCase):
+    """Test cases for email configuration."""
+
+    def test_email_settings_are_configured(self):
+        """Verify all required email settings are present and have expected types."""
+        self.assertIsNotNone(settings.EMAIL_BACKEND)
+        self.assertIsInstance(settings.EMAIL_BACKEND, str)
+        self.assertIsInstance(settings.EMAIL_HOST, str)
+        self.assertIsInstance(settings.EMAIL_PORT, int)
+        self.assertGreaterEqual(settings.EMAIL_PORT, 1)
+        self.assertLessEqual(settings.EMAIL_PORT, 65535)
+        self.assertIsInstance(settings.EMAIL_USE_TLS, bool)
+        self.assertIsInstance(settings.EMAIL_USE_SSL, bool)
+        self.assertIsInstance(settings.EMAIL_HOST_USER, str)
+        self.assertIsInstance(settings.EMAIL_HOST_PASSWORD, str)
+        self.assertIsInstance(settings.EMAIL_TIMEOUT, int)
+        self.assertGreaterEqual(settings.EMAIL_TIMEOUT, 0)
+        self.assertIsInstance(settings.DEFAULT_FROM_EMAIL, str)
+        self.assertIsInstance(settings.SERVER_EMAIL, str)
+        self.assertIsInstance(settings.EMAIL_SUBJECT_PREFIX, str)
+
+    def test_email_connection_uses_configured_backend(self):
+        """Verify get_connection() returns a connection using EMAIL_BACKEND from settings."""
+        connection = get_connection()
+        expected_backend = settings.EMAIL_BACKEND
+        self.assertEqual(
+            connection.__class__.__module__ + '.' + connection.__class__.__name__,
+            expected_backend,
+            "Connection should use EMAIL_BACKEND from settings"
+        )
+
+    @override_settings(
+        EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend',
+        DEFAULT_FROM_EMAIL='test@example.com',
+    )
+    def test_send_mail_uses_email_settings(self):
+        """Verify send_mail uses DEFAULT_FROM_EMAIL and settings; email is stored in outbox."""
+        from django.core import mail as mail_module
+        mail_module.outbox = []
+
+        send_mail(
+            subject='Test Subject',
+            message='Test message',
+            from_email=None,  # Will use DEFAULT_FROM_EMAIL
+            recipient_list=['recipient@example.com'],
+            fail_silently=False,
+        )
+
+        self.assertEqual(len(mail_module.outbox), 1)
+        self.assertEqual(mail_module.outbox[0].subject, 'Test Subject')
+        self.assertEqual(mail_module.outbox[0].from_email, 'test@example.com')
+        self.assertEqual(mail_module.outbox[0].to, ['recipient@example.com'])
+
+    @override_settings(
+        EMAIL_BACKEND='django.core.mail.backends.smtp.EmailBackend',
+        EMAIL_HOST='smtp.example.com',
+        EMAIL_PORT=587,
+        EMAIL_USE_TLS=True,
+    )
+    def test_smtp_settings_produce_valid_connection(self):
+        """Verify SMTP backend can be instantiated with configured settings (no actual send)."""
+        connection = get_connection()
+        self.assertIsNotNone(connection)
+        self.assertEqual(connection.host, 'smtp.example.com')
+        self.assertEqual(connection.port, 587)
+        self.assertTrue(connection.use_tls)
