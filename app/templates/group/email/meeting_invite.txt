@@ -17,6 +17,8 @@
 {{ meeting.description }}
 {% endif %}
 
+{% trans "View meeting details" %}: {{ meeting_url }}
+
 {% if agenda_items %}
 {% trans "Agenda" %}:
 {% for item in agenda_items %}
