@@ -102,6 +102,29 @@
                             {% if form.description.errors %}<div class="invalid-feedback d-block">{% for error in form.description.errors %}{{ error }}{% endfor %}</div>{% endif %}
                         </div>
 
+                        {% if 'invited_members_only' in form.fields %}
+                        <div class="mb-3">
+                            <div class="form-check">
+                                {{ form.invited_members_only }}
+                                <label for="{{ form.invited_members_only.id_for_label }}" class="form-check-label">{{ form.invited_members_only.label }}</label>
+                            </div>
+                            {% if form.invited_members_only.help_text %}<div class="form-text">{{ form.invited_members_only.help_text }}</div>{% endif %}
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">{{ form.invited_members.label }}</label>
+                            {% if form.invited_members.help_text %}<div class="form-text mb-1">{{ form.invited_members.help_text }}</div>{% endif %}
+                            <div class="border rounded p-3" style="max-height: 200px; overflow-y: auto;">
+                                {% for choice in form.invited_members %}
+                                <div class="form-check">
+                                    {{ choice.tag }}
+                                    <label for="{{ choice.id_for_label }}" class="form-check-label">{{ choice.choice_label }}</label>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% if form.invited_members.errors %}<div class="invalid-feedback d-block">{% for error in form.invited_members.errors %}{{ error }}{% endfor %}</div>{% endif %}
+                        </div>
+                        {% endif %}
+
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
                                 {% if event %}

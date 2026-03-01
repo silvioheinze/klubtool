@@ -31,8 +31,9 @@ def is_superuser_or_has_permission(permission):
     return decorator
 
 
-def _get_group_calendar_events_for_month(group, year, month):
-    """Return list of calendar event dicts (group meetings + council sessions + committee meetings) for the given month."""
+def _get_group_calendar_events_for_month(group, year, month, user=None):
+    """Return list of calendar event dicts (group meetings + council sessions + committee meetings) for the given month.
+    When user is provided, filters party events by visibility (invited_members for restricted events)."""
     from datetime import date, timedelta
     start = date(year, month, 1)
     end = date(year, month + 1, 1) - timedelta(days=1) if month < 12 else date(year, 12, 31)
@@ -51,13 +52,15 @@ def _get_group_calendar_events_for_month(group, year, month):
             'type': 'group_meeting',
             'badge_label': badge_label,
         })
-    # Party events (group events)
+    # Party events (group events) - filter by visibility when user provided
     group_events = group.events.filter(
         is_active=True,
         scheduled_date__date__gte=start,
         scheduled_date__date__lte=end,
     ).order_by('scheduled_date')
     for e in group_events:
+        if user and not e.can_user_see(user):
+            continue
         events.append({
             'date': e.scheduled_date,
             'title': e.title or '',
@@ -239,7 +242,7 @@ class GroupDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
                 cal_month, cal_year = now.month, now.year
         except (TypeError, ValueError):
             cal_month, cal_year = now.month, now.year
-        events = _get_group_calendar_events_for_month(self.object, cal_year, cal_month)
+        events = _get_group_calendar_events_for_month(self.object, cal_year, cal_month, self.request.user)
         cal_month, cal_year, context['calendar_weeks'] = _build_month_calendar(events, cal_year, cal_month)
         context['calendar_month'] = cal_month
         context['calendar_year'] = cal_year
@@ -265,11 +268,15 @@ class GroupDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             reverse('group:group-meetings-export-pdf', kwargs={'pk': self.object.pk})
             + f'?calendar_year={cal_year}'
         )
-        # Upcoming party events (preview for group detail)
-        context['upcoming_events'] = (
-            self.object.events.filter(is_active=True, scheduled_date__gte=now)
-            .order_by('scheduled_date')[:5]
-        )
+        # Upcoming party events (preview for group detail) - filter by visibility
+        upcoming_qs = self.object.events.filter(is_active=True, scheduled_date__gte=now).order_by('scheduled_date')
+        if not (self.request.user.is_superuser or self.object.can_user_manage_group(self.request.user)):
+            member = GroupMember.objects.filter(user=self.request.user, group=self.object, is_active=True).first()
+            if member:
+                upcoming_qs = upcoming_qs.filter(Q(invited_members_only=False) | Q(invited_members=member))
+            else:
+                upcoming_qs = upcoming_qs.none()
+        context['upcoming_events'] = upcoming_qs[:5]
         return context
 
     def get(self, request, *args, **kwargs):
@@ -307,7 +314,7 @@ def group_calendar_export_pdf(request, pk):
         cal_year = now.year
     events = []
     for month in range(1, 13):
-        events.extend(_get_group_calendar_events_for_month(group, cal_year, month))
+        events.extend(_get_group_calendar_events_for_month(group, cal_year, month, request.user))
     events.sort(key=lambda e: e['date'])
     try:
         from weasyprint import HTML, CSS
@@ -1082,7 +1089,14 @@ class GroupEventListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
 
     def get_queryset(self):
         group_pk = self.kwargs.get('group_pk')
-        return GroupEvent.objects.filter(group_id=group_pk, is_active=True).select_related('group', 'created_by').order_by('-scheduled_date')
+        group = get_object_or_404(Group, pk=group_pk)
+        qs = GroupEvent.objects.filter(group_id=group_pk, is_active=True).select_related('group', 'created_by').prefetch_related('invited_members').order_by('-scheduled_date')
+        if self.request.user.is_superuser or group.can_user_manage_group(self.request.user):
+            return qs
+        member = GroupMember.objects.filter(user=self.request.user, group=group, is_active=True).first()
+        if not member:
+            return qs.none()
+        return qs.filter(Q(invited_members_only=False) | Q(invited_members=member))
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -1101,14 +1115,14 @@ class GroupEventListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
         except (TypeError, ValueError):
             cal_month, cal_year = now.month, now.year
         context['calendar_weeks'] = _build_event_list_calendar(
-            context['group'], cal_year, cal_month
+            context['group'], cal_year, cal_month, self.request.user
         )
         context['calendar_month'] = cal_month
         context['calendar_year'] = cal_year
         return context
 
 
-def _build_event_list_calendar(group, year, month):
+def _build_event_list_calendar(group, year, month, user=None):
     """Build calendar weeks for event list page (reuse group calendar logic)."""
     from datetime import date, timedelta
     import calendar as cal_mod
@@ -1117,7 +1131,7 @@ def _build_event_list_calendar(group, year, month):
         end = date(year, 12, 31)
     else:
         end = date(year, month + 1, 1) - timedelta(days=1)
-    events = _get_group_calendar_events_for_month(group, year, month)
+    events = _get_group_calendar_events_for_month(group, year, month, user)
     events_by_day = {}
     for e in events:
         d = e['date'].date() if hasattr(e['date'], 'date') else e['date']
@@ -1156,6 +1170,12 @@ class GroupEventCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
         group = get_object_or_404(Group, pk=group_pk)
         return self.request.user.is_superuser or group.can_user_manage_group(self.request.user)
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        group = get_object_or_404(Group, pk=self.kwargs['group_pk'])
+        kwargs['can_manage_event'] = self.request.user.is_superuser or group.can_user_manage_group(self.request.user)
+        return kwargs
+
     def get_initial(self):
         initial = super().get_initial()
         initial['group'] = self.kwargs.get('group_pk')
@@ -1185,11 +1205,7 @@ class GroupEventDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
 
     def test_func(self):
         event = self.get_object()
-        if self.request.user.is_superuser:
-            return True
-        return GroupMember.objects.filter(
-            user=self.request.user, group=event.group, is_active=True
-        ).exists()
+        return event.can_user_see(self.request.user)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -1220,6 +1236,14 @@ class GroupEventUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     form_class = GroupEventForm
     template_name = 'group/event_form.html'
     context_object_name = 'event'
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['can_manage_event'] = (
+            self.request.user.is_superuser
+            or self.object.group.can_user_manage_group(self.request.user)
+        )
+        return kwargs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -1270,6 +1294,9 @@ class GroupEventDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
 def event_attend(request, pk):
     """RSVP: set will_attend=True for the current user. Redirect back to event detail."""
     event = get_object_or_404(GroupEvent, pk=pk)
+    if not event.can_user_see(request.user):
+        messages.error(request, _("You don't have permission to RSVP to this event."))
+        return redirect('group:event-list', group_pk=event.group.pk)
     member = GroupMember.objects.filter(
         user=request.user, group=event.group, is_active=True
     ).first()
@@ -1293,16 +1320,9 @@ def event_attend(request, pk):
 def event_export_ics(request, pk):
     """Export a single group event as ICS."""
     event = get_object_or_404(GroupEvent, pk=pk)
-    is_member = GroupMember.objects.filter(
-        user=request.user, group=event.group, is_active=True
-    ).exists()
-    if not (
-        request.user.is_superuser
-        or event.group.can_user_manage_group(request.user)
-        or is_member
-    ):
+    if not event.can_user_see(request.user):
         messages.error(request, _("You don't have permission to access this page."))
-        return redirect('group:event-detail', pk=pk)
+        return redirect('group:event-list', group_pk=event.group.pk)
     dtstart = event.scheduled_date
     if not timezone.is_aware(dtstart):
         dtstart = timezone.make_aware(dtstart)

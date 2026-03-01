@@ -1174,6 +1174,30 @@ msgstr "Beschreibung"
 msgid "View meeting details"
 msgstr "Sitzungsdetails anzeigen"
 
+#: group/forms.py
+msgid "Restrict visibility to selected members"
+msgstr "Sichtbarkeit auf ausgewählte Mitglieder beschränken"
+
+#: group/forms.py
+msgid "Only selected members will see this event. Others will not see it. Group managers and leaders always see all events."
+msgstr "Nur ausgewählte Mitglieder sehen diese Veranstaltung. Andere sehen sie nicht. Klubverantwortliche und Klubleiter sehen immer alle Veranstaltungen."
+
+#: group/forms.py
+msgid "Members who can see this event"
+msgstr "Mitglieder, die diese Veranstaltung sehen können"
+
+#: group/forms.py
+msgid "Select the members who should be able to see this event when visibility is restricted."
+msgstr "Wählen Sie die Mitglieder, die diese Veranstaltung bei eingeschränkter Sichtbarkeit sehen können."
+
+#: templates/group/event_detail.html
+msgid "Invite only"
+msgstr "Nur auf Einladung"
+
+#: templates/group/event_detail.html
+msgid "Only selected members can see this event"
+msgstr "Nur ausgewählte Mitglieder können diese Veranstaltung sehen"
+
 #: templates/group/email/meeting_invite.txt:32
 #: templates/group/email/member_invite.txt:14
 #: templates/user/email/welcome_email.txt:17

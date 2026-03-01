@@ -102,6 +102,7 @@ class GroupEventForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        self.can_manage_event = kwargs.pop('can_manage_event', False)
         super().__init__(*args, **kwargs)
         self.fields['scheduled_date'].input_formats = ['%Y-%m-%dT%H:%M', '%Y-%m-%d %H:%M:%S', '%Y-%m-%d %H:%M']
         group_id = self.initial.get('group') or self.data.get('group')
@@ -112,11 +113,43 @@ class GroupEventForm(forms.ModelForm):
             self.fields['group'].initial = group_id
         self.fields['group'].queryset = Group.objects.filter(is_active=True)
 
+        if self.can_manage_event:
+            group = None
+            if self.instance and self.instance.pk:
+                group = self.instance.group
+            elif group_id:
+                group = Group.objects.filter(pk=group_id).first()
+            if group:
+                self.fields['invited_members_only'] = forms.BooleanField(
+                    required=False,
+                    initial=getattr(self.instance, 'invited_members_only', False),
+                    label=_('Restrict visibility to selected members'),
+                    help_text=_('Only selected members will see this event. Others will not see it. Group managers and leaders always see all events.'),
+                    widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+                )
+                self.fields['invited_members'] = forms.ModelMultipleChoiceField(
+                    queryset=group.members.filter(is_active=True).select_related('user').order_by('user__last_name', 'user__first_name'),
+                    required=False,
+                    widget=forms.CheckboxSelectMultiple(attrs={'class': 'form-check-input'}),
+                    label=_('Members who can see this event'),
+                    help_text=_('Select the members who should be able to see this event when visibility is restricted.'),
+                )
+                if self.instance and self.instance.pk:
+                    self.fields['invited_members'].initial = self.instance.invited_members.all()
+
     def clean_scheduled_date(self):
         value = self.cleaned_data.get('scheduled_date')
         if value and timezone.is_naive(value):
             return timezone.make_aware(value, timezone.get_current_timezone())
         return value
+
+    def save(self, commit=True):
+        if self.can_manage_event and 'invited_members_only' in self.cleaned_data:
+            self.instance.invited_members_only = self.cleaned_data['invited_members_only']
+        instance = super().save(commit=commit)
+        if self.can_manage_event and 'invited_members' in self.cleaned_data and commit:
+            instance.invited_members.set(self.cleaned_data['invited_members'])
+        return instance
 
 
 class GroupMeetingForm(forms.ModelForm):

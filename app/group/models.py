@@ -298,6 +298,16 @@ class GroupEvent(models.Model):
     location = models.CharField(max_length=300, blank=True, help_text="Location or place of the event")
     description = models.TextField(blank=True, help_text="Optional description or details")
     is_active = models.BooleanField(default=True, help_text="Whether the event is currently active")
+    invited_members_only = models.BooleanField(
+        default=False,
+        help_text="When enabled, only selected members can see this event. Group managers and leaders always see it.",
+    )
+    invited_members = models.ManyToManyField(
+        GroupMember,
+        related_name='invited_to_events',
+        blank=True,
+        help_text="Members who can see this event when visibility is restricted (managers/leaders always see it)",
+    )
     created_by = models.ForeignKey(
         User,
         on_delete=models.SET_NULL,
@@ -328,6 +338,23 @@ class GroupEvent(models.Model):
     @property
     def is_upcoming(self):
         return self.scheduled_date > timezone.now()
+
+    def can_user_see(self, user):
+        """Check if the given user can see this event (for restricted visibility)."""
+        if not user or not user.is_authenticated:
+            return False
+        if user.is_superuser:
+            return True
+        if self.group.can_user_manage_group(user):
+            return True
+        member = GroupMember.objects.filter(
+            user=user, group=self.group, is_active=True
+        ).first()
+        if not member:
+            return False
+        if not self.invited_members_only:
+            return True
+        return self.invited_members.filter(pk=member.pk).exists()
 
 
 class GroupEventParticipation(models.Model):

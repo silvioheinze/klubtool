@@ -130,15 +130,17 @@ def get_personal_calendar_events(user, group_memberships, councils_from_membersh
                 'cancelled': getattr(m, 'status', None) == 'cancelled',
             })
 
-    # Party events: only where user RSVP'd will_attend=True
+    # Party events: only where user RSVP'd will_attend=True and user can still see the event
     attending_events = GroupEventParticipation.objects.filter(
         member__user=user,
         will_attend=True,
         event__is_active=True,
         event__scheduled_date__gte=date_threshold,
-    ).select_related('event', 'event__group').order_by('event__scheduled_date')
+    ).select_related('event', 'event__group').prefetch_related('event__invited_members').order_by('event__scheduled_date')
     for part in attending_events:
         e = part.event
+        if not e.can_user_see(user):
+            continue
         calendar_events.append({
             'date': e.scheduled_date,
             'title': e.title,
