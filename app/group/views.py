@@ -1929,9 +1929,7 @@ def invite_member(request, pk):
             context = {'group': group, 'signup_url': signup_url, 'email': email}
             try:
                 plain_message = render_to_string('group/email/member_invite.txt', context)
-                html_message = render_to_string('group/email/member_invite.html', context)
             except Exception:
-                html_message = None
                 plain_message = _("You have been invited to join the group \"{group_name}\". Create your account by visiting: {url}").format(
                     group_name=group.name, url=signup_url
                 )
@@ -1940,7 +1938,6 @@ def invite_member(request, pk):
                 plain_message,
                 from_email,
                 [email],
-                html_message=html_message,
                 fail_silently=False,
             )
             messages.success(request, _("Invitation email sent to {email}.").format(email=email))
@@ -2005,29 +2002,22 @@ def send_meeting_invites(request, pk):
     for member in members:
         try:
             # Render email template
+            meeting_url = request.build_absolute_uri(reverse('group:meeting-detail', args=[meeting.pk]))
             email_context = {
                 'meeting': meeting,
                 'member': member,
                 'agenda_items': agenda_items,
                 'group': meeting_group,
+                'meeting_url': meeting_url,
             }
             
-            # Try to render HTML email first, fallback to plain text
-            try:
-                message = render_to_string('group/email/meeting_invite.html', email_context)
-                html_message = message
-                plain_message = render_to_string('group/email/meeting_invite.txt', email_context)
-            except:
-                # Fallback to plain text if HTML template doesn't exist
-                plain_message = render_to_string('group/email/meeting_invite.txt', email_context)
-                html_message = None
-            
+            plain_message = render_to_string('group/email/meeting_invite.txt', email_context)
+
             send_mail(
                 subject,
                 plain_message,
                 from_email,
                 [member.user.email],
-                html_message=html_message,
                 fail_silently=False,
             )
             success_count += 1

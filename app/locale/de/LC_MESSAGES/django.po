@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-02-20 22:51+0100\n"
-"PO-Revision-Date: 2026-02-16 20:38+0100\n"
+"POT-Creation-Date: 2026-03-01 17:56+0100\n"
+"PO-Revision-Date: 2026-03-01 18:06+0100\n"
 "Last-Translator: Silvio Heinze <s.heinze@dataplexity.eu>\n"
 "Language-Team: \n"
 "Language: de_CH@informal\n"
@@ -34,7 +34,11 @@ msgstr "Die Person erhält eine E-Mail mit einem Link zur Kontoerstellung."
 msgid "Group meeting"
 msgstr "Klubsitzung"
 
-#: group/views.py:67 pages/calendar_utils.py:75
+#: group/views.py:66 pages/calendar_utils.py:148
+msgid "Party event"
+msgstr "Parteiveranstaltung"
+
+#: group/views.py:81 pages/calendar_utils.py:75
 #: templates/local/committee_confirm_delete.html:42
 #: templates/local/committee_confirm_delete.html:131
 #: templates/local/committee_form.html:109
@@ -44,7 +48,7 @@ msgstr "Klubsitzung"
 msgid "Council"
 msgstr "Vertretung"
 
-#: group/views.py:88 templates/local/committee_meeting_confirm_delete.html:29
+#: group/views.py:102 templates/local/committee_meeting_confirm_delete.html:29
 #: templates/local/committee_meeting_detail.html:42
 #: templates/local/committee_meeting_form.html:83
 #: templates/local/committee_meeting_form.html:90
@@ -59,58 +63,85 @@ msgstr "Vertretung"
 msgid "Committee"
 msgstr "Ausschuss"
 
-#: group/views.py:278 group/views.py:338 group/views.py:881
+#: group/views.py:298 group/views.py:358 group/views.py:901 group/views.py:1304
 #: templates/403.html:18
 msgid "You don't have permission to access this page."
 msgstr "Sie haben keine Berechtigung, auf diese Seite zuzugreifen."
 
-#: group/views.py:323 group/views.py:385
+#: group/views.py:343 group/views.py:405
 msgid "PDF export is not available."
 msgstr "PDF-Export ist nicht verfügbar."
 
-#: group/views.py:1190
+#: group/views.py:1173
+#, python-format
+msgid "Event '%(title)s' created successfully."
+msgstr "Veranstaltung '%(title)s' erfolgreich erstellt."
+
+#: group/views.py:1241
+#, python-format
+msgid "Event '%(title)s' updated successfully."
+msgstr "Veranstaltung '%(title)s' erfolgreich aktualisiert."
+
+#: group/views.py:1264
+#, python-format
+msgid "Event '%(title)s' deleted successfully."
+msgstr "Veranstaltung '%(title)s' erfolgreich gelöscht."
+
+#: group/views.py:1277
+msgid "You must be a group member to RSVP."
+msgstr ""
+
+#: group/views.py:1286
+msgid "You are marked as attending this event."
+msgstr ""
+
+#: group/views.py:1288
+msgid "You are marked as not attending."
+msgstr "Du bist als nicht anwesend markiert."
+
+#: group/views.py:1491
 msgid "Only scheduled or invited meetings can be cancelled."
 msgstr "Nur geplante oder eingeladene Sitzungen können storniert werden."
 
-#: group/views.py:1198
+#: group/views.py:1499
 msgid "Meeting has been cancelled."
 msgstr "Das Treffen wurde abgesagt."
 
-#: group/views.py:1283 group/views.py:1321 group/views.py:1413
+#: group/views.py:1584 group/views.py:1622 group/views.py:1714
 msgid "Agenda can only be modified when the meeting status is scheduled."
 msgstr ""
 "Die Tagesordnung kann nur geändert werden, wenn der Status der Besprechung "
 "auf „geplant“ steht."
 
-#: group/views.py:1492
+#: group/views.py:1793
 msgid "Agenda order can only be changed when the meeting status is scheduled."
 msgstr ""
 "Die Reihenfolge der Tagesordnungspunkte kann nur geändert werden, wenn der "
 "Status der Sitzung auf „geplant“ steht."
 
-#: group/views.py:1544 group/views.py:1573
+#: group/views.py:1845 group/views.py:1874
 msgid "Minutes can only be modified when the meeting status is invited."
 msgstr ""
 "Protokolle können nur geändert werden, wenn der Status der Besprechung "
 "„eingeladen“ ist."
 
-#: group/views.py:1547 group/views.py:1576 local/views.py:2161
+#: group/views.py:1848 group/views.py:1877 local/views.py:2178
 msgid "Permission denied."
 msgstr "Zugriff verweigert."
 
-#: group/views.py:1597
+#: group/views.py:1898
 msgid "Minute item deleted."
 msgstr "Der Punkt wurde aus dem Protokoll entfernt."
 
-#: group/views.py:1608
+#: group/views.py:1909
 msgid "You don't have permission to invite members to this group."
 msgstr "Sie haben keine Berechtigung, Mitglieder in diesen Klub einzuladen."
 
-#: group/views.py:1619
+#: group/views.py:1920
 msgid "A member with this email is already in the group."
 msgstr "Ein Mitglied mit dieser E-Mail-Adresse ist bereits in diesem Klub."
 
-#: group/views.py:1621
+#: group/views.py:1922
 msgid ""
 "A user with this email already has an account. You can add them as a member "
 "from 'Add Member'."
@@ -118,12 +149,12 @@ msgstr ""
 "Ein Nutzer mit dieser E-Mail-Adresse hat bereits ein Konto. Sie können die "
 "Person unter „Mitglied hinzufügen“ hinzufügen."
 
-#: group/views.py:1627
+#: group/views.py:1928
 #, python-brace-format
 msgid "Invitation to join {group_name}"
 msgstr "Einladung zum Klub {group_name}"
 
-#: group/views.py:1634
+#: group/views.py:1933
 #, python-brace-format
 msgid ""
 "You have been invited to join the group \"{group_name}\". Create your "
@@ -132,35 +163,35 @@ msgstr ""
 "Sie wurden eingeladen, dem Klub „{group_name}“ beizutreten. Erstellen Sie "
 "Ihr Konto unter: {url}"
 
-#: group/views.py:1645
+#: group/views.py:1943
 #, python-brace-format
 msgid "Invitation email sent to {email}."
 msgstr "Einladungs-E-Mail wurde an {email} gesendet."
 
-#: group/views.py:1673
+#: group/views.py:1971
 msgid "You don't have permission to send meeting invites."
 msgstr "Sie haben keine Berechtigung, Sitzungseinladungen zu versenden."
 
-#: group/views.py:1677
+#: group/views.py:1975
 msgid "Invites can only be sent when the meeting is scheduled."
 msgstr ""
 "Einladungen können nur verschickt werden, wenn die Sitzung geplant ist."
 
-#: group/views.py:1688
+#: group/views.py:1986
 msgid "No group members with email addresses found."
 msgstr "Es wurden keine Klubmitglieder mit E-Mail-Adressen gefunden."
 
-#: group/views.py:1696
+#: group/views.py:1994
 #, python-brace-format
 msgid "Meeting Invitation: {meeting_title}"
 msgstr "Sitzungseinladung: {meeting_title}"
 
-#: group/views.py:1745
+#: group/views.py:2036
 #, python-brace-format
 msgid "Meeting invites sent successfully to {count} member(s)."
 msgstr "Einladungen zur Sitzung erfolgreich an {count} Mitglieder gesendet."
 
-#: group/views.py:1768
+#: group/views.py:2059
 #, python-brace-format
 msgid "Failed to send invites to {count} member(s): {emails}"
 msgstr ""
@@ -179,8 +210,7 @@ msgid "Substitute member"
 msgstr "Ersatzmitglied"
 
 #: local/models.py:204 local/models.py:446
-#: templates/group/email/meeting_invite.html:125
-#: templates/group/email/meeting_invite.txt:21
+#: templates/group/email/meeting_invite.txt:23
 #: templates/group/meeting_agenda_export_pdf.html:7
 #: templates/group/meeting_agenda_export_pdf.html:12
 #: templates/group/meeting_detail.html:121
@@ -217,17 +247,13 @@ msgstr "Vorsitzende"
 msgid "Vice Chairperson"
 msgstr "Stellv. Vorsitzende/r"
 
-#: local/models.py:246 templates/group/group_detail.html:279
-#: templates/group/group_detail.html:347 templates/group/member_detail.html:85
+#: local/models.py:246 templates/group/group_detail.html:312
+#: templates/group/group_detail.html:380 templates/group/member_detail.html:85
 #: templates/group/member_form.html:226
 #: templates/local/committee_detail.html:106
 #: templates/local/committee_member_form.html:213
 msgid "Member"
 msgstr "Mitglied"
-
-#: templates/group/group_detail.html
-msgid "Party member"
-msgstr "Parteimitglied"
 
 #: local/models.py:247
 msgid "Substitute Member"
@@ -340,59 +366,59 @@ msgstr "Sie haben keine Berechtigung, Mitglieder in diese Gruppe einzuladen."
 msgid "Committee meeting '%(title)s' created successfully."
 msgstr ""
 
-#: local/views.py:2154 local/views.py:2158
+#: local/views.py:2171 local/views.py:2175
 msgid "Invalid request."
 msgstr "Ungültige Anfrage."
 
-#: local/views.py:2165 local/views.py:2166
+#: local/views.py:2182 local/views.py:2183
 msgid "Invalid selection."
 msgstr ""
 
-#: local/views.py:2171
+#: local/views.py:2188
 msgid "Invalid substitute member."
 msgstr "Ungültiges Stellvertreter-Mitglied."
 
-#: local/views.py:2177
+#: local/views.py:2194
 #, python-format
 msgid "Substitute set: %(name)s will attend in your place."
 msgstr "Vertretung festgelegt: %(name)s nimmt an deiner Stelle teil."
 
-#: local/views.py:2181
+#: local/views.py:2198
 msgid "Substitute cleared."
 msgstr "Vertretung entfernt."
 
-#: local/views.py:2212
+#: local/views.py:2229
 #, python-format
 msgid "Committee meeting '%(title)s' updated successfully."
 msgstr ""
 
-#: local/views.py:2233
+#: local/views.py:2250
 #, python-format
 msgid "Committee meeting '%(title)s' deleted successfully."
 msgstr ""
 
-#: local/views.py:2419
+#: local/views.py:2436
 msgid "Invitation can only be added when the session is scheduled."
 msgstr ""
 "Eine Einladung kann nur hinzugefügt werden, wenn die Sitzung geplant ist."
 
-#: local/views.py:2447
+#: local/views.py:2464
 msgid "Invitation uploaded and session status set to Invited."
 msgstr "Einladung hochgeladen und Sitzungsstatus auf „Eingeladen“ gesetzt."
 
-#: local/views.py:2463
+#: local/views.py:2480
 msgid "Only scheduled or invited sessions can be cancelled."
 msgstr "Nur geplante oder eingeladene Sitzungen können storniert werden."
 
-#: local/views.py:2471
+#: local/views.py:2488
 msgid "Session has been cancelled."
 msgstr "Die Sitzung wurde abgesagt."
 
-#: local/views.py:2489
+#: local/views.py:2506
 msgid "Minutes can only be added for completed sessions."
 msgstr "Protokolle können nur für abgeschlossene Sitzungen hinzugefügt werden."
 
-#: local/views.py:2508
+#: local/views.py:2525
 msgid "Minutes saved successfully."
 msgstr "Protokoll erfolgreich gespeichert."
 
@@ -931,8 +957,10 @@ msgid "Do you really want to log out?"
 msgstr "Wirklich abmelden?"
 
 #: templates/account/logout.html:47
+#: templates/group/event_confirm_delete.html:37
+#: templates/group/event_form.html:108 templates/group/event_form.html:111
 #: templates/group/group_confirm_delete.html:83
-#: templates/group/group_detail.html:385 templates/group/group_form.html:128
+#: templates/group/group_detail.html:420 templates/group/group_form.html:128
 #: templates/group/group_form.html:136
 #: templates/group/meeting_confirm_delete.html:66
 #: templates/group/meeting_detail.html:366
@@ -1021,56 +1049,48 @@ msgstr "Du hast bereits ein Konto?"
 
 #: templates/account/verification_sent.html:4
 #: templates/account/verification_sent.html:14
-#, fuzzy
-#| msgid "Enter your email address"
 msgid "Verify Your Email Address"
-msgstr "Geben Sie Ihre E-Mail-Adresse ein"
+msgstr "Bestätige deine E-Mail-Adresse"
 
 #: templates/account/verification_sent.html:20
-#, fuzzy
-#| msgid ""
-#| "We have sent you an email with instructions to reset your password. If "
-#| "you have not received it please check your spam folder. Otherwise contact "
-#| "us if you do not receive it in a few minutes."
 msgid ""
 "We have sent an email to you for verification. Follow the link provided to "
 "finalize the signup process. If you do not see the verification email in "
 "your main inbox, check your spam folder. Please contact us if you do not "
 "receive the verification email within a few minutes."
 msgstr ""
-"Wir haben dir eine E-Mail mit Anweisungen zum Zurücksetzen deines Passworts "
-"geschickt. Wenn du sie nicht bekommen hast, schau mal in deinem Spam-Ordner "
-"nach. Wenn du sie auch nach ein paar Minuten nicht hast, melde dich einfach "
-"bei uns."
+"Wir haben dir eine E-Mail zur Bestätigung geschickt. Klick einfach auf den "
+"Link darin, um die Anmeldung abzuschließen. Wenn du die Bestätigungs-E-Mail "
+"nicht in deinem Posteingang findest, schau mal in deinem Spam-Ordner nach. "
+"Melde dich bei uns, wenn du die Bestätigungs-E-Mail nicht innerhalb von ein "
+"paar Minuten bekommst."
 
 #: templates/account/verification_sent.html:24
-#, fuzzy
-#| msgid "Back to Committee"
 msgid "Back to Home"
-msgstr "Zurück zum Ausschuss"
+msgstr "Zurück zur Startseite"
 
-#: templates/group/email/meeting_invite.html:91
 #: templates/group/email/meeting_invite.txt:2
 msgid "Meeting Invitation"
-msgstr "Antragsinformation"
+msgstr "Sitzungseinladung"
 
-#: templates/group/email/meeting_invite.html:94
 #: templates/group/email/meeting_invite.txt:4
-#: templates/group/email/member_invite.html:19
 #: templates/group/email/member_invite.txt:4
 #: templates/user/email/password_reset_key_message.html:94
-#: templates/user/email/welcome_email.html:67
 #: templates/user/email/welcome_email.txt:4
 msgid "Hello"
 msgstr "Hallo"
 
-#: templates/group/email/meeting_invite.html:96
 #: templates/group/email/meeting_invite.txt:6
 msgid "You are invited to attend the following group meeting:"
 msgstr "Sie sind herzlich eingeladen, an folgendem Klubtreffen teilzunehmen:"
 
-#: templates/group/email/meeting_invite.html:101
+#: templates/group/email/meeting_invite.txt:8
+msgid "Meeting Title"
+msgstr "Sitzungstitel"
+
 #: templates/group/email/meeting_invite.txt:9
+#: templates/group/event_confirm_delete.html:26
+#: templates/group/event_form.html:93
 #: templates/group/meeting_agenda_export_pdf.html:14
 #: templates/group/meeting_confirm_delete.html:37
 #: templates/group/meeting_detail.html:50 templates/group/meeting_form.html:165
@@ -1088,8 +1108,9 @@ msgstr "Sie sind herzlich eingeladen, an folgendem Klubtreffen teilzunehmen:"
 msgid "Group"
 msgstr "Klub"
 
-#: templates/group/email/meeting_invite.html:105
 #: templates/group/email/meeting_invite.txt:10
+#: templates/group/event_confirm_delete.html:28
+#: templates/group/event_detail.html:41
 #: templates/group/meeting_confirm_delete.html:42
 #: templates/group/meeting_detail.html:58 templates/group/meeting_form.html:243
 #: templates/local/committee_meeting_confirm_delete.html:34
@@ -1099,8 +1120,8 @@ msgstr "Klub"
 msgid "Date & Time"
 msgstr "Datum & Uhrzeit"
 
-#: templates/group/email/meeting_invite.html:110
 #: templates/group/email/meeting_invite.txt:12
+#: templates/group/event_detail.html:51
 #: templates/group/meeting_confirm_delete.html:46
 #: templates/group/meeting_detail.html:69 templates/group/meeting_form.html:249
 #: templates/group/meeting_list.html:94
@@ -1112,8 +1133,8 @@ msgstr "Datum & Uhrzeit"
 msgid "Location"
 msgstr "Ort"
 
-#: templates/group/email/meeting_invite.html:118
 #: templates/group/email/meeting_invite.txt:16
+#: templates/group/event_detail.html:57
 #: templates/group/group_confirm_delete.html:73
 #: templates/group/meeting_detail.html:112
 #: templates/group/meeting_detail.html:347
@@ -1149,49 +1170,24 @@ msgstr "Ort"
 msgid "Description"
 msgstr "Beschreibung"
 
-#: templates/group/email/meeting_invite.html:138
-#: templates/group/email/meeting_invite.txt:30
-#: templates/group/email/member_invite.html:26
+#: templates/group/email/meeting_invite.txt:20
+msgid "View meeting details"
+msgstr "Sitzungsdetails anzeigen"
+
+#: templates/group/email/meeting_invite.txt:32
 #: templates/group/email/member_invite.txt:14
-#: templates/user/email/welcome_email.html:92
 #: templates/user/email/welcome_email.txt:17
 msgid "Best regards"
 msgstr "Mit freundlichen Grüßen"
 
-#: templates/group/email/meeting_invite.txt:8
-msgid "Meeting Title"
-msgstr "Sitzungstitel"
-
-#: templates/group/email/member_invite.html:16
 #: templates/group/email/member_invite.txt:2
 msgid "Group invitation"
 msgstr "Gruppeneinladung"
 
-#: templates/group/email/member_invite.html:20
 #: templates/group/email/member_invite.txt:6
 #, python-format
 msgid "You have been invited to join the group \"%(group_name)s\"."
 msgstr "Sie wurden eingeladen, der Gruppe „%(group_name)s“ beizutreten."
-
-#: templates/group/email/member_invite.html:21
-msgid "Click the button below to create your account:"
-msgstr "Klicken Sie auf die Schaltfläche unten, um Ihr Konto zu erstellen:"
-
-#: templates/group/email/member_invite.html:22
-msgid "Create account"
-msgstr "Konto erstellen"
-
-#: templates/group/email/member_invite.html:23
-msgid "Or copy this link into your browser:"
-msgstr "Oder kopieren Sie diesen Link in Ihren Browser:"
-
-#: templates/group/email/member_invite.html:24
-#: templates/group/email/member_invite.txt:12
-msgid ""
-"After creating your account, a group administrator can add you to the group."
-msgstr ""
-"Nach der Kontoerstellung kann ein Gruppenadministrator Sie zur Gruppe "
-"hinzufügen."
 
 #: templates/group/email/member_invite.txt:8
 msgid ""
@@ -1201,22 +1197,52 @@ msgstr ""
 "Erstellen Sie Ihr Konto, indem Sie auf den folgenden Link klicken (oder ihn "
 "in Ihren Browser kopieren):"
 
-#: templates/group/group_calendar_export_pdf.html:6
-#: templates/group/group_calendar_export_pdf.html:10
-msgid "Calendar"
-msgstr "Kalender"
+#: templates/group/email/member_invite.txt:12
+msgid ""
+"After creating your account, a group administrator can add you to the group."
+msgstr ""
+"Nach der Kontoerstellung kann ein Gruppenadministrator Sie zur Gruppe "
+"hinzufügen."
 
-#: templates/group/group_calendar_export_pdf.html:18
-#: templates/group/group_meetings_export_pdf.html:18
-#: templates/group/meeting_cancel_confirm.html:45
-#: templates/group/meeting_list.html:89
-#: templates/local/session_cancel_confirm.html:46
-#: templates/local/session_confirm_delete.html:76
-#: templates/local/session_detail.html:65
-#: templates/pages/personal_calendar_export_pdf.html:17
-msgid "Date"
-msgstr "Datum"
+#: templates/group/event_confirm_delete.html:5
+#: templates/group/event_confirm_delete.html:13
+#: templates/group/event_confirm_delete.html:40
+msgid "Delete Event"
+msgstr "Veranstaltung löschen"
 
+#: templates/group/event_confirm_delete.html:17
+#: templates/group/group_confirm_delete.html:30
+#: templates/group/meeting_confirm_delete.html:17
+#: templates/group/member_confirm_delete.html:30
+#: templates/local/committee_confirm_delete.html:31
+#: templates/local/committee_meeting_confirm_delete.html:17
+#: templates/local/council_confirm_delete.html:30
+#: templates/local/local_confirm_delete.html:19
+#: templates/local/party_confirm_delete.html:30
+#: templates/local/term_confirm_delete.html:30
+#: templates/motion/inquiry_confirm_delete.html:30
+#: templates/motion/inquiry_status_confirm_delete.html:34
+#: templates/motion/motion_confirm_delete.html:30
+#: templates/motion/motion_group_decision_confirm_delete.html:35
+#: templates/motion/motion_status_confirm_delete.html:34
+#: templates/motion/motion_vote_confirm_delete.html:34
+#: templates/user/role_confirm_delete.html:19
+msgid "Warning"
+msgstr "Warnung"
+
+#: templates/group/event_confirm_delete.html:18
+msgid ""
+"Are you sure you want to delete this event? This action cannot be undone."
+msgstr ""
+"Bist du sicher, dass du diese Veranstaltung löschen willst? Diese Aktion "
+"kann nicht rückgängig gemacht werden."
+
+#: templates/group/event_confirm_delete.html:21
+#: templates/group/event_detail.html:5
+msgid "Event Details"
+msgstr "Veranstaltungsdetails"
+
+#: templates/group/event_confirm_delete.html:24
 #: templates/group/group_calendar_export_pdf.html:19
 #: templates/group/group_meetings_export_pdf.html:19
 #: templates/group/meeting_agenda_export_pdf.html:23
@@ -1252,6 +1278,285 @@ msgstr "Datum"
 msgid "Title"
 msgstr "Titel"
 
+#: templates/group/event_detail.html:19 templates/group/group_detail.html:17
+#: templates/group/group_list.html:96 templates/group/meeting_detail.html:26
+#: templates/group/meeting_detail.html:165
+#: templates/group/meeting_detail.html:232
+#: templates/group/meeting_list.html:119 templates/group/member_detail.html:16
+#: templates/local/committee_detail.html:17
+#: templates/local/committee_detail.html:129
+#: templates/local/committee_meeting_detail.html:18
+#: templates/local/council_detail.html:17 templates/local/council_list.html:114
+#: templates/local/local_detail.html:17 templates/local/local_detail.html:186
+#: templates/local/local_detail.html:264 templates/local/local_list.html:105
+#: templates/local/party_detail.html:16 templates/local/party_list.html:126
+#: templates/local/session_detail.html:19 templates/local/term_detail.html:16
+#: templates/local/term_list.html:131
+#: templates/local/term_seat_distribution.html:90
+#: templates/local/term_seat_distribution_list.html:129
+#: templates/motion/inquiry_detail.html:21
+#: templates/motion/motion_detail.html:23 templates/user/list.html:90
+#: templates/user/list.html:91 templates/user/role_list.html:105
+msgid "Edit"
+msgstr "Bearbeiten"
+
+#: templates/group/event_detail.html:21 templates/group/event_form.html:109
+msgid "Are you sure you want to delete this event?"
+msgstr "Möchtest du diese Veranstaltung wirklich löschen?"
+
+#: templates/group/event_detail.html:22 templates/group/event_form.html:109
+#: templates/group/group_list.html:100 templates/group/meeting_detail.html:168
+#: templates/group/meeting_detail.html:235
+#: templates/group/meeting_list.html:123 templates/local/council_list.html:118
+#: templates/local/local_detail.html:192 templates/local/local_list.html:109
+#: templates/local/party_list.html:130 templates/local/term_list.html:135
+#: templates/local/term_seat_distribution.html:94
+#: templates/local/term_seat_distribution_list.html:133
+#: templates/motion/inquiry_detail.html:26 templates/user/role_list.html:110
+#: templates/user/role_list.html:115
+msgid "Delete"
+msgstr "Löschen"
+
+#: templates/group/event_detail.html:26 templates/group/event_form.html:33
+msgid "Back to Events"
+msgstr "Zurück zu den Veranstaltungen"
+
+#: templates/group/event_detail.html:37
+msgid "Event Information"
+msgstr "Infos zur Veranstaltung"
+
+#: templates/group/event_detail.html:45 templates/group/event_list.html:45
+#: templates/group/meeting_confirm_delete.html:55
+#: templates/group/meeting_detail.html:85 templates/group/meeting_list.html:109
+#: templates/local/committee_detail.html:208
+#: templates/local/committee_meeting_confirm_delete.html:45
+#: templates/local/committee_meeting_detail.html:62
+msgid "Upcoming"
+msgstr "Anstehend"
+
+#: templates/group/event_detail.html:47
+msgid "Past event"
+msgstr "Vergangene Veranstaltung"
+
+#: templates/group/event_detail.html:63
+msgid "Your RSVP"
+msgstr ""
+
+#: templates/group/event_detail.html:68
+msgid "I will attend"
+msgstr ""
+
+#: templates/group/event_detail.html:75
+msgid "I will not attend"
+msgstr ""
+
+#: templates/group/event_detail.html:85
+msgid "Attending"
+msgstr ""
+
+#: templates/group/event_detail.html:103
+#: templates/group/group_confirm_delete.html:97
+#: templates/group/group_detail.html:282 templates/group/group_list.html:60
+#: templates/group/meeting_detail.html:142
+#: templates/group/meeting_detail.html:214
+#: templates/group/meeting_detail.html:261
+#: templates/group/member_confirm_delete.html:100
+#: templates/group/member_detail.html:119
+#: templates/local/committee_confirm_delete.html:98
+#: templates/local/committee_detail.html:109
+#: templates/local/committee_detail.html:185
+#: templates/local/committee_detail.html:266
+#: templates/local/committee_list.html:100
+#: templates/local/committee_meeting_detail.html:140
+#: templates/local/council_confirm_delete.html:88
+#: templates/local/council_list.html:84 templates/local/local_detail.html:159
+#: templates/local/local_detail.html:242 templates/local/local_list.html:74
+#: templates/local/party_confirm_delete.html:91
+#: templates/local/party_list.html:86
+#: templates/local/term_confirm_delete.html:97
+#: templates/local/term_detail.html:84 templates/local/term_list.html:93
+#: templates/local/term_seat_distribution.html:62
+#: templates/local/term_seat_distribution.html:147
+#: templates/local/term_seat_distribution_list.html:93
+#: templates/motion/inquiry_confirm_delete.html:106
+#: templates/motion/motion_confirm_delete.html:109 templates/user/list.html:41
+#: templates/user/role_list.html:77
+msgid "Actions"
+msgstr "Aktionen"
+
+#: templates/group/event_detail.html:108
+#: templates/group/meeting_detail.html:266
+msgid "Download Calendar"
+msgstr "Kalendereintrag herunterladen"
+
+#: templates/group/event_form.html:7 templates/group/event_form.html:47
+msgid "Edit Event"
+msgstr "Veranstaltung bearbeiten"
+
+#: templates/group/event_form.html:9 templates/group/event_list.html:19
+#: templates/group/event_list.html:70
+msgid "Add Event"
+msgstr "Veranstaltung hinzufügen"
+
+#: templates/group/event_form.html:21
+msgid "Edit Party Event"
+msgstr "Parteiveranstaltung bearbeiten"
+
+#: templates/group/event_form.html:23
+msgid "Add Party Event"
+msgstr "Parteiveranstaltung hinzufügen"
+
+#: templates/group/event_form.html:29
+msgid "Back to Event"
+msgstr "Zurück zur Veranstaltung"
+
+#: templates/group/event_form.html:49
+msgid "Add New Event"
+msgstr "Veranstaltung hinzufügen"
+
+#: templates/group/event_form.html:115
+msgid "Update Event"
+msgstr "Veranstaltung aktualisieren"
+
+#: templates/group/event_form.html:115
+msgid "Create Event"
+msgstr "Veranstaltung erstellen"
+
+#: templates/group/event_list.html:5
+#, python-format
+msgid "Party Events – %(group)s"
+msgstr ""
+
+#: templates/group/event_list.html:12
+msgid "Party Events"
+msgstr "Parteiveranstaltungen"
+
+#: templates/group/event_list.html:15 templates/group/meeting_detail.html:30
+#: templates/group/meeting_form.html:33
+#: templates/group/member_confirm_delete.html:15
+#: templates/group/member_detail.html:19 templates/group/member_form.html:29
+#: templates/group/member_invite.html:15
+msgid "Back to Group"
+msgstr "Zurück zum Klub"
+
+#: templates/group/event_list.html:31
+msgid "Upcoming Events"
+msgstr "Bevorstehende Veranstaltungen"
+
+#: templates/group/event_list.html:43
+#: templates/group/meeting_confirm_delete.html:53
+#: templates/group/meeting_detail.html:83 templates/group/meeting_list.html:107
+#: templates/local/committee_detail.html:206
+#: templates/local/committee_meeting_confirm_delete.html:43
+#: templates/local/committee_meeting_detail.html:60
+msgid "Past"
+msgstr "Vergangen"
+
+#: templates/group/event_list.html:51
+msgid "Event pagination"
+msgstr "Veranstaltungs-Paginierung"
+
+#: templates/group/event_list.html:54 templates/group/meeting_list.html:144
+msgid "Previous"
+msgstr "Nächstes"
+
+#: templates/group/event_list.html:56 templates/group/meeting_list.html:151
+#: templates/local/committee_list.html:173
+#: templates/local/council_list.html:147 templates/local/local_list.html:138
+#: templates/local/party_list.html:159 templates/local/term_list.html:164
+#: templates/local/term_seat_distribution_list.html:162
+#: templates/motion/inquiry_list.html:230 templates/motion/motion_list.html:245
+#: templates/user/role_list.html:145
+msgid "Page"
+msgstr "Seite"
+
+#: templates/group/event_list.html:58 templates/group/meeting_list.html:158
+msgid "Next"
+msgstr "Nächstes"
+
+#: templates/group/event_list.html:66
+msgid "No events"
+msgstr ""
+
+#: templates/group/event_list.html:67
+msgid "No party events yet."
+msgstr "Noch keine Parteiveranstaltungen."
+
+#: templates/group/event_list.html:84 templates/group/group_detail.html:241
+#: templates/home.html:274
+msgid "Today"
+msgstr "Heute"
+
+#: templates/group/event_list.html:94
+#: templates/group/group_calendar_partial.html:11
+#: templates/group/group_detail.html:196 templates/home.html:218
+#: templates/pages/calendar_month_partial.html:10
+msgid "Mon"
+msgstr "Mo"
+
+#: templates/group/event_list.html:94
+#: templates/group/group_calendar_partial.html:12
+#: templates/group/group_detail.html:197 templates/home.html:219
+#: templates/pages/calendar_month_partial.html:11
+msgid "Tue"
+msgstr "Di"
+
+#: templates/group/event_list.html:94
+#: templates/group/group_calendar_partial.html:13
+#: templates/group/group_detail.html:198 templates/home.html:220
+#: templates/pages/calendar_month_partial.html:12
+msgid "Wed"
+msgstr "Mi"
+
+#: templates/group/event_list.html:94
+#: templates/group/group_calendar_partial.html:14
+#: templates/group/group_detail.html:199 templates/home.html:221
+#: templates/pages/calendar_month_partial.html:13
+msgid "Thu"
+msgstr "Do"
+
+#: templates/group/event_list.html:94
+#: templates/group/group_calendar_partial.html:15
+#: templates/group/group_detail.html:200 templates/home.html:222
+#: templates/pages/calendar_month_partial.html:14
+msgid "Fri"
+msgstr "Fr"
+
+#: templates/group/event_list.html:94
+#: templates/group/group_calendar_partial.html:16
+#: templates/group/group_detail.html:201 templates/home.html:223
+#: templates/pages/calendar_month_partial.html:15
+msgid "Sat"
+msgstr "Sa"
+
+#: templates/group/event_list.html:94
+#: templates/group/group_calendar_partial.html:17
+#: templates/group/group_detail.html:202 templates/home.html:224
+#: templates/pages/calendar_month_partial.html:16
+msgid "Sun"
+msgstr "So"
+
+#: templates/group/event_list.html:120 templates/group/group_detail.html:232
+#: templates/home.html:260
+msgid "Calendar not available."
+msgstr "Kalender nicht verfügbar."
+
+#: templates/group/group_calendar_export_pdf.html:6
+#: templates/group/group_calendar_export_pdf.html:10
+msgid "Calendar"
+msgstr "Kalender"
+
+#: templates/group/group_calendar_export_pdf.html:18
+#: templates/group/group_meetings_export_pdf.html:18
+#: templates/group/meeting_cancel_confirm.html:45
+#: templates/group/meeting_list.html:89
+#: templates/local/session_cancel_confirm.html:46
+#: templates/local/session_confirm_delete.html:76
+#: templates/local/session_detail.html:65
+#: templates/pages/personal_calendar_export_pdf.html:17
+msgid "Date"
+msgstr "Datum"
+
 #: templates/group/group_calendar_export_pdf.html:32
 msgid "No sessions, committee meetings or group meetings in this year."
 msgstr ""
@@ -1265,52 +1570,10 @@ msgid "Generated by Klubtool"
 msgstr "Erstellt von Klubtool"
 
 #: templates/group/group_calendar_partial.html:6
-#: templates/group/group_detail.html:151
+#: templates/group/group_detail.html:182
 #: templates/pages/calendar_month_partial.html:5
 msgid "Monthly calendar"
 msgstr "Monatlicher Kalender"
-
-#: templates/group/group_calendar_partial.html:11
-#: templates/group/group_detail.html:165 templates/home.html:218
-#: templates/pages/calendar_month_partial.html:10
-msgid "Mon"
-msgstr "Mo"
-
-#: templates/group/group_calendar_partial.html:12
-#: templates/group/group_detail.html:166 templates/home.html:219
-#: templates/pages/calendar_month_partial.html:11
-msgid "Tue"
-msgstr "Di"
-
-#: templates/group/group_calendar_partial.html:13
-#: templates/group/group_detail.html:167 templates/home.html:220
-#: templates/pages/calendar_month_partial.html:12
-msgid "Wed"
-msgstr "Mi"
-
-#: templates/group/group_calendar_partial.html:14
-#: templates/group/group_detail.html:168 templates/home.html:221
-#: templates/pages/calendar_month_partial.html:13
-msgid "Thu"
-msgstr "Do"
-
-#: templates/group/group_calendar_partial.html:15
-#: templates/group/group_detail.html:169 templates/home.html:222
-#: templates/pages/calendar_month_partial.html:14
-msgid "Fri"
-msgstr "Fr"
-
-#: templates/group/group_calendar_partial.html:16
-#: templates/group/group_detail.html:170 templates/home.html:223
-#: templates/pages/calendar_month_partial.html:15
-msgid "Sat"
-msgstr "Sa"
-
-#: templates/group/group_calendar_partial.html:17
-#: templates/group/group_detail.html:171 templates/home.html:224
-#: templates/pages/calendar_month_partial.html:16
-msgid "Sun"
-msgstr "So"
 
 #: templates/group/group_confirm_delete.html:5
 #: templates/group/group_confirm_delete.html:12
@@ -1348,25 +1611,6 @@ msgstr "Zurück zur Liste"
 #: templates/motion/motion_vote_confirm_delete.html:29
 msgid "Confirm Deletion"
 msgstr "Löschung bestätigen"
-
-#: templates/group/group_confirm_delete.html:30
-#: templates/group/meeting_confirm_delete.html:17
-#: templates/group/member_confirm_delete.html:30
-#: templates/local/committee_confirm_delete.html:31
-#: templates/local/committee_meeting_confirm_delete.html:17
-#: templates/local/council_confirm_delete.html:30
-#: templates/local/local_confirm_delete.html:19
-#: templates/local/party_confirm_delete.html:30
-#: templates/local/term_confirm_delete.html:30
-#: templates/motion/inquiry_confirm_delete.html:30
-#: templates/motion/inquiry_status_confirm_delete.html:34
-#: templates/motion/motion_confirm_delete.html:30
-#: templates/motion/motion_group_decision_confirm_delete.html:35
-#: templates/motion/motion_status_confirm_delete.html:34
-#: templates/motion/motion_vote_confirm_delete.html:34
-#: templates/user/role_confirm_delete.html:19
-msgid "Warning"
-msgstr "Warnung"
 
 #: templates/group/group_confirm_delete.html:32
 msgid "Are you sure you want to delete the Group"
@@ -1541,35 +1785,6 @@ msgstr "Aktiv"
 msgid "Created"
 msgstr "Erstellt"
 
-#: templates/group/group_confirm_delete.html:97
-#: templates/group/group_detail.html:251 templates/group/group_list.html:60
-#: templates/group/meeting_detail.html:142
-#: templates/group/meeting_detail.html:214
-#: templates/group/meeting_detail.html:261
-#: templates/group/member_confirm_delete.html:100
-#: templates/group/member_detail.html:119
-#: templates/local/committee_confirm_delete.html:98
-#: templates/local/committee_detail.html:109
-#: templates/local/committee_detail.html:185
-#: templates/local/committee_detail.html:266
-#: templates/local/committee_list.html:100
-#: templates/local/committee_meeting_detail.html:140
-#: templates/local/council_confirm_delete.html:88
-#: templates/local/council_list.html:84 templates/local/local_detail.html:159
-#: templates/local/local_detail.html:242 templates/local/local_list.html:74
-#: templates/local/party_confirm_delete.html:91
-#: templates/local/party_list.html:86
-#: templates/local/term_confirm_delete.html:97
-#: templates/local/term_detail.html:84 templates/local/term_list.html:93
-#: templates/local/term_seat_distribution.html:62
-#: templates/local/term_seat_distribution.html:147
-#: templates/local/term_seat_distribution_list.html:93
-#: templates/motion/inquiry_confirm_delete.html:106
-#: templates/motion/motion_confirm_delete.html:109 templates/user/list.html:41
-#: templates/user/role_list.html:77
-msgid "Actions"
-msgstr "Aktionen"
-
 #: templates/group/group_confirm_delete.html:102
 #: templates/group/member_confirm_delete.html:111
 #: templates/group/member_detail.html:131
@@ -1587,48 +1802,16 @@ msgstr "Klub bearbeiten"
 msgid "View Party"
 msgstr "Partei anzeigen"
 
-#: templates/group/group_detail.html:17 templates/group/group_list.html:96
-#: templates/group/meeting_detail.html:26
-#: templates/group/meeting_detail.html:165
-#: templates/group/meeting_detail.html:232
-#: templates/group/meeting_list.html:119 templates/group/member_detail.html:16
-#: templates/local/committee_detail.html:17
-#: templates/local/committee_detail.html:129
-#: templates/local/committee_meeting_detail.html:18
-#: templates/local/council_detail.html:17 templates/local/council_list.html:114
-#: templates/local/local_detail.html:17 templates/local/local_detail.html:186
-#: templates/local/local_detail.html:264 templates/local/local_list.html:105
-#: templates/local/party_detail.html:16 templates/local/party_list.html:126
-#: templates/local/session_detail.html:19 templates/local/term_detail.html:16
-#: templates/local/term_list.html:131
-#: templates/local/term_seat_distribution.html:90
-#: templates/local/term_seat_distribution_list.html:129
-#: templates/motion/inquiry_detail.html:21
-#: templates/motion/motion_detail.html:23 templates/user/list.html:90
-#: templates/user/list.html:91 templates/user/role_list.html:105
-msgid "Edit"
-msgstr "Bearbeiten"
-
 #: templates/group/group_detail.html:29
 msgid "Group Information"
 msgstr "Klubinformation"
 
-#: templates/group/group_detail.html:64 templates/group/meeting_list.html:5
-#: templates/group/meeting_list.html:12
-msgid "Group Meetings"
-msgstr "Klubsitzungen"
+#: templates/group/group_detail.html:64
+msgid "Party events"
+msgstr "Parteiveranstaltungen"
 
-#: templates/group/group_detail.html:67 templates/group/group_detail.html:68
-#: templates/home.html:139
-msgid "ICS"
-msgstr ""
-
-#: templates/group/group_detail.html:70 templates/group/group_detail.html:71
-#: templates/group/group_detail.html:154 templates/home.html:142
-msgid "PDF"
-msgstr ""
-
-#: templates/group/group_detail.html:76 templates/group/group_detail.html:237
+#: templates/group/group_detail.html:67 templates/group/group_detail.html:107
+#: templates/group/group_detail.html:268
 #: templates/group/meeting_detail.html:125
 #: templates/group/meeting_detail.html:200
 #: templates/local/committee_detail.html:95
@@ -1641,7 +1824,30 @@ msgstr ""
 msgid "Add"
 msgstr "Hinzufügen"
 
-#: templates/group/group_detail.html:89
+#: templates/group/group_detail.html:72
+msgid "View all party events"
+msgstr "Alle Parteiveranstaltungen anzeigen"
+
+#: templates/group/group_detail.html:83
+msgid "No upcoming party events."
+msgstr "Keine bevorstehenden Parteiveranstaltungen."
+
+#: templates/group/group_detail.html:95 templates/group/meeting_list.html:5
+#: templates/group/meeting_list.html:12
+msgid "Group Meetings"
+msgstr "Klubsitzungen"
+
+#: templates/group/group_detail.html:98 templates/group/group_detail.html:99
+#: templates/home.html:139
+msgid "ICS"
+msgstr ""
+
+#: templates/group/group_detail.html:101 templates/group/group_detail.html:102
+#: templates/group/group_detail.html:185 templates/home.html:142
+msgid "PDF"
+msgstr ""
+
+#: templates/group/group_detail.html:120
 #: templates/group/group_meetings_list_partial.html:8
 #: templates/group/meeting_cancel_confirm.html:50
 #: templates/group/meeting_detail.html:76
@@ -1652,7 +1858,7 @@ msgstr "Hinzufügen"
 msgid "Scheduled"
 msgstr "Geplant"
 
-#: templates/group/group_detail.html:91
+#: templates/group/group_detail.html:122
 #: templates/group/group_meetings_list_partial.html:10
 #: templates/group/meeting_cancel_confirm.html:52
 #: templates/group/meeting_detail.html:78
@@ -1663,7 +1869,7 @@ msgstr "Geplant"
 msgid "Invited"
 msgstr "Eingeladen"
 
-#: templates/group/group_detail.html:93
+#: templates/group/group_detail.html:124
 #: templates/group/group_meetings_list_partial.html:12
 #: templates/group/meeting_detail.html:80
 #: templates/local/council_detail.html:174
@@ -1672,93 +1878,85 @@ msgstr "Eingeladen"
 msgid "Cancelled"
 msgstr "Abgebrochen"
 
-#: templates/group/group_detail.html:99
+#: templates/group/group_detail.html:130
 #: templates/group/group_meetings_list_partial.html:18
 msgid "Meetings list pagination"
 msgstr "Seitenumbruch bei der Liste der Meetings"
 
-#: templates/group/group_detail.html:101
+#: templates/group/group_detail.html:132
 #: templates/group/group_meetings_list_partial.html:20 templates/home.html:177
-#: templates/pages/personal_calendar_list_partial.html:28
+#: templates/pages/personal_calendar_list_partial.html:30
 #, python-format
 msgid "Page %(page)s of %(num_pages)s"
 msgstr "Seite %(page)s von %(num_pages)s"
 
-#: templates/group/group_detail.html:105
+#: templates/group/group_detail.html:136
 #: templates/group/group_meetings_list_partial.html:24 templates/home.html:181
-#: templates/pages/personal_calendar_list_partial.html:32
+#: templates/pages/personal_calendar_list_partial.html:34
 msgid "Previous page"
 msgstr "Vorherige Seite"
 
-#: templates/group/group_detail.html:110
+#: templates/group/group_detail.html:141
 #: templates/group/group_meetings_list_partial.html:29 templates/home.html:186
-#: templates/pages/personal_calendar_list_partial.html:37
+#: templates/pages/personal_calendar_list_partial.html:39
 msgid "Next page"
 msgstr "Nächste Seite"
 
-#: templates/group/group_detail.html:120 templates/group/group_detail.html:131
+#: templates/group/group_detail.html:151 templates/group/group_detail.html:162
 #: templates/group/group_meetings_list_partial.html:39
 #: templates/group/group_meetings_list_partial.html:48
 #: templates/local/committee_detail.html:231
 msgid "No Meetings found"
 msgstr "Keine Sitzungen gefunden"
 
-#: templates/group/group_detail.html:121 templates/group/group_detail.html:132
+#: templates/group/group_detail.html:152 templates/group/group_detail.html:163
 #: templates/group/group_meetings_list_partial.html:40
 #: templates/group/group_meetings_list_partial.html:49
 msgid "Add meetings to this group to get started."
 msgstr "Fügen Sie diesem Klub Besprechungen hinzu, um loszulegen."
 
-#: templates/group/group_detail.html:124 templates/group/group_detail.html:135
+#: templates/group/group_detail.html:155 templates/group/group_detail.html:166
 #: templates/group/group_meetings_list_partial.html:42
 #: templates/group/group_meetings_list_partial.html:51
 #: templates/group/meeting_form.html:9 templates/group/meeting_list.html:15
 msgid "Add Meeting"
 msgstr "Sitzung hinzufügen"
 
-#: templates/group/group_detail.html:153
+#: templates/group/group_detail.html:184
 msgid "Export (PDF)"
 msgstr "Export (PDF)"
 
-#: templates/group/group_detail.html:201 templates/home.html:260
-msgid "Calendar not available."
-msgstr "Kalender nicht verfügbar."
-
-#: templates/group/group_detail.html:207 templates/group/group_detail.html:208
+#: templates/group/group_detail.html:238 templates/group/group_detail.html:239
 #: templates/home.html:271 templates/home.html:272
 msgid "Previous month"
 msgstr "Vorheriger Monat"
 
-#: templates/group/group_detail.html:210 templates/home.html:274
+#: templates/group/group_detail.html:241 templates/home.html:274
 msgid "Current month"
 msgstr "Aktueller Monat"
 
-#: templates/group/group_detail.html:210 templates/home.html:274
-msgid "Today"
-msgstr "Heute"
-
-#: templates/group/group_detail.html:211 templates/group/group_detail.html:212
+#: templates/group/group_detail.html:242 templates/group/group_detail.html:243
 #: templates/home.html:275 templates/home.html:276
 msgid "Next month"
 msgstr "Nächster Monat"
 
-#: templates/group/group_detail.html:228
+#: templates/group/group_detail.html:259
 msgid "Group members"
 msgstr "Klubmitglieder"
 
-#: templates/group/group_detail.html:232 templates/group/group_detail.html:317
+#: templates/group/group_detail.html:263 templates/group/group_detail.html:350
 #: templates/group/member_invite.html:4 templates/group/member_invite.html:12
 msgid "Invite member"
 msgstr "Mitglied einladen"
 
-#: templates/group/group_detail.html:248
+#: templates/group/group_detail.html:279
 #: templates/group/member_confirm_delete.html:44
 #: templates/group/member_detail.html:36 templates/group/member_form.html:219
 #: templates/local/committee_member_form.html:98
 msgid "User"
 msgstr "Benutzer"
 
-#: templates/group/group_detail.html:249
+#: templates/group/group_detail.html:280
 #: templates/group/member_confirm_delete.html:56
 #: templates/group/member_form.html:221
 #: templates/local/committee_detail.html:107
@@ -1766,7 +1964,7 @@ msgstr "Benutzer"
 msgid "Role"
 msgstr "Rolle"
 
-#: templates/group/group_detail.html:250
+#: templates/group/group_detail.html:281
 #: templates/group/member_confirm_delete.html:70
 #: templates/group/member_detail.html:98
 #: templates/local/committee_detail.html:108
@@ -1774,55 +1972,59 @@ msgstr "Rolle"
 msgid "Joined"
 msgstr "Beigetreten"
 
-#: templates/group/group_detail.html:265 templates/group/group_detail.html:364
+#: templates/group/group_detail.html:296 templates/group/group_detail.html:397
 #: templates/group/member_detail.html:71 templates/user/list.html:67
 msgid "Group Admin"
 msgstr "Klub-Admin"
 
-#: templates/group/group_detail.html:269 templates/group/group_detail.html:368
+#: templates/group/group_detail.html:300 templates/group/group_detail.html:401
 #: templates/group/member_detail.html:75 templates/group/member_form.html:227
 #: templates/user/list.html:71
 msgid "Leader"
 msgstr "Klubobmensch"
 
-#: templates/group/group_detail.html:273 templates/group/group_detail.html:372
+#: templates/group/group_detail.html:304 templates/group/group_detail.html:405
 #: templates/group/member_detail.html:79 templates/group/member_form.html:228
 #: templates/user/list.html:75
 msgid "Deputy Leader"
 msgstr "Klubobmensch Stellvertretung"
 
-#: templates/group/group_detail.html:298
+#: templates/group/group_detail.html:307 templates/group/group_detail.html:408
+msgid "Party member"
+msgstr "Parteimitglied"
+
+#: templates/group/group_detail.html:331
 msgid "Manage Roles"
 msgstr "Berechtigungen vergeben"
 
-#: templates/group/group_detail.html:312
+#: templates/group/group_detail.html:345
 #: templates/local/committee_detail.html:145
 msgid "No Members found"
 msgstr "Keine Mitglieder gefunden"
 
-#: templates/group/group_detail.html:313
+#: templates/group/group_detail.html:346
 msgid "Add members to this group to get started."
 msgstr "Füge Klubmitglieder hin."
 
-#: templates/group/group_detail.html:322 templates/group/member_form.html:9
+#: templates/group/group_detail.html:355 templates/group/member_form.html:9
 #: templates/group/member_form.html:23 templates/group/member_form.html:197
 #: templates/local/committee_member_form.html:193
 msgid "Add Member"
 msgstr "Mitglied hinzufügen"
 
-#: templates/group/group_detail.html:339
+#: templates/group/group_detail.html:372
 msgid "Manage Member Roles"
 msgstr "Mitgliedsrollen verwalten"
 
-#: templates/group/group_detail.html:351
+#: templates/group/group_detail.html:384
 msgid "Current Roles"
 msgstr "Aktuelle Rollen"
 
-#: templates/group/group_detail.html:355
+#: templates/group/group_detail.html:388
 msgid "Available Roles"
 msgstr "Verfügbare Rollen"
 
-#: templates/group/group_detail.html:386
+#: templates/group/group_detail.html:421
 msgid "Save Changes"
 msgstr "Änderungen speichern"
 
@@ -1935,18 +2137,6 @@ msgstr "Filter"
 msgid "View"
 msgstr "Anzeigen"
 
-#: templates/group/group_list.html:100 templates/group/meeting_detail.html:168
-#: templates/group/meeting_detail.html:235
-#: templates/group/meeting_list.html:123 templates/local/council_list.html:118
-#: templates/local/local_detail.html:192 templates/local/local_list.html:109
-#: templates/local/party_list.html:130 templates/local/term_list.html:135
-#: templates/local/term_seat_distribution.html:94
-#: templates/local/term_seat_distribution_list.html:133
-#: templates/motion/inquiry_detail.html:26 templates/user/role_list.html:110
-#: templates/user/role_list.html:115
-msgid "Delete"
-msgstr "Löschen"
-
 #: templates/group/group_list.html:112
 msgid "No Groups found"
 msgstr "Keine Klubs gefunden"
@@ -2043,29 +2233,6 @@ msgstr "Sitzungsdetails"
 msgid "Type"
 msgstr "Typ"
 
-#: templates/group/meeting_confirm_delete.html:53
-#: templates/group/meeting_detail.html:83 templates/group/meeting_list.html:107
-#: templates/local/committee_detail.html:206
-#: templates/local/committee_meeting_confirm_delete.html:43
-#: templates/local/committee_meeting_detail.html:60
-msgid "Past"
-msgstr "Vergangen"
-
-#: templates/group/meeting_confirm_delete.html:55
-#: templates/group/meeting_detail.html:85 templates/group/meeting_list.html:109
-#: templates/local/committee_detail.html:208
-#: templates/local/committee_meeting_confirm_delete.html:45
-#: templates/local/committee_meeting_detail.html:62
-msgid "Upcoming"
-msgstr "Anstehend"
-
-#: templates/group/meeting_detail.html:30 templates/group/meeting_form.html:33
-#: templates/group/member_confirm_delete.html:15
-#: templates/group/member_detail.html:19 templates/group/member_form.html:29
-#: templates/group/member_invite.html:15
-msgid "Back to Group"
-msgstr "Zurück zum Klub"
-
 #: templates/group/meeting_detail.html:41 templates/group/meeting_form.html:236
 #: templates/local/committee_meeting_detail.html:33
 #: templates/local/committee_meeting_form.html:67
@@ -2119,10 +2286,6 @@ msgid ""
 msgstr ""
 "Fügen Sie Protokollpunkte hinzu, um die Sitzung festzuhalten. Die "
 "Tagesordnung wurde beim Versand der Einladungen übernommen."
-
-#: templates/group/meeting_detail.html:266
-msgid "Download Calendar"
-msgstr "Kalendereintrag herunterladen"
 
 #: templates/group/meeting_detail.html:269
 msgid "Export Agenda as PDF"
@@ -2309,20 +2472,6 @@ msgstr "Antragsinformation"
 msgid "First"
 msgstr "Erstes"
 
-#: templates/group/meeting_list.html:144
-msgid "Previous"
-msgstr "Nächstes"
-
-#: templates/group/meeting_list.html:151
-#: templates/local/committee_list.html:173
-#: templates/local/council_list.html:147 templates/local/local_list.html:138
-#: templates/local/party_list.html:159 templates/local/term_list.html:164
-#: templates/local/term_seat_distribution_list.html:162
-#: templates/motion/inquiry_list.html:230 templates/motion/motion_list.html:245
-#: templates/user/role_list.html:145
-msgid "Page"
-msgstr "Seite"
-
 #: templates/group/meeting_list.html:151
 #: templates/local/committee_detail.html:309
 #: templates/local/committee_list.html:173
@@ -2333,10 +2482,6 @@ msgstr "Seite"
 #: templates/user/role_list.html:145
 msgid "of"
 msgstr "von"
-
-#: templates/group/meeting_list.html:158
-msgid "Next"
-msgstr "Nächstes"
 
 #: templates/group/meeting_list.html:163
 msgid "Last"
@@ -2499,8 +2644,8 @@ msgstr ""
 msgid "Send invitation"
 msgstr "Einladung senden"
 
-#: templates/home.html:11 templates/user/email/welcome_email.html:64
-#: templates/user/email/welcome_email.txt:2 user/views.py:409
+#: templates/home.html:11 templates/user/email/welcome_email.txt:2
+#: user/views.py:409
 msgid "Welcome to Klubtool"
 msgstr "Willkommen bei Klubtool"
 
@@ -2558,19 +2703,17 @@ msgid "Personal calendar"
 msgstr "Persönlicher Kalender"
 
 #: templates/home.html:145
-#, fuzzy
-#| msgid "Substitute"
 msgid "Subscribe"
-msgstr "Vertretung"
+msgstr "Abonnieren"
 
 #: templates/home.html:175
-#: templates/pages/personal_calendar_list_partial.html:26
+#: templates/pages/personal_calendar_list_partial.html:28
 msgid "Calendar list pagination"
 msgstr "Kalenderliste Paginierung"
 
 #: templates/home.html:194 templates/home.html:196
-#: templates/pages/personal_calendar_list_partial.html:45
 #: templates/pages/personal_calendar_list_partial.html:47
+#: templates/pages/personal_calendar_list_partial.html:49
 msgid ""
 "No upcoming sessions or group meetings. Sessions from your councils and "
 "committees, and meetings from your groups, will appear here."
@@ -2902,11 +3045,11 @@ msgstr "Dateien"
 #: templates/local/committee_meeting_attachment_form.html:49
 #: templates/local/session_attachment_form.html:50
 msgid ""
-"Maximum file size: 10MB. Allowed types: PDF, DOC, DOCX, TXT, JPG, PNG, GIF, "
+"Maximum file size: 50MB. Allowed types: PDF, DOC, DOCX, TXT, JPG, PNG, GIF, "
 "XLS, XLSX, PPT, PPTX"
 msgstr ""
-"Maximale Dateigröße: 10 MB. Zulässige Dateiformate: PDF, DOC, DOCX, TXT, "
-"JPG, PNG, GIF, XLS, XLSX, PPT, PPTX"
+"Maximale Dateigröße: 50 MB. Erlaubte Dateiformate: PDF, DOC, DOCX, TXT, JPG, "
+"PNG, GIF, XLS, XLSX, PPT, PPTX"
 
 #: templates/local/committee_meeting_attachment_form.html:56
 #: templates/local/session_attachment_form.html:57
@@ -2998,17 +3141,9 @@ msgid "No committee members (excluding substitutes)."
 msgstr "Keine Ausschussmitglieder (ohne Stellvertreter)."
 
 #: templates/local/committee_meeting_detail.html:199
-#, fuzzy
-#| msgid ""
-#| "Select a substitute member who will attend this meeting in your place."
-msgid ""
-"Select a substitute member who will attend this meeting in place of the "
-"participant."
+msgid "Select a substitute member who will attend this meeting in your place."
 msgstr ""
-"Wählen Sie ein Ersatzmitglied, das diese Sitzung anstelle des Teilnehmers "
-"besuchen wird."
-"Wähle ein Stellvertreter-Mitglied, das an deiner Stelle an der Sitzung "
-"teilnimmt."
+"Wählen Sie ein Ersatzmitglied, das an deiner Stelle an der Sitzung teilnimmt."
 
 #: templates/local/committee_meeting_detail.html:208
 #: templates/user/edit.html:134
@@ -3623,26 +3758,28 @@ msgstr "Sitzung löschen"
 
 #: templates/local/session_confirm_delete.html:15
 msgid "Confirm deletion of this session."
-msgstr ""
+msgstr "Willst du diese Sitzung wirklich löschen?"
 
 #: templates/local/session_confirm_delete.html:30
 msgid "Warning: This action cannot be undone!"
-msgstr ""
+msgstr "Achtung: Diese Aktion kann nicht rückgängig gemacht werden."
 
 #: templates/local/session_confirm_delete.html:35
 #: templates/local/session_form.html:255
 msgid "Are you sure you want to delete this session?"
-msgstr ""
+msgstr "Willst du diese Sitzung wirklich löschen?"
 
 #: templates/local/session_confirm_delete.html:37
 msgid ""
 "This will permanently remove the session and all associated data. This "
 "action cannot be undone."
 msgstr ""
+"Damit löschst du die Sitzung und alle dazugehörigen Daten endgültig. Das "
+"kannst du nicht rückgängig machen."
 
 #: templates/local/session_confirm_delete.html:44
 msgid "Session to be deleted"
-msgstr ""
+msgstr "Zu löschende Sitzung"
 
 #: templates/local/session_confirm_delete.html:79
 #: templates/local/session_detail.html:68
@@ -3743,7 +3880,7 @@ msgstr ""
 
 #: templates/local/session_detail.html:426
 msgid "Close"
-msgstr ""
+msgstr "Schliessen"
 
 #: templates/local/session_detail.html:434
 msgid "You will be marked as excused from this session. Optional note:"
@@ -3884,8 +4021,8 @@ msgstr ""
 "„Eingeladen“ gesetzt."
 
 #: templates/local/session_invitation_form.html:49
-msgid "PDF only. Maximum file size: 10MB."
-msgstr "Nur PDF. Maximale Dateigröße: 10 MB."
+msgid "PDF only. Maximum file size: 50MB."
+msgstr "Nur PDF. Maximale Dateigröße: 50 MB."
 
 #: templates/local/session_minutes_form.html:5
 #: templates/local/session_minutes_form.html:14
@@ -4499,10 +4636,8 @@ msgid "Changed By"
 msgstr "Status ändern"
 
 #: templates/motion/motion_attachment.html:21
-#, fuzzy
-#| msgid "Motions"
 msgid "Motion"
-msgstr "Anträge"
+msgstr "Antrag"
 
 #: templates/motion/motion_confirm_delete.html:5
 #: templates/motion/motion_confirm_delete.html:12
@@ -5131,36 +5266,27 @@ msgstr ""
 msgid "Password Reset - %(site_name)s"
 msgstr "Passwort zurücksetzen - %(site_name)s"
 
-#: templates/user/email/welcome_email.html:69
 #: templates/user/email/welcome_email.txt:6
 msgid "Welcome to Klubtool! Your account has been created successfully."
 msgstr "Willkommen bei Klubtool! Dein Konto wurde erfolgreich erstellt."
 
-#: templates/user/email/welcome_email.html:72
 #: templates/user/email/welcome_email.txt:8
 msgid "Account Information"
 msgstr "Kontoinformationen"
 
-#: templates/user/email/welcome_email.html:74
 #: templates/user/email/welcome_email.txt:9 templates/user/list.html:37
 #: user/forms.py:292
 msgid "Username"
 msgstr "Benutzername"
 
-#: templates/user/email/welcome_email.html:78
 #: templates/user/email/welcome_email.txt:10
 msgid "Email"
 msgstr "E-Mail"
 
-#: templates/user/email/welcome_email.html:83
-msgid "You can now log in to your account:"
-msgstr "Du kannst dich jetzt in dein Konto einloggen:"
+#: templates/user/email/welcome_email.txt:12
+msgid "You can now log in to your account at:"
+msgstr "Du kannst dich jetzt bei deinem Konto anmelden unter:"
 
-#: templates/user/email/welcome_email.html:86
-msgid "Log In to Klubtool"
-msgstr "Bei Klubtool anmelden"
-
-#: templates/user/email/welcome_email.html:89
 #: templates/user/email/welcome_email.txt:15
 msgid ""
 "If you have any questions or need assistance, please don't hesitate to "
@@ -5169,14 +5295,9 @@ msgstr ""
 "Wenn du Fragen hast oder Hilfe benötigst, zögere bitte nicht, uns zu "
 "kontaktieren."
 
-#: templates/user/email/welcome_email.html:92
 #: templates/user/email/welcome_email.txt:18
 msgid "The Klubtool Team"
 msgstr "Das Klubtool-Team"
-
-#: templates/user/email/welcome_email.txt:12
-msgid "You can now log in to your account at:"
-msgstr "Du kannst dich jetzt bei deinem Konto anmelden unter:"
 
 #: templates/user/list.html:6 templates/user/list.html:17
 #: templates/user/role_list.html:74
@@ -5471,10 +5592,8 @@ msgid "Update Settings"
 msgstr "Einstellungen aktualisieren"
 
 #: templates/user/settings.html:76
-#, fuzzy
-#| msgid "Calendar list pagination"
 msgid "Calendar Subscription"
-msgstr "Kalenderliste Paginierung"
+msgstr "Kalender-Abonnement"
 
 #: templates/user/settings.html:81
 msgid ""
@@ -5500,10 +5619,8 @@ msgid "Reset subscription link"
 msgstr ""
 
 #: templates/user/settings.html:100
-#, fuzzy
-#| msgid "Create Question"
 msgid "Create subscription link"
-msgstr "Anfrage erstellen"
+msgstr "Abonnement-Link erstellen"
 
 #: templates/user/settings.html:104
 msgid ""
@@ -5658,16 +5775,12 @@ msgid "Preferred language for the interface"
 msgstr "Bevorzugte Sprache für die Benutzeroberfläche"
 
 #: user/models.py:144
-#, fuzzy
-#| msgid "Calendar list pagination"
 msgid "Calendar subscription token"
-msgstr "Kalenderliste Paginierung"
+msgstr "Kalenderabonnement-Token"
 
 #: user/models.py:145
-#, fuzzy
-#| msgid "Calendar list pagination"
 msgid "Calendar subscription tokens"
-msgstr "Kalenderliste Paginierung"
+msgstr "Kalenderabonnement-Token"
 
 #: user/views.py:139
 msgid ""
@@ -5726,23 +5839,38 @@ msgstr ""
 "Benutzer {username} hat sich bereits angemeldet. Willkommens-E-Mails können "
 "nur an Benutzer gesendet werden, die sich noch nicht angemeldet haben."
 
-#: user/views.py:436
+#: user/views.py:428
 #, python-brace-format
 msgid "Welcome email sent successfully to {email}"
 msgstr "Willkommens-E-Mail erfolgreich an {email} gesendet"
 
-#: user/views.py:439
+#: user/views.py:431
 #, python-brace-format
 msgid "Failed to send welcome email: {error}"
 msgstr "Willkommens-E-Mail konnte nicht gesendet werden: {error}"
 
-#: user/views.py:476 user/views.py:482
+#: user/views.py:468 user/views.py:474
 msgid "Your email has been confirmed and you have been logged in."
 msgstr "Deine E-Mail-Adresse wurde bestätigt und du bist nun angemeldet."
 
-#: user/views.py:484
+#: user/views.py:476
 msgid "Your email has been confirmed."
 msgstr "Deine E-Mail-Adresse wurde bestätigt."
+
+#~ msgid "Click the button below to create your account:"
+#~ msgstr "Klicken Sie auf die Schaltfläche unten, um Ihr Konto zu erstellen:"
+
+#~ msgid "Create account"
+#~ msgstr "Konto erstellen"
+
+#~ msgid "Or copy this link into your browser:"
+#~ msgstr "Oder kopieren Sie diesen Link in Ihren Browser:"
+
+#~ msgid "You can now log in to your account:"
+#~ msgstr "Du kannst dich jetzt in dein Konto einloggen:"
+
+#~ msgid "Log In to Klubtool"
+#~ msgstr "Bei Klubtool anmelden"
 
 #~ msgid ""
 #~ "You can only set a substitute for yourself as a regular committee member."
@@ -5780,9 +5908,6 @@ msgstr "Deine E-Mail-Adresse wurde bestätigt."
 #~ msgid "Edit Question"
 #~ msgstr "Anfrage bearbeiten"
 
-#~ msgid "Back to Questions"
-#~ msgstr "Zurück zur Anfrage"
-
 #~ msgid "Question Information"
 #~ msgstr "Anfrageinformation"
 
@@ -5809,9 +5934,6 @@ msgstr "Deine E-Mail-Adresse wurde bestätigt."
 
 #~ msgid "No seat distribution for the current term."
 #~ msgstr "Keine Sitzverteilung für die aktuelle Wahlperiode."
-
-#~ msgid "View All Parties"
-#~ msgstr "Alle Parteien ansehen"
 
 #~ msgid "Export ICS"
 #~ msgstr "Exportiere Kalenderdatei"
@@ -5966,9 +6088,6 @@ msgstr "Deine E-Mail-Adresse wurde bestätigt."
 
 #~ msgid "No"
 #~ msgstr "Nein"
-
-#~ msgid "Party Results"
-#~ msgstr "Parteiergebnisse"
 
 #~ msgid "Votes recorded during status change to"
 #~ msgstr "Stimmen aufgezeichnet bei Statusänderung zu"

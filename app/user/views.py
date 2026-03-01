@@ -414,21 +414,13 @@ def send_welcome_email(request, user_id):
             'site_url': request.build_absolute_uri('/'),
         }
         
-        # Try to render HTML email first, fallback to plain text
-        try:
-            html_message = render_to_string('user/email/welcome_email.html', email_context)
-            plain_message = render_to_string('user/email/welcome_email.txt', email_context)
-        except:
-            # Fallback to plain text if HTML template doesn't exist
-            plain_message = render_to_string('user/email/welcome_email.txt', email_context)
-            html_message = None
-        
+        plain_message = render_to_string('user/email/welcome_email.txt', email_context)
+
         send_mail(
             subject,
             plain_message,
             from_email,
             [target_user.email],
-            html_message=html_message,
             fail_silently=False,
         )
         messages.success(
