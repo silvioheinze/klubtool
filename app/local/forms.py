@@ -466,9 +466,9 @@ class CommitteeMeetingForm(forms.ModelForm):
             del self.fields['status']
             del self.fields['is_active']
         else:
-            # On edit: hide labels for title and is_active
+            # On edit: hide title label, remove is_active (always True, not user-editable)
             self.fields['title'].label = ''
-            self.fields['is_active'].label = ''
+            del self.fields['is_active']
 
     def clean_scheduled_date(self):
         """Ensure scheduled_date is timezone-aware to avoid DateTimeField warnings."""
