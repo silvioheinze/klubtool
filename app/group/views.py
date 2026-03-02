@@ -95,7 +95,7 @@ def _get_group_calendar_events_for_month(group, year, month, user=None):
                     is_active=True,
                     scheduled_date__date__gte=start,
                     scheduled_date__date__lte=end,
-                ).select_related('committee').order_by('scheduled_date')
+                ).exclude(status='cancelled').select_related('committee').order_by('scheduled_date')
                 for m in committee_meetings:
                     events.append({
                         'date': m.scheduled_date,

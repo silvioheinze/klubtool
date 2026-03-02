@@ -21,7 +21,7 @@ def get_personal_calendar_events(user, group_memberships, councils_from_membersh
 
     When for_export=True (ICS export and subscription feed):
     - Includes events from the past 30 days (so re-import/sync can communicate cancellations)
-    - Includes cancelled events (Session, GroupMeeting) with STATUS:CANCELLED
+    - Includes cancelled events (Session, CommitteeMeeting, GroupMeeting) with STATUS:CANCELLED
     When for_export=False (home page display):
     - Future events only, excludes cancelled
     """
@@ -81,13 +81,17 @@ def get_personal_calendar_events(user, group_memberships, councils_from_membersh
             })
 
     if user_committee_ids or meeting_ids_where_user_is_substitute:
-        committee_meetings = CommitteeMeeting.objects.filter(
-            is_active=True,
+        committee_filter = CommitteeMeeting.objects.filter(
             scheduled_date__gte=date_threshold,
         ).filter(
             (Q(committee_id__in=user_committee_ids) if user_committee_ids else Q(pk__in=[]))
             | (Q(pk__in=meeting_ids_where_user_is_substitute) if meeting_ids_where_user_is_substitute else Q(pk__in=[]))
-        ).select_related('committee').order_by('scheduled_date')
+        )
+        if for_export:
+            committee_filter = committee_filter.filter(Q(is_active=True) | Q(status='cancelled'))
+        else:
+            committee_filter = committee_filter.filter(is_active=True).exclude(status='cancelled')
+        committee_meetings = committee_filter.select_related('committee').order_by('scheduled_date')
         for m in committee_meetings:
             calendar_events.append({
                 'date': m.scheduled_date,
@@ -100,7 +104,7 @@ def get_personal_calendar_events(user, group_memberships, councils_from_membersh
                 'location': getattr(m, 'location', '') or '',
                 'pk': m.pk,
                 'model': 'committeemeeting',
-                'cancelled': False,
+                'cancelled': getattr(m, 'status', None) == 'cancelled',
             })
 
     if user_group_ids:
