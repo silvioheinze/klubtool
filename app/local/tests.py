@@ -12,8 +12,8 @@ from .forms import (
     PartyForm, PartyFilterForm, TermSeatDistributionForm
 )
 from .models import (
-    Local, Council, Committee, CommitteeMeeting, CommitteeMember, Session, Term, Party,
-    TermSeatDistribution, SessionAttachment
+    Local, Council, Committee, CommitteeMeeting, CommitteeMember, CommitteeParticipationSubstitute,
+    Session, Term, Party, TermSeatDistribution, SessionAttachment
 )
 
 User = get_user_model()
@@ -1646,6 +1646,185 @@ class CommitteeMeetingViewTests(TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.get('Content-Type'), 'text/calendar; charset=utf-8')
+
+
+class CommitteeMeetingSetSubstituteTests(TestCase):
+    """Test cases for CommitteeMeetingSetSubstituteView - superuser, member, and group leader permissions."""
+
+    def setUp(self):
+        from group.models import Group, GroupMember
+        from user.models import Role
+
+        self.client = Client()
+        self.local = Local.objects.create(
+            name='Test Local',
+            code='TL',
+            description='Test local',
+        )
+        self.council = self.local.council
+        self.party = Party.objects.create(
+            name='Test Party',
+            local=self.local,
+            short_name='TP',
+            is_active=True,
+        )
+        self.group = Group.objects.create(
+            name='Test Group',
+            party=self.party,
+            is_active=True,
+        )
+        self.leader_role = Role.objects.get_or_create(name='Leader', defaults={'is_active': True})[0]
+        self.member_user = User.objects.create_user(
+            username='memberuser',
+            email='member@example.com',
+            password='memberpass123',
+            first_name='Member',
+            last_name='User',
+        )
+        self.substitute_user = User.objects.create_user(
+            username='substituteuser',
+            email='substitute@example.com',
+            password='substitutepass123',
+            first_name='Substitute',
+            last_name='User',
+        )
+        self.leader_user = User.objects.create_user(
+            username='leaderuser',
+            email='leader@example.com',
+            password='leaderpass123',
+            first_name='Leader',
+            last_name='User',
+        )
+        self.regular_group_user = User.objects.create_user(
+            username='regulargroup',
+            email='regular@example.com',
+            password='regularpass123',
+            first_name='Regular',
+            last_name='User',
+        )
+        User.objects.create_superuser(
+            username='admin',
+            email='admin@example.com',
+            password='adminpass123',
+        )
+        GroupMember.objects.create(
+            user=self.member_user,
+            group=self.group,
+            is_active=True,
+        )
+        GroupMember.objects.create(
+            user=self.substitute_user,
+            group=self.group,
+            is_active=True,
+        )
+        GroupMember.objects.create(
+            user=self.leader_user,
+            group=self.group,
+            is_active=True,
+        ).roles.add(self.leader_role)
+        GroupMember.objects.create(
+            user=self.regular_group_user,
+            group=self.group,
+            is_active=True,
+        )
+        self.committee = Committee.objects.create(
+            name='Test Committee',
+            council=self.council,
+            committee_type='Ausschuss',
+            is_active=True,
+        )
+        self.meeting = CommitteeMeeting.objects.create(
+            committee=self.committee,
+            title='Test Meeting',
+            scheduled_date=timezone.now() + timedelta(days=1),
+            is_active=True,
+        )
+        self.regular_member = CommitteeMember.objects.create(
+            committee=self.committee,
+            user=self.member_user,
+            role='member',
+            is_active=True,
+        )
+        self.substitute_member = CommitteeMember.objects.create(
+            committee=self.committee,
+            user=self.substitute_user,
+            role='substitute_member',
+            is_active=True,
+        )
+
+    def test_group_leader_can_set_substitute_for_committee_member(self):
+        """Test that a group leader (of a group with a committee member) can set substitute for that member."""
+        self.client.login(username='leaderuser', password='leaderpass123')
+        response = self.client.post(
+            reverse('local:committee-meeting-set-substitute', kwargs={'pk': self.meeting.pk}),
+            {'member': self.regular_member.pk, 'substitute_member': self.substitute_member.pk},
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(
+            CommitteeParticipationSubstitute.objects.filter(
+                committee_meeting=self.meeting,
+                member=self.regular_member,
+                substitute_member=self.substitute_member,
+            ).exists()
+        )
+
+    def test_member_can_set_own_substitute(self):
+        """Test that a committee member can set their own substitute."""
+        self.client.login(username='memberuser', password='memberpass123')
+        response = self.client.post(
+            reverse('local:committee-meeting-set-substitute', kwargs={'pk': self.meeting.pk}),
+            {'member': self.regular_member.pk, 'substitute_member': self.substitute_member.pk},
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(
+            CommitteeParticipationSubstitute.objects.filter(
+                committee_meeting=self.meeting,
+                member=self.regular_member,
+                substitute_member=self.substitute_member,
+            ).exists()
+        )
+
+    def test_regular_group_member_cannot_set_substitute_for_others(self):
+        """Test that a regular group member (not leader) cannot set substitute for a committee member."""
+        self.client.login(username='regulargroup', password='regularpass123')
+        response = self.client.post(
+            reverse('local:committee-meeting-set-substitute', kwargs={'pk': self.meeting.pk}),
+            {'member': self.regular_member.pk, 'substitute_member': self.substitute_member.pk},
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(
+            CommitteeParticipationSubstitute.objects.filter(
+                committee_meeting=self.meeting,
+                member=self.regular_member,
+            ).exists(),
+            "Regular group member should not be able to create substitute",
+        )
+
+    def test_superuser_can_set_substitute(self):
+        """Test that superuser can set substitute for any committee member."""
+        self.client.login(username='admin', password='adminpass123')
+        response = self.client.post(
+            reverse('local:committee-meeting-set-substitute', kwargs={'pk': self.meeting.pk}),
+            {'member': self.regular_member.pk, 'substitute_member': self.substitute_member.pk},
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(
+            CommitteeParticipationSubstitute.objects.filter(
+                committee_meeting=self.meeting,
+                member=self.regular_member,
+                substitute_member=self.substitute_member,
+            ).exists()
+        )
+
+    def test_meeting_detail_shows_substitute_button_for_group_leader(self):
+        """Test that group leader sees Set substitute button for all participants (can_set_substitute_member_pks)."""
+        self.client.login(username='leaderuser', password='leaderpass123')
+        response = self.client.get(
+            reverse('local:committee-meeting-detail', kwargs={'pk': self.meeting.pk}),
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'btn-set-substitute')
+        self.assertContains(response, 'setSubstituteModal')
 
 
 class CommitteeMemberViewTests(TestCase):

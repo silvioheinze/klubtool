@@ -2133,6 +2133,10 @@ class CommitteeMeetingDetailView(LoginRequiredMixin, UserPassesTestMixin, Detail
             ).select_related('substitute_member', 'substitute_member__user')
         }
         context['participants_with_substitute'] = [(m, substitute_map.get(m.pk)) for m in participants]
+        context['can_set_substitute_member_pks'] = {
+            m.pk for m in participants
+            if _can_user_set_substitute_for_member(self.request.user, m, self.object)
+        }
         my_participant = next((p for p in participants if p.user_id == self.request.user.pk), None)
         existing_sub = None
         if my_participant:
@@ -2147,13 +2151,17 @@ class CommitteeMeetingDetailView(LoginRequiredMixin, UserPassesTestMixin, Detail
         return context
 
 
-def _can_user_set_substitute_for_member(user, member):
-    """Check if user can set a substitute for this committee member. Only superuser or the member themselves."""
+def _can_user_set_substitute_for_member(user, member, meeting=None):
+    """Check if user can set a substitute for this committee member. Superuser, the member themselves, or group leader of a group that has a member on this committee."""
     if user.is_superuser:
         return True
     if member.role == 'substitute_member':
         return False
-    return member.user_id == user.pk
+    if member.user_id == user.pk:
+        return True
+    if meeting and _can_user_edit_committee_meeting(user, meeting):
+        return True
+    return False
 
 
 def _can_user_edit_committee_status(user, committee):
@@ -2213,7 +2221,7 @@ class CommitteeMeetingSetSubstituteView(LoginRequiredMixin, View):
         if member.committee_id != meeting.committee_id:
             messages.error(request, _('Invalid request.'))
             return redirect('local:committee-meeting-detail', pk=pk)
-        if not _can_user_set_substitute_for_member(request.user, member):
+        if not _can_user_set_substitute_for_member(request.user, member, meeting):
             messages.error(request, _('Permission denied.'))
             return redirect('local:committee-meeting-detail', pk=pk)
         form = CommitteeParticipationSubstituteForm(request.POST, committee=meeting.committee)
