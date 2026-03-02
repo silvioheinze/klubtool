@@ -42,16 +42,6 @@
                             </select>
                         </div>
                         <div class="col-md-2">
-                            <label for="status" class="form-label">{% trans "Status" %}</label>
-                            <select class="form-select" id="status" name="status">
-                                <option value="">{% trans "All Statuses" %}</option>
-                                <option value="scheduled" {% if status_filter == 'scheduled' %}selected{% endif %}>{% trans "Scheduled" %}</option>
-                                <option value="completed" {% if status_filter == 'completed' %}selected{% endif %}>{% trans "Completed" %}</option>
-                                <option value="cancelled" {% if status_filter == 'cancelled' %}selected{% endif %}>{% trans "Cancelled" %}</option>
-                                <option value="invited" {% if status_filter == 'invited' %}selected{% endif %}>{% trans "Invited" %}</option>
-                            </select>
-                        </div>
-                        <div class="col-md-2">
                             <label for="council" class="form-label">{% trans "Council" %}</label>
                             <select class="form-select" id="council" name="council">
                                 <option value="">{% trans "All Councils" %}</option>
@@ -72,7 +62,7 @@
                         </div>
                     </form>
                     
-                    {% if search_query or committee_type_filter or status_filter or council_filter %}
+                    {% if search_query or committee_type_filter or council_filter %}
                         <div class="mt-3">
                             <a href="{% url 'local:committee-list' %}" class="btn btn-outline-secondary btn-sm">
                                 <i class="bi bi-x-circle"></i> {% trans "Clear Filters" %}
@@ -105,7 +95,6 @@
                                         <th>{% trans "Name" %}</th>
                                         <th>{% trans "Council" %}</th>
                                         <th>{% trans "Type" %}</th>
-                                        <th>{% trans "Status" %}</th>
                                         <th>{% trans "Chairperson" %}</th>
                                         <th>{% trans "Members" %}</th>
                                         <th>{% trans "Actions" %}</th>
@@ -132,9 +121,6 @@
                                             </td>
                                             <td>
                                                 <span class="badge bg-secondary">{{ committee.get_committee_type_display }}</span>
-                                            </td>
-                                            <td>
-                                                <span class="badge bg-info">{{ committee.get_status_display }}</span>
                                             </td>
                                             <td>
                                                 {% if committee.chairperson_name %}
@@ -175,12 +161,12 @@
                                 <ul class="pagination justify-content-center">
                                     {% if page_obj.has_previous %}
                                         <li class="page-item">
-                                            <a class="page-link" href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}{% if committee_type_filter %}&committee_type={{ committee_type_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if council_filter %}&council={{ council_filter }}{% endif %}">
+                                                <a class="page-link" href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}{% if committee_type_filter %}&committee_type={{ committee_type_filter }}{% endif %}{% if council_filter %}&council={{ council_filter }}{% endif %}">
                                                 <i class="bi bi-chevron-double-left"></i>
                                             </a>
                                         </li>
                                         <li class="page-item">
-                                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if committee_type_filter %}&committee_type={{ committee_type_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if council_filter %}&council={{ council_filter }}{% endif %}">
+                                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if committee_type_filter %}&committee_type={{ committee_type_filter }}{% endif %}{% if council_filter %}&council={{ council_filter }}{% endif %}">
                                                 <i class="bi bi-chevron-left"></i>
                                             </a>
                                         </li>
@@ -194,12 +180,12 @@
 
                                     {% if page_obj.has_next %}
                                         <li class="page-item">
-                                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if committee_type_filter %}&committee_type={{ committee_type_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if council_filter %}&council={{ council_filter }}{% endif %}">
+                                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if committee_type_filter %}&committee_type={{ committee_type_filter }}{% endif %}{% if council_filter %}&council={{ council_filter }}{% endif %}">
                                                 <i class="bi bi-chevron-right"></i>
                                             </a>
                                         </li>
                                         <li class="page-item">
-                                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}{% if committee_type_filter %}&committee_type={{ committee_type_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if council_filter %}&council={{ council_filter }}{% endif %}">
+                                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}{% if committee_type_filter %}&committee_type={{ committee_type_filter }}{% endif %}{% if council_filter %}&council={{ council_filter }}{% endif %}">
                                                 <i class="bi bi-chevron-double-right"></i>
                                             </a>
                                         </li>
@@ -212,7 +198,7 @@
                             <i class="bi bi-people fs-1 text-muted"></i>
                             <h4 class="mt-3">{% trans "No Committees Found" %}</h4>
                             <p class="text-muted">
-                                {% if search_query or committee_type_filter or status_filter or council_filter %}
+                                {% if search_query or committee_type_filter or council_filter %}
                                     {% trans "No committees match your current filters." %}
                                 {% else %}
                                     {% trans "No committees have been created yet." %}
