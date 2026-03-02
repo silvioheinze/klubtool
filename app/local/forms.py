@@ -306,19 +306,17 @@ class CommitteeForm(forms.ModelForm):
     
     class Meta:
         model = Committee
-        fields = ['name', 'abbreviation', 'council', 'term', 'committee_type', 'status', 'description']
+        fields = ['name', 'abbreviation', 'council', 'term', 'committee_type', 'description']
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control'}),
             'abbreviation': forms.TextInput(attrs={'class': 'form-control', 'maxlength': '20'}),
             'council': forms.Select(attrs={'class': 'form-select'}),
             'term': forms.Select(attrs={'class': 'form-select'}),
             'committee_type': forms.Select(attrs={'class': 'form-select'}),
-            'status': forms.Select(attrs={'class': 'form-select'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
     
     def __init__(self, *args, **kwargs):
-        self.can_edit_status_only = kwargs.pop('can_edit_status_only', False)
         # On create: auto-select the last (most recent) term before super() so initial is used
         instance = kwargs.get('instance')
         if instance is None or getattr(instance, 'pk', None) is None:
@@ -347,12 +345,6 @@ class CommitteeForm(forms.ModelForm):
             except Council.DoesNotExist:
                 pass
 
-        # When group leaders edit: only allow changing status
-        if self.can_edit_status_only:
-            for field_name in list(self.fields.keys()):
-                if field_name != 'status':
-                    del self.fields[field_name]
-
 
 class CommitteeFilterForm(forms.Form):
     """Form for filtering committees in the committee list view"""
@@ -365,11 +357,6 @@ class CommitteeFilterForm(forms.Form):
     )
     committee_type = forms.ChoiceField(
         choices=[('', 'All Types')] + Committee.COMMITTEE_TYPE_CHOICES,
-        required=False,
-        widget=forms.Select(attrs={'class': 'form-select'})
-    )
-    status = forms.ChoiceField(
-        choices=[('', _('All Statuses'))] + list(Committee.STATUS_CHOICES),
         required=False,
         widget=forms.Select(attrs={'class': 'form-select'})
     )
@@ -453,13 +440,14 @@ class CommitteeMeetingForm(forms.ModelForm):
 
     class Meta:
         model = CommitteeMeeting
-        fields = ['committee', 'title', 'scheduled_date', 'location', 'description', 'is_active']
+        fields = ['committee', 'title', 'scheduled_date', 'location', 'description', 'status', 'is_active']
         widgets = {
             'committee': forms.Select(attrs={'class': 'form-select'}),
             'title': forms.TextInput(attrs={'class': 'form-control'}),
             'scheduled_date': forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}, format='%Y-%m-%dT%H:%M'),
             'location': forms.TextInput(attrs={'class': 'form-control'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
+            'status': forms.Select(attrs={'class': 'form-select'}),
             'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 
@@ -472,9 +460,10 @@ class CommitteeMeetingForm(forms.ModelForm):
             self.fields['committee'].initial = committee
             if not self.instance.pk:
                 self.initial['committee'] = committee.pk
-        # On create: hide title and is_active; they are set in save()
+        # On create: hide title, status, and is_active; they are set in save()
         if not self.instance.pk:
             del self.fields['title']
+            del self.fields['status']
             del self.fields['is_active']
         else:
             # On edit: hide labels for title and is_active
@@ -494,6 +483,7 @@ class CommitteeMeetingForm(forms.ModelForm):
             scheduled_date = self.cleaned_data.get('scheduled_date')
             if committee and scheduled_date:
                 self.instance.title = f"{committee.name} {scheduled_date.strftime('%d.%m.%Y')}"
+            self.instance.status = 'scheduled'
             self.instance.is_active = True
         return super().save(commit=commit)
 

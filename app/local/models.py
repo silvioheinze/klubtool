@@ -78,13 +78,6 @@ class Committee(models.Model):
         ('Kommission', 'Kommission'),
     ]
 
-    STATUS_CHOICES = [
-        ('scheduled', _('Scheduled')),
-        ('completed', _('Completed')),
-        ('cancelled', _('Cancelled')),
-        ('invited', _('Invited')),
-    ]
-
     name = models.CharField(max_length=200, help_text="Name of the committee")
     abbreviation = models.CharField(max_length=20, blank=True, help_text="Abbreviation for the committee (e.g., 'BA' for Budgetausschuss)")
     council = models.ForeignKey(Council, on_delete=models.CASCADE, related_name='committees', help_text="Council this committee belongs to")
@@ -97,12 +90,6 @@ class Committee(models.Model):
         help_text="Term this committee belongs to"
     )
     committee_type = models.CharField(max_length=20, choices=COMMITTEE_TYPE_CHOICES, default='standing', help_text="Type of committee")
-    status = models.CharField(
-        max_length=20,
-        choices=STATUS_CHOICES,
-        default='scheduled',
-        help_text=_("Current status of the committee"),
-    )
     description = models.TextField(blank=True, help_text="Description of the committee's purpose and responsibilities")
     chairperson = models.CharField(max_length=100, blank=True, help_text="Name of the committee chairperson")
     is_active = models.BooleanField(default=True, help_text="Whether the committee is currently active")
@@ -173,6 +160,13 @@ class Committee(models.Model):
 
 class CommitteeMeeting(models.Model):
     """Model representing a meeting of a committee (replaces committee sessions)."""
+    STATUS_CHOICES = [
+        ('scheduled', _('Scheduled')),
+        ('completed', _('Completed')),
+        ('cancelled', _('Cancelled')),
+        ('invited', _('Invited')),
+    ]
+
     committee = models.ForeignKey(
         Committee, on_delete=models.CASCADE, related_name='meetings',
         help_text="Committee holding the meeting"
@@ -186,6 +180,12 @@ class CommitteeMeeting(models.Model):
     scheduled_date = models.DateTimeField(help_text="Date and time when the meeting is scheduled")
     location = models.CharField(max_length=300, blank=True, help_text="Location where the meeting will be held")
     description = models.TextField(blank=True, help_text="Description or agenda of the meeting")
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='scheduled',
+        help_text=_("Current status of the meeting"),
+    )
     is_active = models.BooleanField(default=True, help_text="Whether the meeting is currently active")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

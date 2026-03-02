@@ -44,10 +44,6 @@
                                 <dd class="col-sm-8">
                                     <span class="badge bg-secondary">{{ committee.get_committee_type_display }}</span>
                                 </dd>
-                                <dt class="col-sm-4">{% trans "Status" %}</dt>
-                                <dd class="col-sm-8">
-                                    <span class="badge bg-info">{{ committee.get_status_display }}</span>
-                                </dd>
                             </dl>
                         </div>
                         <div class="col-md-6">
@@ -206,11 +202,7 @@
                                                 {{ meeting.location|default:"-" }}
                                             </td>
                                             <td>
-                                                {% if meeting.is_past %}
-                                                    <span class="badge bg-secondary">{% trans "Past" %}</span>
-                                                {% else %}
-                                                    <span class="badge bg-success">{% trans "Upcoming" %}</span>
-                                                {% endif %}
+                                                <span class="badge {% if meeting.status == 'cancelled' %}bg-danger{% elif meeting.status == 'completed' %}bg-secondary{% elif meeting.status == 'invited' %}bg-info{% else %}bg-success{% endif %}">{{ meeting.get_status_display }}</span>
                                             </td>
                                             <td>
                                                 <div class="btn-group" role="group">

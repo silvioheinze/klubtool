@@ -1400,7 +1400,11 @@ def committee_meeting_export_ics(request, pk):
     meeting_url = request.build_absolute_uri(reverse('local:committee-meeting-detail', args=[meeting.pk]))
     lines.append(f"URL:{meeting_url}")
     lines.append(f"DTSTAMP:{timezone.now().astimezone(timezone.UTC).strftime('%Y%m%dT%H%M%SZ')}")
-    lines.extend(["STATUS:CONFIRMED", "END:VEVENT", "END:VCALENDAR"])
+    if getattr(meeting, 'status', None) == 'cancelled':
+        lines.append("STATUS:CANCELLED")
+    else:
+        lines.append("STATUS:CONFIRMED")
+    lines.extend(["END:VEVENT", "END:VCALENDAR"])
     ics_file = "\r\n".join(lines)
     response = HttpResponse(ics_file, content_type='text/calendar; charset=utf-8')
     filename = f"committee_meeting_{meeting.pk}_{meeting.title.replace(' ', '_')}.ics"
@@ -1831,11 +1835,6 @@ class CommitteeListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
         committee_type_filter = self.request.GET.get('committee_type', '')
         if committee_type_filter:
             queryset = queryset.filter(committee_type=committee_type_filter)
-
-        # Filter by status
-        status_filter = self.request.GET.get('status', '')
-        if status_filter:
-            queryset = queryset.filter(status=status_filter)
         
         # Filter by council
         council_filter = self.request.GET.get('council', '')
@@ -1849,14 +1848,12 @@ class CommitteeListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
         context = super().get_context_data(**kwargs)
         context['search_query'] = self.request.GET.get('search', '')
         context['committee_type_filter'] = self.request.GET.get('committee_type', '')
-        context['status_filter'] = self.request.GET.get('status', '')
         context['council_filter'] = self.request.GET.get('council', '')
         context['councils'] = Council.objects.filter(is_active=True)
         committees = context.get('committees') or context.get('object_list') or []
-        context['can_edit_committee_ids'] = {
-            c.pk for c in committees
-            if _can_user_edit_committee_status(self.request.user, c)
-        }
+        context['can_edit_committee_ids'] = (
+            {c.pk for c in committees} if self.request.user.is_superuser else set()
+        )
         return context
 
 
@@ -1890,9 +1887,7 @@ class CommitteeDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context = super().get_context_data(**kwargs)
         user = self.request.user
         # Permission flags: show edit/add buttons only to users who can access those views
-        context['can_edit_committee'] = (
-            user.is_superuser or _can_user_edit_committee_status(user, self.object)
-        )
+        context['can_edit_committee'] = user.is_superuser
         context['can_add_committee_member'] = (
             user.is_superuser
             or GroupMember.objects.filter(
@@ -1979,18 +1974,8 @@ class CommitteeUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     success_url = reverse_lazy('local:committee-list')
 
     def test_func(self):
-        """Check if user has permission to edit Committee. Superuser or group leader of a group connected to the council."""
-        committee = self.get_object()
-        return _can_user_edit_committee_status(self.request.user, committee)
-
-    def get_form_kwargs(self):
-        """Pass can_edit_status_only when user is group leader (not superuser) - they can only change status."""
-        kwargs = super().get_form_kwargs()
-        kwargs['can_edit_status_only'] = (
-            not self.request.user.is_superuser
-            and _can_user_edit_committee_status(self.request.user, self.get_object())
-        )
-        return kwargs
+        """Check if user has permission to edit Committee objects"""
+        return self.request.user.is_superuser
 
     def get_success_url(self):
         """Redirect to committee detail after edit"""
@@ -2162,22 +2147,6 @@ def _can_user_set_substitute_for_member(user, member, meeting=None):
     if meeting and _can_user_edit_committee_meeting(user, meeting):
         return True
     return False
-
-
-def _can_user_edit_committee_status(user, committee):
-    """Check if user can change committee status. Superuser or group leader of a group connected to the committee's council (same local)."""
-    if user.is_superuser:
-        return True
-    from group.models import GroupMember
-    council = committee.council
-    if not council or not council.local_id:
-        return False
-    return GroupMember.objects.filter(
-        user=user,
-        is_active=True,
-        roles__name__in=['Group Admin', 'Leader', 'Deputy Leader'],
-        group__party__local_id=council.local_id,
-    ).exists()
 
 
 def _can_user_edit_committee_meeting(user, meeting):
