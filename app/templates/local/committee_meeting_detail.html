@@ -161,8 +161,8 @@
                                         <span>{% if substitute %}{{ substitute.user.get_full_name|default:substitute.user.username }}{% else %}{{ member.user.get_full_name|default:member.user.username }}{% endif %}</span>
                                         <span class="d-flex align-items-center gap-1">
                                             <span class="badge bg-secondary">{% if substitute %}{{ substitute.get_role_display }}{% else %}{{ member.get_role_display }}{% endif %}</span>
-                                            {% if member == my_participant %}
-                                            <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#setSubstituteModal" title="{% trans 'Set substitute' %}">
+                                            {% if member.pk in can_set_substitute_member_pks %}
+                                            <button type="button" class="btn btn-sm btn-outline-secondary btn-set-substitute" data-member-pk="{{ member.pk }}" data-substitute-pk="{% if substitute %}{{ substitute.pk }}{% endif %}" title="{% trans 'Set substitute' %}">
                                                 {% trans "Substitute" %}
                                             </button>
                                             {% endif %}
@@ -183,8 +183,8 @@
     </div>
 </div>
 
-{% if my_participant %}
-<!-- Set substitute modal (members can only set their own substitute) -->
+{% if can_set_substitute_member_pks %}
+<!-- Set substitute modal (members set their own; group leaders can set for any participant) -->
 <div class="modal fade" id="setSubstituteModal" tabindex="-1" aria-labelledby="setSubstituteModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -194,9 +194,9 @@
             </div>
             <form method="post" action="{% url 'local:committee-meeting-set-substitute' meeting.pk %}">
                 {% csrf_token %}
-                <input type="hidden" name="member" value="{{ my_participant.pk }}">
+                <input type="hidden" name="member" id="substituteModalMemberInput" value="">
                 <div class="modal-body">
-                    <p class="text-muted small">{% trans "Select a substitute member who will attend this meeting in your place." %}</p>
+                    <p class="text-muted small">{% trans "Select a substitute member who will attend this meeting in place of the regular member." %}</p>
                     {{ substitute_form.substitute_member.label_tag }}
                     {{ substitute_form.substitute_member }}
                     {% if substitute_form.substitute_member.errors %}
@@ -211,5 +211,17 @@
         </div>
     </div>
 </div>
+<script>
+document.querySelectorAll('.btn-set-substitute').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        var memberPk = this.getAttribute('data-member-pk');
+        var substitutePk = this.getAttribute('data-substitute-pk') || '';
+        document.getElementById('substituteModalMemberInput').value = memberPk;
+        var select = document.querySelector('#setSubstituteModal select[name="substitute_member"]');
+        if (select) select.value = substitutePk;
+        new bootstrap.Modal(document.getElementById('setSubstituteModal')).show();
+    });
+});
+</script>
 {% endif %}
 {% endblock content %}

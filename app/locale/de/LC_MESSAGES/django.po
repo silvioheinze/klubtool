@@ -2461,8 +2461,8 @@ msgid "No committee members (excluding substitutes)."
 msgstr "Keine Ausschussmitglieder (ohne Stellvertreter)."
 
 #: templates/local/committee_meeting_detail.html:199
-msgid "Select a substitute member who will attend this meeting in your place."
-msgstr "Wählen Sie ein Ersatzmitglied, das an deiner Stelle an der Sitzung teilnimmt."
+msgid "Select a substitute member who will attend this meeting in place of the regular member."
+msgstr "Wählen Sie ein Ersatzmitglied, das an der Stelle des regulären Mitglieds an der Sitzung teilnimmt."
 
 #: templates/local/committee_meeting_detail.html:208 templates/user/edit.html:134
 msgid "Save"
