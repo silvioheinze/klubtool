@@ -306,17 +306,19 @@ class CommitteeForm(forms.ModelForm):
     
     class Meta:
         model = Committee
-        fields = ['name', 'abbreviation', 'council', 'term', 'committee_type', 'description']
+        fields = ['name', 'abbreviation', 'council', 'term', 'committee_type', 'status', 'description']
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control'}),
             'abbreviation': forms.TextInput(attrs={'class': 'form-control', 'maxlength': '20'}),
             'council': forms.Select(attrs={'class': 'form-select'}),
             'term': forms.Select(attrs={'class': 'form-select'}),
             'committee_type': forms.Select(attrs={'class': 'form-select'}),
+            'status': forms.Select(attrs={'class': 'form-select'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
     
     def __init__(self, *args, **kwargs):
+        self.can_edit_status_only = kwargs.pop('can_edit_status_only', False)
         # On create: auto-select the last (most recent) term before super() so initial is used
         instance = kwargs.get('instance')
         if instance is None or getattr(instance, 'pk', None) is None:
@@ -345,6 +347,12 @@ class CommitteeForm(forms.ModelForm):
             except Council.DoesNotExist:
                 pass
 
+        # When group leaders edit: only allow changing status
+        if self.can_edit_status_only:
+            for field_name in list(self.fields.keys()):
+                if field_name != 'status':
+                    del self.fields[field_name]
+
 
 class CommitteeFilterForm(forms.Form):
     """Form for filtering committees in the committee list view"""
@@ -357,6 +365,11 @@ class CommitteeFilterForm(forms.Form):
     )
     committee_type = forms.ChoiceField(
         choices=[('', 'All Types')] + Committee.COMMITTEE_TYPE_CHOICES,
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    status = forms.ChoiceField(
+        choices=[('', _('All Statuses'))] + list(Committee.STATUS_CHOICES),
         required=False,
         widget=forms.Select(attrs={'class': 'form-select'})
     )

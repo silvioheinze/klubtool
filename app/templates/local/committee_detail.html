@@ -44,6 +44,10 @@
                                 <dd class="col-sm-8">
                                     <span class="badge bg-secondary">{{ committee.get_committee_type_display }}</span>
                                 </dd>
+                                <dt class="col-sm-4">{% trans "Status" %}</dt>
+                                <dd class="col-sm-8">
+                                    <span class="badge bg-info">{{ committee.get_status_display }}</span>
+                                </dd>
                             </dl>
                         </div>
                         <div class="col-md-6">
