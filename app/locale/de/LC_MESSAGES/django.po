@@ -1403,7 +1403,7 @@ msgstr "Eingeladen"
 #: templates/local/council_detail.html:174 templates/local/session_confirm_delete.html:67 templates/local/session_detail.html:56
 #: templates/local/session_form.html:310
 msgid "Cancelled"
-msgstr "Abgebrochen"
+msgstr "Abgesetzt"
 
 #: templates/group/group_detail.html:130 templates/group/group_meetings_list_partial.html:18
 msgid "Meetings list pagination"
@@ -2139,6 +2139,14 @@ msgstr "Das kann man nicht rückgängig machen. Alle Daten des Ausschusses werde
 msgid "Committee Information"
 msgstr "Ausschussinformation"
 
+msgctxt "Ausschuss"
+msgid "Committee Information"
+msgstr "Ausschussinformation"
+
+msgctxt "Kommission"
+msgid "Committee Information"
+msgstr "Kommissionsinformation"
+
 #: templates/local/committee_confirm_delete.html:53 templates/local/committee_detail.html:56 templates/local/committee_detail.html:65
 #: templates/local/committee_list.html:129 templates/local/council_detail.html:249 templates/local/session_confirm_delete.html:96
 #: templates/motion/inquiry_detail.html:74 templates/motion/inquiry_detail.html:85 templates/motion/motion_detail.html:70
@@ -2192,8 +2200,13 @@ msgid "Back"
 msgstr "Zurück"
 
 #: templates/local/committee_detail.html:90
+msgctxt "Ausschuss"
 msgid "Committee Members"
 msgstr "Ausschussmitglieder"
+
+msgctxt "Kommission"
+msgid "Committee Members"
+msgstr "Kommissionsmitglieder"
 
 #: templates/local/committee_detail.html:146
 msgid "Add committee members to start organizing the committee work."
@@ -2204,8 +2217,14 @@ msgid "Add First Member"
 msgstr "Erstes Mitglied hinzufügen"
 
 #: templates/local/committee_detail.html:165
+msgctxt "Ausschuss"
 msgid "Committee Meetings"
 msgstr "Ausschusssitzungen"
+
+#: templates/local/committee_detail.html:165
+msgctxt "Kommission"
+msgid "Committee Meetings"
+msgstr "Kommissionssitzungen"
 
 #: templates/local/committee_detail.html:182
 msgid "Scheduled Date"
@@ -2224,8 +2243,13 @@ msgid "Create First Meeting"
 msgstr "Erstelle erste Sitzung"
 
 #: templates/local/committee_detail.html:251
+msgctxt "Ausschuss"
 msgid "Committee Motions"
 msgstr "Ausschussanträge"
+
+msgctxt "Kommission"
+msgid "Committee Motions"
+msgstr "Kommissionsanträge"
 
 #: templates/local/committee_detail.html:295 templates/motion/motion_confirm_delete.html:117 templates/motion/motion_form.html:7
 #: templates/motion/motion_form.html:22
@@ -4975,38 +4999,6 @@ msgstr "Deine E-Mail-Adresse wurde bestätigt."
 #~ msgctxt "Kommission"
 #~ msgid "Back to Committee"
 #~ msgstr "Zurück zur Kommission"
-
-#~ msgctxt "Ausschuss"
-#~ msgid "Committee Information"
-#~ msgstr "Ausschussinformation"
-
-#~ msgctxt "Kommission"
-#~ msgid "Committee Information"
-#~ msgstr "Kommissionsinformation"
-
-#~ msgctxt "Ausschuss"
-#~ msgid "Committee Members"
-#~ msgstr "Ausschussmitglieder"
-
-#~ msgctxt "Kommission"
-#~ msgid "Committee Members"
-#~ msgstr "Kommissionsmitglieder"
-
-#~ msgctxt "Ausschuss"
-#~ msgid "Committee Meetings"
-#~ msgstr "Ausschusssitzungen"
-
-#~ msgctxt "Kommission"
-#~ msgid "Committee Meetings"
-#~ msgstr "Kommissionssitzungen"
-
-#~ msgctxt "Ausschuss"
-#~ msgid "Committee Motions"
-#~ msgstr "Ausschussanträge"
-
-#~ msgctxt "Kommission"
-#~ msgid "Committee Motions"
-#~ msgstr "Kommissionsanträge"
 
 #~ msgctxt "Ausschuss"
 #~ msgid "Add Committee Meeting"

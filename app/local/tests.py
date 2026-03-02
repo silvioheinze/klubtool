@@ -340,8 +340,8 @@ class CommitteeMeetingFormTests(TestCase):
         self.assertEqual(form.fields['committee'].queryset.count(), 1)
         self.assertEqual(form.fields['committee'].queryset.get(), self.committee)
 
-    def test_committee_meeting_form_edit_has_title_and_is_active(self):
-        """Test CommitteeMeetingForm for edit (existing instance) shows title and is_active"""
+    def test_committee_meeting_form_edit_has_title_not_is_active(self):
+        """Test CommitteeMeetingForm for edit (existing instance) shows title, not is_active"""
         meeting = CommitteeMeeting.objects.create(
             committee=self.committee,
             title='Existing Meeting',
@@ -350,7 +350,7 @@ class CommitteeMeetingFormTests(TestCase):
         )
         form = CommitteeMeetingForm(instance=meeting)
         self.assertIn('title', form.fields)
-        self.assertIn('is_active', form.fields)
+        self.assertNotIn('is_active', form.fields)
 
 
 class SessionFormTests(TestCase):
