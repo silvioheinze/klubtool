@@ -2254,7 +2254,7 @@ class CommitteeViewTests(TestCase):
             'name': 'Updated Committee',
             'council': self.council.pk,
             'committee_type': 'Kommission',
-            'is_active': True
+            'status': 'scheduled',
         }
         response = self.client.post(reverse('local:committee-edit', kwargs={'pk': self.committee.pk}), form_data)
         self.assertEqual(response.status_code, 302)  # Redirect after successful update
