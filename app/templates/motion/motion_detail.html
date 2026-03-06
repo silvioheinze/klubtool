@@ -327,17 +327,41 @@
                         <hr>
                         <h6>{% trans "Comments" %}</h6>
                         {% for comment in comments %}
-                            <div class="border rounded p-3 mb-3">
-                                <div class="d-flex justify-content-between align-items-start">
-                                    <div>
-                                        <strong>{{ comment.author.username }}</strong>
-                                        <small class="text-muted">{{ comment.created_at|date:"M d, Y H:i" }}</small>
-                                        {% if not comment.is_public %}
-                                            <span class="badge bg-warning ms-1">{% trans "Private" %}</span>
+                            <div class="border rounded p-3 mb-3 comment-item" id="comment-{{ comment.pk }}"
+                                 data-edit-url="{% url 'motion:motion-comment-edit' motion.pk comment.pk %}"
+                                 data-delete-url="{% url 'motion:motion-comment-delete' motion.pk comment.pk %}">
+                                <textarea class="d-none" id="comment-content-{{ comment.pk }}">{{ comment.content }}</textarea>
+                                <div class="comment-display">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <strong>{{ comment.author.username }}</strong>
+                                            <small class="text-muted">{{ comment.created_at|date:"M d, Y H:i" }}</small>
+                                            <span class="comment-badge {% if not comment.is_public %}badge bg-warning ms-1{% endif %}">{% if not comment.is_public %}{% trans "Private" %}{% endif %}</span>
+                                        </div>
+                                        {% if comment.author_id == request.user.id %}
+                                        <div class="btn-group btn-group-sm comment-actions">
+                                            <button type="button" class="btn btn-outline-primary comment-edit-btn" title="{% trans 'Edit' %}" data-comment-id="{{ comment.pk }}">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-outline-danger comment-delete-btn" title="{% trans 'Delete' %}" data-comment-id="{{ comment.pk }}">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
                                         {% endif %}
                                     </div>
+                                    <p class="mb-0 mt-2 comment-body">{{ comment.content|linebreaks }}</p>
                                 </div>
-                                <p class="mb-0 mt-2">{{ comment.content|linebreaks }}</p>
+                                <div class="comment-edit-form d-none">
+                                    <textarea class="form-control mb-2" rows="4"></textarea>
+                                    <div class="form-check mb-2">
+                                        <input type="checkbox" class="form-check-input comment-is-public">
+                                        <label class="form-check-label">{% trans "Make this comment public" %}</label>
+                                    </div>
+                                    <div class="btn-group btn-group-sm">
+                                        <button type="button" class="btn btn-primary comment-save-btn">{% trans "Save" %}</button>
+                                        <button type="button" class="btn btn-secondary comment-cancel-btn">{% trans "Cancel" %}</button>
+                                    </div>
+                                </div>
                             </div>
                         {% endfor %}
                     {% else %}
@@ -594,6 +618,107 @@
         var titleEl = document.getElementById('voteResultsModalLabel');
         if (titleEl) titleEl.textContent = statusDisplay ? (statusDisplay + ' – {% trans "Voting results" %}') : '{% trans "Voting results" %}';
         if (body && source) body.innerHTML = source.innerHTML;
+    });
+})();
+</script>
+
+<script>
+(function() {
+    var csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+    if (!csrfToken) return;
+    csrfToken = csrfToken.value;
+
+    function getCsrfHeaders() {
+        return {
+            'X-CSRFToken': csrfToken,
+            'X-Requested-With': 'XMLHttpRequest',
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Accept': 'application/json'
+        };
+    }
+
+    document.querySelectorAll('.comment-delete-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            if (!confirm('{% trans "Are you sure you want to delete this comment?" %}')) return;
+            var commentId = btn.dataset.commentId;
+            var item = document.getElementById('comment-' + commentId);
+            var deleteUrl = item.dataset.deleteUrl;
+            fetch(deleteUrl, {
+                method: 'POST',
+                headers: getCsrfHeaders(),
+                body: 'csrfmiddlewaretoken=' + encodeURIComponent(csrfToken)
+            }).then(function(r) {
+                if (r.ok) {
+                    item.style.opacity = '0';
+                    item.style.transition = 'opacity 0.2s';
+                    setTimeout(function() { item.remove(); }, 200);
+                }
+            });
+        });
+    });
+
+    document.querySelectorAll('.comment-edit-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var commentId = btn.dataset.commentId;
+            var item = document.getElementById('comment-' + commentId);
+            var display = item.querySelector('.comment-display');
+            var editForm = item.querySelector('.comment-edit-form');
+            var contentSource = document.getElementById('comment-content-' + commentId);
+            var textarea = editForm.querySelector('textarea');
+            var isPublicCheck = editForm.querySelector('.comment-is-public');
+            var badge = item.querySelector('.comment-badge');
+            textarea.value = contentSource.value;
+            isPublicCheck.checked = !badge.classList.contains('bg-warning');
+            display.classList.add('d-none');
+            editForm.classList.remove('d-none');
+        });
+    });
+
+    document.querySelectorAll('.comment-cancel-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var item = btn.closest('.comment-item');
+            item.querySelector('.comment-display').classList.remove('d-none');
+            item.querySelector('.comment-edit-form').classList.add('d-none');
+        });
+    });
+
+    document.querySelectorAll('.comment-save-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var item = btn.closest('.comment-item');
+            var commentId = item.id.replace('comment-', '');
+            var editForm = item.querySelector('.comment-edit-form');
+            var textarea = editForm.querySelector('textarea');
+            var isPublicCheck = editForm.querySelector('.comment-is-public');
+            var editUrl = item.dataset.editUrl;
+            var body = 'csrfmiddlewaretoken=' + encodeURIComponent(csrfToken) + '&content=' + encodeURIComponent(textarea.value);
+            if (isPublicCheck.checked) body += '&is_public=on';
+            btn.disabled = true;
+            fetch(editUrl, {
+                method: 'POST',
+                headers: getCsrfHeaders(),
+                body: body
+            }).then(function(r) {
+                return r.json().then(function(data) {
+                    if (r.ok && data.success) {
+                        item.querySelector('.comment-body').innerHTML = data.content_html;
+                        item.querySelector('#comment-content-' + commentId).value = data.content;
+                        var badge = item.querySelector('.comment-badge');
+                        if (data.is_public) {
+                            badge.textContent = '';
+                            badge.className = 'comment-badge';
+                        } else {
+                            badge.textContent = '{% trans "Private" %}';
+                            badge.className = 'comment-badge badge bg-warning ms-1';
+                        }
+                        item.querySelector('.comment-display').classList.remove('d-none');
+                        editForm.classList.add('d-none');
+                    }
+                });
+            }).catch(function() {})
+            .finally(function() {
+                btn.disabled = false;
+            });
+        });
     });
 })();
 </script>
