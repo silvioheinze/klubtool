@@ -5,6 +5,7 @@ from django.contrib import messages
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from django.urls import reverse_lazy, reverse
 from django.http import JsonResponse, HttpResponseRedirect
+from django.utils.html import linebreaks
 from django.db.models import Q, Count
 from django.core.paginator import Paginator
 from django.utils import timezone
@@ -688,6 +689,63 @@ def motion_comment_view(request, pk):
         'motion': motion,
         'form': form
     })
+
+
+@login_required
+def motion_comment_edit_view(request, motion_pk, comment_pk):
+    """Edit a motion comment. Only the comment author can edit. Returns JSON for AJAX."""
+    from django.core.exceptions import PermissionDenied
+    motion = get_object_or_404(Motion, pk=motion_pk)
+    comment = get_object_or_404(MotionComment, pk=comment_pk, motion=motion)
+    if comment.author_id != request.user.pk:
+        raise PermissionDenied
+
+    if request.method == 'POST':
+        form = MotionCommentForm(request.POST, motion=motion, author=request.user, instance=comment)
+        if form.is_valid():
+            form.save()
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': True,
+                    'content': comment.content,
+                    'content_html': linebreaks(comment.content),
+                    'is_public': comment.is_public,
+                })
+            messages.success(request, _("Your comment has been updated."))
+            return redirect('motion:motion-detail', pk=motion_pk)
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'errors': form.errors}, status=400)
+
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({'success': False}, status=405)
+
+    form = MotionCommentForm(motion=motion, author=request.user, instance=comment)
+    return render(request, 'motion/motion_comment_edit.html', {
+        'motion': motion,
+        'comment': comment,
+        'form': form,
+    })
+
+
+@login_required
+def motion_comment_delete_view(request, motion_pk, comment_pk):
+    """Delete a motion comment. Only the comment author can delete. Returns JSON for AJAX."""
+    from django.core.exceptions import PermissionDenied
+    motion = get_object_or_404(Motion, pk=motion_pk)
+    comment = get_object_or_404(MotionComment, pk=comment_pk, motion=motion)
+    if comment.author_id != request.user.pk:
+        raise PermissionDenied
+
+    if request.method == 'POST':
+        comment.delete()
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'success': True})
+        messages.success(request, _("Your comment has been deleted."))
+        return redirect('motion:motion-detail', pk=motion_pk)
+
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({'success': False}, status=405)
+    return redirect('motion:motion-detail', pk=motion_pk)
 
 
 @login_required
