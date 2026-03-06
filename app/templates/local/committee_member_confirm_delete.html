@@ -1,0 +1,55 @@
+{% extends "_base.html" %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}{% trans "Remove Committee Member" %}{% endblock title %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-exclamation-triangle"></i> {% trans "Remove Committee Member" %}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <h6><i class="bi bi-exclamation-triangle"></i> {% trans "Warning" %}</h6>
+                        <p class="mb-0">{% trans "Are you sure you want to remove this member from the committee? This action cannot be undone." %}</p>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0">{% trans "Member Details" %}</h6>
+                        </div>
+                        <div class="card-body">
+                            <dl class="row">
+                                <dt class="col-sm-3">{% trans "Member" %}</dt>
+                                <dd class="col-sm-9">{{ object.user.get_full_name|default:object.user.username }} ({{ object.user.email }})</dd>
+                                <dt class="col-sm-3">{% trans "Committee" %}</dt>
+                                <dd class="col-sm-9">
+                                    <a href="{% url 'local:committee-detail' object.committee.pk %}">{{ object.committee.name }}</a>
+                                </dd>
+                                <dt class="col-sm-3">{% trans "Role" %}</dt>
+                                <dd class="col-sm-9">{{ object.get_role_display }}</dd>
+                                <dt class="col-sm-3">{% trans "Joined" %}</dt>
+                                <dd class="col-sm-9">{{ object.joined_date|date:"M d, Y" }}</dd>
+                            </dl>
+                        </div>
+                    </div>
+                    <form method="post" class="mt-4">
+                        {% csrf_token %}
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'local:committee-detail' object.committee.pk %}" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> {% trans "Cancel" %}
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash"></i> {% trans "Remove Member" %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
