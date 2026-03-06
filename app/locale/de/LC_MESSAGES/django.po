@@ -203,7 +203,7 @@ msgstr "Sonstiges"
 #: local/models.py:244 templates/local/committee_confirm_delete.html:48 templates/local/committee_detail.html:51 templates/local/committee_list.html:98
 #: templates/local/committee_member_form.html:211 templates/local/council_detail.html:229
 msgid "Chairperson"
-msgstr "Vorsitzende"
+msgstr "Vorsitzende/r"
 
 #: local/models.py:245 templates/local/committee_detail.html:60 templates/local/committee_member_form.html:212
 msgid "Vice Chairperson"
