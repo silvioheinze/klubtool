@@ -2384,11 +2384,14 @@ class CommitteeMemberDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteV
     """View for deleting a CommitteeMember object"""
     model = CommitteeMember
     template_name = 'local/committee_member_confirm_delete.html'
-    success_url = reverse_lazy('local:committee-member-list')
 
     def test_func(self):
         """Check if user has permission to delete CommitteeMember objects"""
         return self.request.user.is_superuser
+
+    def get_success_url(self):
+        """Redirect to committee detail after deletion"""
+        return reverse('local:committee-detail', kwargs={'pk': self.object.committee_id})
 
     def delete(self, request, *args, **kwargs):
         """Display success message on deletion"""
