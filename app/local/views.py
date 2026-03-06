@@ -2381,9 +2381,13 @@ class CommitteeMemberUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateV
 
 
 class CommitteeMemberDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
-    """View for deleting a CommitteeMember object"""
+    """View for deleting a CommitteeMember object. Uses JS confirm, no separate template."""
     model = CommitteeMember
-    template_name = 'local/committee_member_confirm_delete.html'
+
+    def get(self, request, *args, **kwargs):
+        """Only POST allowed; redirect to committee on GET."""
+        self.object = self.get_object()
+        return redirect('local:committee-detail', pk=self.object.committee_id)
 
     def test_func(self):
         """Check if user has permission to delete CommitteeMember objects"""

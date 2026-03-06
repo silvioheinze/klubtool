@@ -170,10 +170,13 @@
                         <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center">
                             <div>
                                 {% if committeemember %}
-                                    <a href="{% url 'local:committee-member-delete' committeemember.pk %}" class="btn btn-danger"
-                                       onclick="return confirm('{% trans 'Are you sure you want to remove this member?' %}');">
-                                        <i class="bi bi-person-x"></i> {% trans "Remove Member" %}
-                                    </a>
+                                    <form method="post" action="{% url 'local:committee-member-delete' committeemember.pk %}" style="display: inline;"
+                                          onsubmit="return confirm('{% trans 'Are you sure you want to remove this member?' %}');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-danger">
+                                            <i class="bi bi-person-x"></i> {% trans "Remove Member" %}
+                                        </button>
+                                    </form>
                                 {% endif %}
                             </div>
                             <div class="d-flex gap-2">
