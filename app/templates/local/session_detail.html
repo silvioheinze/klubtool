@@ -391,6 +391,20 @@
                                             <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#sessionExcuseModal" title="{% trans 'Excuse myself' %}">
                                                 {% if user_has_excused %}{% trans "Cancel excuse" %}{% else %}{% trans "Excuse" %}{% endif %}
                                             </button>
+                                            {% elif gm.group_id in user_leader_group_ids %}
+                                            {% if gm.user_id in excused_user_ids %}
+                                            <form method="post" action="{% url 'local:session-excuse' session.pk %}" style="display: inline;">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="user_id" value="{{ gm.user_id }}">
+                                                <input type="hidden" name="clear" value="1">
+                                                <button type="submit" class="btn btn-sm btn-outline-secondary" title="{% trans 'Cancel excuse for' %} {{ gm.user.get_full_name|default:gm.user.username }}">{% trans "Cancel excuse" %}</button>
+                                            </form>
+                                            {% else %}
+                                            <button type="button" class="btn btn-sm btn-outline-secondary excuse-other-btn" data-bs-toggle="modal" data-bs-target="#sessionExcuseOtherModal"
+                                                    data-user-id="{{ gm.user_id }}" data-user-name="{{ gm.user.get_full_name|default:gm.user.username }}" title="{% trans 'Excuse' %} {{ gm.user.get_full_name|default:gm.user.username }}">
+                                                {% trans "Excuse" %}
+                                            </button>
+                                            {% endif %}
                                             {% endif %}
                                         </span>
                                     </div>
@@ -443,6 +457,43 @@
                     </div>
                 </div>
             </div>
+            {% endif %}
+
+            {% if user_leader_group_ids %}
+            <!-- Excuse other participant (group leader) modal -->
+            <div class="modal fade" id="sessionExcuseOtherModal" tabindex="-1" aria-labelledby="sessionExcuseOtherModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="sessionExcuseOtherModalLabel">{% trans "Excuse participant" %}</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <form method="post" action="{% url 'local:session-excuse' session.pk %}" id="sessionExcuseOtherForm">
+                            {% csrf_token %}
+                            <input type="hidden" name="user_id" id="sessionExcuseOtherUserId" value="">
+                            <div class="modal-body">
+                                <p class="text-muted small mb-2" id="sessionExcuseOtherIntro">{% trans "Mark this participant as excused. Optional note:" %}</p>
+                                <textarea name="note" class="form-control" rows="2" placeholder="{% trans 'Optional reason (e.g. illness, other commitment)' %}"></textarea>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
+                                <button type="submit" class="btn btn-primary">{% trans "Excuse" %}</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <script>
+            document.getElementById('sessionExcuseOtherModal').addEventListener('show.bs.modal', function(e) {
+                var btn = e.relatedTarget;
+                if (btn && btn.classList.contains('excuse-other-btn')) {
+                    document.getElementById('sessionExcuseOtherUserId').value = btn.dataset.userId || '';
+                    var title = "{% trans 'Excuse' %}";
+                    if (btn.dataset.userName) title += ' ' + btn.dataset.userName;
+                    document.getElementById('sessionExcuseOtherModalLabel').textContent = title;
+                }
+            });
+            </script>
             {% endif %}
             
             <!-- Presence Tracker (only on day of session) -->

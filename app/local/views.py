@@ -1,4 +1,5 @@
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView, FormView, View
+from django.contrib.auth import get_user_model
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -980,11 +981,22 @@ class SessionDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         else:
             context['user_is_participant'] = any(gm.user_id == self.request.user.pk for gm in (participants or []))
 
+        # Group IDs where current user is Leader, Deputy Leader, or Group Admin (for excusing participants)
+        from group.models import GroupMember
+        context['user_leader_group_ids'] = set(
+            GroupMember.objects.filter(
+                user=self.request.user,
+                is_active=True,
+                roles__name__in=['Group Admin', 'Leader', 'Deputy Leader'],
+            ).values_list('group_id', flat=True).distinct()
+        )
+
         return context
 
 
 class SessionExcuseView(LoginRequiredMixin, View):
-    """View to excuse oneself from a council session or cancel the excuse (POST only)."""
+    """View to excuse oneself or another participant from a council session (POST only).
+    Group leaders can excuse participants from their group."""
     http_method_names = ['get', 'post']
 
     def get(self, request, pk):
@@ -992,14 +1004,13 @@ class SessionExcuseView(LoginRequiredMixin, View):
 
     def post(self, request, pk):
         session = get_object_or_404(Session, pk=pk)
-        # Check user is in participants (group member from a party with seats in current term)
         from group.models import GroupMember
         today = timezone.now().date()
         current_term = Term.objects.filter(
             start_date__lte=today, end_date__gte=today, is_active=True
         ).first()
         if not current_term or not session.council or not session.council.local:
-            messages.error(request, _('You cannot excuse yourself for this session.'))
+            messages.error(request, _('You cannot excuse for this session.'))
             return redirect('local:session-detail', pk=pk)
         party_ids = list(
             TermSeatDistribution.objects.filter(
@@ -1008,28 +1019,73 @@ class SessionExcuseView(LoginRequiredMixin, View):
                 party__is_active=True,
             ).values_list('party_id', flat=True)
         )
-        is_participant = GroupMember.objects.filter(
-            group__party_id__in=party_ids,
-            group__party__is_active=True,
-            group__is_active=True,
-            is_active=True,
-            user_id=request.user.pk,
-        ).exists()
-        if not is_participant:
-            messages.error(request, _('You are not a participant of this session.'))
-            return redirect('local:session-detail', pk=pk)
+        target_user_id = request.POST.get('user_id')
+        if target_user_id:
+            try:
+                target_user_id = int(target_user_id)
+            except (TypeError, ValueError):
+                target_user_id = None
+        if not target_user_id:
+            target_user_id = request.user.pk
+
+        if target_user_id == request.user.pk:
+            # Excusing oneself
+            is_participant = GroupMember.objects.filter(
+                group__party_id__in=party_ids,
+                group__party__is_active=True,
+                group__is_active=True,
+                is_active=True,
+                user_id=request.user.pk,
+            ).exists()
+            if not is_participant:
+                messages.error(request, _('You are not a participant of this session.'))
+                return redirect('local:session-detail', pk=pk)
+        else:
+            # Excusing another user: requester must be group leader of a group containing target
+            target_gm = GroupMember.objects.filter(
+                group__party_id__in=party_ids,
+                group__party__is_active=True,
+                group__is_active=True,
+                is_active=True,
+                user_id=target_user_id,
+            ).first()
+            if not target_gm:
+                messages.error(request, _('That user is not a participant of this session.'))
+                return redirect('local:session-detail', pk=pk)
+            leader_group_ids = set(
+                GroupMember.objects.filter(
+                    user=request.user,
+                    is_active=True,
+                    roles__name__in=['Group Admin', 'Leader', 'Deputy Leader'],
+                ).values_list('group_id', flat=True).distinct()
+            )
+            if target_gm.group_id not in leader_group_ids:
+                messages.error(request, _('You can only excuse members of groups you lead.'))
+                return redirect('local:session-detail', pk=pk)
+
+        target_user = get_user_model().objects.get(pk=target_user_id)
         clear = request.POST.get('clear') == '1'
         if clear:
-            SessionExcuse.objects.filter(session=session, user=request.user).delete()
-            messages.success(request, _('Excuse cancelled.'))
+            SessionExcuse.objects.filter(session=session, user=target_user).delete()
+            if target_user_id == request.user.pk:
+                messages.success(request, _('Excuse cancelled.'))
+            else:
+                messages.success(request, _('Excuse cancelled for %(name)s.') % {
+                    'name': target_user.get_full_name() or target_user.username
+                })
         else:
             note = (request.POST.get('note') or '').strip()
             SessionExcuse.objects.update_or_create(
                 session=session,
-                user=request.user,
+                user=target_user,
                 defaults={'note': note},
             )
-            messages.success(request, _('You have excused yourself from this session.'))
+            if target_user_id == request.user.pk:
+                messages.success(request, _('You have excused yourself from this session.'))
+            else:
+                messages.success(request, _('%(name)s has been excused from this session.') % {
+                    'name': target_user.get_full_name() or target_user.username
+                })
         return redirect('local:session-detail', pk=pk)
 
 
