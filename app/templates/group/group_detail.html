@@ -120,6 +120,8 @@
                                                     <span class="badge bg-primary rounded-pill">{% trans "Scheduled" %}</span>
                                                 {% elif meeting.status == 'invited' %}
                                                     <span class="badge bg-info rounded-pill">{% trans "Invited" %}</span>
+                                                {% elif meeting.status == 'completed' %}
+                                                    <span class="badge bg-secondary rounded-pill">{% trans "Completed" %}</span>
                                                 {% elif meeting.status == 'cancelled' %}
                                                     <span class="badge bg-danger rounded-pill">{% trans "Cancelled" %}</span>
                                                 {% endif %}
