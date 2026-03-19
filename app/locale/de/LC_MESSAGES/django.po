@@ -765,6 +765,18 @@ msgstr "Bitte korrigieren Sie die untenstehenden Fehler."
 msgid "Email Address"
 msgstr "E-Mail-Adresse"
 
+#: user/forms.py:256 user/models.py:24
+msgid "Phone"
+msgstr "Telefon"
+
+#: user/forms.py:259
+msgid "Your phone number for group contact (visible to other group members)"
+msgstr "Deine Telefonnummer für Gruppenkontakt (sichtbar für andere Gruppenmitglieder)"
+
+#: user/models.py:27
+msgid "Your phone number for group contact purposes"
+msgstr "Deine Telefonnummer für Gruppenkontakt"
+
 #: templates/account/login.html:38 templates/account/signup.html:38 templates/user/login.html:44 templates/user/password_reset.html:49
 msgid "Enter your email address"
 msgstr "Geben Sie Ihre E-Mail-Adresse ein"

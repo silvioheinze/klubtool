@@ -54,6 +54,14 @@ class CustomUser(AbstractUser):
         default='de',
         help_text=_('Preferred language for the interface')
     )
+
+    # Contact phone (editable by user in settings, shown for group members)
+    phone = models.CharField(
+        max_length=30,
+        blank=True,
+        verbose_name=_('Phone'),
+        help_text=_('Your phone number for group contact purposes')
+    )
     
     # Add related_name to avoid field clashes
     groups = models.ManyToManyField(

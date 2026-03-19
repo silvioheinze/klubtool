@@ -37,6 +37,9 @@
                                 <dd class="col-sm-8">
                                     <strong>{{ member.user.get_full_name|default:member.user.username }}</strong>
                                     <br><small class="text-muted">{{ member.user.email }}</small>
+                                    {% if member.user.phone %}
+                                    <br><small class="text-muted"><i class="bi bi-telephone"></i> {{ member.user.phone }}</small>
+                                    {% endif %}
                                 </dd>
                                 
                                 <dt class="col-sm-4">{% trans "Group" %}</dt>
