@@ -287,7 +287,9 @@
                                         <tr>
                                             <td>
                                                 <strong>{{ member.user.get_full_name|default:member.user.username }}</strong>
-                                                <br><small class="text-muted">{{ member.user.email }}</small>
+                                                {% if member.user.phone %}
+                                                <br><small class="text-muted"><i class="bi bi-telephone"></i> {{ member.user.phone }}</small>
+                                                {% endif %}
                                             </td>
                                             <td>
                                                 {% for role in member.roles.all %}

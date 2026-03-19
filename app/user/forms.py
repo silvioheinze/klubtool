@@ -132,7 +132,7 @@ class CustomUserEditForm(UserChangeForm):
 
     class Meta:
         model = CustomUser
-        fields = ('username', 'email', 'first_name', 'last_name', 'role')
+        fields = ('username', 'email', 'first_name', 'last_name', 'phone', 'role')
 
     def __init__(self, *args, allow_set_password=False, **kwargs):
         super().__init__(*args, **kwargs)
@@ -247,15 +247,18 @@ class UserSettingsForm(forms.ModelForm):
     
     class Meta:
         model = CustomUser
-        fields = ['email', 'language']
+        fields = ['email', 'phone', 'language']
         widgets = {
             'email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '+43 123 456789'}),
         }
         labels = {
             'email': _('Email Address'),
+            'phone': _('Phone'),
         }
         help_texts = {
             'email': _('Your email address for account notifications and password resets'),
+            'phone': _('Your phone number for group contact (visible to other group members)'),
         }
     
     def __init__(self, *args, **kwargs):
