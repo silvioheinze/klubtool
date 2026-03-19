@@ -636,7 +636,7 @@ msgstr "Zur Startseite"
 msgid "Settings"
 msgstr "Einstellungen"
 
-#: templates/_base.html:11 templates/_base.html:29
+#: templates/_base.html:11 templates/_base.html:29 templates/user/email/password_reset_key_message.html:89
 msgid "Klubtool"
 msgstr "Klubtool"
 
