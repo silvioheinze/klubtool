@@ -16,6 +16,17 @@
         {% endif %}
     </div>
 
+    {% if attendees %}
+    <div class="attendees-section">
+        <h2>{% trans "Attendees" %}</h2>
+        <ul class="attendees-list">
+            {% for member in attendees %}
+            <li>{{ member.user.get_full_name|default:member.user.username }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
     {% if minute_items %}
     <table class="minutes-table">
         <thead>

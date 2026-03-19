@@ -1464,6 +1464,13 @@ class GroupMeetingMinutesExportPDFView(LoginRequiredMixin, UserPassesTestMixin, 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['minute_items'] = self.object.minute_items.filter(is_active=True).order_by('order')
+        # Only include members marked as present (attending)
+        present_member_ids = GroupMeetingParticipation.objects.filter(
+            meeting=self.object, is_present=True
+        ).values_list('member_id', flat=True)
+        context['attendees'] = self.object.group.members.filter(
+            pk__in=present_member_ids, is_active=True
+        ).select_related('user').order_by('user__last_name', 'user__first_name')
         return context
 
     def render_to_response(self, context, **response_kwargs):
@@ -1479,6 +1486,11 @@ class GroupMeetingMinutesExportPDFView(LoginRequiredMixin, UserPassesTestMixin, 
             .header { text-align: center; margin-bottom: 20px; }
             .header h1 { font-size: 14pt; margin: 0 0 5px 0; }
             .header p { font-size: 10pt; margin: 2px 0; }
+            .attendees-section { margin-bottom: 20px; }
+            .attendees-section h2 { font-size: 11pt; margin: 0 0 8px 0; }
+            .attendees-table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+            .attendees-table th, .attendees-table td { border: 1px solid #333; padding: 6px; text-align: left; }
+            .attendees-table th { background-color: #f2f2f2; font-weight: bold; }
             .minutes-table { width: 100%; border-collapse: collapse; margin-top: 15px; page-break-inside: auto; }
             .minutes-table thead { display: table-header-group; }
             .minutes-table tbody tr { page-break-inside: avoid; }
