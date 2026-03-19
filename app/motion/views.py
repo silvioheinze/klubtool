@@ -504,6 +504,18 @@ class MotionUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
         messages.success(self.request, f"Motion '{form.instance.title}' updated successfully.")
         return response
 
+    def get_context_data(self, **kwargs):
+        """Add can_delete_motion for group leaders"""
+        context = super().get_context_data(**kwargs)
+        motion = self.object
+        user = self.request.user
+        context['can_delete_motion'] = (
+            user.is_superuser
+            or (motion.submitted_by == user if motion.submitted_by else False)
+            or (motion.group and is_leader_or_deputy_leader(user, motion))
+        )
+        return context
+
 
 class MotionDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
     """View for deleting a Motion object"""
