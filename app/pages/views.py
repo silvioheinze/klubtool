@@ -86,6 +86,12 @@ class HomePageView(TemplateView):
             context['group_memberships'] = []
             context['locals_from_memberships'] = []
             context['councils_from_memberships'] = []
+            # Login form for unauthenticated users
+            from allauth.account.forms import LoginForm
+            from django.contrib.auth import REDIRECT_FIELD_NAME
+            context['login_form'] = LoginForm(request=self.request)
+            context['redirect_field_name'] = REDIRECT_FIELD_NAME
+            context['redirect_field_value'] = reverse('home')
         
         # Personal calendar: sessions (council + committee) and group meetings (always when authenticated)
         if self.request.user.is_authenticated:
