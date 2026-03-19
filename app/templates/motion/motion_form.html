@@ -182,24 +182,31 @@
                         </div>
 
                         <!-- Form Actions -->
-                        <div class="d-flex justify-content-between mt-4">
-                            {% if object %}
-                                {# When editing, link to motion detail #}
-                                <a href="{% url 'motion:motion-detail' object.pk %}" class="btn btn-secondary">
-                                    <i class="bi bi-x-circle"></i> {% trans "Cancel" %}
-                                </a>
-                            {% else %}
-                                {# When creating, link to session from form if available #}
-                                {% if form.session.value %}
-                                    <a href="{% url 'local:session-detail' form.session.value %}" class="btn btn-secondary">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-4">
+                            <div class="d-flex gap-2">
+                                {% if object %}
+                                    {# When editing, link to motion detail #}
+                                    <a href="{% url 'motion:motion-detail' object.pk %}" class="btn btn-secondary">
                                         <i class="bi bi-x-circle"></i> {% trans "Cancel" %}
                                     </a>
-                                {% else %}
-                            <a href="{% url 'motion:motion-list' %}" class="btn btn-secondary">
-                                <i class="bi bi-x-circle"></i> {% trans "Cancel" %}
-                            </a>
+                                    {% if can_delete_motion %}
+                                        <a href="{% url 'motion:motion-delete' object.pk %}" class="btn btn-outline-danger">
+                                            <i class="bi bi-trash"></i> {% trans "Delete Motion" %}
+                                        </a>
+                                    {% endif %}
+                                    {% else %}
+                                    {# When creating, link to session from form if available #}
+                                    {% if form.session.value %}
+                                        <a href="{% url 'local:session-detail' form.session.value %}" class="btn btn-secondary">
+                                            <i class="bi bi-x-circle"></i> {% trans "Cancel" %}
+                                        </a>
+                                    {% else %}
+                                        <a href="{% url 'motion:motion-list' %}" class="btn btn-secondary">
+                                            <i class="bi bi-x-circle"></i> {% trans "Cancel" %}
+                                        </a>
+                                    {% endif %}
                                 {% endif %}
-                            {% endif %}
+                            </div>
                             <button type="submit" class="btn btn-primary">
                                 <i class="bi bi-check-circle"></i>
                                 {% if object %}
