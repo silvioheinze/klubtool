@@ -5,105 +5,182 @@
 
 {% block title %}{% trans "Users" %}{% endblock title %}
 
-{% block styles %}
-<link rel="stylesheet" href="https://unpkg.com/bootstrap-table@1.21.2/dist/bootstrap-table.min.css"/>
-<script src="https://cdn.jsdelivr.net/npm/jquery/dist/jquery.min.js"></script>
-<script src="https://unpkg.com/bootstrap-table@1.21.2/dist/bootstrap-table.min.js"></script>
-{% endblock styles %}
-
 {% block content %}
-<div class="container mt-5">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>{% trans "Users" %}</h2>
-        <div>
+<div class="container-fluid mt-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <h2 class="mb-0">{% trans "Users" %}</h2>
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            <form method="get" class="d-flex flex-wrap align-items-center gap-2" role="search">
+                <label for="user-list-search" class="visually-hidden">{% trans "Search" %}</label>
+                <input type="text"
+                       class="form-control"
+                       id="user-list-search"
+                       name="search"
+                       value="{{ search_query }}"
+                       placeholder="{% trans 'Username, email, name…' %}"
+                       style="min-width: 12rem; max-width: 20rem;">
+                <label for="user-list-role" class="visually-hidden">{% trans "Role" %}</label>
+                <select class="form-select" id="user-list-role" name="role" style="min-width: 10rem; max-width: 14rem;">
+                    <option value="">{% trans "All roles" %}</option>
+                    {% for r in roles %}
+                        <option value="{{ r.name }}" {% if role_filter == r.name %}selected{% endif %}>{{ r.name }}</option>
+                    {% endfor %}
+                </select>
+                <label for="user-list-status" class="visually-hidden">{% trans "Status" %}</label>
+                <select class="form-select" id="user-list-status" name="status" style="min-width: 8rem;">
+                    <option value="">{% trans "All" %}</option>
+                    <option value="active" {% if status_filter == 'active' %}selected{% endif %}>{% trans "Active" %}</option>
+                    <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>{% trans "Inactive" %}</option>
+                </select>
+                <button type="submit" class="btn btn-outline-primary" title="{% trans 'Search' %}">
+                    <i class="bi bi-search"></i>
+                </button>
+                <a href="{% url 'user-list' %}" class="btn btn-outline-secondary" title="{% trans 'Clear' %}">
+                    <i class="bi bi-x-lg"></i>
+                </a>
+            </form>
             <a href="{% url 'admin-user-create' %}" class="btn btn-primary">
                 <i class="bi bi-person-plus"></i> {% trans "Add User" %}
             </a>
         </div>
     </div>
+
     {% if users %}
-        <table
-            id="table"
-            data-toggle="table"
-            data-search="true"
-            data-sortable="true"
-            data-pagination="true"
-            data-page-size="50"
-            data-page-list="[50, 100, 200]"
-            class="table">
-        <thead class="table-light">
-            <tr>
-            <th data-field="id" data-sortable="true">{% trans "ID" %}</th>
-            <th data-field="username" data-sortable="true">{% trans "Username" %}</th>
-            <th data-field="local" data-sortable="true">{% trans "Local" %}</th>
-            <th data-field="role" data-sortable="true">{% trans "Role" %}</th>
-            <th data-field="date_joined" data-sortable="true">{% trans "Date joined" %}</th>
-            <th data-field="actions" class="text-end">{% trans "Actions" %}</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for user in users %}
-            <tr>
-                <td>{{ user.id }}</td>
-                <td>{{ user.username }}</td>
-                <td>
-                    {% if user.unique_locals %}
-                        {% for local in user.unique_locals %}
-                            <span class="badge bg-primary me-1">{{ local.name }}</span>
-                        {% endfor %}
+        <div class="card">
+            <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <h5 class="mb-0">{% trans "User list" %}</h5>
+                <span class="text-muted small">
+                    {% if is_paginated %}
+                        {% blocktrans with start=page_obj.start_index end=page_obj.end_index total=page_obj.paginator.count %}
+                        Showing {{ start }}–{{ end }} of {{ total }} users
+                        {% endblocktrans %}
                     {% else %}
-                        <span class="text-muted">-</span>
+                        {% blocktrans count counter=page_obj.paginator.count %}
+                        {{ counter }} user
+                        {% plural %}
+                        {{ counter }} users
+                        {% endblocktrans %}
                     {% endif %}
-                </td>
-                <td>
-                    {% if user.role %}
-                        <span class="badge bg-secondary">{{ user.role.name }}</span>
-                    {% endif %}
-                    {% for membership in user.group_memberships.all %}
-                        {% if membership.is_active %}
-                            {% for role in membership.roles.all %}
-                                {% if role.name == 'Group Admin' %}
-                                    <span class="badge bg-warning me-1">
-                                        <i class="bi bi-shield-check"></i> {% trans "Group Admin" %}
-                                    </span>
-                                {% elif role.name == 'Leader' %}
-                                    <span class="badge bg-primary me-1">
-                                        <i class="bi bi-star"></i> {% trans "Leader" %}
-                                    </span>
-                                {% elif role.name == 'Deputy Leader' %}
-                                    <span class="badge bg-info me-1">
-                                        <i class="bi bi-star-half"></i> {% trans "Deputy Leader" %}
-                                    </span>
-                                {% else %}
-                                    <span class="badge bg-secondary me-1">{{ role.name }}</span>
-                                {% endif %}
+                </span>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>{% trans "ID" %}</th>
+                                <th>{% trans "Username" %}</th>
+                                <th>{% trans "Local" %}</th>
+                                <th>{% trans "Role" %}</th>
+                                <th>{% trans "Date joined" %}</th>
+                                <th class="text-end">{% trans "Actions" %}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in users %}
+                            <tr>
+                                <td>{{ user.id }}</td>
+                                <td>{{ user.username }}</td>
+                                <td>
+                                    {% if user.unique_locals %}
+                                        {% for local in user.unique_locals %}
+                                            <span class="badge bg-primary me-1">{{ local.name }}</span>
+                                        {% endfor %}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if user.role %}
+                                        <span class="badge bg-secondary">{{ user.role.name }}</span>
+                                    {% endif %}
+                                    {% for membership in user.group_memberships.all %}
+                                        {% if membership.is_active %}
+                                            {% for role in membership.roles.all %}
+                                                {% if role.name == 'Group Admin' %}
+                                                    <span class="badge bg-warning me-1">
+                                                        <i class="bi bi-shield-check"></i> {% trans "Group Admin" %}
+                                                    </span>
+                                                {% elif role.name == 'Leader' %}
+                                                    <span class="badge bg-primary me-1">
+                                                        <i class="bi bi-star"></i> {% trans "Leader" %}
+                                                    </span>
+                                                {% elif role.name == 'Deputy Leader' %}
+                                                    <span class="badge bg-info me-1">
+                                                        <i class="bi bi-star-half"></i> {% trans "Deputy Leader" %}
+                                                    </span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary me-1">{{ role.name }}</span>
+                                                {% endif %}
+                                            {% endfor %}
+                                        {% endif %}
+                                    {% endfor %}
+                                    {% if not user.role and not user.group_memberships.all %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ user.date_joined|naturaltime }}</td>
+                                <td class="text-end">
+                                    <div class="btn-group" role="group">
+                                        <a href="{% url 'user-edit' user.id %}" class="btn btn-secondary btn-sm" title="{% trans 'Edit' %}">
+                                            <i class="bi bi-pencil-square"></i> <span class="d-none d-sm-inline">{% trans "Edit" %}</span>
+                                        </a>
+                                        {% if user.email and not user.last_login %}
+                                        <form method="post" action="{% url 'user-send-welcome-email' user.id %}" style="display: inline;" onsubmit="return confirm('{% trans 'Send welcome email to this user?' %}');">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-success btn-sm" title="{% trans 'Send Welcome Email' %}">
+                                                <i class="bi bi-envelope"></i> <span class="d-none d-sm-inline">{% trans "Welcome Email" %}</span>
+                                            </button>
+                                        </form>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
                             {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% if is_paginated %}
+            <div class="card-footer bg-transparent border-top-0 pb-3">
+                <nav aria-label="{% trans 'User list pagination' %}">
+                    <ul class="pagination justify-content-center flex-wrap mb-0">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1{% if search_query %}&search={{ search_query|urlencode }}{% endif %}{% if role_filter %}&role={{ role_filter|urlencode }}{% endif %}{% if status_filter %}&status={{ status_filter|urlencode }}{% endif %}">
+                                    <i class="bi bi-chevron-double-left"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query|urlencode }}{% endif %}{% if role_filter %}&role={{ role_filter|urlencode }}{% endif %}{% if status_filter %}&status={{ status_filter|urlencode }}{% endif %}">
+                                    <i class="bi bi-chevron-left"></i>
+                                </a>
+                            </li>
                         {% endif %}
-                    {% endfor %}
-                    {% if not user.role and not user.group_memberships.all %}
-                        <span class="text-muted">-</span>
-                    {% endif %}
-                </td>
-                <td>{{ user.date_joined|naturaltime }}</td>
-                <td class="text-end">
-                    <div class="btn-group" role="group">
-                <a href="{% url 'user-edit' user.id %}" class="btn btn-secondary btn-sm" title="{% trans 'Edit' %}">
-                    <i class="bi bi-pencil-square"></i> <span class="d-none d-sm-inline">{% trans "Edit" %}</span>
-                </a>
-                        {% if user.email and not user.last_login %}
-                        <form method="post" action="{% url 'user-send-welcome-email' user.id %}" style="display: inline;" onsubmit="return confirm('{% trans 'Send welcome email to this user?' %}');">
-                            {% csrf_token %}
-                            <button type="submit" class="btn btn-success btn-sm" title="{% trans 'Send Welcome Email' %}">
-                                <i class="bi bi-envelope"></i> <span class="d-none d-sm-inline">{% trans "Welcome Email" %}</span>
-                            </button>
-                        </form>
+
+                        <li class="page-item active">
+                            <span class="page-link">
+                                {% trans "Page" %} {{ page_obj.number }} {% trans "of" %} {{ page_obj.paginator.num_pages }}
+                            </span>
+                        </li>
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query|urlencode }}{% endif %}{% if role_filter %}&role={{ role_filter|urlencode }}{% endif %}{% if status_filter %}&status={{ status_filter|urlencode }}{% endif %}">
+                                    <i class="bi bi-chevron-right"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query|urlencode }}{% endif %}{% if role_filter %}&role={{ role_filter|urlencode }}{% endif %}{% if status_filter %}&status={{ status_filter|urlencode }}{% endif %}">
+                                    <i class="bi bi-chevron-double-right"></i>
+                                </a>
+                            </li>
                         {% endif %}
-                    </div>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-        </table>  
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+        </div>
     {% else %}
         <div class="alert alert-warning" role="alert">
             {% trans "No users found." %}

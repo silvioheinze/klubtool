@@ -166,7 +166,8 @@ class UsersListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
     model = get_user_model()
     context_object_name = 'users'
     template_name = 'user/list.html'
-    paginate_by = 20
+    # Server-side pagination (larger page size; use page links to see all users)
+    paginate_by = 100
 
     def test_func(self):
         # Allow access only if user is superuser
