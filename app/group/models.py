@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from django.db import models
 from django.contrib.auth import get_user_model
 from auditlog.registry import auditlog
@@ -138,6 +140,7 @@ class GroupMeeting(models.Model):
     STATUS_CHOICES = [
         ('scheduled', 'Scheduled'),
         ('invited', 'Invited'),
+        ('completed', 'Completed'),
         ('cancelled', 'Cancelled'),
     ]
     
@@ -190,6 +193,20 @@ class GroupMeeting(models.Model):
                 minutes = delta.seconds // 60
                 return f"{minutes} minutes"
         return "Past"
+
+    @classmethod
+    def auto_complete_past_meetings(cls):
+        """
+        Mark meetings as completed if 2+ hours have passed since the start time.
+        Only updates meetings with status 'invited' (never cancelled or scheduled).
+        Returns the number of meetings updated.
+        """
+        from datetime import timedelta
+        threshold = timezone.now() - timedelta(hours=2)
+        return cls.objects.filter(
+            status='invited',
+            scheduled_date__lt=threshold
+        ).update(status='completed')
 
 
 class AgendaItem(models.Model):

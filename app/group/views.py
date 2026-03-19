@@ -654,6 +654,8 @@ class GroupMeetingListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
 
     def get_queryset(self):
         """Filter queryset: superusers see all meetings; others see only meetings of their groups."""
+        # Auto-complete meetings that ended 2+ hours ago
+        GroupMeeting.auto_complete_past_meetings()
         user = self.request.user
         base = GroupMeeting.objects.all().select_related('group', 'created_by').order_by('-scheduled_date')
         if user.is_superuser:
@@ -722,10 +724,13 @@ class GroupMeetingDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView
         )
 
     def get_context_data(self, **kwargs):
-        """Add agenda items and minute items (when invited) to context"""
+        """Add agenda items and minute items (when invited or completed) to context"""
+        # Auto-complete meetings that ended 2+ hours ago
+        GroupMeeting.auto_complete_past_meetings()
+        self.object.refresh_from_db()
         context = super().get_context_data(**kwargs)
         context['agenda_items'] = self.object.agenda_items.filter(is_active=True).order_by('order')
-        if self.object.status == 'invited':
+        if self.object.status in ('invited', 'completed'):
             context['minute_items'] = self.object.minute_items.filter(is_active=True).order_by('order')
         else:
             context['minute_items'] = []
@@ -738,8 +743,10 @@ class GroupMeetingDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView
         context['can_send_invites'] = can_manage
         context['can_edit_meeting'] = can_manage
         context['can_manage_agenda'] = can_manage
-        context['can_manage_minutes'] = can_manage
-        context['can_cancel_meeting'] = can_manage
+        # Minutes can only be edited when status is 'invited' (read-only when completed)
+        context['can_manage_minutes'] = can_manage and self.object.status == 'invited'
+        # Don't allow cancelling completed or already cancelled meetings
+        context['can_cancel_meeting'] = can_manage and self.object.status not in ('cancelled', 'completed')
         context['can_toggle_participation'] = can_manage
         
         # Add group members and participation data
