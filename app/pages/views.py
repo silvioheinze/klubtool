@@ -89,6 +89,7 @@ class HomePageView(TemplateView):
             # Login form for unauthenticated users
             from allauth.account.forms import LoginForm
             from django.contrib.auth import REDIRECT_FIELD_NAME
+            from django.urls import reverse as reverse_fn
             context['login_form'] = LoginForm(request=self.request)
             context['redirect_field_name'] = REDIRECT_FIELD_NAME
             context['redirect_field_value'] = reverse('home')
@@ -157,7 +158,6 @@ class HomePageView(TemplateView):
                     context['calendar_next_month'], context['calendar_next_year'] = 1, cal_year + 1
                 else:
                     context['calendar_next_month'], context['calendar_next_year'] = cal_month + 1, cal_year
-                from django.urls import reverse
                 context['calendar_prev_url'] = '{}?calendar_month={}&calendar_year={}'.format(
                     reverse('home'), context['calendar_prev_month'], context['calendar_prev_year'])
                 context['calendar_next_url'] = '{}?calendar_month={}&calendar_year={}'.format(
