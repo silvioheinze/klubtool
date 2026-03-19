@@ -186,6 +186,8 @@ AUTH_USER_MODEL = 'user.CustomUser'
 
 # Django Allauth Configuration
 SITE_ID = 1
+SITE_DOMAIN = os.environ.get('SITE_DOMAIN', 'localhost')
+SITE_NAME = os.environ.get('SITE_NAME', 'Klubtool')
 
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',

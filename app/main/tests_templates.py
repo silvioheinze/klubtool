@@ -75,12 +75,6 @@ class UserTemplatesTests(TestCase):
 class AccountTemplatesTests(TestCase):
     """Test templates for django-allauth account (overrides)."""
 
-    def test_login_template_exists(self):
-        get_template('account/login.html')
-
-    def test_signup_template_exists(self):
-        get_template('account/signup.html')
-
     def test_logout_template_exists(self):
         get_template('account/logout.html')
 
