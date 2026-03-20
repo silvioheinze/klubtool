@@ -1513,6 +1513,19 @@ msgstr "Klubobmensch Stellvertretung"
 msgid "Party member"
 msgstr "Parteimitglied"
 
+#: templates/group/group_detail.html templates/group/member_detail.html templates/group/member_form.html
+#: templates/user/list.html
+msgid "Group member"
+msgstr "Gruppenmitglied"
+
+#: templates/group/member_form.html
+msgid "Group participant without party affiliation"
+msgstr "Gruppenteilnehmer ohne Parteizugehörigkeit"
+
+#: templates/group/member_form.html
+msgid "Party-affiliated group participant"
+msgstr "Gruppenteilnehmer mit Parteizugehörigkeit"
+
 #: templates/group/group_detail.html:331
 msgid "Manage Roles"
 msgstr "Berechtigungen vergeben"
