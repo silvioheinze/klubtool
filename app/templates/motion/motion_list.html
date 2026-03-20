@@ -161,7 +161,6 @@
                                         <th>{% trans "Title" %}</th>
                                         <th>{% trans "Parties" %}</th>
                                         <th>{% trans "Status" %}</th>
-                                        <th>{% trans "Session" %}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -203,18 +202,6 @@
                                                     <span class="badge bg-light text-dark">{% trans "Tabled" %}</span>
                                                 {% elif motion.status == 'not_admitted' %}
                                                     <span class="badge bg-dark">{% trans "Nicht zugelassen" %}</span>
-                                                {% endif %}
-                                            </td>
-
-
-                                            <td>
-                                                {% if motion.session %}
-                                                    <a href="{% url 'local:session-detail' motion.session.pk %}">
-                                                        {{ motion.session.title }}
-                                                    </a>
-                                                    <br><small class="text-muted">{{ motion.session.scheduled_date|date:"M d, Y" }}</small>
-                                                {% else %}
-                                                    <span class="text-muted">{% trans "No session" %}</span>
                                                 {% endif %}
                                             </td>
                                         </tr>
