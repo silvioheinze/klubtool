@@ -494,11 +494,12 @@ class GroupMemberModelTests(TestCase):
         self.assertIn(group_member, self.group.members.all())
 
     def test_group_member_get_primary_role_priority(self):
-        """Test get_primary_role returns highest-priority role (Group Admin > Leader > Deputy Leader > Member > Party member)"""
+        """Test get_primary_role returns highest-priority role (Group Admin > Leader > Deputy Leader > Member > Group member > Party member)"""
         group_admin = Role.objects.get_or_create(name='Group Admin', defaults={'is_active': True})[0]
         leader = Role.objects.get_or_create(name='Leader', defaults={'is_active': True})[0]
         deputy_leader = Role.objects.get_or_create(name='Deputy Leader', defaults={'is_active': True})[0]
         member_role = Role.objects.get_or_create(name='Member', defaults={'is_active': True})[0]
+        group_member_role = Role.objects.get_or_create(name='Group member', defaults={'is_active': True})[0]
         party_member = Role.objects.get_or_create(name='Party member', defaults={'is_active': True})[0]
 
         # Party member only -> returns Party member
@@ -506,7 +507,11 @@ class GroupMemberModelTests(TestCase):
         gm.roles.add(party_member)
         self.assertEqual(gm.get_primary_role(), 'Party member')
 
-        # Member + Party member -> returns Member (higher priority)
+        # Group member + Party member -> Group member wins
+        gm.roles.add(group_member_role)
+        self.assertEqual(gm.get_primary_role(), 'Group member')
+
+        # Member + Group member + Party member -> returns Member (higher priority)
         gm.roles.add(member_role)
         self.assertEqual(gm.get_primary_role(), 'Member')
 
@@ -554,6 +559,34 @@ class GroupMemberModelTests(TestCase):
         group_member = form.save()
         self.assertIn(party_member_role, group_member.roles.all())
         self.assertEqual(group_member.get_primary_role(), 'Party member')
+
+    def test_group_member_form_includes_group_member_role(self):
+        """Test that GroupMemberForm includes Group member role when available"""
+        Role.objects.get_or_create(
+            name='Group member',
+            defaults={'description': 'Group member role', 'is_active': True},
+        )
+        form = GroupMemberForm()
+        role_names = [r.name for r in form.fields['roles'].queryset]
+        self.assertIn('Group member', role_names)
+
+    def test_group_member_form_with_group_member_role(self):
+        """Test GroupMemberForm with Group member role assignment"""
+        group_member_role = Role.objects.get_or_create(
+            name='Group member',
+            defaults={'description': 'Group member role', 'is_active': True},
+        )[0]
+        form_data = {
+            'user': self.user.pk,
+            'group': self.group.pk,
+            'roles': [group_member_role.pk],
+            'notes': '',
+        }
+        form = GroupMemberForm(data=form_data)
+        self.assertTrue(form.is_valid(), form.errors)
+        gm = form.save()
+        self.assertIn(group_member_role, gm.roles.all())
+        self.assertEqual(gm.get_primary_role(), 'Group member')
 
 
 class GroupMeetingFormTests(TestCase):

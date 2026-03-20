@@ -126,8 +126,15 @@ class GroupMember(models.Model):
         return ', '.join([role.name for role in self.roles.all()])
 
     def get_primary_role(self):
-        """Get the primary role (Group Admin > Leader > Deputy Leader > Member > Party member)"""
-        role_priority = ['Group Admin', 'Leader', 'Deputy Leader', 'Member', 'Party member']
+        """Get the primary role (Group Admin > Leader > Deputy Leader > Member > Group member > Party member)"""
+        role_priority = [
+            'Group Admin',
+            'Leader',
+            'Deputy Leader',
+            'Member',
+            'Group member',
+            'Party member',
+        ]
         for role_name in role_priority:
             if self.has_role(role_name):
                 return role_name
