@@ -19,6 +19,7 @@ urlpatterns = [
     path('<int:motion_pk>/comment/<int:comment_pk>/edit/', views.motion_comment_edit_view, name='motion-comment-edit'),
     path('<int:motion_pk>/comment/<int:comment_pk>/delete/', views.motion_comment_delete_view, name='motion-comment-delete'),
     path('<int:pk>/attach/', views.motion_attachment_view, name='motion-attach'),
+    path('<int:motion_pk>/attachments/<int:pk>/delete/', views.motion_attachment_delete_view, name='motion-attachment-delete'),
     path('<int:pk>/status-change/', views.motion_status_change_view, name='motion-status-change'),
     path('<int:motion_pk>/status/<int:status_pk>/delete/', views.motion_status_delete_view, name='motion-status-delete'),
     path('<int:pk>/group-decision/', views.motion_group_decision_view, name='motion-group-decision'),

@@ -8,7 +8,8 @@ from django.db.models import Q, Prefetch, Case, When, Value, IntegerField
 from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
 from django.http import JsonResponse, HttpResponse
-from django.views.decorators.http import require_http_methods
+from django.core.exceptions import PermissionDenied
+from django.views.decorators.http import require_http_methods, require_POST
 from django.utils.translation import gettext_lazy as _
 import json
 
@@ -824,6 +825,53 @@ class PartyDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
 
 
 # Session Views
+def user_can_delete_session_attachment(user, attachment):
+    """Superuser, uploader, or Leader/Deputy Leader of a group whose party is in the session council's local."""
+    if user.is_superuser or attachment.uploaded_by_id == user.pk:
+        return True
+    session = attachment.session
+    if not session.council_id or not getattr(session.council, 'local_id', None):
+        return False
+    local_id = session.council.local_id
+    from group.models import Group, GroupMember
+    from user.models import Role
+    group_ids = list(
+        Group.objects.filter(
+            party__local_id=local_id,
+            party__isnull=False,
+            is_active=True,
+        ).values_list('pk', flat=True)
+    )
+    if not group_ids:
+        return False
+    try:
+        leader_role = Role.objects.get(name='Leader')
+        deputy_leader_role = Role.objects.get(name='Deputy Leader')
+    except Role.DoesNotExist:
+        return False
+    return GroupMember.objects.filter(
+        user=user,
+        group_id__in=group_ids,
+        is_active=True,
+        roles__in=[leader_role, deputy_leader_role],
+    ).exists()
+
+
+@login_required
+@require_POST
+def session_attachment_delete_view(request, session_pk, pk):
+    """Delete a session attachment (superuser, uploader, or group leader/deputy in council local)."""
+    attachment = get_object_or_404(SessionAttachment, pk=pk, session_id=session_pk)
+    if not user_can_delete_session_attachment(request.user, attachment):
+        raise PermissionDenied
+    name = attachment.filename
+    if attachment.file:
+        attachment.file.delete(save=False)
+    attachment.delete()
+    messages.success(request, _('Attachment "%(name)s" has been removed.') % {'name': name})
+    return redirect('local:session-detail', pk=session_pk)
+
+
 class SessionDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
     """View for displaying a single Session object"""
     model = Session
@@ -990,6 +1038,12 @@ class SessionDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
                 roles__name__in=['Group Admin', 'Leader', 'Deputy Leader'],
             ).values_list('group_id', flat=True).distinct()
         )
+
+        context['session_attachment_delete_ids'] = [
+            att.pk
+            for att in self.object.attachments.all()
+            if user_can_delete_session_attachment(self.request.user, att)
+        ]
 
         return context
 

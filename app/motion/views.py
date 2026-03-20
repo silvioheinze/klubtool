@@ -10,6 +10,8 @@ from django.db.models import Q, Count
 from django.core.paginator import Paginator
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
+from django.views.decorators.http import require_POST
+from django.core.exceptions import PermissionDenied
 
 from .models import Motion, MotionVote, MotionComment, MotionAttachment, MotionStatus, MotionGroupDecision, Inquiry, InquiryStatus, InquiryAttachment
 from .forms import MotionForm, MotionFilterForm, MotionVoteForm, MotionVoteFormSetFactory, MotionVoteTypeForm, MotionCommentForm, MotionAttachmentForm, MotionStatusForm, MotionGroupDecisionForm, InquiryForm, InquiryFilterForm, InquiryStatusForm, InquiryAttachmentForm
@@ -38,33 +40,43 @@ def is_superuser_or_has_permission(permission):
     return check_permission
 
 
+def is_leader_or_deputy_leader_of_group(user, group):
+    """True if user is Leader or Deputy Leader in this group (no superuser shortcut)."""
+    if not group:
+        return False
+    from user.models import Role
+    try:
+        leader_role = Role.objects.get(name='Leader')
+        deputy_leader_role = Role.objects.get(name='Deputy Leader')
+        return GroupMember.objects.filter(
+            user=user,
+            group=group,
+            is_active=True,
+            roles__in=[leader_role, deputy_leader_role],
+        ).exists()
+    except Role.DoesNotExist:
+        return False
+
+
 def is_leader_or_deputy_leader(user, motion):
     """Check if user is a leader or deputy leader of the motion's group"""
     if user.is_superuser:
         return True
-    
-    if not motion.group:
-        return False
-    
-    # Check if user is a member of the motion's group with leader or deputy leader role
-    from user.models import Role
-    
-    try:
-        # Get leader and deputy leader roles
-        leader_role = Role.objects.get(name='Leader')
-        deputy_leader_role = Role.objects.get(name='Deputy Leader')
-        
-        # Check if user has these roles in the motion's group
-        membership = GroupMember.objects.filter(
-            user=user,
-            group=motion.group,
-            is_active=True,
-            roles__in=[leader_role, deputy_leader_role]
-        ).first()
-        
-        return membership is not None
-    except Role.DoesNotExist:
-        return False
+    return is_leader_or_deputy_leader_of_group(user, motion.group)
+
+
+def user_can_delete_motion_attachment(user, attachment):
+    """Superuser, uploader, or leader/deputy of the motion's group."""
+    if user.is_superuser or attachment.uploaded_by_id == user.pk:
+        return True
+    return is_leader_or_deputy_leader_of_group(user, attachment.motion.group)
+
+
+def user_can_delete_inquiry_attachment(user, attachment):
+    """Superuser, uploader, or leader/deputy of the inquiry's group."""
+    if user.is_superuser or attachment.uploaded_by_id == user.pk:
+        return True
+    return is_leader_or_deputy_leader_of_group(user, attachment.inquiry.group)
 
 
 def can_change_inquiry_status(user, inquiry):
@@ -401,8 +413,12 @@ class MotionDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             context['comments'] = motion.comments.filter(is_public=True)
         
         # Get attachments
-        context['attachments'] = motion.attachments.all()
-        
+        attachments = list(motion.attachments.all())
+        context['attachments'] = attachments
+        context['motion_attachment_delete_ids'] = [
+            a.pk for a in attachments if user_can_delete_motion_attachment(user, a)
+        ]
+
         # Get status history with votes for vote-results popup
         context['status_history'] = motion.status_history.prefetch_related('votes', 'votes__party').all()
         
@@ -788,6 +804,21 @@ def motion_attachment_view(request, pk):
         'motion': motion,
         'form': form
     })
+
+
+@login_required
+@require_POST
+def motion_attachment_delete_view(request, motion_pk, pk):
+    """Delete a motion attachment (superuser, uploader, or group leader/deputy)."""
+    attachment = get_object_or_404(MotionAttachment, pk=pk, motion_id=motion_pk)
+    if not user_can_delete_motion_attachment(request.user, attachment):
+        raise PermissionDenied
+    name = attachment.filename
+    if attachment.file:
+        attachment.file.delete(save=False)
+    attachment.delete()
+    messages.success(request, _('Attachment "%(name)s" has been removed.') % {'name': name})
+    return redirect('motion:motion-detail', pk=motion_pk)
 
 
 @login_required
@@ -1746,8 +1777,12 @@ class InquiryDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['can_change_status'] = can_change_inquiry_status(self.request.user, inquiry)
         
         # Get attachments
-        context['attachments'] = inquiry.attachments.all().order_by('-uploaded_at')
-        
+        attachments = list(inquiry.attachments.all().order_by('-uploaded_at'))
+        context['attachments'] = attachments
+        context['inquiry_attachment_delete_ids'] = [
+            a.pk for a in attachments if user_can_delete_inquiry_attachment(user, a)
+        ]
+
         # Get status history
         context['status_history'] = inquiry.status_history.all()
         
@@ -1926,6 +1961,21 @@ def inquiry_attachment_view(request, pk):
         'inquiry': inquiry,
         'form': form
     })
+
+
+@login_required
+@require_POST
+def inquiry_attachment_delete_view(request, inquiry_pk, pk):
+    """Delete an inquiry attachment (superuser, uploader, or group leader/deputy)."""
+    attachment = get_object_or_404(InquiryAttachment, pk=pk, inquiry_id=inquiry_pk)
+    if not user_can_delete_inquiry_attachment(request.user, attachment):
+        raise PermissionDenied
+    name = attachment.filename
+    if attachment.file:
+        attachment.file.delete(save=False)
+    attachment.delete()
+    messages.success(request, _('Attachment "%(name)s" has been removed.') % {'name': name})
+    return redirect('inquiry:inquiry-detail', pk=inquiry_pk)
 
 
 @login_required

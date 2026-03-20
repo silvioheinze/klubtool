@@ -9,7 +9,7 @@ from .views import (
     TermSeatDistributionListView, TermSeatDistributionDetailView, TermSeatDistributionCreateView,
     TermSeatDistributionUpdateView, TermSeatDistributionDeleteView, TermSeatDistributionView,
     PartyListView, PartyDetailView, PartyCreateView, PartyUpdateView, PartyDeleteView,
-    SessionDetailView, SessionCreateView, SessionUpdateView, SessionDeleteView, SessionExportPDFView, SessionExcuseView, SessionAttachmentView, SessionInvitationUploadView, SessionCancelView, SessionMinutesUpdateView, update_motion_order, update_inquiry_order, update_session_presence, session_export_ics,
+    SessionDetailView, SessionCreateView, SessionUpdateView, SessionDeleteView, SessionExportPDFView, SessionExcuseView, SessionAttachmentView, session_attachment_delete_view, SessionInvitationUploadView, SessionCancelView, SessionMinutesUpdateView, update_motion_order, update_inquiry_order, update_session_presence, session_export_ics,
     CommitteeListView, CommitteeDetailView, CommitteeCreateView, CommitteeUpdateView, CommitteeDeleteView,
     CommitteeMeetingCreateView, CommitteeMeetingDetailView, CommitteeMeetingUpdateView, CommitteeMeetingDeleteView, CommitteeMeetingSetSubstituteView, committee_meeting_export_ics, CommitteeMeetingAttachmentView,
     CommitteeMemberListView, CommitteeMemberCreateView, CommitteeMemberUpdateView, CommitteeMemberDeleteView
@@ -64,6 +64,7 @@ urlpatterns = [
     path('sessions/<int:pk>/export-pdf/', SessionExportPDFView.as_view(), name='session-export-pdf'),
     path('sessions/<int:pk>/export-ics/', session_export_ics, name='session-export-ics'),
     path('sessions/<int:session_pk>/attach/', SessionAttachmentView.as_view(), name='session-attach'),
+    path('sessions/<int:session_pk>/attachments/<int:pk>/delete/', session_attachment_delete_view, name='session-attachment-delete'),
     path('sessions/<int:session_pk>/invitation/', SessionInvitationUploadView.as_view(), name='session-invitation'),
     path('sessions/<int:pk>/cancel/', SessionCancelView.as_view(), name='session-cancel'),
     path('sessions/<int:pk>/excuse/', SessionExcuseView.as_view(), name='session-excuse'),
