@@ -33,6 +33,23 @@ def _get_user_accessible_group_ids(user):
     )
 
 
+def user_can_view_inquiry(user, inquiry_pk):
+    """Return True if user may view this inquiry (same rules as InquiryDetailView)."""
+    if user.is_superuser or user.has_role_permission('motion.view'):
+        return True
+    if inquiry_pk is None:
+        return False
+    try:
+        inquiry_pk = int(inquiry_pk)
+    except (TypeError, ValueError):
+        return False
+    group_id = Inquiry.objects.filter(pk=inquiry_pk).values_list('group_id', flat=True).first()
+    if group_id is None:
+        return False
+    group_ids = _get_user_accessible_group_ids(user)
+    return group_ids is not None and group_id in group_ids
+
+
 def is_superuser_or_has_permission(permission):
     """Decorator to check if user is superuser or has specific permission"""
     def check_permission(user):
@@ -1640,6 +1657,102 @@ class MotionExportPDFView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         return response
 
 
+class InquiryExportPDFView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
+    """Export inquiry information as PDF (WeasyPrint)."""
+
+    model = Inquiry
+    context_object_name = 'inquiry'
+    template_name = 'motion/inquiry_export_pdf.html'
+
+    def test_func(self):
+        return user_can_view_inquiry(self.request.user, self.kwargs.get('pk'))
+
+    def get_queryset(self):
+        return Inquiry.objects.select_related(
+            'session', 'session__council', 'group', 'submitted_by'
+        ).prefetch_related('parties', 'tags', 'interventions', 'attachments', 'status_history')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        inquiry = self.object
+        context['attachments'] = inquiry.attachments.all().order_by('uploaded_at')
+        context['status_history'] = inquiry.status_history.all().order_by('-changed_at')
+
+        from local.models import Term, TermSeatDistribution
+
+        parties_with_logos = []
+        party_seat_map = {}
+        council = None
+        if inquiry.session and inquiry.session.council:
+            council = inquiry.session.council
+            today = timezone.now().date()
+            current_term = Term.objects.filter(
+                start_date__lte=today,
+                end_date__gte=today,
+                is_active=True,
+            ).first()
+            if current_term and council.local:
+                for distribution in TermSeatDistribution.objects.filter(
+                    term=current_term,
+                    party__local=council.local,
+                ).select_related('party'):
+                    party_seat_map[distribution.party.pk] = distribution.seats
+
+        parties = list(inquiry.parties.all())
+        parties.sort(key=lambda p: (-party_seat_map.get(p.pk, 0), p.name))
+        for party in parties:
+            parties_with_logos.append({
+                'party': party,
+                'logo_name': party.logo.name if party.logo else None,
+            })
+        context['parties_with_logos'] = parties_with_logos
+        context['ordered_parties'] = parties
+        return context
+
+    def render_to_response(self, context, **response_kwargs):
+        from django.template.loader import render_to_string
+        from django.http import HttpResponse
+        from django.conf import settings
+        from weasyprint import HTML, CSS
+        import os
+
+        html_string = render_to_string(self.template_name, context)
+        css = CSS(string='''
+            body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
+            p { line-height: 1.6; }
+            h1 { font-size: 20px; }
+            h2 { font-size: 16px; }
+            .header { text-align: center; margin-bottom: 20px; }
+            .section { margin-bottom: 20px; }
+            .meta-table { width: 100%; border-collapse: collapse; margin: 12px 0; }
+            .meta-table th, .meta-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            .meta-table th { background-color: #f2f2f2; }
+            .attachments-section { margin-top: 16px; }
+            .timeline-entry { margin-bottom: 10px; padding: 8px; border-left: 3px solid #ccc; padding-left: 12px; }
+        ''')
+
+        if settings.MEDIA_ROOT:
+            base_url = f"file://{os.path.abspath(settings.MEDIA_ROOT)}/"
+        else:
+            base_url = None
+
+        try:
+            html = HTML(string=html_string, base_url=base_url)
+            pdf = html.write_pdf(stylesheets=[css])
+        except (AttributeError, TypeError) as e:
+            if 'transform' in str(e) or 'super' in str(e) or 'base_url' in str(e):
+                html = HTML(string=html_string)
+                pdf = html.write_pdf(stylesheets=[css])
+            else:
+                raise
+
+        safe_title = self.object.title.replace(' ', '_').replace('/', '-')[:80]
+        filename = f'Anfrage_{safe_title}.pdf'
+        response = HttpResponse(pdf, content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        return response
+
+
 # Inquiry Views
 class InquiryListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
     """View for listing Inquiry objects"""
@@ -1743,21 +1856,7 @@ class InquiryDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
 
     def test_func(self):
         """Allow superuser, motion.view permission, or regular group members for inquiries of their group."""
-        user = self.request.user
-        if user.is_superuser or user.has_role_permission('motion.view'):
-            return True
-        inquiry_pk = self.kwargs.get('pk')
-        if inquiry_pk is None:
-            return False
-        try:
-            inquiry_pk = int(inquiry_pk)
-        except (TypeError, ValueError):
-            return False
-        group_id = Inquiry.objects.filter(pk=inquiry_pk).values_list('group_id', flat=True).first()
-        if group_id is None:
-            return False
-        group_ids = _get_user_accessible_group_ids(user)
-        return group_ids is not None and group_id in group_ids
+        return user_can_view_inquiry(self.request.user, self.kwargs.get('pk'))
 
     def get_queryset(self):
         return Inquiry.objects.prefetch_related('interventions', 'parties', 'group', 'attachments')
@@ -1766,16 +1865,11 @@ class InquiryDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         """Add additional context data"""
         context = super().get_context_data(**kwargs)
         inquiry = self.object
-        
-        # Add attachment form
-        context['attachment_form'] = InquiryAttachmentForm(inquiry=inquiry, uploaded_by=self.request.user)
-        
-        # Add status change form
-        context['status_form'] = InquiryStatusForm(inquiry=inquiry, changed_by=self.request.user)
-        
+        user = self.request.user
+
         # Add permission check for status changes
-        context['can_change_status'] = can_change_inquiry_status(self.request.user, inquiry)
-        
+        context['can_change_status'] = can_change_inquiry_status(user, inquiry)
+
         # Get attachments
         attachments = list(inquiry.attachments.all().order_by('-uploaded_at'))
         context['attachments'] = attachments

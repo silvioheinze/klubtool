@@ -313,6 +313,22 @@ class InquiryDetailViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Wortmeldung')
 
+    def test_inquiry_detail_includes_export_pdf_link(self):
+        """Export PDF URL appears in sidebar (Files card)."""
+        self.client.login(username='admin', password='adminpass123')
+        response = self.client.get(reverse('inquiry:inquiry-detail', kwargs={'pk': self.inquiry.pk}))
+        self.assertEqual(response.status_code, 200)
+        export_url = reverse('inquiry:inquiry-export-pdf', kwargs={'pk': self.inquiry.pk})
+        self.assertContains(response, export_url)
+
+    def test_inquiry_export_pdf_superuser(self):
+        """Superuser receives a PDF response for inquiry export."""
+        self.client.login(username='admin', password='adminpass123')
+        response = self.client.get(reverse('inquiry:inquiry-export-pdf', kwargs={'pk': self.inquiry.pk}))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/pdf')
+        self.assertGreater(len(response.content), 100)
+
 
 class InquiryCreateViewTests(TestCase):
     """Test cases for InquiryCreateView"""

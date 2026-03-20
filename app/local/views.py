@@ -9,6 +9,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
 from django.http import JsonResponse, HttpResponse
 from django.core.exceptions import PermissionDenied
+from django.core.paginator import Paginator
 from django.views.decorators.http import require_http_methods, require_POST
 from django.utils.translation import gettext_lazy as _
 import json
@@ -276,6 +277,47 @@ def _get_user_accessible_council_ids(user):
     )
 
 
+COUNCIL_SESSIONS_PER_PAGE = 10
+
+
+def _council_sessions_queryset(council):
+    """Active sessions for council detail / partial (newest first, minimal fields)."""
+    return (
+        council.sessions.filter(is_active=True)
+        .order_by('-scheduled_date')
+        .only('pk', 'title', 'status')
+    )
+
+
+@login_required
+def council_sessions_partial(request, pk):
+    """
+    HTML fragment for council session list + pagination (AJAX).
+    Non-AJAX requests redirect to council detail.
+    """
+    if request.headers.get('X-Requested-With') != 'XMLHttpRequest':
+        return redirect('local:council-detail', pk=pk)
+
+    council = get_object_or_404(Council, pk=pk)
+    if not request.user.is_superuser and pk not in _get_user_accessible_council_ids(request.user):
+        raise PermissionDenied
+
+    paginator = Paginator(_council_sessions_queryset(council), COUNCIL_SESSIONS_PER_PAGE)
+    page_obj = paginator.get_page(request.GET.get('page', 1))
+
+    return render(
+        request,
+        'local/council_sessions_list_partial.html',
+        {
+            'council': council,
+            'sessions': page_obj.object_list,
+            'sessions_page_obj': page_obj,
+            'sessions_show_pagination': paginator.count > COUNCIL_SESSIONS_PER_PAGE,
+            'council_sessions_partial_url': reverse('local:council-sessions-partial', kwargs={'pk': pk}),
+        },
+    )
+
+
 class CouncilDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
     """View for displaying a single Council object"""
     model = Council
@@ -308,11 +350,23 @@ class CouncilDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             or self.object.pk in _get_user_accessible_council_ids(self.request.user)
         )
 
-        # Get sessions for this council, youngest (most recent) date first
-        context['sessions'] = self.object.sessions.filter(is_active=True).order_by('-scheduled_date')
-        context['total_sessions'] = self.object.sessions.count()
-        # Get committees for this council
-        context['committees'] = self.object.committees.filter(is_active=True).order_by('name')
+        # Paginated active sessions (newest first); pagination UI only if more than one page
+        sessions_qs = _council_sessions_queryset(self.object)
+        paginator = Paginator(sessions_qs, COUNCIL_SESSIONS_PER_PAGE)
+        sessions_page_obj = paginator.get_page(1)
+        context['sessions'] = sessions_page_obj.object_list
+        context['sessions_page_obj'] = sessions_page_obj
+        context['sessions_show_pagination'] = paginator.count > COUNCIL_SESSIONS_PER_PAGE
+        context['council_sessions_partial_url'] = reverse(
+            'local:council-sessions-partial', kwargs={'pk': self.object.pk}
+        )
+        context['total_sessions'] = paginator.count
+        # Get committees for this council (name + link only on council detail)
+        context['committees'] = (
+            self.object.committees.filter(is_active=True)
+            .order_by('name')
+            .only('pk', 'name')
+        )
         context['total_committees'] = self.object.committees.count()
         
         # Get the current term and its seat distribution

@@ -10,6 +10,7 @@ urlpatterns = [
     path('<int:pk>/', views.InquiryDetailView.as_view(), name='inquiry-detail'),
     path('<int:pk>/edit/', views.InquiryUpdateView.as_view(), name='inquiry-edit'),
     path('<int:pk>/delete/', views.InquiryDeleteView.as_view(), name='inquiry-delete'),
+    path('<int:pk>/export-pdf/', views.InquiryExportPDFView.as_view(), name='inquiry-export-pdf'),
     path('<int:pk>/attach/', views.inquiry_attachment_view, name='inquiry-attach'),
     path('<int:inquiry_pk>/attachments/<int:pk>/delete/', views.inquiry_attachment_delete_view, name='inquiry-attachment-delete'),
     path('<int:pk>/status-change/', views.inquiry_status_change_view, name='inquiry-status-change'),

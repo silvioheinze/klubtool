@@ -1,0 +1,65 @@
+{% load i18n %}
+{% if sessions %}
+    <div class="table-responsive">
+        <table class="table table-striped table-hover table-sm mb-0">
+            <thead>
+                <tr>
+                    <th>{% trans "Title" %}</th>
+                    <th class="text-nowrap">{% trans "Status" %}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for session in sessions %}
+                    <tr>
+                        <td class="text-break">
+                            <a href="{% url 'local:session-detail' session.pk %}">{{ session.title }}</a>
+                        </td>
+                        <td>
+                            {% if session.status == 'scheduled' %}
+                                <span class="badge bg-primary">{% trans "Scheduled" %}</span>
+                            {% elif session.status == 'in_progress' %}
+                                <span class="badge bg-warning text-dark">{% trans "In Progress" %}</span>
+                            {% elif session.status == 'completed' %}
+                                <span class="badge bg-success">{% trans "Completed" %}</span>
+                            {% elif session.status == 'cancelled' %}
+                                <span class="badge bg-danger">{% trans "Cancelled" %}</span>
+                            {% elif session.status == 'invited' %}
+                                <span class="badge bg-info text-dark">{% trans "Invited" %}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if sessions_show_pagination %}
+    <nav class="council-sessions-pagination mt-2" aria-label="{% trans 'Council sessions pagination' %}">
+        <ul class="pagination pagination-sm justify-content-center mb-0">
+            {% if sessions_page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link council-sessions-page-link" href="{{ council_sessions_partial_url }}?page={{ sessions_page_obj.previous_page_number }}">{% trans "Previous" %}</a>
+            </li>
+            {% endif %}
+            <li class="page-item disabled">
+                <span class="page-link">{{ sessions_page_obj.number }} / {{ sessions_page_obj.paginator.num_pages }}</span>
+            </li>
+            {% if sessions_page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link council-sessions-page-link" href="{{ council_sessions_partial_url }}?page={{ sessions_page_obj.next_page_number }}">{% trans "Next" %}</a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+{% else %}
+    <div class="text-center py-4">
+        <i class="bi bi-calendar-event fs-1 text-muted"></i>
+        <h6 class="mt-3">{% trans "No Sessions found" %}</h6>
+        <p class="text-muted">{% trans "Create council sessions to manage meetings and events." %}</p>
+        {% if can_add_session %}
+        <a href="{% url 'local:session-create' %}?council={{ council.pk }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> {% trans "Create First Session" %}
+        </a>
+        {% endif %}
+    </div>
+{% endif %}
