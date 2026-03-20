@@ -5,7 +5,7 @@ from user.views import (
     AccountDeleteView, SettingsView, SignupPageView,
     UsersUpdateView, UsersListView, RoleListView, RoleCreateView,
     RoleUpdateView, RoleDeleteView, AdminUserCreateView, AdminSettingsView,
-    send_welcome_email, CustomConfirmEmailView, calendar_subscription_create,
+    send_welcome_email, user_remove_view, CustomConfirmEmailView, calendar_subscription_create,
 )
 
 
@@ -23,6 +23,7 @@ urlpatterns = [
     path('edit/<int:user_id>/', UsersUpdateView.as_view(), name='user-edit'),
     path('edit/password/', redirect_password_change, name='user-password-change-redirect'),
     path('send-welcome-email/<int:user_id>/', send_welcome_email, name='user-send-welcome-email'),
+    path('remove/<int:user_id>/', user_remove_view, name='user-remove'),
     
     # Role Management
     path('roles/', RoleListView.as_view(), name='role-list'),

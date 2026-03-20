@@ -1356,3 +1356,69 @@ class UserRegistrationTests(TestCase):
             'Welcome' in response_text or 'Willkommen' in response_text,
             "Home page should show welcome message"
         )
+
+
+class UserRemoveViewTests(TestCase):
+    """Superuser-only POST to set target user is_active=False (labeled Remove in UI)."""
+
+    def setUp(self):
+        self.client = Client()
+        self.superuser = User.objects.create_superuser(
+            username='admin',
+            email='admin@example.com',
+            password='adminpass123',
+        )
+        self.other = User.objects.create_user(
+            username='otheruser',
+            email='other@example.com',
+            password='otherpass123',
+        )
+
+    def test_superuser_remove_sets_inactive(self):
+        self.client.login(username='admin', password='adminpass123')
+        url = reverse('user-remove', kwargs={'user_id': self.other.pk})
+        response = self.client.post(url, follow=False)
+        self.assertRedirects(response, reverse('user-list'), fetch_redirect_response=False)
+        self.other.refresh_from_db()
+        self.assertFalse(self.other.is_active)
+
+    def test_superuser_cannot_remove_self(self):
+        self.client.login(username='admin', password='adminpass123')
+        url = reverse('user-remove', kwargs={'user_id': self.superuser.pk})
+        response = self.client.post(url, follow=False)
+        self.assertRedirects(response, reverse('user-list'), fetch_redirect_response=False)
+        self.superuser.refresh_from_db()
+        self.assertTrue(self.superuser.is_active)
+
+    def test_remove_idempotent_inactive(self):
+        self.other.is_active = False
+        self.other.save(update_fields=['is_active'])
+        self.client.login(username='admin', password='adminpass123')
+        url = reverse('user-remove', kwargs={'user_id': self.other.pk})
+        response = self.client.post(url, follow=False)
+        self.assertRedirects(response, reverse('user-list'), fetch_redirect_response=False)
+
+    def test_non_superuser_forbidden(self):
+        regular = User.objects.create_user(
+            username='regular',
+            email='regular@example.com',
+            password='regularpass123',
+        )
+        self.client.login(username='regular', password='regularpass123')
+        url = reverse('user-remove', kwargs={'user_id': self.other.pk})
+        response = self.client.post(url, follow=False)
+        self.assertEqual(response.status_code, 403)
+        self.other.refresh_from_db()
+        self.assertTrue(self.other.is_active)
+
+    def test_get_not_allowed(self):
+        self.client.login(username='admin', password='adminpass123')
+        url = reverse('user-remove', kwargs={'user_id': self.other.pk})
+        response = self.client.get(url, follow=False)
+        self.assertEqual(response.status_code, 405)
+
+    def test_anonymous_redirects_to_login(self):
+        url = reverse('user-remove', kwargs={'user_id': self.other.pk})
+        response = self.client.post(url, follow=False)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('login', response.url)

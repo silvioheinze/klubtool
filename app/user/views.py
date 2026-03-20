@@ -8,6 +8,7 @@ from django.contrib.auth import get_user_model, login
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.views.decorators.http import require_POST
 from django.db.models import Q
 from django.core.paginator import Paginator
 from django.core.exceptions import PermissionDenied
@@ -434,6 +435,34 @@ def send_welcome_email(request, user_id):
         logger = logging.getLogger(__name__)
         logger.error(f"Failed to send welcome email to {target_user.email}: {str(e)}")
     
+    return redirect('user-list')
+
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+@require_POST
+def user_remove_view(request, user_id):
+    """
+    Set a user's is_active to False (superusers only). Does not delete the account.
+    """
+    try:
+        uid = int(user_id)
+    except (TypeError, ValueError):
+        raise PermissionDenied
+    if uid == request.user.pk:
+        messages.error(request, _("You cannot remove your own account."))
+        return redirect('user-list')
+    target = get_object_or_404(CustomUser, pk=uid)
+    if not target.is_active:
+        messages.info(request, _("This user is already inactive."))
+        return redirect('user-list')
+    target.is_active = False
+    target.save(update_fields=['is_active'])
+    messages.success(
+        request,
+        _("User %(username)s has been removed. They can no longer log in.")
+        % {'username': target.username},
+    )
     return redirect('user-list')
 
 

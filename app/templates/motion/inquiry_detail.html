@@ -185,12 +185,6 @@
                                             <small class="text-muted d-block">
                                                 {{ attachment.get_file_type_display }}
                                             </small>
-                                            <small class="text-muted d-block">
-                                                {% trans "Uploaded by" %} {{ attachment.uploaded_by.get_full_name|default:attachment.uploaded_by.username }}
-                                            </small>
-                                            <small class="text-muted d-block">
-                                                {{ attachment.uploaded_at|date:"d.m.Y H:i" }}
-                                            </small>
                                             {% if attachment.description %}
                                                 <p class="mt-2 mb-0 small">{{ attachment.description }}</p>
                                             {% endif %}
