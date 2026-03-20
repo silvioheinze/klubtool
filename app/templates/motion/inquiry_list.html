@@ -151,7 +151,6 @@
                                         <th>{% trans "Title" %}</th>
                                         <th>{% trans "Parties" %}</th>
                                         <th>{% trans "Status" %}</th>
-                                        <th>{% trans "Session" %}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -190,16 +189,6 @@
                                                     <span class="badge bg-warning">{% trans "Withdrawn" %}</span>
                                                 {% elif inquiry.status == 'not_admitted' %}
                                                     <span class="badge bg-dark">{% trans "Nicht zugelassen" %}</span>
-                                                {% endif %}
-                                            </td>
-                                            <td>
-                                                {% if inquiry.session %}
-                                                    <a href="{% url 'local:session-detail' inquiry.session.pk %}">
-                                                        {{ inquiry.session.title }}
-                                                    </a>
-                                                    <br><small class="text-muted">{{ inquiry.session.scheduled_date|date:"M d, Y" }}</small>
-                                                {% else %}
-                                                    <span class="text-muted">{% trans "No session" %}</span>
                                                 {% endif %}
                                             </td>
                                         </tr>
