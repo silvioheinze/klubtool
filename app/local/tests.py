@@ -1238,6 +1238,69 @@ class CouncilViewTests(TestCase):
         self.client.login(username='admin', password='adminpass123')
         response = self.client.get(reverse('local:council-detail', kwargs={'pk': self.council.pk}))
         self.assertContains(response, self.council.name)
+
+    def test_council_detail_sessions_no_pagination_when_ten_or_fewer(self):
+        """Council sessions list shows no pagination controls when at most 10 active sessions."""
+        self.client.login(username='admin', password='adminpass123')
+        term = Term.objects.create(
+            name='Pagination Term',
+            start_date=timezone.now().date(),
+            end_date=timezone.now().date() + timedelta(days=365),
+        )
+        for i in range(10):
+            Session.objects.create(
+                title=f'Session Page Test {i}',
+                council=self.council,
+                term=term,
+                session_type='regular',
+                status='scheduled',
+                scheduled_date=timezone.now() + timedelta(days=i + 1),
+            )
+        response = self.client.get(reverse('local:council-detail', kwargs={'pk': self.council.pk}))
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, 'council-sessions-pagination')
+        for i in range(10):
+            self.assertContains(response, f'Session Page Test {i}')
+
+    def test_council_detail_sessions_pagination_when_more_than_ten(self):
+        """With 11+ active sessions, pagination appears; AJAX partial page 2 returns the remaining row."""
+        self.client.login(username='admin', password='adminpass123')
+        term = Term.objects.create(
+            name='Pagination Term 2',
+            start_date=timezone.now().date(),
+            end_date=timezone.now().date() + timedelta(days=365),
+        )
+        for i in range(11):
+            Session.objects.create(
+                title=f'Session Eleven Test {i}',
+                council=self.council,
+                term=term,
+                session_type='regular',
+                status='scheduled',
+                scheduled_date=timezone.now() + timedelta(days=i + 1),
+            )
+        response = self.client.get(reverse('local:council-detail', kwargs={'pk': self.council.pk}))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'council-sessions-pagination')
+        # Newest first: i=10 has latest scheduled_date → on page 1; i=0 oldest → page 2
+        self.assertContains(response, 'Session Eleven Test 10')
+        self.assertNotContains(response, 'Session Eleven Test 0')
+
+        partial_url = reverse('local:council-sessions-partial', kwargs={'pk': self.council.pk})
+        r2 = self.client.get(
+            partial_url + '?page=2',
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+        self.assertEqual(r2.status_code, 200)
+        self.assertContains(r2, 'Session Eleven Test 0')
+        self.assertNotContains(r2, 'Session Eleven Test 10')
+
+    def test_council_sessions_partial_forbidden_without_access(self):
+        """Partial endpoint returns 403 for users who cannot access the council."""
+        self.client.login(username='testuser', password='testpass123')
+        partial_url = reverse('local:council-sessions-partial', kwargs={'pk': self.council.pk})
+        response = self.client.get(partial_url, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 403)
     
     def test_council_edit_view_requires_superuser(self):
         """Test that CouncilUpdateView requires superuser"""

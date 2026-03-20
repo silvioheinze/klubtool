@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ inquiry.title }}</title>
+</head>
+<body>
+    {% if inquiry.parties.exists %}
+    <div class="section parties-section">
+        <div style="margin-bottom: 16px; text-align: center; white-space: nowrap;">
+            {% for party_data in parties_with_logos %}
+                {% if party_data.logo_name %}
+                    <img src="{{ party_data.logo_name }}" alt="{{ party_data.party.name }}" style="max-height: 50px; max-width: 120px; margin: 2px 5px; vertical-align: middle; display: inline-block;">
+                {% else %}
+                    <span style="display: inline-block; background-color: {{ party_data.party.color }}; color: white; padding: 4px 8px; margin: 2px 5px; border-radius: 4px; vertical-align: middle;">
+                        {{ party_data.party.name }}
+                    </span>
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="header">
+        <h1>{{ inquiry.title }}</h1>
+    </div>
+
+    <div class="section">
+        <h2>Angaben</h2>
+        <table class="meta-table">
+            <tbody>
+                <tr><th>Status</th><td>{{ inquiry.get_status_display }}</td></tr>
+                {% if inquiry.group %}
+                <tr><th>Gruppe</th><td>{{ inquiry.group.name }}</td></tr>
+                {% endif %}
+                {% if inquiry.session %}
+                <tr><th>Sitzung</th><td>{{ inquiry.session.title }} ({{ inquiry.session.scheduled_date|date:"d.m.Y H:i" }})</td></tr>
+                {% endif %}
+                {% if inquiry.submitted_by %}
+                <tr><th>Eingereicht von</th><td>{{ inquiry.submitted_by.get_full_name|default:inquiry.submitted_by.username }}</td></tr>
+                {% endif %}
+                <tr><th>Eingereicht am</th><td>{{ inquiry.submitted_date|date:"d.m.Y H:i" }}</td></tr>
+                {% if inquiry.tags.exists %}
+                <tr><th>Schlagwörter</th><td>{% for tag in inquiry.tags.all %}{{ tag.name }}{% if not forloop.last %}, {% endif %}{% endfor %}</td></tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if inquiry.text %}
+    <div class="section">
+        <h2>Text der Anfrage</h2>
+        <p>{{ inquiry.text|linebreaks }}</p>
+    </div>
+    {% endif %}
+
+    {% if inquiry.answer %}
+    <div class="section">
+        <h2>Antwort</h2>
+        <p>{{ inquiry.answer|linebreaks }}</p>
+    </div>
+    {% endif %}
+
+    {% if ordered_parties %}
+    <div class="section">
+        <h2>Unterstützende Parteien</h2>
+        <p>{% for party in ordered_parties %}{{ party.name }}{% if not forloop.last %}, {% endif %}{% endfor %}</p>
+    </div>
+    {% endif %}
+
+    {% if inquiry.interventions.exists %}
+    <div class="section">
+        <h2>Wortmeldung</h2>
+        <p>{% for u in inquiry.interventions.all %}{{ u.get_full_name|default:u.username }}{% if not forloop.last %}, {% endif %}{% endfor %}</p>
+    </div>
+    {% endif %}
+
+    {% if status_history %}
+    <div class="section">
+        <h2>Statusverlauf</h2>
+        {% for entry in status_history %}
+        <div class="timeline-entry">
+            <strong>{{ entry.get_status_display }}</strong>
+            — {{ entry.changed_at|date:"d.m.Y H:i" }}
+            {% if entry.changed_by %}<br><small>von {{ entry.changed_by.get_full_name|default:entry.changed_by.username }}</small>{% endif %}
+            {% if entry.reason %}<br><small>{{ entry.reason }}</small>{% endif %}
+            {% if entry.committee %}<br><small>Ausschuss: {{ entry.committee.name }}</small>{% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if attachments %}
+    <div class="section attachments-section">
+        <h2>Anhänge</h2>
+        <ul>
+            {% for a in attachments %}
+            <li>{{ a.filename }} ({{ a.get_file_type_display }}){% if a.description %} — {{ a.description }}{% endif %}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+</body>
+</html>

@@ -151,9 +151,12 @@
                     {% endif %}
                 </div>
             </div>
-            
+        </div>
+
+        <!-- Quick Info Sidebar -->
+        <div class="col-lg-4">
             <!-- Files -->
-            <div class="card mt-3">
+            <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">{% trans "Files" %}</h5>
                     <a href="{% url 'inquiry:inquiry-attach' inquiry.pk %}" class="btn btn-sm btn-primary">
@@ -161,7 +164,14 @@
                     </a>
                 </div>
                 <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'inquiry:inquiry-export-pdf' inquiry.pk %}" class="btn btn-outline-primary">
+                            <i class="bi bi-file-pdf"></i> {% trans "Export Inquiry as PDF" %}
+                        </a>
+                    </div>
+
                     {% if attachments %}
+                        <hr>
                         <h6>{% trans "Attachments" %}</h6>
                         <div class="row">
                             {% for attachment in attachments %}
@@ -203,39 +213,11 @@
                             {% endfor %}
                         </div>
                     {% else %}
-                        <p class="text-muted text-center mb-0">{% trans "No attachments uploaded yet." %}</p>
+                        <p class="text-muted text-center mb-0 mt-3">{% trans "No attachments uploaded." %}</p>
                     {% endif %}
                 </div>
             </div>
-        </div>
 
-        <!-- Sidebar -->
-        <div class="col-lg-4">
-            <!-- Metadata -->
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">{% trans "Metadata" %}</h5>
-                </div>
-                <div class="card-body">
-                    <dl class="row mb-0">
-                        <dt class="col-sm-5">{% trans "Submitted by" %}</dt>
-                        <dd class="col-sm-7">
-                            {% if inquiry.submitted_by %}
-                                {{ inquiry.submitted_by.get_full_name|default:inquiry.submitted_by.username }}
-                            {% else %}
-                                <span class="text-muted">{% trans "Unknown" %}</span>
-                            {% endif %}
-                        </dd>
-                        
-                        <dt class="col-sm-5">{% trans "Submitted date" %}</dt>
-                        <dd class="col-sm-7">{{ inquiry.submitted_date|date:"d.m.Y H:i" }}</dd>
-                        
-                        <dt class="col-sm-5">{% trans "Last modified" %}</dt>
-                        <dd class="col-sm-7">{{ inquiry.last_modified|date:"d.m.Y H:i" }}</dd>
-                    </dl>
-                </div>
-            </div>
-            
             <!-- Status History -->
             <div class="card mt-3">
                 <div class="card-header d-flex justify-content-between align-items-center">

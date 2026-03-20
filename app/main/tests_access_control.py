@@ -480,6 +480,31 @@ class InquiryAccessTests(AccessControlTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, self.inquiry.title)
 
+    def test_inquiry_export_pdf_superuser_access(self):
+        """Superuser can export inquiry as PDF."""
+        self.client.login(username='admin', password='adminpass123')
+        response = self.client.get(reverse('inquiry:inquiry-export-pdf', kwargs={'pk': self.inquiry.pk}))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/pdf')
+
+    def test_inquiry_export_pdf_regular_user_denied(self):
+        """Regular user without access cannot export inquiry PDF."""
+        self.client.login(username='regular', password='regularpass123')
+        response = self.client.get(reverse('inquiry:inquiry-export-pdf', kwargs={'pk': self.inquiry.pk}))
+        self.assertEqual(response.status_code, 403)
+
+    def test_inquiry_export_pdf_group_member_access(self):
+        """Group member can export PDF for their group's inquiry."""
+        self.client.login(username='member', password='memberpass123')
+        response = self.client.get(reverse('inquiry:inquiry-export-pdf', kwargs={'pk': self.inquiry.pk}))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/pdf')
+
+    def test_inquiry_export_pdf_anonymous_redirects(self):
+        """Anonymous user is redirected to login for inquiry PDF export."""
+        response = self.client.get(reverse('inquiry:inquiry-export-pdf', kwargs={'pk': self.inquiry.pk}))
+        self.assertEqual(response.status_code, 302)
+
     def test_inquiry_edit_view_group_member_access(self):
         """Test that group member can edit inquiries of their group"""
         self.client.login(username='member', password='memberpass123')
