@@ -317,33 +317,26 @@
                 </div>
                 <div class="card-body">
                     {% if session.attachments.all %}
-                        <div class="row">
+                        <div class="row g-2">
                             {% for attachment in session.attachments.all %}
-                                <div class="col-md-6 col-lg-4 mb-3">
-                                    <div class="card h-100">
-                                        <div class="card-body">
-                                            <div class="d-flex align-items-center mb-2">
-                                                <i class="bi bi-file-earmark me-2"></i>
-                                                <strong class="text-truncate">{{ attachment.filename }}</strong>
-                                            </div>
-                                            <small class="text-muted d-block">
-                                                {{ attachment.get_file_type_display }}
-                                            </small>
-                                            {% if attachment.description %}
-                                                <p class="mt-2 mb-0 small">{{ attachment.description }}</p>
+                                <div class="col-md-6 col-lg-4 min-w-0">
+                                    <div class="card h-100 border overflow-hidden">
+                                        <div class="card-body position-relative p-2{% if attachment.pk in session_attachment_delete_ids %} pe-4{% endif %} overflow-hidden">
+                                            {% if attachment.pk in session_attachment_delete_ids %}
+                                            <form method="post" action="{% url 'local:session-attachment-delete' session.pk attachment.pk %}" class="position-absolute top-0 end-0 mt-1 me-1" onsubmit="return confirm('{% trans "Remove this attachment?" %}');">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn-close btn-close-sm" aria-label="{% trans 'Remove attachment' %}" title="{% trans 'Remove' %}"></button>
+                                            </form>
                                             {% endif %}
-                                            <div class="mt-2 d-flex flex-wrap gap-1 align-items-center">
-                                                <a href="{{ attachment.file.url }}" class="btn btn-sm btn-outline-primary" target="_blank">
-                                                    <i class="bi bi-download"></i> {% trans "Download" %}
-                                                </a>
-                                                {% if attachment.pk in session_attachment_delete_ids %}
-                                                <form method="post" action="{% url 'local:session-attachment-delete' session.pk attachment.pk %}" class="d-inline" onsubmit="return confirm('{% trans "Remove this attachment?" %}');">
-                                                    {% csrf_token %}
-                                                    <button type="submit" class="btn btn-sm btn-outline-danger">
-                                                        <i class="bi bi-trash"></i> {% trans "Remove" %}
-                                                    </button>
-                                                </form>
-                                                {% endif %}
+                                            <div class="d-flex align-items-start gap-2 min-w-0">
+                                                <i class="bi bi-file-earmark flex-shrink-0 mt-1 text-muted"></i>
+                                                <div class="min-w-0 flex-grow-1 overflow-hidden">
+                                                    <a href="{{ attachment.file.url }}" class="fw-semibold text-truncate d-block w-100 text-decoration-none" target="_blank" rel="noopener" title="{{ attachment.filename }}">{{ attachment.filename }}</a>
+                                                    <small class="text-muted d-block">{{ attachment.get_file_type_display }}</small>
+                                                    {% if attachment.description %}
+                                                        <p class="mb-0 small text-body-secondary mt-1">{{ attachment.description }}</p>
+                                                    {% endif %}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
