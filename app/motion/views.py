@@ -50,6 +50,13 @@ def user_can_view_inquiry(user, inquiry_pk):
     return group_ids is not None and group_id in group_ids
 
 
+def _pagination_querystring(request_get):
+    """URL-encoded GET params without ``page``, for pagination links (avoids duplicate ``page`` keys)."""
+    q = request_get.copy()
+    q.pop('page', None)
+    return q.urlencode()
+
+
 def is_superuser_or_has_permission(permission):
     """Decorator to check if user is superuser or has specific permission"""
     def check_permission(user):
@@ -225,7 +232,8 @@ class MotionListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
         
         # Add user to context for permission checks in template
         context['user'] = self.request.user
-        
+        context['pagination_query'] = _pagination_querystring(self.request.GET)
+
         return context
 
 
@@ -1844,6 +1852,7 @@ class InquiryListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
 
         # Add user to context for permission checks in template
         context['user'] = self.request.user
+        context['pagination_query'] = _pagination_querystring(self.request.GET)
 
         return context
 
