@@ -170,6 +170,14 @@
                                                     <span class="badge bg-secondary">{% trans "Draft" %}</span>
                                                 {% elif motion.status == 'submitted' %}
                                                     <span class="badge bg-primary">{% trans "Submitted" %}</span>
+                                                {% elif motion.status == 'tabled' %}
+                                                    <span class="badge bg-info">{% trans "Tabled" %}</span>
+                                                {% elif motion.status == 'refer_to_committee' %}
+                                                    <span class="badge bg-warning">{% trans "Refer to Committee" %}</span>
+                                                {% elif motion.status == 'refer_no_majority' %}
+                                                    <span class="badge bg-warning text-dark">{% trans "Refer to Committee (no majority)" %}</span>
+                                                {% elif motion.status == 'voted_in_committee' %}
+                                                    <span class="badge bg-warning">{% trans "Voted upon in Committee" %}</span>
                                                 {% elif motion.status == 'approved' %}
                                                     <span class="badge bg-success">{% trans "Approved" %}</span>
                                                 {% elif motion.status == 'rejected' %}
@@ -178,6 +186,12 @@
                                                     <span class="badge bg-warning">{% trans "Withdrawn" %}</span>
                                                 {% elif motion.status == 'not_admitted' %}
                                                     <span class="badge bg-dark">{% trans "Nicht zugelassen" %}</span>
+                                                {% elif motion.status == 'answered' %}
+                                                    <span class="badge bg-success">{% trans "Answered" %}</span>
+                                                {% elif motion.status == 'deleted' %}
+                                                    <span class="badge bg-secondary">{% trans "Deleted" %}</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">{{ motion.get_status_display }}</span>
                                                 {% endif %}
                                             </td>
                                             <td>
