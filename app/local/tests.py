@@ -1,6 +1,7 @@
 from django.test import TestCase, Client
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.utils import timezone
 from django.urls import reverse
 from datetime import datetime, timedelta
@@ -1709,6 +1710,106 @@ class CommitteeMeetingViewTests(TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.get('Content-Type'), 'text/calendar; charset=utf-8')
+
+    def _post_attachment(self, meeting, file_type='minutes'):
+        """POST a minimal PDF attachment to a committee meeting."""
+        return self.client.post(
+            reverse('local:committee-meeting-attach', kwargs={'committee_meeting_pk': meeting.pk}),
+            {
+                'file': SimpleUploadedFile(
+                    'protocol.pdf',
+                    b'%PDF-1.4 minimal test content',
+                    content_type='application/pdf',
+                ),
+                'file_type': file_type,
+                'description': '',
+            },
+        )
+
+    def test_protocol_upload_sets_meeting_completed(self):
+        """Uploading minutes (protocol) attachment sets scheduled meeting to completed."""
+        self.meeting.status = 'scheduled'
+        self.meeting.save(update_fields=['status'])
+        self.client.login(username='admin', password='adminpass123')
+        response = self._post_attachment(self.meeting, file_type='minutes')
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(
+            response,
+            reverse('local:committee-meeting-detail', kwargs={'pk': self.meeting.pk}),
+            fetch_redirect_response=False,
+        )
+        self.meeting.refresh_from_db()
+        self.assertEqual(self.meeting.status, 'completed')
+
+    def test_agenda_upload_does_not_change_meeting_status(self):
+        """Non-protocol attachment types leave meeting status unchanged."""
+        self.meeting.status = 'scheduled'
+        self.meeting.save(update_fields=['status'])
+        self.client.login(username='admin', password='adminpass123')
+        response = self._post_attachment(self.meeting, file_type='agenda')
+        self.assertEqual(response.status_code, 302)
+        self.meeting.refresh_from_db()
+        self.assertEqual(self.meeting.status, 'scheduled')
+
+    def test_protocol_upload_does_not_change_cancelled_meeting(self):
+        """Protocol upload on a cancelled meeting does not change status."""
+        self.meeting.status = 'cancelled'
+        self.meeting.save(update_fields=['status'])
+        self.client.login(username='admin', password='adminpass123')
+        response = self._post_attachment(self.meeting, file_type='minutes')
+        self.assertEqual(response.status_code, 302)
+        self.meeting.refresh_from_db()
+        self.assertEqual(self.meeting.status, 'cancelled')
+
+    def test_protocol_upload_on_already_completed_meeting_is_idempotent(self):
+        """Protocol upload when already completed leaves status completed."""
+        self.meeting.status = 'completed'
+        self.meeting.save(update_fields=['status'])
+        self.client.login(username='admin', password='adminpass123')
+        response = self._post_attachment(self.meeting, file_type='minutes')
+        self.assertEqual(response.status_code, 302)
+        self.meeting.refresh_from_db()
+        self.assertEqual(self.meeting.status, 'completed')
+
+    def test_invitation_upload_sets_meeting_invited(self):
+        """Uploading invitation attachment sets scheduled meeting to invited."""
+        self.meeting.status = 'scheduled'
+        self.meeting.save(update_fields=['status'])
+        self.client.login(username='admin', password='adminpass123')
+        response = self._post_attachment(self.meeting, file_type='invitation')
+        self.assertEqual(response.status_code, 302)
+        self.meeting.refresh_from_db()
+        self.assertEqual(self.meeting.status, 'invited')
+
+    def test_invitation_upload_does_not_change_completed_meeting(self):
+        """Invitation upload on a completed meeting does not change status."""
+        self.meeting.status = 'completed'
+        self.meeting.save(update_fields=['status'])
+        self.client.login(username='admin', password='adminpass123')
+        response = self._post_attachment(self.meeting, file_type='invitation')
+        self.assertEqual(response.status_code, 302)
+        self.meeting.refresh_from_db()
+        self.assertEqual(self.meeting.status, 'completed')
+
+    def test_invitation_upload_does_not_change_cancelled_meeting(self):
+        """Invitation upload on a cancelled meeting does not change status."""
+        self.meeting.status = 'cancelled'
+        self.meeting.save(update_fields=['status'])
+        self.client.login(username='admin', password='adminpass123')
+        response = self._post_attachment(self.meeting, file_type='invitation')
+        self.assertEqual(response.status_code, 302)
+        self.meeting.refresh_from_db()
+        self.assertEqual(self.meeting.status, 'cancelled')
+
+    def test_invitation_upload_on_already_invited_meeting_is_idempotent(self):
+        """Invitation upload when already invited leaves status invited."""
+        self.meeting.status = 'invited'
+        self.meeting.save(update_fields=['status'])
+        self.client.login(username='admin', password='adminpass123')
+        response = self._post_attachment(self.meeting, file_type='invitation')
+        self.assertEqual(response.status_code, 302)
+        self.meeting.refresh_from_db()
+        self.assertEqual(self.meeting.status, 'invited')
 
 
 class CommitteeMeetingSetSubstituteTests(TestCase):

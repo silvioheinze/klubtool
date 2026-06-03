@@ -2337,6 +2337,34 @@ def _can_user_edit_committee_meeting(user, meeting):
     ).exists()
 
 
+def _complete_committee_meeting_if_protocol_uploaded(meeting, file_type):
+    """
+    Set committee meeting status to completed when a protocol (minutes) attachment is uploaded.
+    Does not override cancelled or already completed meetings.
+    """
+    if file_type != 'minutes':
+        return False
+    if meeting.status in ('cancelled', 'completed'):
+        return False
+    meeting.status = 'completed'
+    meeting.save(update_fields=['status'])
+    return True
+
+
+def _invite_committee_meeting_if_invitation_uploaded(meeting, file_type):
+    """
+    Set committee meeting status to invited when an invitation attachment is uploaded.
+    Only transitions from scheduled (same rule as session invitation upload).
+    """
+    if file_type != 'invitation':
+        return False
+    if meeting.status != 'scheduled':
+        return False
+    meeting.status = 'invited'
+    meeting.save(update_fields=['status'])
+    return True
+
+
 class CommitteeMeetingSetSubstituteView(LoginRequiredMixin, View):
     """View to set or clear a substitute. Members can only set their own substitute; superusers can set for anyone."""
     http_method_names = ['get', 'post']
@@ -2750,9 +2778,26 @@ class CommitteeMeetingAttachmentView(LoginRequiredMixin, UserPassesTestMixin, Cr
         return context
 
     def form_valid(self, form):
-        """Display success message on form validation"""
-        messages.success(
-            self.request,
-            f"Attachment '{form.instance.filename}' uploaded successfully."
-        )
-        return super().form_valid(form)
+        """Save attachment; update meeting status for protocol or invitation uploads."""
+        response = super().form_valid(form)
+        meeting = self.get_committee_meeting()
+        filename = form.instance.filename
+        if _complete_committee_meeting_if_protocol_uploaded(meeting, form.instance.file_type):
+            messages.success(
+                self.request,
+                _("Attachment '%(filename)s' uploaded and meeting marked as completed.")
+                % {'filename': filename},
+            )
+        elif _invite_committee_meeting_if_invitation_uploaded(meeting, form.instance.file_type):
+            messages.success(
+                self.request,
+                _("Attachment '%(filename)s' uploaded and meeting marked as invited.")
+                % {'filename': filename},
+            )
+        else:
+            messages.success(
+                self.request,
+                _("Attachment '%(filename)s' uploaded successfully.")
+                % {'filename': filename},
+            )
+        return response

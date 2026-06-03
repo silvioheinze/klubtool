@@ -4154,7 +4154,7 @@ msgstr "Anwesendheit"
 
 #: templates/local/session_detail.html:506
 msgid "Total Present"
-msgstr "Gesamte abgegebene Stimmen"
+msgstr "Anwesend (gesamt)"
 
 #: templates/local/session_detail.html:511
 #: templates/local/session_detail.html:515
