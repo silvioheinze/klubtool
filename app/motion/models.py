@@ -459,12 +459,6 @@ class MotionStatus(models.Model):
     changed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='motion_status_changes')
     changed_at = models.DateTimeField(auto_now_add=True)
     reason = models.TextField(blank=True, help_text="Reason for the status change")
-    answer_pdf = models.FileField(
-        upload_to='motion_answers/%Y/%m/%d/',
-        null=True,
-        blank=True,
-        help_text=_("Written answer PDF (when status is 'answered')")
-    )
     
     class Meta:
         ordering = ['-changed_at']
@@ -473,6 +467,27 @@ class MotionStatus(models.Model):
     
     def __str__(self):
         return f"{self.motion.title} - {self.get_status_display()} ({self.changed_at.strftime('%d.%m.%Y %H:%M')})"
+
+
+class MotionStatusAnswerFile(models.Model):
+    """PDF answer file attached to a motion status entry (when status is 'answered')."""
+
+    status_entry = models.ForeignKey(
+        MotionStatus,
+        on_delete=models.CASCADE,
+        related_name='answer_files',
+    )
+    file = models.FileField(upload_to='motion_answers/%Y/%m/%d/')
+    filename = models.CharField(max_length=255)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['uploaded_at']
+        verbose_name = "Motion Status Answer File"
+        verbose_name_plural = "Motion Status Answer Files"
+
+    def __str__(self):
+        return f"{self.filename} - {self.status_entry}"
 
 
 class MotionGroupDecision(models.Model):
@@ -639,6 +654,27 @@ class InquiryStatus(models.Model):
         return f"{self.inquiry.title} - {self.get_status_display()} ({self.changed_at.strftime('%d.%m.%Y %H:%M')})"
 
 
+class InquiryStatusAnswerFile(models.Model):
+    """PDF answer file attached to an inquiry status entry (when status is 'answered')."""
+
+    status_entry = models.ForeignKey(
+        InquiryStatus,
+        on_delete=models.CASCADE,
+        related_name='answer_files',
+    )
+    file = models.FileField(upload_to='inquiry_answers/%Y/%m/%d/')
+    filename = models.CharField(max_length=255)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['uploaded_at']
+        verbose_name = "Inquiry Status Answer File"
+        verbose_name_plural = "Inquiry Status Answer Files"
+
+    def __str__(self):
+        return f"{self.filename} - {self.status_entry}"
+
+
 class InquiryAttachment(models.Model):
     """Model representing file attachments for inquiries"""
     
@@ -674,7 +710,9 @@ auditlog.register(MotionVote)
 auditlog.register(MotionComment)
 auditlog.register(MotionAttachment)
 auditlog.register(MotionStatus)
+auditlog.register(MotionStatusAnswerFile)
 auditlog.register(MotionGroupDecision)
 auditlog.register(Inquiry)
 auditlog.register(InquiryStatus)
+auditlog.register(InquiryStatusAnswerFile)
 auditlog.register(InquiryAttachment)

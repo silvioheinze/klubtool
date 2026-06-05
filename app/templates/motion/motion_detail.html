@@ -106,11 +106,11 @@
                                     {% elif motion.status == 'answered' %}
                                         <span class="badge bg-success">{% trans "Answered" %}</span>
                                         {% with answered_entry=motion.status_history.first %}
-                                            {% if answered_entry.answer_pdf %}
-                                                <a href="{{ answered_entry.answer_pdf.url }}" target="_blank" rel="noopener" class="ms-2">
-                                                    <i class="bi bi-file-pdf"></i> {% trans "Written answer (PDF)" %}
+                                            {% for answer_file in answered_entry.answer_files.all %}
+                                                <a href="{{ answer_file.file.url }}" target="_blank" rel="noopener" class="ms-2" title="{{ answer_file.filename }}">
+                                                    <i class="bi bi-file-pdf"></i> {{ answer_file.filename|truncatechars:30 }}
                                                 </a>
-                                            {% endif %}
+                                            {% endfor %}
                                         {% endwith %}
                                     {% elif motion.status == 'deleted' %}
                                         <span class="badge bg-secondary">{% trans "Deleted" %}</span>
@@ -526,11 +526,13 @@
                                                     </small>
                                                 </div>
                                             {% endif %}
-                                            {% if status_entry.status == 'answered' and status_entry.answer_pdf %}
-                                                <div class="mt-1">
-                                                    <a href="{{ status_entry.answer_pdf.url }}" target="_blank" rel="noopener">
-                                                        <i class="bi bi-file-pdf"></i> {% trans "Written answer (PDF)" %}
-                                                    </a>
+                                            {% if status_entry.status == 'answered' and status_entry.answer_files.all %}
+                                                <div class="mt-1 d-flex flex-column gap-1">
+                                                    {% for answer_file in status_entry.answer_files.all %}
+                                                        <a href="{{ answer_file.file.url }}" target="_blank" rel="noopener" class="text-truncate">
+                                                            <i class="bi bi-file-pdf"></i> {{ answer_file.filename }}
+                                                        </a>
+                                                    {% endfor %}
                                                 </div>
                                             {% endif %}
                                         </div>

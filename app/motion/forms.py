@@ -1,3 +1,5 @@
+import os
+
 from django import forms
 from django.contrib.auth import get_user_model
 from django.forms import BaseFormSet, formset_factory
@@ -1003,6 +1005,29 @@ class InquiryAttachmentForm(forms.ModelForm):
         return instance
 
 
+def validate_answer_pdf_files(files, *, require_at_least_one=False):
+    """Validate uploaded answer PDF files. Returns list of valid files or raises ValidationError."""
+    errors = []
+    valid_files = [f for f in files if f]
+
+    if require_at_least_one and not valid_files:
+        errors.append(_('Please upload at least one written answer PDF when marking as answered.'))
+
+    for uploaded_file in valid_files:
+        ext = os.path.splitext(getattr(uploaded_file, 'name', '') or '')[1].lower()
+        if ext != '.pdf':
+            errors.append(_('Only PDF files are allowed for the written answer.'))
+            break
+        if uploaded_file.size > 20 * 1024 * 1024:
+            errors.append(_('Each file must be smaller than 20 MB.'))
+            break
+
+    if errors:
+        raise forms.ValidationError(errors[0])
+
+    return valid_files
+
+
 class MotionStatusForm(forms.ModelForm):
     """Form for changing motion status with integrated voting"""
     
@@ -1021,19 +1046,14 @@ class MotionStatusForm(forms.ModelForm):
         widget=forms.Select(attrs={'class': 'form-select'}),
         help_text="Select the session where this motion will be tabled"
     )
-    
-    answer_pdf = forms.FileField(
+    answer_files = forms.FileField(
         required=False,
-        widget=forms.FileInput(attrs={
-            'class': 'form-control',
-            'accept': 'application/pdf,.pdf',
-        }),
-        help_text=_("Upload the written answer PDF (required when marking as answered)")
+        widget=forms.HiddenInput(),
     )
-
+    
     class Meta:
         model = MotionStatus
-        fields = ['status', 'committee', 'session', 'reason', 'answer_pdf']
+        fields = ['status', 'committee', 'session', 'reason']
         widgets = {
             'status': forms.Select(attrs={'class': 'form-select'}),
             'committee': forms.Select(attrs={'class': 'form-select'}),
@@ -1141,25 +1161,15 @@ class MotionStatusForm(forms.ModelForm):
                         'committee': f'This motion was referred to {referral_committee.name}. Please select the same committee.'
                     })
         
-        # If status is 'answered', written answer PDF is required
         if status == 'answered':
-            answer_pdf = cleaned_data.get('answer_pdf')
-            if not answer_pdf:
-                raise forms.ValidationError({
-                    'answer_pdf': _('Please upload the written answer PDF when marking the motion as answered.')
-                })
-            # Validate PDF only
-            import os
-            ext = os.path.splitext(getattr(answer_pdf, 'name', '') or '')[1].lower()
-            if ext != '.pdf':
-                raise forms.ValidationError({
-                    'answer_pdf': _('Only PDF files are allowed for the written answer.')
-                })
-            # Max size 20MB
-            if answer_pdf.size > 20 * 1024 * 1024:
-                raise forms.ValidationError({
-                    'answer_pdf': _('The file must be smaller than 20 MB.')
-                })
+            answer_files = self.files.getlist('answer_files') if self.files else []
+            try:
+                cleaned_data['answer_files'] = validate_answer_pdf_files(
+                    answer_files,
+                    require_at_least_one=True,
+                )
+            except forms.ValidationError as exc:
+                self.add_error('answer_files', exc)
         
         return cleaned_data
     
@@ -1184,6 +1194,10 @@ class InquiryStatusForm(forms.ModelForm):
         empty_label="Select a committee...",
         widget=forms.Select(attrs={'class': 'form-select'}),
         help_text="Select the committee to refer this inquiry to"
+    )
+    answer_files = forms.FileField(
+        required=False,
+        widget=forms.HiddenInput(),
     )
     
     class Meta:
@@ -1221,6 +1235,16 @@ class InquiryStatusForm(forms.ModelForm):
             raise forms.ValidationError({
                 'committee': 'A committee must be selected when referring an inquiry to committee.'
             })
+
+        if status == 'answered':
+            answer_files = self.files.getlist('answer_files') if self.files else []
+            try:
+                cleaned_data['answer_files'] = validate_answer_pdf_files(
+                    answer_files,
+                    require_at_least_one=False,
+                )
+            except forms.ValidationError as exc:
+                self.add_error('answer_files', exc)
         
         return cleaned_data
     

@@ -155,19 +155,20 @@
                         </div>
                         
                         <div class="mb-3" id="answer-pdf-field" style="display: none;">
-                            <label for="{{ form.answer_pdf.id_for_label }}" class="form-label">
+                            <label for="answer_files" class="form-label">
                                 <strong>{% trans "Written answer (PDF)" %}</strong>
                             </label>
-                            {{ form.answer_pdf }}
-                            {% if form.answer_pdf.errors %}
+                            <input type="file" name="answer_files" id="answer_files" multiple
+                                   accept="application/pdf,.pdf" class="form-control">
+                            {% if form.errors.answer_files %}
                                 <div class="text-danger">
-                                    {% for error in form.answer_pdf.errors %}
+                                    {% for error in form.errors.answer_files %}
                                         <small>{{ error }}</small>
                                     {% endfor %}
                                 </div>
                             {% endif %}
                             <div class="form-text">
-                                {% trans "Upload the written answer as PDF (max. 20 MB). Required when marking as answered." %}
+                                {% trans "Upload one or more written answers as PDF (max. 20 MB each). At least one file is required when marking as answered." %}
                             </div>
                         </div>
                         
