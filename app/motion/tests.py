@@ -1,17 +1,24 @@
 from django.test import TestCase, Client
 from django.contrib.auth import get_user_model
-from django.core.exceptions import ValidationError
+from django import forms
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.forms import formset_factory
 from django.utils import timezone
+from django.utils.datastructures import MultiValueDict
 from django.urls import reverse
 from datetime import datetime, timedelta
 
 from .forms import (
-    MotionForm, MotionVoteForm, MotionVoteFormSetFactory, 
-    MotionStatusForm, MotionCommentForm, MotionAttachmentForm, 
-    MotionGroupDecisionForm, InquiryForm
+    MotionForm, MotionVoteForm, MotionVoteFormSetFactory,
+    MotionStatusForm, MotionCommentForm, MotionAttachmentForm,
+    MotionGroupDecisionForm, InquiryForm, InquiryStatusForm,
+    validate_answer_pdf_files,
 )
-from .models import Motion, MotionVote, MotionComment, MotionAttachment, MotionStatus, MotionGroupDecision, Inquiry
+from .models import (
+    Motion, MotionVote, MotionComment, MotionAttachment, MotionStatus,
+    MotionStatusAnswerFile, MotionGroupDecision, Inquiry, InquiryStatus,
+    InquiryStatusAnswerFile,
+)
 from local.models import Local, Council, Session, Term, Party, Committee
 from group.models import Group
 
@@ -1080,3 +1087,158 @@ class MotionInquiryStatusPermissionTests(TestCase):
         self.client.login(username='status_admin', password='adminpass123')
         response = self.client.get(self.inquiry_status_change_url)
         self.assertEqual(response.status_code, 200)
+
+
+class StatusAnswerFileTests(TestCase):
+    """Tests for multiple PDF answer attachments on motions and inquiries."""
+
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_superuser(
+            username='answer_admin',
+            email='answer_admin@example.com',
+            password='adminpass123',
+        )
+
+        self.local = Local.objects.create(
+            name='Answer Local',
+            code='AL',
+            description='Test local',
+            is_active=True,
+        )
+        self.council = self.local.council
+        self.party = Party.objects.create(
+            name='Answer Party',
+            local=self.local,
+            is_active=True,
+        )
+        self.group = Group.objects.create(
+            name='Answer Group',
+            party=self.party,
+            is_active=True,
+        )
+        self.term = Term.objects.create(
+            name='Answer Term',
+            start_date=timezone.now().date(),
+            end_date=(timezone.now().date() + timedelta(days=365)),
+            is_active=True,
+        )
+        self.session = Session.objects.create(
+            title='Answer Session',
+            council=self.council,
+            term=self.term,
+            scheduled_date=timezone.now() + timedelta(days=1),
+            is_active=True,
+        )
+        self.motion = Motion.objects.create(
+            title='Answer Motion',
+            text='Motion text',
+            session=self.session,
+            group=self.group,
+            submitted_by=self.user,
+            status='approved',
+        )
+        self.inquiry = Inquiry.objects.create(
+            title='Answer Inquiry',
+            text='Inquiry text',
+            session=self.session,
+            group=self.group,
+            submitted_by=self.user,
+            status='approved',
+        )
+
+    def _pdf_file(self, name):
+        return SimpleUploadedFile(name, b'%PDF-1.4 test content', content_type='application/pdf')
+
+    def _pdf_files_dict(self, names):
+        files = MultiValueDict()
+        files.setlist('answer_files', [self._pdf_file(name) for name in names])
+        return files
+
+    def test_validate_answer_pdf_files_requires_at_least_one_for_motions(self):
+        with self.assertRaises(forms.ValidationError):
+            validate_answer_pdf_files([], require_at_least_one=True)
+
+    def test_validate_answer_pdf_files_rejects_non_pdf(self):
+        bad_file = SimpleUploadedFile('answer.txt', b'not a pdf', content_type='text/plain')
+        with self.assertRaises(forms.ValidationError):
+            validate_answer_pdf_files([bad_file], require_at_least_one=True)
+
+    def test_motion_status_form_accepts_multiple_pdfs(self):
+        form = MotionStatusForm(
+            data={'status': 'answered', 'reason': 'Answered'},
+            files=self._pdf_files_dict(['answer1.pdf', 'answer2.pdf']),
+            motion=self.motion,
+            changed_by=self.user,
+            locked_status='answered',
+        )
+        self.assertTrue(form.is_valid())
+        self.assertEqual(len(form.cleaned_data['answer_files']), 2)
+
+    def test_motion_status_form_requires_pdf_when_answered(self):
+        form = MotionStatusForm(
+            data={'status': 'answered', 'reason': 'Answered'},
+            files=MultiValueDict(),
+            motion=self.motion,
+            changed_by=self.user,
+            locked_status='answered',
+        )
+        self.assertFalse(form.is_valid())
+        self.assertIn('answer_files', form.errors)
+
+    def test_inquiry_status_form_accepts_zero_or_multiple_pdfs(self):
+        for names in ([], ['answer1.pdf'], ['answer1.pdf', 'answer2.pdf']):
+            with self.subTest(names=names):
+                files = self._pdf_files_dict(names) if names else MultiValueDict()
+                form = InquiryStatusForm(
+                    data={'status': 'answered', 'reason': 'Answered'},
+                    files=files,
+                    inquiry=self.inquiry,
+                    changed_by=self.user,
+                )
+                self.assertTrue(form.is_valid())
+                self.assertEqual(len(form.cleaned_data.get('answer_files', [])), len(names))
+
+    def test_motion_status_change_view_saves_multiple_answer_files(self):
+        self.client.login(username='answer_admin', password='adminpass123')
+        url = reverse('motion:motion-status-change', kwargs={'pk': self.motion.pk}) + '?status=answered'
+        response = self.client.post(
+            url,
+            {
+                'status': 'answered',
+                'reason': 'Written answers',
+                'answer_files': [
+                    self._pdf_file('motion_answer1.pdf'),
+                    self._pdf_file('motion_answer2.pdf'),
+                ],
+            },
+            format='multipart',
+        )
+        self.assertEqual(response.status_code, 302)
+        self.motion.refresh_from_db()
+        self.assertEqual(self.motion.status, 'answered')
+        status_entry = self.motion.status_history.filter(status='answered').first()
+        self.assertIsNotNone(status_entry)
+        self.assertEqual(status_entry.answer_files.count(), 2)
+
+    def test_inquiry_status_change_view_saves_answer_files(self):
+        self.client.login(username='answer_admin', password='adminpass123')
+        url = reverse('inquiry:inquiry-status-change', kwargs={'pk': self.inquiry.pk})
+        response = self.client.post(
+            url,
+            {
+                'status': 'answered',
+                'reason': 'Written answers',
+                'answer_files': [
+                    self._pdf_file('inquiry_answer1.pdf'),
+                    self._pdf_file('inquiry_answer2.pdf'),
+                ],
+            },
+            format='multipart',
+        )
+        self.assertEqual(response.status_code, 302)
+        self.inquiry.refresh_from_db()
+        self.assertEqual(self.inquiry.status, 'answered')
+        status_entry = self.inquiry.status_history.filter(status='answered').first()
+        self.assertIsNotNone(status_entry)
+        self.assertEqual(status_entry.answer_files.count(), 2)

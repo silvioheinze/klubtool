@@ -13,7 +13,11 @@ from django.utils.translation import gettext_lazy as _
 from django.views.decorators.http import require_POST
 from django.core.exceptions import PermissionDenied
 
-from .models import Motion, MotionVote, MotionComment, MotionAttachment, MotionStatus, MotionGroupDecision, Inquiry, InquiryStatus, InquiryAttachment
+from .models import (
+    Motion, MotionVote, MotionComment, MotionAttachment, MotionStatus,
+    MotionStatusAnswerFile, MotionGroupDecision, Inquiry, InquiryStatus,
+    InquiryStatusAnswerFile, InquiryAttachment,
+)
 from .forms import MotionForm, MotionFilterForm, MotionVoteForm, MotionVoteFormSetFactory, MotionVoteTypeForm, MotionCommentForm, MotionAttachmentForm, MotionStatusForm, MotionGroupDecisionForm, InquiryForm, InquiryFilterForm, InquiryStatusForm, InquiryAttachmentForm
 from user.models import CustomUser
 from local.models import Session, Party
@@ -101,6 +105,34 @@ def user_can_delete_inquiry_attachment(user, attachment):
     if user.is_superuser or attachment.uploaded_by_id == user.pk:
         return True
     return is_leader_or_deputy_leader_of_group(user, attachment.inquiry.group)
+
+
+def _save_motion_status_answer_files(status_entry, files):
+    """Persist uploaded PDF answer files for a motion status entry."""
+    import os
+    for uploaded_file in files:
+        if not uploaded_file:
+            continue
+        filename = os.path.basename(getattr(uploaded_file, 'name', '') or '') or 'answer.pdf'
+        MotionStatusAnswerFile.objects.create(
+            status_entry=status_entry,
+            file=uploaded_file,
+            filename=filename,
+        )
+
+
+def _save_inquiry_status_answer_files(status_entry, files):
+    """Persist uploaded PDF answer files for an inquiry status entry."""
+    import os
+    for uploaded_file in files:
+        if not uploaded_file:
+            continue
+        filename = os.path.basename(getattr(uploaded_file, 'name', '') or '') or 'answer.pdf'
+        InquiryStatusAnswerFile.objects.create(
+            status_entry=status_entry,
+            file=uploaded_file,
+            filename=filename,
+        )
 
 
 def can_change_motion_status(user, motion):
@@ -432,7 +464,9 @@ class MotionDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         ]
 
         # Get status history with votes for vote-results popup
-        context['status_history'] = motion.status_history.prefetch_related('votes', 'votes__party').all()
+        context['status_history'] = motion.status_history.prefetch_related(
+            'votes', 'votes__party', 'answer_files',
+        ).all()
         
         return context
 
@@ -881,7 +915,7 @@ def motion_status_change_view(request, pk):
     requires_votes = initial_status in ['approved', 'rejected', 'refer_to_committee', 'voted_in_committee']
     
     if request.method == 'POST':
-        # Use the status from query parameter, not from POST data (include FILES for answer_pdf upload)
+        # Use the status from query parameter, not from POST data (include FILES for answer file uploads)
         form = MotionStatusForm(request.POST, request.FILES, motion=motion, changed_by=request.user, locked_status=initial_status)
         
         # Only create and validate vote formset if votes are required
@@ -990,14 +1024,16 @@ def motion_status_change_view(request, pk):
             
             logger.debug(f"Motion saved. Old status: {old_status}, New status: {motion.status}")
             
-            # If status is 'answered', attach the uploaded PDF to the new status entry
             if new_status == 'answered':
                 status_entry = motion.status_history.first()
-                answer_pdf = form.cleaned_data.get('answer_pdf')
-                if status_entry and answer_pdf:
-                    status_entry.answer_pdf = answer_pdf
-                    status_entry.save(update_fields=['answer_pdf'])
-                    logger.info(f"Saved answer PDF to status entry {status_entry.pk}")
+                answer_files = form.cleaned_data.get('answer_files', [])
+                if status_entry and answer_files:
+                    _save_motion_status_answer_files(status_entry, answer_files)
+                    logger.info(
+                        "Saved %s answer file(s) to status entry %s",
+                        len(answer_files),
+                        status_entry.pk,
+                    )
             
             # Process vote formset if status requires voting (including refer_no_majority so votes are recorded)
             if new_status in ['approved', 'rejected', 'refer_to_committee', 'refer_no_majority', 'voted_in_committee']:
@@ -1674,7 +1710,9 @@ class InquiryExportPDFView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context = super().get_context_data(**kwargs)
         inquiry = self.object
         context['attachments'] = inquiry.attachments.all().order_by('uploaded_at')
-        context['status_history'] = inquiry.status_history.all().order_by('-changed_at')
+        context['status_history'] = inquiry.status_history.prefetch_related(
+            'answer_files',
+        ).all().order_by('-changed_at')
 
         from local.models import Term, TermSeatDistribution
 
@@ -1877,7 +1915,7 @@ class InquiryDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         ]
 
         # Get status history
-        context['status_history'] = inquiry.status_history.all()
+        context['status_history'] = inquiry.status_history.prefetch_related('answer_files').all()
         
         return context
 
@@ -2082,7 +2120,12 @@ def inquiry_status_change_view(request, pk):
         return redirect('inquiry:inquiry-detail', pk=pk)
     
     if request.method == 'POST':
-        form = InquiryStatusForm(request.POST, inquiry=inquiry, changed_by=request.user)
+        form = InquiryStatusForm(
+            request.POST,
+            request.FILES,
+            inquiry=inquiry,
+            changed_by=request.user,
+        )
         
         if form.is_valid():
             # Get the new status
@@ -2100,6 +2143,12 @@ def inquiry_status_change_view(request, pk):
             
             # Save the inquiry (this will trigger the save method which creates the status history entry)
             inquiry.save()
+
+            if new_status == 'answered':
+                status_entry = inquiry.status_history.first()
+                answer_files = form.cleaned_data.get('answer_files', [])
+                if status_entry and answer_files:
+                    _save_inquiry_status_answer_files(status_entry, answer_files)
             
             messages.success(request, f"Inquiry status changed to '{inquiry.get_status_display()}'.")
             return redirect('inquiry:inquiry-detail', pk=pk)

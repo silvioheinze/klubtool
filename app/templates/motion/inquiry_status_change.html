@@ -70,7 +70,7 @@
                     <h5 class="mb-0">{% trans "Change Status" %}</h5>
                 </div>
                 <div class="card-body">
-                    <form method="post">
+                    <form method="post" enctype="multipart/form-data">
                         {% csrf_token %}
                         
                         <div class="mb-3">
@@ -90,6 +90,24 @@
                             {% if form.committee.help_text %}
                                 <small class="form-text text-muted">{{ form.committee.help_text }}</small>
                             {% endif %}
+                        </div>
+
+                        <div class="mb-3" id="answer-files-field" style="display: none;">
+                            <label for="answer_files" class="form-label">
+                                <strong>{% trans "Written answer (PDF)" %}</strong>
+                            </label>
+                            <input type="file" name="answer_files" id="answer_files" multiple
+                                   accept="application/pdf,.pdf" class="form-control">
+                            {% if form.errors.answer_files %}
+                                <div class="text-danger">
+                                    {% for error in form.errors.answer_files %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">
+                                {% trans "Upload one or more written answers as PDF (max. 20 MB each). Optional if a text answer is already provided." %}
+                            </div>
                         </div>
 
                         <div class="mb-3">
@@ -175,6 +193,15 @@
                                                     </small>
                                                 </div>
                                             {% endif %}
+                                            {% if status_entry.status == 'answered' and status_entry.answer_files.all %}
+                                                <div class="mt-1 d-flex flex-column gap-1">
+                                                    {% for answer_file in status_entry.answer_files.all %}
+                                                        <a href="{{ answer_file.file.url }}" target="_blank" rel="noopener" class="text-truncate">
+                                                            <i class="bi bi-file-pdf"></i> {{ answer_file.filename }}
+                                                        </a>
+                                                    {% endfor %}
+                                                </div>
+                                            {% endif %}
                                         </div>
                                     </div>
                                 </div>
@@ -195,23 +222,28 @@
 </div>
 
 <script>
-    // Show/hide committee field based on status selection
     document.addEventListener('DOMContentLoaded', function() {
         const statusField = document.getElementById('{{ form.status.id_for_label }}');
         const committeeField = document.getElementById('committee-field');
+        const answerFilesField = document.getElementById('answer-files-field');
+        const committeeInput = document.getElementById('{{ form.committee.id_for_label }}');
         
-        function toggleCommitteeField() {
+        function toggleFields() {
             if (statusField.value === 'refer_to_committee') {
                 committeeField.style.display = 'block';
-                document.getElementById('{{ form.committee.id_for_label }}').required = true;
+                if (committeeInput) committeeInput.required = true;
             } else {
                 committeeField.style.display = 'none';
-                document.getElementById('{{ form.committee.id_for_label }}').required = false;
+                if (committeeInput) committeeInput.required = false;
+            }
+
+            if (answerFilesField) {
+                answerFilesField.style.display = statusField.value === 'answered' ? 'block' : 'none';
             }
         }
         
-        statusField.addEventListener('change', toggleCommitteeField);
-        toggleCommitteeField(); // Initial check
+        statusField.addEventListener('change', toggleFields);
+        toggleFields();
     });
 </script>
 {% endblock content %}

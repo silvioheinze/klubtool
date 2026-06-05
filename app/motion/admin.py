@@ -1,5 +1,9 @@
 from django.contrib import admin
-from .models import Tag, Motion, MotionVote, MotionComment, MotionAttachment, MotionStatus, Inquiry, InquiryStatus, InquiryAttachment
+from .models import (
+    Tag, Motion, MotionVote, MotionComment, MotionAttachment, MotionStatus,
+    MotionStatusAnswerFile, Inquiry, InquiryStatus, InquiryStatusAnswerFile,
+    InquiryAttachment,
+)
 
 
 @admin.register(Tag)
@@ -225,6 +229,26 @@ class InquiryAdmin(admin.ModelAdmin):
         """Display count of supporting parties"""
         return obj.supporting_parties_count
     supporting_parties_count.short_description = 'Supporting Parties'
+
+
+@admin.register(MotionStatusAnswerFile)
+class MotionStatusAnswerFileAdmin(admin.ModelAdmin):
+    """Admin configuration for MotionStatusAnswerFile model"""
+    list_display = ['filename', 'status_entry', 'uploaded_at']
+    list_filter = ['uploaded_at']
+    search_fields = ['filename', 'status_entry__motion__title']
+    readonly_fields = ['uploaded_at']
+    date_hierarchy = 'uploaded_at'
+
+
+@admin.register(InquiryStatusAnswerFile)
+class InquiryStatusAnswerFileAdmin(admin.ModelAdmin):
+    """Admin configuration for InquiryStatusAnswerFile model"""
+    list_display = ['filename', 'status_entry', 'uploaded_at']
+    list_filter = ['uploaded_at']
+    search_fields = ['filename', 'status_entry__inquiry__title']
+    readonly_fields = ['uploaded_at']
+    date_hierarchy = 'uploaded_at'
 
 
 @admin.register(InquiryAttachment)
