@@ -103,35 +103,22 @@ def user_can_delete_inquiry_attachment(user, attachment):
     return is_leader_or_deputy_leader_of_group(user, attachment.inquiry.group)
 
 
+def can_change_motion_status(user, motion):
+    """Check if user can change motion status (superuser, motion.edit, or group manager)."""
+    if user.is_superuser or user.has_role_permission('motion.edit'):
+        return True
+    if not motion.group:
+        return False
+    return motion.group.can_user_manage_group(user)
+
+
 def can_change_inquiry_status(user, inquiry):
     """Check if user can change inquiry status (superuser, group admin, leader, or deputy leader)"""
     if user.is_superuser:
         return True
-    
     if not inquiry.group:
         return False
-    
-    # Check if user is a group admin
-    if inquiry.group.has_group_admin(user):
-        return True
-    
-    # Check if user is a leader or deputy leader
-    from user.models import Role
-    
-    try:
-        leader_role = Role.objects.get(name='Leader')
-        deputy_leader_role = Role.objects.get(name='Deputy Leader')
-        
-        membership = GroupMember.objects.filter(
-            user=user,
-            group=inquiry.group,
-            is_active=True,
-            roles__in=[leader_role, deputy_leader_role]
-        ).first()
-        
-        return membership is not None
-    except Role.DoesNotExist:
-        return False
+    return inquiry.group.can_user_manage_group(user)
 
 
 class MotionListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
@@ -300,7 +287,7 @@ class MotionDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['can_delete_votes'] = self.request.user.is_superuser or self.request.user.has_role_permission('motion.vote')
         
         # Add permission check for status changes
-        context['can_change_status'] = self.request.user.is_superuser or self.request.user.has_role_permission('motion.edit')
+        context['can_change_status'] = can_change_motion_status(self.request.user, motion)
         
         # Always determine action buttons from the last non-deleted status in history
         last_non_deleted = motion.status_history.exclude(status='deleted').order_by('-changed_at').first()
@@ -847,10 +834,13 @@ def motion_attachment_delete_view(request, motion_pk, pk):
 
 
 @login_required
-@user_passes_test(is_superuser_or_has_permission('motion.edit'))
 def motion_status_change_view(request, pk):
     """View for changing motion status with integrated voting"""
     motion = get_object_or_404(Motion, pk=pk)
+
+    if not can_change_motion_status(request.user, motion):
+        messages.error(request, _("You don't have permission to change the status of this motion."))
+        return redirect('motion:motion-detail', pk=pk)
     
     # Get parties for this motion's session council
     parties = Party.objects.filter(

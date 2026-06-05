@@ -912,3 +912,171 @@ class MotionCreateViewTests(TestCase):
         # Check that motion was created with the correct session
         motion = Motion.objects.get(title='Test Motion')
         self.assertEqual(motion.session, self.session)
+
+
+class MotionInquiryStatusPermissionTests(TestCase):
+    """Tests for motion and inquiry status-change permissions for group managers."""
+
+    def setUp(self):
+        self.client = Client()
+
+        self.local = Local.objects.create(
+            name='Status Perm Local',
+            code='SPL',
+            description='Test local',
+            is_active=True,
+        )
+        self.council = self.local.council
+        self.party = Party.objects.create(
+            name='Status Perm Party',
+            local=self.local,
+            is_active=True,
+        )
+        self.group = Group.objects.create(
+            name='Status Perm Group',
+            party=self.party,
+            is_active=True,
+        )
+
+        self.term = Term.objects.create(
+            name='Status Perm Term',
+            start_date=timezone.now().date(),
+            end_date=(timezone.now().date() + timedelta(days=365)),
+            is_active=True,
+        )
+        self.session = Session.objects.create(
+            title='Status Perm Session',
+            council=self.council,
+            term=self.term,
+            scheduled_date=timezone.now() + timedelta(days=1),
+            is_active=True,
+        )
+
+        from group.models import GroupMember
+        from user.models import Role
+
+        self.leader_role = Role.objects.get_or_create(name='Leader', defaults={'is_active': True})[0]
+        self.deputy_leader_role = Role.objects.get_or_create(
+            name='Deputy Leader', defaults={'is_active': True}
+        )[0]
+        self.group_admin_role = Role.objects.get_or_create(
+            name='Group Admin', defaults={'is_active': True}
+        )[0]
+        self.member_role = Role.objects.get_or_create(name='Member', defaults={'is_active': True})[0]
+
+        self.motion_edit_role = Role.objects.create(
+            name='Motion Editor',
+            is_active=True,
+            permissions={'permissions': ['motion.edit', 'motion.view']},
+        )
+
+        self.group_leader = User.objects.create_user(
+            username='status_leader',
+            email='status_leader@example.com',
+            password='leaderpass123',
+        )
+        leader_membership = GroupMember.objects.create(
+            user=self.group_leader,
+            group=self.group,
+            is_active=True,
+        )
+        leader_membership.roles.add(self.leader_role)
+
+        self.group_admin = User.objects.create_user(
+            username='status_admin',
+            email='status_admin@example.com',
+            password='adminpass123',
+        )
+        admin_membership = GroupMember.objects.create(
+            user=self.group_admin,
+            group=self.group,
+            is_active=True,
+        )
+        admin_membership.roles.add(self.group_admin_role)
+
+        self.deputy_leader = User.objects.create_user(
+            username='status_deputy',
+            email='status_deputy@example.com',
+            password='deputypass123',
+        )
+        deputy_membership = GroupMember.objects.create(
+            user=self.deputy_leader,
+            group=self.group,
+            is_active=True,
+        )
+        deputy_membership.roles.add(self.deputy_leader_role)
+
+        self.motion_editor = User.objects.create_user(
+            username='status_editor',
+            email='status_editor@example.com',
+            password='editorpass123',
+            role=self.motion_edit_role,
+        )
+
+        self.regular_member = User.objects.create_user(
+            username='status_member',
+            email='status_member@example.com',
+            password='memberpass123',
+        )
+        member_membership = GroupMember.objects.create(
+            user=self.regular_member,
+            group=self.group,
+            is_active=True,
+        )
+        member_membership.roles.add(self.member_role)
+
+        self.motion = Motion.objects.create(
+            title='Status Perm Motion',
+            text='Motion text',
+            session=self.session,
+            group=self.group,
+            submitted_by=self.regular_member,
+            status='draft',
+        )
+        self.inquiry = Inquiry.objects.create(
+            title='Status Perm Inquiry',
+            text='Inquiry text',
+            session=self.session,
+            group=self.group,
+            submitted_by=self.regular_member,
+            status='draft',
+        )
+
+        self.motion_status_change_url = (
+            reverse('motion:motion-status-change', kwargs={'pk': self.motion.pk})
+            + '?status=submitted'
+        )
+        self.inquiry_status_change_url = reverse(
+            'inquiry:inquiry-status-change', kwargs={'pk': self.inquiry.pk}
+        )
+
+    def _assert_motion_status_change_allowed(self, username, password):
+        self.client.login(username=username, password=password)
+        response = self.client.get(self.motion_status_change_url)
+        self.assertEqual(response.status_code, 200)
+
+    def test_group_leader_can_change_motion_status(self):
+        self._assert_motion_status_change_allowed('status_leader', 'leaderpass123')
+
+    def test_group_admin_can_change_motion_status(self):
+        self._assert_motion_status_change_allowed('status_admin', 'adminpass123')
+
+    def test_deputy_leader_can_change_motion_status(self):
+        self._assert_motion_status_change_allowed('status_deputy', 'deputypass123')
+
+    def test_motion_edit_user_can_change_motion_status(self):
+        self._assert_motion_status_change_allowed('status_editor', 'editorpass123')
+
+    def test_regular_member_cannot_change_motion_status(self):
+        self.client.login(username='status_member', password='memberpass123')
+        response = self.client.get(self.motion_status_change_url)
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(
+            response,
+            reverse('motion:motion-detail', kwargs={'pk': self.motion.pk}),
+        )
+
+    def test_group_admin_can_change_inquiry_status(self):
+        self.client.login(username='status_admin', password='adminpass123')
+        response = self.client.get(self.inquiry_status_change_url)
+        self.assertEqual(response.status_code, 200)
