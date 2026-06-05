@@ -110,7 +110,7 @@
                             </div>
                             {% if form.invited_members_only.help_text %}<div class="form-text">{{ form.invited_members_only.help_text }}</div>{% endif %}
                         </div>
-                        <div class="mb-3">
+                        <div id="event-invited-members-panel" class="mb-3 d-none">
                             <label class="form-label">{{ form.invited_members.label }}</label>
                             {% if form.invited_members.help_text %}<div class="form-text mb-1">{{ form.invited_members.help_text }}</div>{% endif %}
                             <div class="border rounded p-3" style="max-height: 200px; overflow-y: auto;">
@@ -144,4 +144,25 @@
         </div>
     </div>
 </div>
+{% if 'invited_members_only' in form.fields %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var restrictCheckbox = document.getElementById('{{ form.invited_members_only.id_for_label }}');
+    var membersPanel = document.getElementById('event-invited-members-panel');
+    if (!restrictCheckbox || !membersPanel) return;
+
+    function setMembersPanelVisible(visible) {
+        membersPanel.classList.toggle('d-none', !visible);
+        membersPanel.querySelectorAll('input[type="checkbox"]').forEach(function(input) {
+            input.disabled = !visible;
+        });
+    }
+
+    restrictCheckbox.addEventListener('change', function() {
+        setMembersPanelVisible(restrictCheckbox.checked);
+    });
+    setMembersPanelVisible(restrictCheckbox.checked);
+});
+</script>
+{% endif %}
 {% endblock content %}
