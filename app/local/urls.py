@@ -13,7 +13,9 @@ from .views import (
     SessionDetailView, SessionCreateView, SessionUpdateView, SessionDeleteView, SessionExportPDFView, SessionExcuseView, SessionAttachmentView, session_attachment_delete_view, SessionInvitationUploadView, SessionCancelView, SessionMinutesUpdateView, update_motion_order, update_inquiry_order, update_session_presence, session_export_ics,
     CommitteeListView, CommitteeDetailView, CommitteeCreateView, CommitteeUpdateView, CommitteeDeleteView,
     CommitteeMeetingCreateView, CommitteeMeetingDetailView, CommitteeMeetingUpdateView, CommitteeMeetingDeleteView, CommitteeMeetingSetSubstituteView, committee_meeting_export_ics, CommitteeMeetingAttachmentView,
-    CommitteeMemberListView, CommitteeMemberCreateView, CommitteeMemberUpdateView, CommitteeMemberDeleteView
+    CommitteeMemberListView, CommitteeMemberCreateView, CommitteeMemberUpdateView, CommitteeMemberDeleteView,
+    LocalEventCreateView, LocalEventDetailView, LocalEventUpdateView, LocalEventDeleteView,
+    local_event_attend, local_event_export_ics,
 )
 
 app_name = 'local'
@@ -25,6 +27,14 @@ urlpatterns = [
     path('<int:pk>/', LocalDetailView.as_view(), name='local-detail'),
     path('<int:pk>/edit/', LocalUpdateView.as_view(), name='local-edit'),
     path('<int:pk>/delete/', LocalDeleteView.as_view(), name='local-delete'),
+    path('<int:pk>/events/create/', LocalEventCreateView.as_view(), name='event-create'),
+
+    # District event URLs
+    path('events/<int:pk>/', LocalEventDetailView.as_view(), name='event-detail'),
+    path('events/<int:pk>/edit/', LocalEventUpdateView.as_view(), name='event-edit'),
+    path('events/<int:pk>/delete/', LocalEventDeleteView.as_view(), name='event-delete'),
+    path('events/<int:pk>/attend/', local_event_attend, name='event-attend'),
+    path('events/<int:pk>/export-ics/', local_event_export_ics, name='event-export-ics'),
     
     # Council URLs
     path('councils/', CouncilListView.as_view(), name='council-list'),

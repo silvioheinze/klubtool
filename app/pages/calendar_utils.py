@@ -27,7 +27,10 @@ def get_personal_calendar_events(user, group_memberships, councils_from_membersh
     """
     from django.urls import reverse
     from django.db.models import Q
-    from local.models import Session, CommitteeMeeting, CommitteeMember, CommitteeParticipationSubstitute, SessionExcuse
+    from local.models import (
+        Session, CommitteeMeeting, CommitteeMember, CommitteeParticipationSubstitute,
+        SessionExcuse, LocalEventParticipation,
+    )
     from group.models import GroupMeeting, GroupEventParticipation
 
     user_council_ids = [c.pk for c in councils_from_memberships]
@@ -156,6 +159,28 @@ def get_personal_calendar_events(user, group_memberships, councils_from_membersh
             'location': getattr(e, 'location', '') or '',
             'pk': e.pk,
             'model': 'groupevent',
+            'cancelled': False,
+        })
+
+    attending_local_events = LocalEventParticipation.objects.filter(
+        user=user,
+        will_attend=True,
+        event__is_active=True,
+        event__scheduled_date__gte=date_threshold,
+    ).select_related('event', 'event__local').order_by('event__scheduled_date')
+    for part in attending_local_events:
+        e = part.event
+        calendar_events.append({
+            'date': e.scheduled_date,
+            'title': e.title,
+            'url': e.get_absolute_url(),
+            'ics_export_url': reverse('local:event-export-ics', args=[e.pk]),
+            'type': 'local_event',
+            'badge_label': _('District event'),
+            'subtitle': e.local.name,
+            'location': '',
+            'pk': e.pk,
+            'model': 'localevent',
             'cancelled': False,
         })
 
