@@ -12,10 +12,24 @@ from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.views.decorators.http import require_http_methods, require_POST
 from django.utils.translation import gettext_lazy as _
+from django.utils.http import url_has_allowed_host_and_scheme
 import json
 
-from .models import Local, Term, Council, TermSeatDistribution, Party, Session, Committee, CommitteeMeeting, CommitteeMeetingAttachment, CommitteeMember, CommitteeParticipationSubstitute, SessionAttachment, SessionPresence, SessionExcuse
-from .forms import LocalForm, LocalFilterForm, CouncilForm, CouncilFilterForm, TermForm, TermFilterForm, CouncilNameForm, TermSeatDistributionForm, PartyForm, PartyFilterForm, SessionForm, SessionFilterForm, CommitteeForm, CommitteeFilterForm, CommitteeMeetingForm, CommitteeMemberForm, CommitteeMemberFilterForm, SessionAttachmentForm, CommitteeMeetingAttachmentForm, SessionInvitationForm, SessionMinutesForm, CommitteeParticipationSubstituteForm
+from .models import (
+    Local, Term, Council, TermSeatDistribution, Party, Session, Committee,
+    CommitteeMeeting, CommitteeMeetingAttachment, CommitteeMember,
+    CommitteeParticipationSubstitute, SessionAttachment, SessionPresence,
+    SessionExcuse, LocalEvent, LocalEventParticipation,
+)
+from .forms import (
+    LocalForm, LocalFilterForm, CouncilForm, CouncilFilterForm, TermForm,
+    TermFilterForm, CouncilNameForm, TermSeatDistributionForm, PartyForm,
+    PartyFilterForm, SessionForm, SessionFilterForm, CommitteeForm,
+    CommitteeFilterForm, CommitteeMeetingForm, CommitteeMemberForm,
+    CommitteeMemberFilterForm, SessionAttachmentForm,
+    CommitteeMeetingAttachmentForm, SessionInvitationForm, SessionMinutesForm,
+    CommitteeParticipationSubstituteForm, LocalEventForm,
+)
 
 
 class LocalListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
@@ -121,6 +135,34 @@ class LocalDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             context['recent_sessions'] = self.object.council.sessions.filter(is_active=True).order_by('-scheduled_date')[:3]
         else:
             context['recent_sessions'] = []
+
+        context['can_manage_local_events'] = user_can_manage_local_events(
+            self.request.user, self.object,
+        )
+        local_events = LocalEvent.objects.filter(
+            local=self.object,
+            is_active=True,
+            scheduled_date__gte=timezone.now(),
+        ).order_by('scheduled_date')
+        participations = {
+            p.event_id: p.will_attend
+            for p in LocalEventParticipation.objects.filter(
+                user=self.request.user,
+                event__in=local_events,
+            )
+        }
+        context['local_events_data'] = [
+            {
+                'event': event,
+                'rsvp_status': (
+                    'attending' if participations.get(event.pk)
+                    else 'declined' if event.pk in participations
+                    else 'none'
+                ),
+            }
+            for event in local_events
+        ]
+
         return context
 
 
@@ -275,6 +317,29 @@ def _get_user_accessible_council_ids(user):
             group__party__local__council__isnull=True,
         ).values_list('group__party__local__council__pk', flat=True).distinct()
     )
+
+
+def user_is_local_member(user, local):
+    """True if user is a superuser or active group member in this district."""
+    if user.is_superuser:
+        return True
+    council_id = Council.objects.filter(local_id=local.pk).values_list('pk', flat=True).first()
+    if council_id is None:
+        return False
+    return council_id in _get_user_accessible_council_ids(user)
+
+
+def user_can_manage_local_events(user, local):
+    """True if user can create/edit/delete district events (superuser or group manager in district)."""
+    if user.is_superuser:
+        return True
+    from group.models import Group
+    groups = Group.objects.filter(
+        party__local=local,
+        is_active=True,
+        party__is_active=True,
+    )
+    return any(group.can_user_manage_group(user) for group in groups)
 
 
 COUNCIL_SESSIONS_PER_PAGE = 10
@@ -2801,3 +2866,200 @@ class CommitteeMeetingAttachmentView(LoginRequiredMixin, UserPassesTestMixin, Cr
                 % {'filename': filename},
             )
         return response
+
+
+class LocalEventCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
+    """Create a district event."""
+    model = LocalEvent
+    form_class = LocalEventForm
+    template_name = 'local/event_form.html'
+
+    def test_func(self):
+        local = get_object_or_404(Local, pk=self.kwargs['pk'])
+        return user_can_manage_local_events(self.request.user, local)
+
+    def get_initial(self):
+        initial = super().get_initial()
+        initial['local'] = self.kwargs.get('pk')
+        return initial
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['local'] = get_object_or_404(Local, pk=self.kwargs['pk'])
+        return context
+
+    def form_valid(self, form):
+        form.instance.created_by = self.request.user
+        if not form.instance.local_id:
+            form.instance.local = get_object_or_404(Local, pk=self.kwargs['pk'])
+        messages.success(
+            self.request,
+            _("Event '%(title)s' created successfully.") % {'title': form.instance.title},
+        )
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse('local:local-detail', kwargs={'pk': self.object.local.pk})
+
+
+class LocalEventDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
+    """Detail view for a district event."""
+    model = LocalEvent
+    context_object_name = 'event'
+    template_name = 'local/event_detail.html'
+
+    def test_func(self):
+        return user_is_local_member(self.request.user, self.get_object().local)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        event = self.object
+        context['local'] = event.local
+        context['can_edit_event'] = user_can_manage_local_events(self.request.user, event.local)
+        attending = LocalEventParticipation.objects.filter(
+            event=event, will_attend=True,
+        ).select_related('user').order_by('user__last_name', 'user__first_name')
+        context['attending_members'] = attending
+        context['attending_count'] = attending.count()
+        part = LocalEventParticipation.objects.filter(
+            event=event, user=self.request.user,
+        ).first()
+        if part is None:
+            context['user_rsvp_status'] = 'none'
+        elif part.will_attend:
+            context['user_rsvp_status'] = 'attending'
+        else:
+            context['user_rsvp_status'] = 'declined'
+        return context
+
+
+class LocalEventUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
+    """Update a district event."""
+    model = LocalEvent
+    form_class = LocalEventForm
+    template_name = 'local/event_form.html'
+    context_object_name = 'event'
+
+    def test_func(self):
+        return user_can_manage_local_events(self.request.user, self.get_object().local)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['local'] = self.object.local
+        return context
+
+    def form_valid(self, form):
+        messages.success(
+            self.request,
+            _("Event '%(title)s' updated successfully.") % {'title': form.instance.title},
+        )
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse('local:event-detail', kwargs={'pk': self.object.pk})
+
+
+class LocalEventDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
+    """Delete a district event."""
+    model = LocalEvent
+    template_name = 'local/event_confirm_delete.html'
+    context_object_name = 'event'
+
+    def test_func(self):
+        return user_can_manage_local_events(self.request.user, self.get_object().local)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['local'] = self.object.local
+        return context
+
+    def delete(self, request, *args, **kwargs):
+        event = self.get_object()
+        messages.success(
+            request,
+            _("Event '%(title)s' deleted successfully.") % {'title': event.title},
+        )
+        return super().delete(request, *args, **kwargs)
+
+    def get_success_url(self):
+        return reverse('local:local-detail', kwargs={'pk': self.object.local.pk})
+
+
+@login_required
+@require_http_methods(["POST"])
+def local_event_attend(request, pk):
+    """RSVP for a district event."""
+    event = get_object_or_404(LocalEvent, pk=pk)
+    if not user_is_local_member(request.user, event.local):
+        messages.error(request, _("You don't have permission to RSVP to this event."))
+        return redirect('local:local-detail', pk=event.local.pk)
+    will_attend = request.POST.get('will_attend') == '1'
+    part, _created = LocalEventParticipation.objects.get_or_create(
+        event=event,
+        user=request.user,
+        defaults={'will_attend': will_attend},
+    )
+    part.will_attend = will_attend
+    part.save(update_fields=['will_attend', 'updated_at'])
+    if will_attend:
+        messages.success(request, _("You are marked as attending this event."))
+    else:
+        messages.info(request, _("You are marked as not attending."))
+    next_url = request.POST.get('next')
+    if next_url and url_has_allowed_host_and_scheme(
+        next_url, allowed_hosts={request.get_host()},
+    ):
+        return redirect(next_url)
+    return redirect('local:event-detail', pk=pk)
+
+
+@login_required
+def local_event_export_ics(request, pk):
+    """Export a single district event as ICS."""
+    event = get_object_or_404(LocalEvent, pk=pk)
+    if not user_is_local_member(request.user, event.local):
+        messages.error(request, _("You don't have permission to access this page."))
+        return redirect('local:local-detail', pk=event.local.pk)
+
+    dtstart = event.scheduled_date
+    if not timezone.is_aware(dtstart):
+        dtstart = timezone.make_aware(dtstart)
+    dtstart_utc = dtstart.astimezone(timezone.UTC)
+    dtend_utc = dtstart_utc + timezone.timedelta(hours=1)
+    dtstart_str = dtstart_utc.strftime('%Y%m%dT%H%M%SZ')
+    dtend_str = dtend_utc.strftime('%Y%m%dT%H%M%SZ')
+    uid = f"local-event-{event.pk}@{request.get_host()}"
+
+    def escape_ics_text(text):
+        if not text:
+            return ""
+        text = str(text).replace('\\', '\\\\').replace(',', '\\,').replace(';', '\\;').replace('\n', '\\n')
+        return text
+
+    ics_content = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "PRODID:-//Klubtool//District Event//EN",
+        "CALSCALE:GREGORIAN",
+        "METHOD:PUBLISH",
+        "BEGIN:VEVENT",
+        f"UID:{uid}",
+        f"DTSTART:{dtstart_str}",
+        f"DTEND:{dtend_str}",
+        f"SUMMARY:{escape_ics_text(event.title)}",
+    ]
+    if event.description:
+        ics_content.append(f"DESCRIPTION:{escape_ics_text(event.description)}")
+    created = event.created_at
+    if not timezone.is_aware(created):
+        created = timezone.make_aware(created)
+    ics_content.append(f"DTSTAMP:{created.astimezone(timezone.UTC).strftime('%Y%m%dT%H%M%SZ')}")
+    event_url = event.external_link or request.build_absolute_uri(
+        reverse('local:event-detail', args=[event.pk])
+    )
+    ics_content.append(f"URL:{event_url}")
+    ics_content.extend(["STATUS:CONFIRMED", "SEQUENCE:0", "END:VEVENT", "END:VCALENDAR"])
+    response = HttpResponse("\r\n".join(ics_content), content_type='text/calendar; charset=utf-8')
+    safe_title = "".join(c if c.isalnum() or c in ' -_' else '_' for c in event.title)[:50]
+    response['Content-Disposition'] = f'attachment; filename="event_{event.pk}_{safe_title.strip()}.ics"'
+    return response

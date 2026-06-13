@@ -1,6 +1,7 @@
 from datetime import date
 
 from django.db import models
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from auditlog.registry import auditlog
 from auditlog.models import AuditlogHistoryField
@@ -531,6 +532,84 @@ class SessionExcuse(models.Model):
         return f"{self.session.title}: {self.user.get_full_name() or self.user.username} excused"
 
 
+class LocalEvent(models.Model):
+    """District-wide event. Group members of the district can RSVP; attending events appear in personal calendars."""
+
+    local = models.ForeignKey(
+        Local,
+        on_delete=models.CASCADE,
+        related_name='events',
+        help_text=_("District this event belongs to"),
+    )
+    title = models.CharField(max_length=200, help_text=_("Title of the event"))
+    scheduled_date = models.DateTimeField(help_text=_("Date and time of the event"))
+    description = models.TextField(blank=True, help_text=_("Optional description or details"))
+    external_link = models.URLField(blank=True, help_text=_("Optional external link for more information"))
+    is_active = models.BooleanField(default=True, help_text=_("Whether the event is currently active"))
+    created_by = models.ForeignKey(
+        'user.CustomUser',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='created_local_events',
+        help_text=_("User who created the event"),
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['scheduled_date']
+        verbose_name = _("District Event")
+        verbose_name_plural = _("District Events")
+
+    def __str__(self):
+        return f"{self.title} - {self.local.name} ({self.scheduled_date.strftime('%Y-%m-%d %H:%M')})"
+
+    def get_absolute_url(self):
+        from django.urls import reverse
+        return reverse('local:event-detail', args=[str(self.pk)])
+
+    @property
+    def is_past(self):
+        return self.scheduled_date < timezone.now()
+
+    @property
+    def is_upcoming(self):
+        return self.scheduled_date > timezone.now()
+
+
+class LocalEventParticipation(models.Model):
+    """RSVP: whether a district group member will attend a district event."""
+
+    event = models.ForeignKey(
+        LocalEvent,
+        on_delete=models.CASCADE,
+        related_name='participations',
+        help_text=_("Event"),
+    )
+    user = models.ForeignKey(
+        'user.CustomUser',
+        on_delete=models.CASCADE,
+        related_name='local_event_participations',
+        help_text=_("User"),
+    )
+    will_attend = models.BooleanField(default=False, help_text=_("Whether the user will attend"))
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['event', 'user'], name='local_localeventparticipation_event_user_uniq'),
+        ]
+        verbose_name = _("District Event Participation")
+        verbose_name_plural = _("District Event Participations")
+        ordering = ['user__last_name', 'user__first_name']
+
+    def __str__(self):
+        status = _("Attending") if self.will_attend else _("Not attending")
+        return f"{self.user.get_full_name() or self.user.username} - {self.event.title} ({status})"
+
+
 # Register models for audit logging
 auditlog.register(Local)
 auditlog.register(Council)
@@ -546,3 +625,5 @@ auditlog.register(Session)
 auditlog.register(SessionAttachment)
 auditlog.register(SessionPresence)
 auditlog.register(SessionExcuse)
+auditlog.register(LocalEvent)
+auditlog.register(LocalEventParticipation)

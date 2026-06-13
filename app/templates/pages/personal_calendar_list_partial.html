@@ -14,6 +14,8 @@
                 <span class="badge bg-success">{{ event.badge_label }}</span>
                 {% elif event.type == 'group_event' %}
                 <span class="badge bg-warning text-dark">{{ event.badge_label }}</span>
+                {% elif event.type == 'local_event' %}
+                <span class="badge bg-danger">{{ event.badge_label }}</span>
                 {% endif %}
             </div>
             <small class="text-muted">{{ event.subtitle }}{% if event.location %} · {{ event.location }}{% endif %}</small>

@@ -1,7 +1,11 @@
 from django import forms
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
-from .models import Local, Council, Committee, CommitteeMeeting, CommitteeMeetingAttachment, CommitteeMember, CommitteeParticipationSubstitute, Session, Term, Party, TermSeatDistribution, SessionAttachment
+from .models import (
+    Local, Council, Committee, CommitteeMeeting, CommitteeMeetingAttachment,
+    CommitteeMember, CommitteeParticipationSubstitute, Session, Term, Party,
+    TermSeatDistribution, SessionAttachment, LocalEvent,
+)
 
 
 class LocalForm(forms.ModelForm):
@@ -656,3 +660,33 @@ class CommitteeParticipationSubstituteForm(forms.Form):
             def label_from_instance(obj):
                 return obj.user.get_full_name() or obj.user.username
             self.fields['substitute_member'].label_from_instance = label_from_instance
+
+
+class LocalEventForm(forms.ModelForm):
+    """Form for creating and editing district events."""
+
+    class Meta:
+        model = LocalEvent
+        fields = ['title', 'scheduled_date', 'description', 'external_link', 'local']
+        widgets = {
+            'title': forms.TextInput(attrs={'class': 'form-control'}),
+            'scheduled_date': forms.DateTimeInput(
+                attrs={'class': 'form-control', 'type': 'datetime-local'},
+                format='%Y-%m-%dT%H:%M',
+            ),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
+            'external_link': forms.URLInput(attrs={'class': 'form-control'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['scheduled_date'].input_formats = [
+            '%Y-%m-%dT%H:%M', '%Y-%m-%d %H:%M:%S', '%Y-%m-%d %H:%M',
+        ]
+        local_id = self.initial.get('local') or self.data.get('local')
+        if not local_id and self.instance and self.instance.pk:
+            local_id = self.instance.local_id
+        if local_id:
+            self.fields['local'].widget = forms.HiddenInput()
+            self.fields['local'].initial = local_id
+        self.fields['local'].queryset = Local.objects.filter(is_active=True)

@@ -1,6 +1,7 @@
 from django.test import TestCase, Client
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
+from django.db import IntegrityError
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.utils import timezone
 from django.urls import reverse
@@ -14,8 +15,10 @@ from .forms import (
 )
 from .models import (
     Local, Council, Committee, CommitteeMeeting, CommitteeMember, CommitteeParticipationSubstitute,
-    Session, Term, Party, TermSeatDistribution, SessionAttachment
+    Session, Term, Party, TermSeatDistribution, SessionAttachment, LocalEvent, LocalEventParticipation,
 )
+from .views import user_is_local_member, user_can_manage_local_events
+from pages.calendar_utils import get_personal_calendar_events
 
 User = get_user_model()
 
@@ -2966,3 +2969,145 @@ class CouncilCommitteesExportPDFViewTests(TestCase):
         pdf_content = response.content
         self.assertTrue(len(pdf_content) > 0)
         self.assertTrue(pdf_content.startswith(b'%PDF'))
+
+
+class LocalEventTests(TestCase):
+    """Tests for district events with RSVP and personal calendar integration."""
+
+    def setUp(self):
+        self.client = Client()
+        self.member = User.objects.create_user(
+            username='district_member',
+            email='district_member@example.com',
+            password='memberpass123',
+        )
+        self.manager = User.objects.create_user(
+            username='district_manager',
+            email='district_manager@example.com',
+            password='managerpass123',
+        )
+        self.outsider = User.objects.create_user(
+            username='outsider',
+            email='outsider@example.com',
+            password='outsiderpass123',
+        )
+        self.local = Local.objects.create(
+            name='District Events Local',
+            code='DEL',
+            description='Test district',
+            is_active=True,
+        )
+        self.council = self.local.council
+        self.party = Party.objects.create(
+            name='District Events Party',
+            local=self.local,
+            is_active=True,
+        )
+        from group.models import Group, GroupMember
+        from user.models import Role
+
+        self.group = Group.objects.create(
+            name='District Events Group',
+            party=self.party,
+            is_active=True,
+        )
+        GroupMember.objects.create(user=self.member, group=self.group, is_active=True)
+        leader_role = Role.objects.get_or_create(name='Leader', defaults={'is_active': True})[0]
+        manager_membership = GroupMember.objects.create(
+            user=self.manager, group=self.group, is_active=True,
+        )
+        manager_membership.roles.add(leader_role)
+        self.event = LocalEvent.objects.create(
+            title='District Meetup',
+            local=self.local,
+            scheduled_date=timezone.now() + timedelta(days=7),
+            description='A district-wide event',
+            external_link='https://example.com/event',
+            created_by=self.manager,
+        )
+
+    def test_participation_unique_per_user(self):
+        LocalEventParticipation.objects.create(
+            event=self.event, user=self.member, will_attend=True,
+        )
+        with self.assertRaises(IntegrityError):
+            LocalEventParticipation.objects.create(
+                event=self.event, user=self.member, will_attend=False,
+            )
+
+    def test_user_is_local_member(self):
+        self.assertTrue(user_is_local_member(self.member, self.local))
+        self.assertFalse(user_is_local_member(self.outsider, self.local))
+
+    def test_user_can_manage_local_events(self):
+        self.assertTrue(user_can_manage_local_events(self.manager, self.local))
+        self.assertFalse(user_can_manage_local_events(self.member, self.local))
+
+    def test_member_can_view_event_detail(self):
+        self.client.login(username='district_member', password='memberpass123')
+        response = self.client.get(reverse('local:event-detail', kwargs={'pk': self.event.pk}))
+        self.assertEqual(response.status_code, 200)
+
+    def test_outsider_cannot_view_event_detail(self):
+        self.client.login(username='outsider', password='outsiderpass123')
+        response = self.client.get(reverse('local:event-detail', kwargs={'pk': self.event.pk}))
+        self.assertEqual(response.status_code, 403)
+
+    def test_manager_can_create_event(self):
+        self.client.login(username='district_manager', password='managerpass123')
+        response = self.client.get(reverse('local:event-create', kwargs={'pk': self.local.pk}))
+        self.assertEqual(response.status_code, 200)
+
+    def test_member_cannot_create_event(self):
+        self.client.login(username='district_member', password='memberpass123')
+        response = self.client.get(reverse('local:event-create', kwargs={'pk': self.local.pk}))
+        self.assertEqual(response.status_code, 403)
+
+    def test_member_can_rsvp_attend_and_decline(self):
+        self.client.login(username='district_member', password='memberpass123')
+        attend_url = reverse('local:event-attend', kwargs={'pk': self.event.pk})
+        response = self.client.post(attend_url, {'will_attend': '1'})
+        self.assertEqual(response.status_code, 302)
+        part = LocalEventParticipation.objects.get(event=self.event, user=self.member)
+        self.assertTrue(part.will_attend)
+        response = self.client.post(attend_url, {'will_attend': '0'})
+        part.refresh_from_db()
+        self.assertFalse(part.will_attend)
+
+    def test_district_detail_shows_upcoming_events(self):
+        self.client.login(username='district_member', password='memberpass123')
+        response = self.client.get(reverse('local:local-detail', kwargs={'pk': self.local.pk}))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'District Meetup')
+
+    def test_attending_event_appears_in_personal_calendar(self):
+        LocalEventParticipation.objects.create(
+            event=self.event, user=self.member, will_attend=True,
+        )
+        from group.models import GroupMember
+        memberships = list(GroupMember.objects.filter(user=self.member, is_active=True))
+        councils = [self.council]
+        events = get_personal_calendar_events(self.member, memberships, councils)
+        local_event_entries = [e for e in events if e['type'] == 'local_event']
+        self.assertEqual(len(local_event_entries), 1)
+        self.assertEqual(local_event_entries[0]['title'], 'District Meetup')
+
+    def test_declined_event_not_in_personal_calendar(self):
+        LocalEventParticipation.objects.create(
+            event=self.event, user=self.member, will_attend=False,
+        )
+        from group.models import GroupMember
+        memberships = list(GroupMember.objects.filter(user=self.member, is_active=True))
+        councils = [self.council]
+        events = get_personal_calendar_events(self.member, memberships, councils)
+        local_event_entries = [e for e in events if e['type'] == 'local_event']
+        self.assertEqual(len(local_event_entries), 0)
+
+    def test_attending_event_in_ics_export(self):
+        LocalEventParticipation.objects.create(
+            event=self.event, user=self.member, will_attend=True,
+        )
+        self.client.login(username='district_member', password='memberpass123')
+        response = self.client.get(reverse('personal-calendar-export-ics'))
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'District Meetup', response.content)

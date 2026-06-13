@@ -1,5 +1,8 @@
 from django.contrib import admin
-from .models import Local, Council, Committee, CommitteeMember, Session, Term, Party, TermSeatDistribution, SessionPresence
+from .models import (
+    Local, Council, Committee, CommitteeMember, Session, Term, Party,
+    TermSeatDistribution, SessionPresence, LocalEvent, LocalEventParticipation,
+)
 
 
 @admin.register(Local)
@@ -202,3 +205,20 @@ class SessionPresenceAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
     )
+
+
+@admin.register(LocalEvent)
+class LocalEventAdmin(admin.ModelAdmin):
+    list_display = ['title', 'local', 'scheduled_date', 'is_active', 'created_by', 'created_at']
+    list_filter = ['is_active', 'local', 'scheduled_date']
+    search_fields = ['title', 'description', 'local__name']
+    readonly_fields = ['created_at', 'updated_at']
+    date_hierarchy = 'scheduled_date'
+
+
+@admin.register(LocalEventParticipation)
+class LocalEventParticipationAdmin(admin.ModelAdmin):
+    list_display = ['event', 'user', 'will_attend', 'updated_at']
+    list_filter = ['will_attend', 'event__local']
+    search_fields = ['event__title', 'user__username', 'user__first_name', 'user__last_name']
+    readonly_fields = ['created_at', 'updated_at']
