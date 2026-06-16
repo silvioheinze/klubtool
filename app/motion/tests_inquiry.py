@@ -482,6 +482,26 @@ class InquiryCreateViewTests(TestCase):
         inquiry = Inquiry.objects.get(title='Test Inquiry')
         self.assertEqual(inquiry.submitted_by, self.superuser)
 
+    def test_group_member_can_access_inquiry_create_without_session_param(self):
+        """Regular group members should be able to create inquiries even without ?session=..."""
+        from group.models import GroupMember
+        user = User.objects.create_user(username='groupmember', password='testpass123')
+        GroupMember.objects.create(user=user, group=self.group, is_active=True)
+        self.client.login(username='groupmember', password='testpass123')
+
+        response = self.client.get(reverse('inquiry:inquiry-create'))
+        self.assertEqual(response.status_code, 200)
+
+    def test_group_member_can_access_inquiry_create_with_session_param(self):
+        """Regular group members should be able to create inquiries with ?session=..."""
+        from group.models import GroupMember
+        user = User.objects.create_user(username='groupmember2', password='testpass123')
+        GroupMember.objects.create(user=user, group=self.group, is_active=True)
+        self.client.login(username='groupmember2', password='testpass123')
+
+        response = self.client.get(f"{reverse('inquiry:inquiry-create')}?session={self.session.pk}")
+        self.assertEqual(response.status_code, 200)
+
 
 class InquiryUpdateViewTests(TestCase):
     """Test cases for InquiryUpdateView"""
