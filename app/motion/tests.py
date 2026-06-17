@@ -920,6 +920,26 @@ class MotionCreateViewTests(TestCase):
         motion = Motion.objects.get(title='Test Motion')
         self.assertEqual(motion.session, self.session)
 
+    def test_group_member_can_access_motion_create_without_session_param(self):
+        """Regular group members should be able to create motions even without ?session=..."""
+        from group.models import GroupMember
+        user = User.objects.create_user(username='groupmember', password='testpass123')
+        GroupMember.objects.create(user=user, group=self.group, is_active=True)
+        self.client.login(username='groupmember', password='testpass123')
+
+        response = self.client.get(reverse('motion:motion-create'))
+        self.assertEqual(response.status_code, 200)
+
+    def test_group_member_can_access_motion_create_with_session_param(self):
+        """Regular group members should be able to create motions with ?session=..."""
+        from group.models import GroupMember
+        user = User.objects.create_user(username='groupmember2', password='testpass123')
+        GroupMember.objects.create(user=user, group=self.group, is_active=True)
+        self.client.login(username='groupmember2', password='testpass123')
+
+        response = self.client.get(f"{reverse('motion:motion-create')}?session={self.session.pk}")
+        self.assertEqual(response.status_code, 200)
+
 
 class MotionInquiryStatusPermissionTests(TestCase):
     """Tests for motion and inquiry status-change permissions for group managers."""

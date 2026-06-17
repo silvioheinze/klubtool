@@ -479,18 +479,13 @@ class MotionCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     success_url = reverse_lazy('motion:motion-list')
 
     def test_func(self):
-        """Allow superuser, motion.create permission, or regular group members for the session's council."""
+        """Allow superuser, motion.create permission, or regular group members."""
         user = self.request.user
         if user.is_superuser or user.has_role_permission('motion.create'):
             return True
-        session_id = self.request.GET.get('session')
-        if session_id:
-            try:
-                council_id = Session.objects.filter(pk=session_id).values_list('council_id', flat=True).first()
-                if council_id is not None and council_id in _get_user_accessible_council_ids(user):
-                    return True
-            except (ValueError, TypeError):
-                pass
+        group_ids = _get_user_accessible_group_ids(user)
+        if group_ids is not None and len(group_ids) > 0:
+            return True
         return False
 
     def get_form_kwargs(self):
@@ -1928,18 +1923,13 @@ class InquiryCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     success_url = reverse_lazy('inquiry:inquiry-list')
 
     def test_func(self):
-        """Allow superuser, motion.create permission, or regular group members for the session's council."""
+        """Allow superuser, motion.create permission, or regular group members."""
         user = self.request.user
         if user.is_superuser or user.has_role_permission('motion.create'):
             return True
-        session_id = self.request.GET.get('session')
-        if session_id:
-            try:
-                council_id = Session.objects.filter(pk=session_id).values_list('council_id', flat=True).first()
-                if council_id is not None and council_id in _get_user_accessible_council_ids(user):
-                    return True
-            except (ValueError, TypeError):
-                pass
+        group_ids = _get_user_accessible_group_ids(user)
+        if group_ids is not None and len(group_ids) > 0:
+            return True
         return False
 
     def get_form_kwargs(self):
