@@ -44,6 +44,8 @@ urlpatterns = [
     path('group/', include(('group.urls', 'group'))),
     path('motions/', include('motion.urls')),
     path('inquiries/', include('motion.inquiry_urls')),
+    path('mcp/', include('mcp_integration.urls')),
+    path('', include('mcp_server.urls')),
 ]
 
 # Serve static and media files during development

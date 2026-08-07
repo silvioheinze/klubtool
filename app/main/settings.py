@@ -54,6 +54,10 @@ INSTALLED_APPS = [
     'local',
     'group',
     'motion', # Added
+    'mcp_integration',
+    'rest_framework',
+    'rest_framework.authtoken',
+    'mcp_server',
 ]
 
 MIDDLEWARE = [
@@ -227,6 +231,24 @@ SERVER_EMAIL = os.environ.get('SERVER_EMAIL', DEFAULT_FROM_EMAIL)
 EMAIL_SUBJECT_PREFIX = os.environ.get('EMAIL_SUBJECT_PREFIX', '[Django] ')
 
 API_URL = ''
+
+# MCP server configuration
+DJANGO_MCP_AUTHENTICATION_CLASSES = [
+    'rest_framework.authentication.TokenAuthentication',
+]
+DJANGO_MCP_GLOBAL_SERVER_CONFIG = {
+    'name': 'klubtool',
+    'instructions': (
+        'Query and manage klubtool data. Only use models exposed by the administrator.'
+    ),
+}
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ],
+}
 
 # Logging configuration for debugging
 LOGGING = {
