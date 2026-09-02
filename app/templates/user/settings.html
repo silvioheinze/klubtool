@@ -122,6 +122,51 @@
     </div>
 </div>
 
+<!-- MCP Access -->
+<div class="card mb-4" id="mcp-access">
+    <div class="card-header">
+        <h3 class="mb-0">
+            <i class="bi bi-plug me-2"></i>
+            {% trans "MCP Access" %}
+        </h3>
+    </div>
+    <div class="card-body">
+        <p class="text-muted mb-3">
+            {% trans "Connect Cursor or other MCP clients to manage district events. Create a personal bearer token and configure your client with the MCP URL and Authorization header." %}
+        </p>
+        {% if new_mcp_token %}
+        <div class="alert alert-success mb-3">
+            <label class="form-label fw-bold">{% trans "MCP server URL:" %}</label>
+            <div class="input-group mb-3">
+                <input type="text" class="form-control font-monospace" id="mcp-server-url" readonly value="{{ new_mcp_url }}">
+                <button type="button" class="btn btn-outline-primary" title="{% trans 'Copy to clipboard' %}" onclick="navigator.clipboard.writeText(document.getElementById('mcp-server-url').value);">
+                    <i class="bi bi-clipboard"></i>
+                </button>
+            </div>
+            <label class="form-label fw-bold">{% trans "Bearer token (copy now — shown only once):" %}</label>
+            <div class="input-group">
+                <input type="text" class="form-control font-monospace" id="mcp-bearer-token" readonly value="{{ new_mcp_token }}">
+                <button type="button" class="btn btn-outline-primary" title="{% trans 'Copy to clipboard' %}" onclick="navigator.clipboard.writeText(document.getElementById('mcp-bearer-token').value);">
+                    <i class="bi bi-clipboard"></i>
+                </button>
+            </div>
+            <small class="text-muted d-block mt-2">{% trans "Keep this token private. If it is compromised, use Reset below." %}</small>
+        </div>
+        {% endif %}
+        <a class="btn {% if has_mcp_token %}btn-outline-warning{% else %}btn-outline-primary{% endif %}" href="{% url 'mcp-token-create' %}">
+            <i class="bi bi-{% if has_mcp_token %}arrow-repeat{% else %}plus-lg{% endif %} me-2"></i>
+            {% if has_mcp_token %}
+            {% trans "Reset MCP token" %}
+            {% else %}
+            {% trans "Create MCP token" %}
+            {% endif %}
+        </a>
+        <p class="text-muted small mt-2 mb-0">
+            {% trans "Resetting creates a new token and invalidates the old one." %}
+        </p>
+    </div>
+</div>
+
 <!-- Change Password -->
 <div class="card mb-4">
     <div class="card-header">

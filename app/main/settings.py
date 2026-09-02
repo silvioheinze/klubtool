@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     'district',
     'group',
     'motion', # Added
+    'mcp',
 ]
 
 MIDDLEWARE = [
