@@ -1,8 +1,11 @@
-from django.test import TestCase, Client
+from unittest.mock import MagicMock, patch
+
+from django.test import TestCase, Client, RequestFactory, override_settings
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.template.loader import render_to_string
 from django.utils import timezone
 from django.urls import reverse
 from datetime import datetime, timedelta
@@ -17,7 +20,11 @@ from .models import (
     District, Council, Committee, CommitteeMeeting, CommitteeMember, CommitteeParticipationSubstitute,
     Session, Term, Party, TermSeatDistribution, SessionAttachment, DistrictEvent, DistrictEventParticipation,
 )
-from .views import user_is_district_member, user_can_manage_district_events
+from .views import (
+    user_is_district_member,
+    user_can_manage_district_events,
+    CouncilCommitteesExportPDFView,
+)
 from pages.calendar_utils import get_personal_calendar_events
 
 User = get_user_model()
@@ -2632,344 +2639,230 @@ class CommitteeViewTests(TestCase):
         self.assertFalse(Committee.objects.filter(pk=self.committee.pk).exists())
 
 
+@override_settings(PASSWORD_HASHERS=['django.contrib.auth.hashers.MD5PasswordHasher'])
 class CouncilCommitteesExportPDFViewTests(TestCase):
-    """Test cases for CouncilCommitteesExportPDFView"""
-    
-    def setUp(self):
-        """Set up test data"""
-        self.client = Client()
-        User = get_user_model()
-        
-        # Create users
-        self.superuser = User.objects.create_user(
+    """Access, HTML content, and a single WeasyPrint smoke test for committee PDF export."""
+
+    @classmethod
+    def setUpTestData(cls):
+        from group.models import Group, GroupMember
+        from user.models import Role
+
+        cls.superuser = User.objects.create_user(
             username='admin',
             email='admin@example.com',
             password='adminpass123',
-            is_superuser=True
+            is_superuser=True,
         )
-        
-        self.regular_user = User.objects.create_user(
+        cls.regular_user = User.objects.create_user(
             username='regular',
             email='regular@example.com',
-            password='regularpass123'
+            password='regularpass123',
         )
-        
-        # Create user with session.view permission
-        from user.models import Role
-        self.role_user = User.objects.create_user(
+        cls.role_user = User.objects.create_user(
             username='roleuser',
             email='role@example.com',
-            password='rolepass123'
+            password='rolepass123',
         )
-        # Create role with session.view permission
-        role, created = Role.objects.get_or_create(
+        role = Role.objects.create(
             name='Session Viewer',
-            defaults={'is_active': True, 'permissions': {'permissions': ['session.view']}}
+            is_active=True,
+            permissions={'permissions': ['session.view']},
         )
-        if created:
-            role.permissions = {'permissions': ['session.view']}
-            role.save()
-        self.role_user.role = role
-        self.role_user.save()
-        
-        # Create local, council, and party
-        self.district = District.objects.create(
+        cls.role_user.role = role
+        cls.role_user.save()
+
+        cls.district = District.objects.create(
             name='Test Local',
             code='TL',
-            description='Test local description'
+            description='Test local description',
         )
-        self.council = self.district.council
-        
-        self.party = Party.objects.create(
+        cls.council = cls.district.council
+        cls.party = Party.objects.create(
             name='Test Party',
-            district=self.district,
+            district=cls.district,
             short_name='TP',
-            is_active=True
+            is_active=True,
         )
-        
-        # Create group and group memberships
-        from group.models import Group, GroupMember
-        self.group = Group.objects.create(
+        cls.group = Group.objects.create(
             name='Test Group',
-            party=self.party,
-            is_active=True
+            party=cls.party,
+            is_active=True,
         )
-        
-        # Create committee members
-        self.member_user1 = User.objects.create_user(
+
+        cls.member_user1 = User.objects.create_user(
             username='member1',
             email='member1@example.com',
             password='memberpass123',
             first_name='John',
-            last_name='Doe'
+            last_name='Doe',
         )
-        self.member_user2 = User.objects.create_user(
+        cls.member_user2 = User.objects.create_user(
             username='member2',
             email='member2@example.com',
             password='memberpass123',
             first_name='Jane',
-            last_name='Smith'
+            last_name='Smith',
         )
-        self.substitute_user = User.objects.create_user(
+        cls.substitute_user = User.objects.create_user(
             username='substitute',
             email='substitute@example.com',
             password='substitutepass123',
             first_name='Bob',
-            last_name='Johnson'
+            last_name='Johnson',
         )
-        
-        # Add users to group
-        GroupMember.objects.create(
-            user=self.member_user1,
-            group=self.group,
-            is_active=True
-        )
-        GroupMember.objects.create(
-            user=self.member_user2,
-            group=self.group,
-            is_active=True
-        )
-        GroupMember.objects.create(
-            user=self.substitute_user,
-            group=self.group,
-            is_active=True
-        )
-        
-        # Create committees
-        self.committee1 = Committee.objects.create(
+
+        GroupMember.objects.create(user=cls.member_user1, group=cls.group, is_active=True)
+        GroupMember.objects.create(user=cls.member_user2, group=cls.group, is_active=True)
+        GroupMember.objects.create(user=cls.substitute_user, group=cls.group, is_active=True)
+
+        cls.committee1 = Committee.objects.create(
             name='Budget Committee',
-            council=self.council,
+            council=cls.council,
             committee_type='Ausschuss',
             abbreviation='BC',
             description='Budget and finance committee',
-            is_active=True
+            is_active=True,
         )
-        
-        self.committee2 = Committee.objects.create(
+        cls.committee2 = Committee.objects.create(
             name='Education Committee',
-            council=self.council,
+            council=cls.council,
             committee_type='Kommission',
-            is_active=True
+            is_active=True,
         )
-        
-        # Create committee members
-        CommitteeMember.objects.create(
-            committee=self.committee1,
-            user=self.member_user1,
-            role='chairperson',
-            is_active=True
-        )
-        CommitteeMember.objects.create(
-            committee=self.committee1,
-            user=self.member_user2,
-            role='member',
-            is_active=True
-        )
-        CommitteeMember.objects.create(
-            committee=self.committee1,
-            user=self.substitute_user,
-            role='substitute_member',
-            is_active=True
-        )
-        
-        CommitteeMember.objects.create(
-            committee=self.committee2,
-            user=self.member_user1,
-            role='vice_chairperson',
-            is_active=True
-        )
-    
-    def test_pdf_export_superuser_access(self):
-        """Test that superuser can export PDF"""
-        self.client.login(username='admin', password='adminpass123')
-        response = self.client.get(reverse('district:council-committees-export-pdf', kwargs={'pk': self.council.pk}))
-        
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response['Content-Type'], 'application/pdf')
-        self.assertIn('attachment', response['Content-Disposition'])
-        self.assertIn('.pdf', response['Content-Disposition'])
-        # View uses filename like "Council_of_Test_Local_Stand_2026-01-31.pdf"
-        self.assertIn('attachment; filename=', response['Content-Disposition'])
-    
-    def test_pdf_export_role_user_access(self):
-        """Test that user with session.view permission can export PDF"""
-        self.client.login(username='roleuser', password='rolepass123')
-        response = self.client.get(reverse('district:council-committees-export-pdf', kwargs={'pk': self.council.pk}))
-        
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response['Content-Type'], 'application/pdf')
-        self.assertIn('attachment', response['Content-Disposition'])
-    
-    def test_pdf_export_regular_user_denied(self):
-        """Test that regular user without permission cannot export PDF"""
-        self.client.login(username='regular', password='regularpass123')
-        response = self.client.get(reverse('district:council-committees-export-pdf', kwargs={'pk': self.council.pk}))
-        
-        # Should return 403 Forbidden
-        self.assertEqual(response.status_code, 403)
-    
-    def test_pdf_export_unauthenticated_denied(self):
-        """Test that unauthenticated user cannot export PDF"""
-        response = self.client.get(reverse('district:council-committees-export-pdf', kwargs={'pk': self.council.pk}))
-        
-        # Should redirect to login (could be /accounts/login/ or /user/settings/)
-        self.assertEqual(response.status_code, 302)
-        self.assertTrue('/login/' in response.url or '/settings/' in response.url)
-    
-    def test_pdf_export_contains_council_name(self):
-        """Test that PDF is generated successfully"""
-        self.client.login(username='admin', password='adminpass123')
-        response = self.client.get(reverse('district:council-committees-export-pdf', kwargs={'pk': self.council.pk}))
-        
-        self.assertEqual(response.status_code, 200)
-        # Check that PDF content is not empty (PDFs start with %PDF)
-        pdf_content = response.content
-        self.assertTrue(len(pdf_content) > 0)
-        self.assertTrue(pdf_content.startswith(b'%PDF'))
-    
-    def test_pdf_export_contains_committees(self):
-        """Test that PDF is generated successfully with committees"""
-        self.client.login(username='admin', password='adminpass123')
-        response = self.client.get(reverse('district:council-committees-export-pdf', kwargs={'pk': self.council.pk}))
-        
-        self.assertEqual(response.status_code, 200)
-        # Verify PDF was generated (non-empty and valid PDF format)
-        pdf_content = response.content
-        self.assertTrue(len(pdf_content) > 0)
-        self.assertTrue(pdf_content.startswith(b'%PDF'))
-    
-    def test_pdf_export_contains_members(self):
-        """Test that PDF is generated successfully with members"""
-        self.client.login(username='admin', password='adminpass123')
-        response = self.client.get(reverse('district:council-committees-export-pdf', kwargs={'pk': self.council.pk}))
-        
-        self.assertEqual(response.status_code, 200)
-        # Verify PDF was generated (non-empty and valid PDF format)
-        pdf_content = response.content
-        self.assertTrue(len(pdf_content) > 0)
-        self.assertTrue(pdf_content.startswith(b'%PDF'))
-    
-    def test_pdf_export_contains_substitute_members(self):
-        """Test that PDF is generated successfully with substitute members"""
-        self.client.login(username='admin', password='adminpass123')
-        response = self.client.get(reverse('district:council-committees-export-pdf', kwargs={'pk': self.council.pk}))
-        
-        self.assertEqual(response.status_code, 200)
-        # Verify PDF was generated (non-empty and valid PDF format)
-        pdf_content = response.content
-        self.assertTrue(len(pdf_content) > 0)
-        self.assertTrue(pdf_content.startswith(b'%PDF'))
-    
-    def test_pdf_export_contains_roles(self):
-        """Test that PDF is generated successfully with role information"""
-        self.client.login(username='admin', password='adminpass123')
-        response = self.client.get(reverse('district:council-committees-export-pdf', kwargs={'pk': self.council.pk}))
-        
-        self.assertEqual(response.status_code, 200)
-        # Verify PDF was generated (non-empty and valid PDF format)
-        pdf_content = response.content
-        self.assertTrue(len(pdf_content) > 0)
-        self.assertTrue(pdf_content.startswith(b'%PDF'))
-    
-    def test_pdf_export_no_committees(self):
-        """Test PDF export when council has no committees"""
-        # Create a council without committees
-        local2 = District.objects.create(
-            name='Empty Local',
-            code='EL',
-            description='Local with no committees'
-        )
-        council2 = local2.council
-        
-        self.client.login(username='admin', password='adminpass123')
-        response = self.client.get(reverse('district:council-committees-export-pdf', kwargs={'pk': council2.pk}))
-        
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response['Content-Type'], 'application/pdf')
-        # Verify PDF was generated even with no committees
-        pdf_content = response.content
-        self.assertTrue(len(pdf_content) > 0)
-        self.assertTrue(pdf_content.startswith(b'%PDF'))
-    
-    def test_pdf_export_inactive_committees_excluded(self):
-        """Test that inactive committees are excluded from PDF"""
-        # Create an inactive committee
-        inactive_committee = Committee.objects.create(
+        Committee.objects.create(
             name='Inactive Committee',
-            council=self.council,
+            council=cls.council,
             committee_type='Ausschuss',
-            is_active=False
+            is_active=False,
         )
-        
-        self.client.login(username='admin', password='adminpass123')
-        response = self.client.get(reverse('district:council-committees-export-pdf', kwargs={'pk': self.council.pk}))
-        
-        self.assertEqual(response.status_code, 200)
-        # Verify PDF was generated (inactive committees are filtered in the view)
-        pdf_content = response.content
-        self.assertTrue(len(pdf_content) > 0)
-        self.assertTrue(pdf_content.startswith(b'%PDF'))
-    
-    def test_pdf_export_inactive_members_excluded(self):
-        """Test that inactive committee members are excluded from PDF"""
-        # Create an inactive member
-        inactive_member = User.objects.create_user(
+
+        CommitteeMember.objects.create(
+            committee=cls.committee1,
+            user=cls.member_user1,
+            role='chairperson',
+            is_active=True,
+        )
+        CommitteeMember.objects.create(
+            committee=cls.committee1,
+            user=cls.member_user2,
+            role='member',
+            is_active=True,
+        )
+        CommitteeMember.objects.create(
+            committee=cls.committee1,
+            user=cls.substitute_user,
+            role='substitute_member',
+            is_active=True,
+        )
+        CommitteeMember.objects.create(
+            committee=cls.committee2,
+            user=cls.member_user1,
+            role='vice_chairperson',
+            is_active=True,
+        )
+        cls.inactive_member = User.objects.create_user(
             username='inactive',
             email='inactive@example.com',
             password='inactivepass123',
             first_name='Inactive',
-            last_name='Member'
+            last_name='Member',
         )
         CommitteeMember.objects.create(
-            committee=self.committee1,
-            user=inactive_member,
+            committee=cls.committee1,
+            user=cls.inactive_member,
             role='member',
-            is_active=False
+            is_active=False,
         )
-        
-        self.client.login(username='admin', password='adminpass123')
-        response = self.client.get(reverse('district:council-committees-export-pdf', kwargs={'pk': self.council.pk}))
-        
-        self.assertEqual(response.status_code, 200)
-        # Verify PDF was generated (inactive members are filtered in the view)
-        pdf_content = response.content
-        self.assertTrue(len(pdf_content) > 0)
-        self.assertTrue(pdf_content.startswith(b'%PDF'))
-    
+
+        empty_district = District.objects.create(
+            name='Empty Local',
+            code='EL',
+            description='Local with no committees',
+        )
+        cls.empty_council = empty_district.council
+        cls.export_url = reverse(
+            'district:council-committees-export-pdf',
+            kwargs={'pk': cls.council.pk},
+        )
+
+    def _export_html(self, council=None, user=None):
+        """Render the PDF template from view context without WeasyPrint."""
+        council = council or self.council
+        user = user or self.superuser
+        request = RequestFactory().get('/')
+        request.user = user
+        view = CouncilCommitteesExportPDFView()
+        view.setup(request, pk=council.pk)
+        view.object = council
+        context = view.get_context_data()
+        return render_to_string(view.template_name, context), context
+
+    def _get_pdf_response(self, url=None, user=None):
+        """GET the export URL with WeasyPrint stubbed to a tiny PDF payload."""
+        if user is None:
+            self.client.logout()
+        else:
+            self.client.force_login(user)
+        html_doc = MagicMock()
+        html_doc.write_pdf.return_value = b'%PDF-1.4 stub'
+        with patch('weasyprint.HTML', return_value=html_doc), patch('weasyprint.CSS'):
+            return self.client.get(url or self.export_url)
+
+    def test_pdf_export_access(self):
+        cases = [
+            (self.superuser, 200),
+            (self.role_user, 200),
+            (self.regular_user, 403),
+            (None, 302),
+        ]
+        for user, status in cases:
+            with self.subTest(user=getattr(user, 'username', 'anonymous'), status=status):
+                response = self._get_pdf_response(user=user)
+                self.assertEqual(response.status_code, status)
+                if status == 200:
+                    self.assertEqual(response['Content-Type'], 'application/pdf')
+                    self.assertIn('attachment; filename=', response['Content-Disposition'])
+                    self.assertIn('.pdf', response['Content-Disposition'])
+                if status == 302:
+                    self.assertTrue('/login/' in response.url or '/settings/' in response.url)
+
     def test_pdf_export_filename_format(self):
-        """Test that PDF filename is correctly formatted"""
-        self.client.login(username='admin', password='adminpass123')
-        response = self.client.get(reverse('district:council-committees-export-pdf', kwargs={'pk': self.council.pk}))
-        
+        response = self._get_pdf_response(user=self.superuser)
         self.assertEqual(response.status_code, 200)
-        content_disposition = response['Content-Disposition']
-        
-        # View uses filename like "Council_of_Test_Local_Stand_2026-01-31.pdf" or group name + _Stand_ + date
-        self.assertIn('attachment; filename=', content_disposition)
-        self.assertIn('.pdf', content_disposition)
-        self.assertIn('Stand_', content_disposition)
-    
-    def test_pdf_export_committee_ordering(self):
-        """Test that PDF is generated with committees ordered by name"""
-        self.client.login(username='admin', password='adminpass123')
-        response = self.client.get(reverse('district:council-committees-export-pdf', kwargs={'pk': self.council.pk}))
-        
+        disposition = response['Content-Disposition']
+        self.assertIn('attachment; filename=', disposition)
+        self.assertIn('Stand_', disposition)
+        self.assertIn('.pdf', disposition)
+
+    def test_pdf_export_html_content(self):
+        html, context = self._export_html()
+        self.assertEqual(context['group_name'], self.council.name)
+        self.assertIn(self.council.name, html)
+        self.assertIn('Budget Committee', html)
+        self.assertIn('(BC)', html)
+        self.assertIn('Education Committee', html)
+        self.assertIn('John Doe', html)
+        self.assertIn('Jane Smith', html)
+        self.assertIn('Bob Johnson', html)
+        self.assertNotIn('Inactive Committee', html)
+        self.assertNotIn('Inactive Member', html)
+        self.assertLess(html.index('Budget Committee'), html.index('Education Committee'))
+        self.assertLess(html.index('John Doe'), html.index('Jane Smith'))
+
+    def test_pdf_export_no_committees(self):
+        html, context = self._export_html(council=self.empty_council)
+        self.assertEqual(context['total_committees'], 0)
+        self.assertIn('Keine Ausschüsse oder Kommissionen gefunden.', html)
+
+    def test_pdf_export_weasyprint_smoke(self):
+        """One real WeasyPrint render so CI still checks PDF generation."""
+        self.client.force_login(self.superuser)
+        response = self.client.get(self.export_url)
         self.assertEqual(response.status_code, 200)
-        # Verify PDF was generated (committees are ordered by name in the view)
-        pdf_content = response.content
-        self.assertTrue(len(pdf_content) > 0)
-        self.assertTrue(pdf_content.startswith(b'%PDF'))
-    
-    def test_pdf_export_member_ordering(self):
-        """Test that PDF is generated with members ordered by role then name"""
-        self.client.login(username='admin', password='adminpass123')
-        response = self.client.get(reverse('district:council-committees-export-pdf', kwargs={'pk': self.council.pk}))
-        
-        self.assertEqual(response.status_code, 200)
-        # Verify PDF was generated (members are ordered by role then name in the view)
-        pdf_content = response.content
-        self.assertTrue(len(pdf_content) > 0)
-        self.assertTrue(pdf_content.startswith(b'%PDF'))
+        self.assertEqual(response['Content-Type'], 'application/pdf')
+        self.assertTrue(response.content.startswith(b'%PDF'))
+        self.assertGreater(len(response.content), 100)
 
 
 class DistrictEventTests(TestCase):

@@ -1421,4 +1421,10 @@ class UserRemoveViewTests(TestCase):
         url = reverse('user-remove', kwargs={'user_id': self.other.pk})
         response = self.client.post(url, follow=False)
         self.assertEqual(response.status_code, 302)
-        self.assertIn('login', response.url)
+        # LOGIN_URL is /user/settings/ (not Django's default /accounts/login/)
+        self.assertTrue(
+            '/login' in response.url or '/user/settings' in response.url,
+            f'Expected redirect to login or settings, got {response.url}',
+        )
+        self.other.refresh_from_db()
+        self.assertTrue(self.other.is_active)

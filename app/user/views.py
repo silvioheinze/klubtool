@@ -439,12 +439,13 @@ def send_welcome_email(request, user_id):
 
 
 @login_required
-@user_passes_test(lambda u: u.is_superuser)
 @require_POST
 def user_remove_view(request, user_id):
     """
     Set a user's is_active to False (superusers only). Does not delete the account.
     """
+    if not request.user.is_superuser:
+        raise PermissionDenied
     try:
         uid = int(user_id)
     except (TypeError, ValueError):
