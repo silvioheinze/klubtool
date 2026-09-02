@@ -1428,3 +1428,96 @@ class UserRemoveViewTests(TestCase):
         )
         self.other.refresh_from_db()
         self.assertTrue(self.other.is_active)
+
+
+class PasswordlessLoginTests(TestCase):
+    """Passwordless email login: code, magic link, and password fallback."""
+
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(
+            username='signinuser',
+            email='signin@example.com',
+            password='testpass123',
+        )
+
+    def _request_login_code(self, email='signin@example.com'):
+        return self.client.post(
+            reverse('account_request_login_code'),
+            {'email': email},
+        )
+
+    def _extract_code_from_mail(self, msg):
+        import re
+        match = re.search(r'Sign-in code:\s*(\S+)', msg.body)
+        if not match:
+            match = re.search(r'Anmeldecode:\s*(\S+)', msg.body)
+        self.assertIsNotNone(match, msg.body)
+        return match.group(1)
+
+    def _extract_magic_link_from_mail(self, msg):
+        import re
+        match = re.search(r'https?://[^\s]+/user/login/link/[^\s]+', msg.body)
+        self.assertIsNotNone(match, msg.body)
+        return match.group(0)
+
+    def test_settings_shows_email_only_login(self):
+        response = self.client.get(reverse('user-settings'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'name="email"')
+        self.assertNotContains(response, 'name="password"')
+        self.assertContains(response, reverse('account_login'))
+
+    def test_request_code_sends_mail(self):
+        self._request_login_code()
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn('signin@example.com', mail.outbox[0].to)
+        self.assertIn('/user/login/link/', mail.outbox[0].body)
+
+    def test_confirm_code_logs_in(self):
+        response = self._request_login_code()
+        self.assertRedirects(response, reverse('account_confirm_login_code'))
+        code = self._extract_code_from_mail(mail.outbox[0])
+        response = self.client.post(
+            reverse('account_confirm_login_code'),
+            {'code': code},
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('_auth_user_id', self.client.session)
+
+    def test_magic_link_logs_in_once(self):
+        self._request_login_code()
+        link = self._extract_magic_link_from_mail(mail.outbox[0])
+        response = self.client.get(link)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('_auth_user_id', self.client.session)
+
+        self.client.logout()
+        response = self.client.get(link, follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn('_auth_user_id', self.client.session)
+
+    def test_invalid_magic_link_shows_message(self):
+        url = reverse('user-login-link', kwargs={'token': 'not-a-valid-token'})
+        response = self.client.get(url, follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn('_auth_user_id', self.client.session)
+
+    def test_unknown_email_does_not_404(self):
+        response = self._request_login_code(email='unknown@example.com')
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('login/code/confirm', response.url)
+
+    def test_password_login_still_works(self):
+        response = self.client.post(
+            reverse('account_login'),
+            {'login': 'signin@example.com', 'password': 'testpass123'},
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('_auth_user_id', self.client.session)
+
+    def test_homepage_shows_email_only_login(self):
+        response = self.client.get(reverse('home'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'name="email"')
+        self.assertNotContains(response, 'name="password"')
