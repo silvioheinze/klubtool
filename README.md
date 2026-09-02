@@ -15,7 +15,7 @@ A modern Django-based political group management system built with Docker, Postg
 ## 🛠️ Tech Stack
 
 - **Backend**: Django 6.0
-- **Database**: PostgreSQL 15
+- **Database**: PostgreSQL 17
 - **Web Server**: Nginx 1.25
 - **Containerization**: Docker & Docker Compose
 - **Authentication**: django-allauth
@@ -182,7 +182,8 @@ klubtool/
 │   └── manage.py                # Django management script
 ├── .github/                     # GitHub configuration
 │   └── workflows/               # GitHub Actions
-│       └── docker-build.yml     # Docker build workflow
+│       ├── docker-build.yml     # Docker build workflow
+│       └── test.yml             # Django test workflow
 ├── nginx/                       # Nginx configuration
 │   ├── Dockerfile               # Nginx Dockerfile
 │   └── nginx.conf               # Nginx configuration
