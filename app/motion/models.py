@@ -2,7 +2,7 @@ from django.db import models
 from django.contrib.auth import get_user_model
 from django.utils.translation import gettext_lazy as _
 from auditlog.registry import auditlog
-from local.models import Session, Party
+from district.models import Session, Party
 from group.models import Group
 
 User = get_user_model()
@@ -68,7 +68,7 @@ class Motion(models.Model):
     
     # Relationships
     session = models.ForeignKey(Session, on_delete=models.CASCADE, related_name='motions', help_text="Session where this motion will be presented")
-    committee = models.ForeignKey('local.Committee', on_delete=models.CASCADE, related_name='motions', blank=True, null=True, help_text="Committee this motion is assigned to (optional)")
+    committee = models.ForeignKey('district.Committee', on_delete=models.CASCADE, related_name='motions', blank=True, null=True, help_text="Committee this motion is assigned to (optional)")
     group = models.ForeignKey(Group, on_delete=models.CASCADE, related_name='motions', help_text="Group proposing this motion")
     parties = models.ManyToManyField(Party, related_name='motions', blank=True, help_text="Parties supporting this motion")
     interventions = models.ManyToManyField(User, related_name='motion_interventions', blank=True, help_text=_("Wortmeldung: Users from the corresponding group who can speak in session"))
@@ -199,7 +199,7 @@ class MotionVote(models.Model):
     
     # New fields for multiple votes support
     vote_session = models.ForeignKey(
-        'local.Session',
+        'district.Session',
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
@@ -311,7 +311,7 @@ class MotionVote(models.Model):
         """Validate the vote data"""
         from django.core.exceptions import ValidationError
         from django.utils import timezone
-        from local.models import Term, TermSeatDistribution
+        from district.models import Term, TermSeatDistribution
         
         # Get the motion's session and term (use motion_id to avoid RelatedObjectDoesNotExist)
         if not self.motion_id:
@@ -328,8 +328,8 @@ class MotionVote(models.Model):
             return
         term = session.term
         
-        # If session doesn't have a term, try to get current term from local
-        if not term and session.council and session.council.local:
+        # If session doesn't have a term, try to get current term from district
+        if not term and session.council and session.council.district:
             today = timezone.now().date()
             term = Term.objects.filter(
                 start_date__lte=today,
@@ -341,7 +341,7 @@ class MotionVote(models.Model):
         # Use party_id to avoid RelatedObjectDoesNotExist when instance is unsaved
         if term and self.party_id:
             try:
-                from local.models import Party
+                from district.models import Party
                 party = Party.objects.get(pk=self.party_id)
                 seat_distribution = TermSeatDistribution.objects.get(
                     term=term,
@@ -454,7 +454,7 @@ class MotionStatus(models.Model):
     
     motion = models.ForeignKey(Motion, on_delete=models.CASCADE, related_name='status_history')
     status = models.CharField(max_length=20, choices=Motion.STATUS_CHOICES)
-    committee = models.ForeignKey('local.Committee', on_delete=models.SET_NULL, null=True, blank=True, related_name='motion_status_changes', help_text="Committee when status is 'refer_to_committee' or 'voted_in_committee'")
+    committee = models.ForeignKey('district.Committee', on_delete=models.SET_NULL, null=True, blank=True, related_name='motion_status_changes', help_text="Committee when status is 'refer_to_committee' or 'voted_in_committee'")
     session = models.ForeignKey(Session, on_delete=models.SET_NULL, null=True, blank=True, related_name='motion_status_changes', help_text="Session when status is 'tabled'")
     changed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='motion_status_changes')
     changed_at = models.DateTimeField(auto_now_add=True)
@@ -503,7 +503,7 @@ class MotionGroupDecision(models.Model):
     
     motion = models.ForeignKey(Motion, on_delete=models.CASCADE, related_name='group_decisions')
     decision = models.CharField(max_length=20, choices=DECISION_CHOICES)
-    committee = models.ForeignKey('local.Committee', on_delete=models.SET_NULL, null=True, blank=True, related_name='motion_group_decisions', help_text="Committee when decision is 'refer_to_committee'")
+    committee = models.ForeignKey('district.Committee', on_delete=models.SET_NULL, null=True, blank=True, related_name='motion_group_decisions', help_text="Committee when decision is 'refer_to_committee'")
     description = models.TextField(blank=True, help_text="Description of the group decision")
     decision_time = models.DateTimeField(help_text="When the decision was made")
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='motion_group_decisions_created')
@@ -640,7 +640,7 @@ class InquiryStatus(models.Model):
     
     inquiry = models.ForeignKey(Inquiry, on_delete=models.CASCADE, related_name='status_history')
     status = models.CharField(max_length=20, choices=Inquiry.STATUS_CHOICES)
-    committee = models.ForeignKey('local.Committee', on_delete=models.SET_NULL, null=True, blank=True, related_name='inquiry_status_changes', help_text="Committee when status is 'refer_to_committee'")
+    committee = models.ForeignKey('district.Committee', on_delete=models.SET_NULL, null=True, blank=True, related_name='inquiry_status_changes', help_text="Committee when status is 'refer_to_committee'")
     changed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='inquiry_status_changes')
     changed_at = models.DateTimeField(auto_now_add=True)
     reason = models.TextField(blank=True, help_text="Reason for the status change")

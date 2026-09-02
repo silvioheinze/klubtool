@@ -1,0 +1,3065 @@
+from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView, FormView, View
+from django.contrib.auth import get_user_model
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.urls import reverse_lazy, reverse
+from django.db.models import Q, Prefetch, Case, When, Value, IntegerField
+from django.shortcuts import render, redirect, get_object_or_404
+from django.utils import timezone
+from django.http import JsonResponse, HttpResponse
+from django.core.exceptions import PermissionDenied
+from django.core.paginator import Paginator
+from django.views.decorators.http import require_http_methods, require_POST
+from django.utils.translation import gettext_lazy as _
+from django.utils.http import url_has_allowed_host_and_scheme
+import json
+
+from .models import (
+    District, Term, Council, TermSeatDistribution, Party, Session, Committee,
+    CommitteeMeeting, CommitteeMeetingAttachment, CommitteeMember,
+    CommitteeParticipationSubstitute, SessionAttachment, SessionPresence,
+    SessionExcuse, DistrictEvent, DistrictEventParticipation,
+)
+from .forms import (
+    DistrictForm, DistrictFilterForm, CouncilForm, CouncilFilterForm, TermForm,
+    TermFilterForm, CouncilNameForm, TermSeatDistributionForm, PartyForm,
+    PartyFilterForm, SessionForm, SessionFilterForm, CommitteeForm,
+    CommitteeFilterForm, CommitteeMeetingForm, CommitteeMemberForm,
+    CommitteeMemberFilterForm, SessionAttachmentForm,
+    CommitteeMeetingAttachmentForm, SessionInvitationForm, SessionMinutesForm,
+    CommitteeParticipationSubstituteForm, DistrictEventForm,
+)
+
+
+class DistrictListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
+    """View for listing all District objects"""
+    model = District
+    context_object_name = 'districts'
+    template_name = 'district/district_list.html'
+    paginate_by = 20
+
+    def test_func(self):
+        """Check if user has permission to view District objects"""
+        return self.request.user.is_superuser
+
+    def get_queryset(self):
+        """Filter queryset based on search parameters"""
+        queryset = District.objects.all().order_by('name')
+        
+        # Filter by search query
+        search_query = self.request.GET.get('search', '')
+        if search_query:
+            queryset = queryset.filter(
+                Q(name__icontains=search_query) |
+                Q(code__icontains=search_query) |
+                Q(description__icontains=search_query)
+            )
+        
+        # Filter by status
+        status_filter = self.request.GET.get('status', '')
+        if status_filter == 'active':
+            queryset = queryset.filter(is_active=True)
+        elif status_filter == 'inactive':
+            queryset = queryset.filter(is_active=False)
+        
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        """Add filter form to context"""
+        context = super().get_context_data(**kwargs)
+        context['search_query'] = self.request.GET.get('search', '')
+        context['status_filter'] = self.request.GET.get('status', '')
+        return context
+
+
+class DistrictDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
+    """View for displaying a single District object"""
+    model = District
+    context_object_name = 'district'
+    template_name = 'district/district_detail.html'
+
+    def test_func(self):
+        """Allow superusers or group members whose group's party belongs to this local."""
+        if self.request.user.is_superuser:
+            return True
+        local_pk = self.kwargs.get('pk')
+        if local_pk is None:
+            return False
+        try:
+            local_pk = int(local_pk)
+        except (TypeError, ValueError):
+            return False
+        # User can access local if the local's council is in their accessible councils
+        council_id = Council.objects.filter(district_id=local_pk).values_list('pk', flat=True).first()
+        if council_id is None:
+            return False
+        return council_id in _get_user_accessible_council_ids(self.request.user)
+
+    def get_context_data(self, **kwargs):
+        """Add terms, parties, and sessions data to context"""
+        context = super().get_context_data(**kwargs)
+        # Show edit/add/delete buttons only to users who have access (same checks as Update/Create/Delete views)
+        context['can_edit_local'] = self.request.user.is_superuser
+        context['can_add_party'] = self.request.user.is_superuser
+        context['can_add_term'] = self.request.user.is_superuser
+        context['can_view_party'] = self.request.user.is_superuser
+        context['can_edit_party'] = self.request.user.is_superuser
+        context['can_delete_party'] = self.request.user.is_superuser
+        context['can_manage_terms'] = self.request.user.is_superuser  # View, Edit, Seats (TermDetailView, TermUpdateView, TermSeatDistributionView)
+
+        # Get all active terms (not just those connected through seat distributions)
+        # This allows users to see and configure terms even before creating parties
+        context['terms'] = Term.objects.filter(is_active=True).order_by('-start_date')
+
+        context['parties'] = self.object.parties.filter(is_active=True).order_by('name')
+        
+        # Get the current term and its seat distribution
+        from django.utils import timezone
+        today = timezone.now().date()
+        current_term = Term.objects.filter(
+            start_date__lte=today,
+            end_date__gte=today,
+            is_active=True
+        ).first()
+        
+        if current_term:
+            context['current_term'] = current_term
+            # Get seat distributions for parties in this local
+            context['current_term_seat_distributions'] = current_term.seat_distributions.filter(
+                party__district=self.object
+            ).select_related('party').order_by('-seats')
+        
+        # Get the last 3 sessions for the council
+        if self.object.council:
+            context['recent_sessions'] = self.object.council.sessions.filter(is_active=True).order_by('-scheduled_date')[:3]
+        else:
+            context['recent_sessions'] = []
+
+        context['can_manage_district_events'] = user_can_manage_district_events(
+            self.request.user, self.object,
+        )
+        local_events = DistrictEvent.objects.filter(
+            district=self.object,
+            is_active=True,
+            scheduled_date__gte=timezone.now(),
+        ).order_by('scheduled_date')
+        participations = {
+            p.event_id: p.will_attend
+            for p in DistrictEventParticipation.objects.filter(
+                user=self.request.user,
+                event__in=local_events,
+            )
+        }
+        context['district_events_data'] = [
+            {
+                'event': event,
+                'rsvp_status': (
+                    'attending' if participations.get(event.pk)
+                    else 'declined' if event.pk in participations
+                    else 'none'
+                ),
+            }
+            for event in local_events
+        ]
+
+        return context
+
+
+class DistrictCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
+    """View for creating a new District object"""
+    model = District
+    form_class = DistrictForm
+    template_name = 'district/district_form.html'
+    success_url = reverse_lazy('district:district-list')
+
+    def test_func(self):
+        """Check if user has permission to create District objects"""
+        return self.request.user.is_superuser
+
+    def get_context_data(self, **kwargs):
+        """Add context information for URL parameters"""
+        context = super().get_context_data(**kwargs)
+        
+        # Check for local parameter in URL
+        district_id = self.request.GET.get('district')
+        if district_id:
+            try:
+                district_obj = District.objects.get(pk=district_id)
+                context['parent_district'] = district_obj
+            except District.DoesNotExist:
+                pass
+        
+        return context
+
+    def form_valid(self, form):
+        """Display success message on form validation"""
+        messages.success(self.request, f"District '{form.instance.name}' created successfully with a default council.")
+        return super().form_valid(form)
+
+
+class DistrictUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
+    """View for updating an existing District object"""
+    model = District
+    form_class = DistrictForm
+    template_name = 'district/district_form.html'
+    success_url = reverse_lazy('district:district-list')
+
+    def test_func(self):
+        """Check if user has permission to edit District objects"""
+        return self.request.user.is_superuser
+
+    def form_valid(self, form):
+        """Display success message on form validation"""
+        messages.success(self.request, f"District '{form.instance.name}' updated successfully.")
+        return super().form_valid(form)
+
+
+class DistrictDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
+    """View for deleting a District object"""
+    model = District
+    template_name = 'district/district_confirm_delete.html'
+    success_url = reverse_lazy('district:district-list')
+
+    def test_func(self):
+        """Check if user has permission to delete District objects"""
+        return self.request.user.is_superuser
+
+    def delete(self, request, *args, **kwargs):
+        """Display success message on deletion"""
+        local_obj = self.get_object()
+        messages.success(request, f"District '{local_obj.name}' deleted successfully.")
+        return super().delete(request, *args, **kwargs)
+
+
+class CouncilNameUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
+    """View for updating only the council name"""
+    model = Council
+    form_class = CouncilNameForm
+    template_name = 'district/council_name_form.html'
+
+    def test_func(self):
+        """Check if user has permission to edit Council objects"""
+        return self.request.user.is_superuser
+
+    def form_valid(self, form):
+        """Display success message and save the form"""
+        response = super().form_valid(form)
+        messages.success(self.request, f"Council name updated to '{form.instance.name}'.")
+        return response
+
+    def get_success_url(self):
+        """Redirect back to the local detail page"""
+        return reverse_lazy('district:district-detail', kwargs={'pk': self.object.district.pk})
+
+
+# Council Views
+class CouncilListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
+    """View for listing all Council objects"""
+    model = Council
+    context_object_name = 'councils'
+    template_name = 'district/council_list.html'
+    paginate_by = 20
+
+    def test_func(self):
+        """Check if user has permission to view Council objects"""
+        return self.request.user.is_superuser
+
+    def get_queryset(self):
+        """Filter queryset based on search parameters"""
+        queryset = Council.objects.select_related('district').all().order_by('name')
+        
+        # Filter by search query
+        search_query = self.request.GET.get('search', '')
+        if search_query:
+            queryset = queryset.filter(
+                Q(name__icontains=search_query) |
+                Q(description__icontains=search_query) |
+                Q(district__name__icontains=search_query)
+            )
+        
+        # Filter by local
+        district_filter = self.request.GET.get('district', '')
+        if district_filter:
+            queryset = queryset.filter(district_id=district_filter)
+        
+        # Filter by status
+        status_filter = self.request.GET.get('status', '')
+        if status_filter == 'active':
+            queryset = queryset.filter(is_active=True)
+        elif status_filter == 'inactive':
+            queryset = queryset.filter(is_active=False)
+        
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        """Add filter form to context"""
+        context = super().get_context_data(**kwargs)
+        context['search_query'] = self.request.GET.get('search', '')
+        context['district_filter'] = self.request.GET.get('district', '')
+        context['status_filter'] = self.request.GET.get('status', '')
+        context['districts'] = District.objects.filter(is_active=True)
+        return context
+
+
+def _get_user_accessible_council_ids(user):
+    """Return set of council PKs the user can access (via group membership: group's party belongs to local with that council)."""
+    if user.is_superuser:
+        return set(Council.objects.filter(is_active=True).values_list('pk', flat=True))
+    from group.models import GroupMember
+    return set(
+        GroupMember.objects.filter(
+            user=user,
+            is_active=True,
+            group__party__isnull=False,
+            group__party__district__isnull=False,
+        ).exclude(
+            group__party__district__council__isnull=True,
+        ).values_list('group__party__district__council__pk', flat=True).distinct()
+    )
+
+
+def user_is_district_member(user, district):
+    """True if user is a superuser or active group member in this district."""
+    if user.is_superuser:
+        return True
+    council_id = Council.objects.filter(district_id=district.pk).values_list('pk', flat=True).first()
+    if council_id is None:
+        return False
+    return council_id in _get_user_accessible_council_ids(user)
+
+
+def user_can_manage_district_events(user, district):
+    """True if user can create/edit/delete district events (superuser or group manager in district)."""
+    if user.is_superuser:
+        return True
+    from group.models import Group
+    groups = Group.objects.filter(
+        party__district=district,
+        is_active=True,
+        party__is_active=True,
+    )
+    return any(group.can_user_manage_group(user) for group in groups)
+
+
+COUNCIL_SESSIONS_PER_PAGE = 10
+
+
+def _council_sessions_queryset(council):
+    """Active sessions for council detail / partial (newest first, minimal fields)."""
+    return (
+        council.sessions.filter(is_active=True)
+        .order_by('-scheduled_date')
+        .only('pk', 'title', 'status')
+    )
+
+
+@login_required
+def council_sessions_partial(request, pk):
+    """
+    HTML fragment for council session list + pagination (AJAX).
+    Non-AJAX requests redirect to council detail.
+    """
+    if request.headers.get('X-Requested-With') != 'XMLHttpRequest':
+        return redirect('district:council-detail', pk=pk)
+
+    council = get_object_or_404(Council, pk=pk)
+    if not request.user.is_superuser and pk not in _get_user_accessible_council_ids(request.user):
+        raise PermissionDenied
+
+    paginator = Paginator(_council_sessions_queryset(council), COUNCIL_SESSIONS_PER_PAGE)
+    page_obj = paginator.get_page(request.GET.get('page', 1))
+
+    return render(
+        request,
+        'district/council_sessions_list_partial.html',
+        {
+            'council': council,
+            'sessions': page_obj.object_list,
+            'sessions_page_obj': page_obj,
+            'sessions_show_pagination': paginator.count > COUNCIL_SESSIONS_PER_PAGE,
+            'council_sessions_partial_url': reverse('district:council-sessions-partial', kwargs={'pk': pk}),
+        },
+    )
+
+
+class CouncilDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
+    """View for displaying a single Council object"""
+    model = Council
+    context_object_name = 'council'
+    template_name = 'district/council_detail.html'
+
+    def test_func(self):
+        """Allow superusers or users who are group members in a group whose party's local has this council."""
+        if self.request.user.is_superuser:
+            return True
+        council_pk = self.kwargs.get('pk')
+        if council_pk is None:
+            return False
+        try:
+            council_pk = int(council_pk)
+        except (TypeError, ValueError):
+            return False
+        return council_pk in _get_user_accessible_council_ids(self.request.user)
+
+    def get_context_data(self, **kwargs):
+        """Add sessions and committees data to context"""
+        context = super().get_context_data(**kwargs)
+        # Show edit/add/export buttons only to users who have access (same checks as Update/Create/Export views)
+        context['can_edit_council'] = self.request.user.is_superuser
+        context['can_add_session'] = self.request.user.is_superuser
+        context['can_add_committee'] = self.request.user.is_superuser
+        context['can_export_committees_pdf'] = (
+            self.request.user.is_superuser
+            or self.request.user.has_role_permission('session.view')
+            or self.object.pk in _get_user_accessible_council_ids(self.request.user)
+        )
+
+        # Paginated active sessions (newest first); pagination UI only if more than one page
+        sessions_qs = _council_sessions_queryset(self.object)
+        paginator = Paginator(sessions_qs, COUNCIL_SESSIONS_PER_PAGE)
+        sessions_page_obj = paginator.get_page(1)
+        context['sessions'] = sessions_page_obj.object_list
+        context['sessions_page_obj'] = sessions_page_obj
+        context['sessions_show_pagination'] = paginator.count > COUNCIL_SESSIONS_PER_PAGE
+        context['council_sessions_partial_url'] = reverse(
+            'district:council-sessions-partial', kwargs={'pk': self.object.pk}
+        )
+        context['total_sessions'] = paginator.count
+        # Get committees for this council (name + link only on council detail)
+        context['committees'] = (
+            self.object.committees.filter(is_active=True)
+            .order_by('name')
+            .only('pk', 'name')
+        )
+        context['total_committees'] = self.object.committees.count()
+        
+        # Get the current term and its seat distribution
+        from django.utils import timezone
+        today = timezone.now().date()
+        current_term = Term.objects.filter(
+            start_date__lte=today,
+            end_date__gte=today,
+            is_active=True
+        ).first()
+        
+        if current_term:
+            context['current_term'] = current_term
+            # Get seat distributions for parties in this council's local
+            if self.object.district:
+                context['current_term_seat_distributions'] = current_term.seat_distributions.filter(
+                    party__district=self.object.district
+                ).select_related('party').order_by('-seats')
+            else:
+                context['current_term_seat_distributions'] = []
+        else:
+            context['current_term'] = None
+            context['current_term_seat_distributions'] = []
+        
+        return context
+
+
+class CouncilCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
+    """View for creating a new Council object"""
+    model = Council
+    form_class = CouncilForm
+    template_name = 'district/council_form.html'
+    success_url = reverse_lazy('district:council-list')
+
+    def test_func(self):
+        """Check if user has permission to create Council objects"""
+        return self.request.user.is_superuser
+
+    def get_initial(self):
+        """Set initial local if provided in URL"""
+        initial = super().get_initial()
+        district_id = self.request.GET.get('district')
+        if district_id:
+            try:
+                district_obj = District.objects.get(pk=district_id)
+                initial['district'] = district_obj
+            except District.DoesNotExist:
+                pass
+        return initial
+
+    def form_valid(self, form):
+        """Display success message on form validation"""
+        messages.success(self.request, f"Council '{form.instance.name}' created successfully.")
+        return super().form_valid(form)
+
+
+class CouncilUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
+    """View for updating an existing Council object"""
+    model = Council
+    form_class = CouncilForm
+    template_name = 'district/council_form.html'
+    success_url = reverse_lazy('district:council-list')
+
+    def test_func(self):
+        """Check if user has permission to edit Council objects"""
+        return self.request.user.is_superuser
+
+    def form_valid(self, form):
+        """Display success message on form validation"""
+        messages.success(self.request, f"Council '{form.instance.name}' updated successfully.")
+        return super().form_valid(form)
+
+
+class CouncilDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
+    """View for deleting a Council object"""
+    model = Council
+    template_name = 'district/council_confirm_delete.html'
+    success_url = reverse_lazy('district:council-list')
+
+    def test_func(self):
+        """Check if user has permission to delete Council objects"""
+        return self.request.user.is_superuser
+
+    def delete(self, request, *args, **kwargs):
+        """Display success message on deletion"""
+        council_obj = self.get_object()
+        messages.success(request, f"Council '{council_obj.name}' deleted successfully.")
+        return super().delete(request, *args, **kwargs)
+
+
+# Term Views
+class TermListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
+    """View for listing all Term objects"""
+    model = Term
+    context_object_name = 'terms'
+    template_name = 'district/term_list.html'
+    paginate_by = 20
+
+    def test_func(self):
+        """Check if user has permission to view Term objects"""
+        return self.request.user.is_superuser
+
+    def get_queryset(self):
+        """Filter queryset based on search parameters"""
+        queryset = Term.objects.all().order_by('-start_date')
+        
+        # Filter by local
+        district_filter = self.request.GET.get('district', '')
+        if district_filter:
+            # Filter terms that have seat distributions with parties belonging to this local
+            queryset = queryset.filter(
+                seat_distributions__party__district_id=district_filter
+            ).distinct()
+        
+        # Filter by search query
+        search_query = self.request.GET.get('search', '')
+        if search_query:
+            queryset = queryset.filter(
+                Q(name__icontains=search_query) |
+                Q(description__icontains=search_query)
+            )
+        
+        # Filter by status
+        status_filter = self.request.GET.get('status', '')
+        if status_filter == 'active':
+            queryset = queryset.filter(is_active=True)
+        elif status_filter == 'inactive':
+            queryset = queryset.filter(is_active=False)
+        
+        # Filter by current status
+        current_filter = self.request.GET.get('is_current', '')
+        if current_filter == 'True':
+            queryset = queryset.filter(start_date__lte=timezone.now().date(), end_date__gte=timezone.now().date())
+        elif current_filter == 'False':
+            queryset = queryset.exclude(start_date__lte=timezone.now().date(), end_date__gte=timezone.now().date())
+        
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        """Add filter form to context"""
+        context = super().get_context_data(**kwargs)
+        context['search_query'] = self.request.GET.get('search', '')
+        context['status_filter'] = self.request.GET.get('status', '')
+        context['current_filter'] = self.request.GET.get('is_current', '')
+        context['district_filter'] = self.request.GET.get('district', '')
+        
+        # Add local object to context if filtering by local
+        district_filter = self.request.GET.get('district', '')
+        if district_filter:
+            try:
+                from .models import District
+                context['filtered_district'] = District.objects.get(pk=district_filter)
+            except District.DoesNotExist:
+                context['filtered_district'] = None
+        
+        return context
+
+
+class TermDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
+    """View for displaying a single Term object"""
+    model = Term
+    context_object_name = 'term'
+    template_name = 'district/term_detail.html'
+
+    def test_func(self):
+        """Check if user has permission to view Term objects"""
+        return self.request.user.is_superuser
+
+
+class TermCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
+    """View for creating a new Term object"""
+    model = Term
+    form_class = TermForm
+    template_name = 'district/term_form.html'
+    success_url = reverse_lazy('district:term-list')
+
+    def test_func(self):
+        """Check if user has permission to create Term objects"""
+        return self.request.user.is_superuser
+
+    def form_valid(self, form):
+        """Display success message on form validation"""
+        messages.success(self.request, f"Term '{form.instance.name}' created successfully.")
+        return super().form_valid(form)
+
+
+class TermUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
+    """View for updating an existing Term object"""
+    model = Term
+    form_class = TermForm
+    template_name = 'district/term_form.html'
+    success_url = reverse_lazy('district:term-list')
+
+    def test_func(self):
+        """Check if user has permission to edit Term objects"""
+        return self.request.user.is_superuser
+
+    def form_valid(self, form):
+        """Display success message on form validation"""
+        messages.success(self.request, f"Term '{form.instance.name}' updated successfully.")
+        return super().form_valid(form)
+
+
+class TermDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
+    """View for deleting a Term object"""
+    model = Term
+    template_name = 'district/term_confirm_delete.html'
+    success_url = reverse_lazy('district:term-list')
+
+    def test_func(self):
+        """Check if user has permission to delete Term objects"""
+        return self.request.user.is_superuser
+
+    def delete(self, request, *args, **kwargs):
+        """Display success message on deletion"""
+        term_obj = self.get_object()
+        messages.success(request, f"Term '{term_obj.name}' deleted successfully.")
+        return super().delete(request, *args, **kwargs)
+
+
+# TermSeatDistribution Views
+class TermSeatDistributionListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
+    """View for listing all TermSeatDistribution objects"""
+    model = TermSeatDistribution
+    context_object_name = 'seat_distributions'
+    template_name = 'district/term_seat_distribution_list.html'
+    paginate_by = 20
+
+    def test_func(self):
+        """Check if user has permission to view TermSeatDistribution objects"""
+        return self.request.user.is_superuser
+
+    def get_queryset(self):
+        """Filter queryset based on search parameters"""
+        queryset = TermSeatDistribution.objects.select_related('term', 'party').all().order_by('-term__start_date', '-seats')
+        
+        # Filter by term
+        term_filter = self.request.GET.get('term', '')
+        if term_filter:
+            queryset = queryset.filter(term_id=term_filter)
+        
+        # Filter by party
+        party_filter = self.request.GET.get('party', '')
+        if party_filter:
+            queryset = queryset.filter(party_id=party_filter)
+        
+        # Filter by seats range
+        min_seats = self.request.GET.get('min_seats', '')
+        if min_seats:
+            queryset = queryset.filter(seats__gte=min_seats)
+        
+        max_seats = self.request.GET.get('max_seats', '')
+        if max_seats:
+            queryset = queryset.filter(seats__lte=max_seats)
+        
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        """Add filter form to context"""
+        context = super().get_context_data(**kwargs)
+        context['term_filter'] = self.request.GET.get('term', '')
+        context['party_filter'] = self.request.GET.get('party', '')
+        context['min_seats'] = self.request.GET.get('min_seats', '')
+        context['max_seats'] = self.request.GET.get('max_seats', '')
+        context['terms'] = Term.objects.filter(is_active=True)
+        context['parties'] = Party.objects.filter(is_active=True)
+        return context
+
+
+class TermSeatDistributionDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
+    """View for displaying a single TermSeatDistribution object"""
+    model = TermSeatDistribution
+    context_object_name = 'seat_distribution'
+    template_name = 'district/term_seat_distribution_detail.html'
+
+    def test_func(self):
+        """Check if user has permission to view TermSeatDistribution objects"""
+        return self.request.user.is_superuser
+
+
+class TermSeatDistributionCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
+    """View for creating a new TermSeatDistribution object"""
+    model = TermSeatDistribution
+    form_class = TermSeatDistributionForm
+    template_name = 'district/term_seat_distribution_form.html'
+    success_url = reverse_lazy('district:term-seat-distribution-list')
+
+    def test_func(self):
+        """Check if user has permission to create TermSeatDistribution objects"""
+        return self.request.user.is_superuser
+
+    def get_initial(self):
+        """Set initial term if provided in URL"""
+        initial = super().get_initial()
+        term_id = self.request.GET.get('term')
+        if term_id:
+            try:
+                term = Term.objects.get(pk=term_id)
+                initial['term'] = term.pk
+            except Term.DoesNotExist:
+                pass
+        return initial
+
+    def form_valid(self, form):
+        """Display success message on form validation"""
+        messages.success(self.request, f"Seat distribution for {form.instance.party.name} in {form.instance.term.name} created successfully.")
+        return super().form_valid(form)
+
+
+class TermSeatDistributionUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
+    """View for updating an existing TermSeatDistribution object"""
+    model = TermSeatDistribution
+    form_class = TermSeatDistributionForm
+    template_name = 'district/term_seat_distribution_form.html'
+    success_url = reverse_lazy('district:term-seat-distribution-list')
+
+    def test_func(self):
+        """Check if user has permission to edit TermSeatDistribution objects"""
+        return self.request.user.is_superuser
+
+    def form_valid(self, form):
+        """Display success message on form validation"""
+        messages.success(self.request, f"Seat distribution for {form.instance.party.name} in {form.instance.term.name} updated successfully.")
+        return super().form_valid(form)
+
+
+class TermSeatDistributionDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
+    """View for deleting a TermSeatDistribution object"""
+    model = TermSeatDistribution
+    template_name = 'district/term_seat_distribution_confirm_delete.html'
+    success_url = reverse_lazy('district:term-seat-distribution-list')
+
+    def test_func(self):
+        """Check if user has permission to delete TermSeatDistribution objects"""
+        return self.request.user.is_superuser
+
+    def delete(self, request, *args, **kwargs):
+        """Display success message on deletion"""
+        seat_distribution_obj = self.get_object()
+        messages.success(request, f"Seat distribution for {seat_distribution_obj.party.name} in {seat_distribution_obj.term.name} deleted successfully.")
+        return super().delete(request, *args, **kwargs)
+
+
+class TermSeatDistributionView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
+    """View for displaying seat distribution for a specific term"""
+    model = Term
+    context_object_name = 'term'
+    template_name = 'district/term_seat_distribution.html'
+
+    def test_func(self):
+        """Check if user has permission to view Term objects"""
+        return self.request.user.is_superuser
+
+    def get_context_data(self, **kwargs):
+        """Add seat distributions to context"""
+        context = super().get_context_data(**kwargs)
+        context['seat_distributions'] = self.object.seat_distributions.select_related('party').all().order_by('-seats')
+        context['parties'] = Party.objects.filter(is_active=True)
+        return context
+
+
+# Party Views
+class PartyListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
+    """View for listing all Party objects"""
+    model = Party
+    context_object_name = 'parties'
+    template_name = 'district/party_list.html'
+    paginate_by = 20
+
+    def test_func(self):
+        """Check if user has permission to view Party objects"""
+        return self.request.user.is_superuser
+
+    def get_queryset(self):
+        """Filter queryset based on search parameters"""
+        queryset = Party.objects.select_related('district').all().order_by('name')
+        
+        # Filter by search query
+        search_query = self.request.GET.get('search', '')
+        if search_query:
+            queryset = queryset.filter(
+                Q(name__icontains=search_query) |
+                Q(short_name__icontains=search_query) |
+                Q(description__icontains=search_query) |
+                Q(district__name__icontains=search_query)
+            )
+        
+        # Filter by local
+        district_filter = self.request.GET.get('district', '')
+        if district_filter:
+            queryset = queryset.filter(district_id=district_filter)
+        
+        # Filter by status
+        status_filter = self.request.GET.get('status', '')
+        if status_filter == 'active':
+            queryset = queryset.filter(is_active=True)
+        elif status_filter == 'inactive':
+            queryset = queryset.filter(is_active=False)
+        
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        """Add filter form to context"""
+        context = super().get_context_data(**kwargs)
+        context['search_query'] = self.request.GET.get('search', '')
+        context['district_filter'] = self.request.GET.get('district', '')
+        context['status_filter'] = self.request.GET.get('status', '')
+        context['districts'] = District.objects.filter(is_active=True)
+        return context
+
+
+class PartyDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
+    """View for displaying a single Party object"""
+    model = Party
+    context_object_name = 'party'
+    template_name = 'district/party_detail.html'
+
+    def test_func(self):
+        """Check if user has permission to view Party objects"""
+        return self.request.user.is_superuser
+
+
+class PartyCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
+    """View for creating a new Party object"""
+    model = Party
+    form_class = PartyForm
+    template_name = 'district/party_form.html'
+    success_url = reverse_lazy('district:party-list')
+
+    def test_func(self):
+        """Check if user has permission to create Party objects"""
+        return self.request.user.is_superuser
+
+    def get_initial(self):
+        """Set initial local if provided in URL"""
+        initial = super().get_initial()
+        district_id = self.request.GET.get('district')
+        if district_id:
+            try:
+                district_obj = District.objects.get(pk=district_id)
+                initial['district'] = district_obj.pk
+            except District.DoesNotExist:
+                pass
+        return initial
+
+    def get_context_data(self, **kwargs):
+        """Add context information for URL parameters"""
+        context = super().get_context_data(**kwargs)
+        
+        # Check for local parameter in URL
+        district_id = self.request.GET.get('district')
+        if district_id:
+            try:
+                district_obj = District.objects.get(pk=district_id)
+                context['parent_district'] = district_obj
+            except District.DoesNotExist:
+                pass
+        
+        return context
+
+    def get_success_url(self):
+        """Redirect to local detail page if local parameter is provided"""
+        district_id = self.request.GET.get('district')
+        if district_id:
+            try:
+                district_obj = District.objects.get(pk=district_id)
+                return reverse('district:district-detail', kwargs={'pk': district_obj.pk})
+            except District.DoesNotExist:
+                pass
+        return super().get_success_url()
+
+    def form_valid(self, form):
+        """Display success message on form validation"""
+        messages.success(self.request, f"Party '{form.instance.name}' created successfully.")
+        return super().form_valid(form)
+
+
+class PartyUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
+    """View for updating an existing Party object"""
+    model = Party
+    form_class = PartyForm
+    template_name = 'district/party_form.html'
+    success_url = reverse_lazy('district:party-list')
+
+    def test_func(self):
+        """Check if user has permission to edit Party objects"""
+        return self.request.user.is_superuser
+
+    def form_valid(self, form):
+        """Display success message on form validation"""
+        messages.success(self.request, f"Party '{form.instance.name}' updated successfully.")
+        return super().form_valid(form)
+
+
+class PartyDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
+    """View for deleting a Party object"""
+    model = Party
+    template_name = 'district/party_confirm_delete.html'
+    success_url = reverse_lazy('district:party-list')
+
+    def test_func(self):
+        """Check if user has permission to delete Party objects"""
+        return self.request.user.is_superuser
+
+    def delete(self, request, *args, **kwargs):
+        """Display success message on deletion"""
+        party_obj = self.get_object()
+        messages.success(request, f"Party '{party_obj.name}' deleted successfully.")
+        return super().delete(request, *args, **kwargs)
+
+
+# Session Views
+def user_can_delete_session_attachment(user, attachment):
+    """Superuser, uploader, or Leader/Deputy Leader of a group whose party is in the session council's local."""
+    if user.is_superuser or attachment.uploaded_by_id == user.pk:
+        return True
+    session = attachment.session
+    if not session.council_id or not getattr(session.council, 'district_id', None):
+        return False
+    district_id = session.council.district_id
+    from group.models import Group, GroupMember
+    from user.models import Role
+    group_ids = list(
+        Group.objects.filter(
+            party__district_id=district_id,
+            party__isnull=False,
+            is_active=True,
+        ).values_list('pk', flat=True)
+    )
+    if not group_ids:
+        return False
+    try:
+        leader_role = Role.objects.get(name='Leader')
+        deputy_leader_role = Role.objects.get(name='Deputy Leader')
+    except Role.DoesNotExist:
+        return False
+    return GroupMember.objects.filter(
+        user=user,
+        group_id__in=group_ids,
+        is_active=True,
+        roles__in=[leader_role, deputy_leader_role],
+    ).exists()
+
+
+@login_required
+@require_POST
+def session_attachment_delete_view(request, session_pk, pk):
+    """Delete a session attachment (superuser, uploader, or group leader/deputy in council local)."""
+    attachment = get_object_or_404(SessionAttachment, pk=pk, session_id=session_pk)
+    if not user_can_delete_session_attachment(request.user, attachment):
+        raise PermissionDenied
+    name = attachment.filename
+    if attachment.file:
+        attachment.file.delete(save=False)
+    attachment.delete()
+    messages.success(request, _('Attachment "%(name)s" has been removed.') % {'name': name})
+    return redirect('district:session-detail', pk=session_pk)
+
+
+class SessionDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
+    """View for displaying a single Session object"""
+    model = Session
+    context_object_name = 'session'
+    template_name = 'district/session_detail.html'
+
+    def test_func(self):
+        """Allow superusers or group members whose group's council is the session's council."""
+        if self.request.user.is_superuser:
+            return True
+        session_pk = self.kwargs.get('pk')
+        if session_pk is None:
+            return False
+        try:
+            session_pk = int(session_pk)
+        except (TypeError, ValueError):
+            return False
+        council_id = Session.objects.filter(pk=session_pk).values_list('council_id', flat=True).first()
+        if council_id is None:
+            return False
+        return council_id in _get_user_accessible_council_ids(self.request.user)
+
+    def get_context_data(self, **kwargs):
+        """Add motions and inquiries data to context"""
+        from django.db.models import Case, When, IntegerField
+        from motion.models import Inquiry
+
+        context = super().get_context_data(**kwargs)
+        # Show edit/add buttons only to users who have access (same checks as Update/Invitation/Cancel/Minutes/Attachment views and motion/inquiry create)
+        user = self.request.user
+        context['can_edit_session'] = user.is_superuser
+        context['can_add_invitation'] = user.is_superuser
+        context['can_cancel_session'] = user.is_superuser
+        context['can_add_minutes'] = user.is_superuser
+        context['can_attach_session'] = user.is_superuser
+        accessible_council_ids = _get_user_accessible_council_ids(user)
+        context['can_add_motion'] = (
+            user.is_superuser or user.has_role_permission('motion.create')
+            or self.object.council_id in accessible_council_ids
+        )
+        context['can_add_inquiry'] = (
+            user.is_superuser or user.has_role_permission('motion.create')
+            or self.object.council_id in accessible_council_ids
+        )
+        # Show Export and Participants sidebar to superusers, group admins (via template), or regular group members of this session's council
+        context['can_see_export_and_participants'] = self.object.council_id in accessible_council_ids
+
+        # Get all motions for this session
+        # Order: regular motions by session_rank, then not_admitted motions at the end
+        motions_queryset = self.object.motions.filter(is_active=True)
+        context['motions'] = motions_queryset.annotate(
+            status_order=Case(
+                When(status='not_admitted', then=1),
+                default=0,
+                output_field=IntegerField()
+            )
+        ).order_by('status_order', 'session_rank', '-submitted_date')
+        context['total_motions'] = self.object.motions.count()
+        
+        # Get all inquiries for this session
+        # Order by session_rank (then by submitted_date as fallback)
+        context['inquiries'] = Inquiry.objects.filter(
+            session=self.object,
+            is_active=True
+        ).select_related('group', 'submitted_by').prefetch_related('parties', 'interventions').order_by('session_rank', '-submitted_date')
+        context['total_inquiries'] = context['inquiries'].count()
+        
+        # Get presence tracking data
+        session = self.object
+        if session.council and session.council.district:
+            # Get current term and seat distributions
+            today = timezone.now().date()
+            current_term = Term.objects.filter(
+                start_date__lte=today,
+                end_date__gte=today,
+                is_active=True
+            ).first()
+            
+            if current_term:
+                # Get seat distributions for parties in this council's local
+                seat_distributions = TermSeatDistribution.objects.filter(
+                    term=current_term,
+                    party__district=session.council.district,
+                    party__is_active=True
+                ).select_related('party').order_by('-seats', 'party__name')
+                
+                # Get or create presence records for each party
+                presence_data = []
+                total_seats = 0
+                total_present = 0
+                gruene_present = 0
+                
+                for distribution in seat_distributions:
+                    presence, created = SessionPresence.objects.get_or_create(
+                        session=session,
+                        party=distribution.party,
+                        defaults={'present_count': 0}
+                    )
+                    presence_data.append({
+                        'party': distribution.party,
+                        'seats': distribution.seats,
+                        'present_count': presence.present_count,
+                    })
+                    total_seats += distribution.seats
+                    total_present += presence.present_count
+                    
+                    # Check if this is GRÜNE party (check both name and short_name)
+                    party_name = distribution.party.name.upper()
+                    party_short = distribution.party.short_name.upper() if distribution.party.short_name else ""
+                    if 'GRÜNE' in party_name or 'GRÜNE' in party_short or 'GRUNE' in party_name or 'GRUNE' in party_short:
+                        gruene_present = presence.present_count
+                
+                context['presence_data'] = presence_data
+                context['total_seats'] = total_seats
+                context['total_present'] = total_present
+                # Majority is GRÜNE >= half of total present
+                context['majority_needed'] = (total_present // 2) + 1 if total_present > 0 else 0
+                context['has_majority'] = gruene_present >= context['majority_needed'] if total_present > 0 else False
+                # Participants: group members from parties with seats in current term (political group members)
+                party_ids = [d.party_id for d in seat_distributions]
+                from group.models import GroupMember
+                context['session_participants'] = (
+                    GroupMember.objects.filter(
+                        group__party_id__in=party_ids,
+                        group__party__is_active=True,
+                        group__is_active=True,
+                        is_active=True,
+                    )
+                    .select_related('user', 'group', 'group__party')
+                    .order_by('group__party__name', 'group__name', 'user__last_name', 'user__first_name')
+                )
+            else:
+                context['presence_data'] = []
+                context['total_seats'] = 0
+                context['total_present'] = 0
+                context['majority_needed'] = 0
+                context['has_majority'] = False
+                context['session_participants'] = []
+        else:
+            context['presence_data'] = []
+            context['total_seats'] = 0
+            context['total_present'] = 0
+            context['majority_needed'] = 0
+            context['has_majority'] = False
+            context['session_participants'] = []
+
+        # Session excuses: who has excused themselves (for Participants section)
+        context['excused_user_ids'] = list(
+            SessionExcuse.objects.filter(session=self.object).values_list('user_id', flat=True)
+        )
+        context['user_has_excused'] = self.request.user.pk in context['excused_user_ids']
+        participants = context.get('session_participants')
+        if hasattr(participants, 'filter'):
+            context['user_is_participant'] = participants.filter(user_id=self.request.user.pk).exists()
+        else:
+            context['user_is_participant'] = any(gm.user_id == self.request.user.pk for gm in (participants or []))
+
+        # Group IDs where current user is Leader, Deputy Leader, or Group Admin (for excusing participants)
+        from group.models import GroupMember
+        context['user_leader_group_ids'] = set(
+            GroupMember.objects.filter(
+                user=self.request.user,
+                is_active=True,
+                roles__name__in=['Group Admin', 'Leader', 'Deputy Leader'],
+            ).values_list('group_id', flat=True).distinct()
+        )
+
+        context['session_attachment_delete_ids'] = [
+            att.pk
+            for att in self.object.attachments.all()
+            if user_can_delete_session_attachment(self.request.user, att)
+        ]
+
+        return context
+
+
+class SessionExcuseView(LoginRequiredMixin, View):
+    """View to excuse oneself or another participant from a council session (POST only).
+    Group leaders can excuse participants from their group."""
+    http_method_names = ['get', 'post']
+
+    def get(self, request, pk):
+        return redirect('district:session-detail', pk=pk)
+
+    def post(self, request, pk):
+        session = get_object_or_404(Session, pk=pk)
+        from group.models import GroupMember
+        today = timezone.now().date()
+        current_term = Term.objects.filter(
+            start_date__lte=today, end_date__gte=today, is_active=True
+        ).first()
+        if not current_term or not session.council or not session.council.district:
+            messages.error(request, _('You cannot excuse for this session.'))
+            return redirect('district:session-detail', pk=pk)
+        party_ids = list(
+            TermSeatDistribution.objects.filter(
+                term=current_term,
+                party__district=session.council.district,
+                party__is_active=True,
+            ).values_list('party_id', flat=True)
+        )
+        target_user_id = request.POST.get('user_id')
+        if target_user_id:
+            try:
+                target_user_id = int(target_user_id)
+            except (TypeError, ValueError):
+                target_user_id = None
+        if not target_user_id:
+            target_user_id = request.user.pk
+
+        if target_user_id == request.user.pk:
+            # Excusing oneself
+            is_participant = GroupMember.objects.filter(
+                group__party_id__in=party_ids,
+                group__party__is_active=True,
+                group__is_active=True,
+                is_active=True,
+                user_id=request.user.pk,
+            ).exists()
+            if not is_participant:
+                messages.error(request, _('You are not a participant of this session.'))
+                return redirect('district:session-detail', pk=pk)
+        else:
+            # Excusing another user: requester must be group leader of a group containing target
+            target_gm = GroupMember.objects.filter(
+                group__party_id__in=party_ids,
+                group__party__is_active=True,
+                group__is_active=True,
+                is_active=True,
+                user_id=target_user_id,
+            ).first()
+            if not target_gm:
+                messages.error(request, _('That user is not a participant of this session.'))
+                return redirect('district:session-detail', pk=pk)
+            leader_group_ids = set(
+                GroupMember.objects.filter(
+                    user=request.user,
+                    is_active=True,
+                    roles__name__in=['Group Admin', 'Leader', 'Deputy Leader'],
+                ).values_list('group_id', flat=True).distinct()
+            )
+            if target_gm.group_id not in leader_group_ids:
+                messages.error(request, _('You can only excuse members of groups you lead.'))
+                return redirect('district:session-detail', pk=pk)
+
+        target_user = get_user_model().objects.get(pk=target_user_id)
+        clear = request.POST.get('clear') == '1'
+        if clear:
+            SessionExcuse.objects.filter(session=session, user=target_user).delete()
+            if target_user_id == request.user.pk:
+                messages.success(request, _('Excuse cancelled.'))
+            else:
+                messages.success(request, _('Excuse cancelled for %(name)s.') % {
+                    'name': target_user.get_full_name() or target_user.username
+                })
+        else:
+            note = (request.POST.get('note') or '').strip()
+            SessionExcuse.objects.update_or_create(
+                session=session,
+                user=target_user,
+                defaults={'note': note},
+            )
+            if target_user_id == request.user.pk:
+                messages.success(request, _('You have excused yourself from this session.'))
+            else:
+                messages.success(request, _('%(name)s has been excused from this session.') % {
+                    'name': target_user.get_full_name() or target_user.username
+                })
+        return redirect('district:session-detail', pk=pk)
+
+
+class SessionCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
+    """View for creating a new Session object"""
+    model = Session
+    form_class = SessionForm
+    template_name = 'district/session_form.html'
+    success_url = reverse_lazy('district:council-list')
+
+    def test_func(self):
+        """Check if user has permission to create Session objects"""
+        return self.request.user.is_superuser
+
+    def get_initial(self):
+        """Set initial council if provided in URL"""
+        initial = super().get_initial()
+        council_id = self.request.GET.get('council')
+        if council_id:
+            try:
+                council = Council.objects.get(pk=council_id)
+                initial['council'] = council.pk
+            except Council.DoesNotExist:
+                pass
+        return initial
+
+    def get_success_url(self):
+        """Redirect to the council detail page after successful creation"""
+        if hasattr(self.object, 'council') and self.object.council:
+            return reverse('district:council-detail', kwargs={'pk': self.object.council.pk})
+        return str(self.success_url)
+
+    def form_valid(self, form):
+        """Display success message on form validation"""
+        messages.success(self.request, f"Session '{form.instance.title}' created successfully.")
+        return super().form_valid(form)
+
+
+class SessionUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
+    """View for updating an existing Session object"""
+    model = Session
+    form_class = SessionForm
+    template_name = 'district/session_form.html'
+    success_url = reverse_lazy('district:council-list')
+
+    def test_func(self):
+        """Check if user has permission to edit Session objects"""
+        return self.request.user.is_superuser
+
+    def get_success_url(self):
+        """Redirect to session detail page after successful update"""
+        return reverse('district:session-detail', kwargs={'pk': self.object.pk})
+
+    def form_valid(self, form):
+        """Display success message on form validation"""
+        messages.success(self.request, f"Session '{form.instance.title}' updated successfully.")
+        return super().form_valid(form)
+
+
+class SessionDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
+    """View for deleting a Session object"""
+    model = Session
+    template_name = 'district/session_confirm_delete.html'
+    success_url = reverse_lazy('district:council-list')
+
+    def test_func(self):
+        """Check if user has permission to delete Session objects"""
+        return self.request.user.is_superuser
+
+    def get_success_url(self):
+        """Redirect to council detail page after deletion"""
+        council_pk = self.object.council_id if hasattr(self.object, 'council_id') and self.object.council_id else None
+        if council_pk:
+            return reverse('district:council-detail', kwargs={'pk': council_pk})
+        return str(self.success_url)
+
+    def delete(self, request, *args, **kwargs):
+        """Display success message on deletion"""
+        session_obj = self.get_object()
+        messages.success(request, f"Session '{session_obj.title}' deleted successfully.")
+        return super().delete(request, *args, **kwargs)
+
+
+class SessionExportPDFView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
+    """View for exporting session information and motions as PDF"""
+    model = Session
+    context_object_name = 'session'
+    template_name = 'district/session_export_pdf.html'
+
+    def test_func(self):
+        """Allow superuser, session.view permission, or regular group members for the session's council."""
+        user = self.request.user
+        if user.is_superuser or user.has_role_permission('session.view'):
+            return True
+        session_pk = self.kwargs.get('pk')
+        if session_pk is None:
+            return False
+        try:
+            session_pk = int(session_pk)
+        except (TypeError, ValueError):
+            return False
+        council_id = Session.objects.filter(pk=session_pk).values_list('council_id', flat=True).first()
+        if council_id is None:
+            return False
+        return council_id in _get_user_accessible_council_ids(user)
+
+    def get_context_data(self, **kwargs):
+        """Add motions and inquiries data to context"""
+        from motion.models import MotionGroupDecision, Inquiry
+        
+        context = super().get_context_data(**kwargs)
+        # Get all motions for this session with prefetched parties, group_decisions, and interventions
+        # Exclude not_admitted motions from PDF export
+        # Order by session_rank (then by submitted_date as fallback)
+        # Order group_decisions by decision_time descending to get latest first
+        context['motions'] = self.object.motions.filter(
+            is_active=True
+        ).exclude(
+            status='not_admitted'
+        ).prefetch_related(
+            'parties',
+            'interventions',
+            Prefetch(
+                'group_decisions',
+                queryset=MotionGroupDecision.objects.select_related('committee').order_by('-decision_time')
+            )
+        ).order_by('session_rank', '-submitted_date')
+        context['total_motions'] = self.object.motions.count()
+        
+        # Get all inquiries for this session
+        context['inquiries'] = Inquiry.objects.filter(
+            session=self.object,
+            is_active=True
+        ).prefetch_related(
+            'parties',
+            'interventions'
+        ).order_by('session_rank', '-submitted_date')
+        context['total_inquiries'] = context['inquiries'].count()
+        return context
+
+    def render_to_response(self, context, **response_kwargs):
+        """Render PDF response"""
+        from django.template.loader import render_to_string
+        from django.http import HttpResponse
+        from weasyprint import HTML, CSS
+        from django.conf import settings
+        import os
+        
+        # Render the template to HTML
+        html_string = render_to_string(self.template_name, context)
+        
+        # Create PDF using WeasyPrint
+        html = HTML(string=html_string)
+        css = CSS(string='''
+            @page {
+                size: A4 landscape;
+                margin: 15mm;
+            }
+            body { 
+                font-family: Arial, sans-serif; 
+                margin: 0;
+                font-size: 10pt;
+            }
+            .header { 
+                text-align: center; 
+                margin-bottom: 20px; 
+            }
+            .header h1 {
+                font-size: 14pt;
+                margin: 0 0 5px 0;
+            }
+            .header p {
+                font-size: 10pt;
+                margin: 2px 0;
+            }
+            .motions-table { 
+                width: 100%; 
+                border-collapse: collapse; 
+                margin-top: 20px;
+                page-break-inside: auto;
+            }
+            .motions-table thead {
+                display: table-header-group;
+            }
+            .motions-table tbody tr {
+                page-break-inside: avoid;
+                page-break-after: auto;
+            }
+            .motions-table th, .motions-table td { 
+                border: 1px solid #333; 
+                padding: 8px; 
+                text-align: left;
+                vertical-align: top;
+            }
+            .motions-table th { 
+                background-color: #f2f2f2; 
+                font-weight: bold;
+            }
+            .motions-table td:first-child {
+                width: 5%;
+                text-align: center;
+                font-weight: bold;
+            }
+            .motions-table th:first-child {
+                text-align: center;
+            }
+            .motions-table td:nth-child(2) {
+                width: 25%;
+            }
+            .motions-table td:nth-child(3) {
+                width: 20%;
+            }
+            .motions-table td:nth-child(4) {
+                width: 25%;
+            }
+            .motions-table td:nth-child(5) {
+                width: 25%;
+            }
+            .no-motions {
+                text-align: center;
+                color: #666;
+                font-style: italic;
+                margin: 40px 0;
+            }
+            .footer {
+                margin-top: 30px;
+                padding-top: 15px;
+                border-top: 1px solid #ddd;
+                text-align: center;
+                color: #666;
+                font-size: 8pt;
+            }
+            .footer p {
+                margin: 2px 0;
+            }
+        ''')
+        
+        # Generate PDF
+        pdf = html.write_pdf(stylesheets=[css])
+        
+        # Create response
+        response = HttpResponse(pdf, content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="session_{self.object.pk}_{self.object.title.replace(" ", "_")}.pdf"'
+        
+        return response
+
+
+@login_required
+def session_export_ics(request, pk):
+    """Export a single session as an ICS calendar file."""
+    session = get_object_or_404(Session, pk=pk)
+    # Allow: superuser, session.view permission, or session is in user's councils/committees (personal calendar)
+    can_export = (
+        request.user.is_superuser
+        or request.user.has_role_permission('session.view')
+    )
+    if not can_export:
+        from group.models import GroupMember
+        user_council_ids = set()
+        for m in GroupMember.objects.filter(user=request.user, is_active=True).select_related('group__party__district'):
+            if getattr(m.group.party, 'district', None) and getattr(m.group.party.district, 'council', None):
+                user_council_ids.add(m.group.party.district.council_id)
+        if session.council_id in user_council_ids:
+            can_export = True
+        if not can_export and session.committee_id:
+            from .models import CommitteeMember
+            can_export = CommitteeMember.objects.filter(
+                user=request.user, committee_id=session.committee_id, is_active=True
+            ).exists()
+    if not can_export:
+        messages.error(request, "You don't have permission to export this session.")
+        return redirect('district:session-detail', pk=pk)
+
+    dtstart = session.scheduled_date
+    if not timezone.is_aware(dtstart):
+        dtstart = timezone.make_aware(dtstart)
+    dtstart_utc = dtstart.astimezone(timezone.UTC)
+    dtend_utc = dtstart_utc + timezone.timedelta(hours=1)
+    dtstart_str = dtstart_utc.strftime('%Y%m%dT%H%M%SZ')
+    dtend_str = dtend_utc.strftime('%Y%m%dT%H%M%SZ')
+    uid = f"session-{session.pk}@{request.get_host()}"
+
+    def escape_ics(text):
+        if not text:
+            return ""
+        text = str(text).replace('\\', '\\\\').replace(',', '\\,').replace(';', '\\;').replace('\n', '\\n')
+        return text
+
+    lines = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "PRODID:-//Klubtool//Session//EN",
+        "CALSCALE:GREGORIAN",
+        "METHOD:PUBLISH",
+        "BEGIN:VEVENT",
+        f"UID:{uid}",
+        f"DTSTART:{dtstart_str}",
+        f"DTEND:{dtend_str}",
+        f"SUMMARY:{escape_ics(session.title)}",
+    ]
+    if session.location:
+        lines.append(f"LOCATION:{escape_ics(session.location)}")
+    if session.agenda:
+        lines.append(f"DESCRIPTION:{escape_ics(session.agenda)}")
+    session_url = request.build_absolute_uri(reverse('district:session-detail', args=[session.pk]))
+    lines.append(f"URL:{session_url}")
+    lines.append(f"DTSTAMP:{timezone.now().astimezone(timezone.UTC).strftime('%Y%m%dT%H%M%SZ')}")
+    lines.extend(["STATUS:CONFIRMED", "END:VEVENT", "END:VCALENDAR"])
+    ics_file = "\r\n".join(lines)
+    response = HttpResponse(ics_file, content_type='text/calendar; charset=utf-8')
+    filename = f"session_{session.pk}_{session.title.replace(' ', '_')}.ics"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return response
+
+
+@login_required
+def committee_meeting_export_ics(request, pk):
+    """Export a single committee meeting as an ICS calendar file."""
+    meeting = get_object_or_404(CommitteeMeeting, pk=pk)
+    can_export = (
+        request.user.is_superuser
+        or request.user.has_role_permission('session.view')
+    )
+    if not can_export:
+        from .models import CommitteeMember
+        can_export = CommitteeMember.objects.filter(
+            user=request.user, committee_id=meeting.committee_id, is_active=True
+        ).exists()
+    if not can_export and meeting.committee_id:
+        council_id = Committee.objects.filter(pk=meeting.committee_id).values_list('council_id', flat=True).first()
+        if council_id is not None and council_id in _get_user_accessible_council_ids(request.user):
+            can_export = True
+    if not can_export:
+        messages.error(request, _("You don't have permission to export this meeting."))
+        return redirect('district:committee-meeting-detail', pk=pk)
+
+    dtstart = meeting.scheduled_date
+    if not timezone.is_aware(dtstart):
+        dtstart = timezone.make_aware(dtstart)
+    dtstart_utc = dtstart.astimezone(timezone.UTC)
+    dtend_utc = dtstart_utc + timezone.timedelta(hours=1)
+    dtstart_str = dtstart_utc.strftime('%Y%m%dT%H%M%SZ')
+    dtend_str = dtend_utc.strftime('%Y%m%dT%H%M%SZ')
+    uid = f"committee-meeting-{meeting.pk}@{request.get_host()}"
+
+    def escape_ics(text):
+        if not text:
+            return ""
+        text = str(text).replace('\\', '\\\\').replace(',', '\\,').replace(';', '\\;').replace('\n', '\\n')
+        return text
+
+    lines = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "PRODID:-//Klubtool//Committee Meeting//EN",
+        "CALSCALE:GREGORIAN",
+        "METHOD:PUBLISH",
+        "BEGIN:VEVENT",
+        f"UID:{uid}",
+        f"DTSTART:{dtstart_str}",
+        f"DTEND:{dtend_str}",
+        f"SUMMARY:{escape_ics(meeting.title)}",
+    ]
+    if meeting.location:
+        lines.append(f"LOCATION:{escape_ics(meeting.location)}")
+    if meeting.description:
+        lines.append(f"DESCRIPTION:{escape_ics(meeting.description)}")
+    meeting_url = request.build_absolute_uri(reverse('district:committee-meeting-detail', args=[meeting.pk]))
+    lines.append(f"URL:{meeting_url}")
+    lines.append(f"DTSTAMP:{timezone.now().astimezone(timezone.UTC).strftime('%Y%m%dT%H%M%SZ')}")
+    if getattr(meeting, 'status', None) == 'cancelled':
+        lines.append("STATUS:CANCELLED")
+    else:
+        lines.append("STATUS:CONFIRMED")
+    lines.extend(["END:VEVENT", "END:VCALENDAR"])
+    ics_file = "\r\n".join(lines)
+    response = HttpResponse(ics_file, content_type='text/calendar; charset=utf-8')
+    filename = f"committee_meeting_{meeting.pk}_{meeting.title.replace(' ', '_')}.ics"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return response
+
+
+class CouncilCommitteesExportPDFView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
+    """View for exporting all committees of a council as PDF"""
+    model = Council
+    context_object_name = 'council'
+    template_name = 'district/council_committees_export_pdf.html'
+
+    def test_func(self):
+        """Allow superusers, users with session.view, or group members whose group's council is this council."""
+        if self.request.user.is_superuser:
+            return True
+        if self.request.user.has_role_permission('session.view'):
+            return True
+        council_pk = self.kwargs.get('pk')
+        if council_pk is None:
+            return False
+        try:
+            council_pk = int(council_pk)
+        except (TypeError, ValueError):
+            return False
+        return council_pk in _get_user_accessible_council_ids(self.request.user)
+
+    def get_context_data(self, **kwargs):
+        """Add committees with members and substitute members to context"""
+        from django.db.models import Case, When, CharField, Value
+        
+        context = super().get_context_data(**kwargs)
+        # Get all active committees for this council with their members
+        committees = self.object.committees.filter(is_active=True).order_by('name')
+        
+        # Prefetch members with proper ordering
+        from django.db.models import Prefetch
+        committees_list = []
+        for committee in committees:
+            # Get members (excluding substitute members)
+            members = committee.members.filter(
+                is_active=True
+            ).exclude(
+                role='substitute_member'
+            ).select_related('user').prefetch_related(
+                'user__group_memberships__group__party'
+            ).annotate(
+                role_order=Case(
+                    When(role='chairperson', then=Value(1)),
+                    When(role='vice_chairperson', then=Value(2)),
+                    When(role='member', then=Value(3)),
+                    default=Value(4),
+                    output_field=CharField(),
+                )
+            ).order_by('role_order', 'user__first_name', 'user__last_name')
+            
+            # Get substitute members
+            substitute_members = committee.members.filter(
+                is_active=True,
+                role='substitute_member'
+            ).select_related('user').prefetch_related(
+                'user__group_memberships__group__party'
+            ).order_by('user__first_name', 'user__last_name')
+            
+            # Combine members and substitute members into pairs for the table
+            combined_members = []
+            members_list = list(members)
+            substitute_list = list(substitute_members)
+            max_length = max(len(members_list), len(substitute_list))
+            
+            for i in range(max_length):
+                member = members_list[i] if i < len(members_list) else None
+                substitute = substitute_list[i] if i < len(substitute_list) else None
+                combined_members.append({
+                    'member': member,
+                    'substitute': substitute,
+                })
+            
+            committees_list.append({
+                'committee': committee,
+                'members': members,
+                'substitute_members': substitute_members,
+                'combined_members': combined_members,
+            })
+        
+        context['committees_data'] = committees_list
+        context['total_committees'] = len(committees_list)
+        
+        # Get the user's political group name for the title
+        from group.models import GroupMember
+        user_group = GroupMember.objects.filter(
+            user=self.request.user,
+            is_active=True
+        ).select_related('group').first()
+        
+        if user_group:
+            context['group_name'] = user_group.group.name
+        else:
+            # Fallback to council name if user has no group
+            context['group_name'] = self.object.name
+        
+        return context
+
+    def render_to_response(self, context, **response_kwargs):
+        """Render PDF response"""
+        from django.template.loader import render_to_string
+        from django.http import HttpResponse
+        from weasyprint import HTML, CSS
+        
+        # Render the template to HTML
+        html_string = render_to_string(self.template_name, context)
+        
+        # Create PDF using WeasyPrint
+        html = HTML(string=html_string)
+        css = CSS(string='''
+            @page {
+                size: A4 portrait;
+                margin: 15mm;
+            }
+            body { 
+                font-family: Arial, sans-serif; 
+                margin: 0;
+                font-size: 10pt;
+            }
+            .header { 
+                text-align: center; 
+                margin-bottom: 20px; 
+            }
+            .header h1 {
+                font-size: 16pt;
+                margin: 0 0 5px 0;
+            }
+            .header p {
+                font-size: 10pt;
+                margin: 2px 0;
+            }
+            .committee-section {
+                margin-bottom: 25px;
+                page-break-inside: avoid;
+            }
+            .committee-title {
+                font-size: 12pt;
+                font-weight: bold;
+                margin-bottom: 10px;
+                padding: 8px;
+                background-color: #f2f2f2;
+            }
+            .committee-info {
+                margin-bottom: 10px;
+                font-size: 9pt;
+                color: #666;
+            }
+            .members-table { 
+                width: 100%; 
+                border-collapse: collapse; 
+                margin-top: 10px;
+                margin-bottom: 15px;
+                font-size: 9pt;
+            }
+            .members-table th, .members-table td { 
+                border: none; 
+                padding: 6px; 
+                text-align: left;
+                vertical-align: top;
+            }
+            .members-table th { 
+                background-color: #fff; 
+                font-weight: bold;
+            }
+            .members-table th:first-child,
+            .members-table td:first-child {
+                width: 50%;
+            }
+            .members-table th:nth-child(2),
+            .members-table td:nth-child(2) {
+                width: 50%;
+            }
+            .substitute-section {
+                margin-top: 10px;
+                margin-bottom: 10px;
+            }
+            .substitute-title {
+                font-size: 10pt;
+                font-weight: bold;
+                margin-bottom: 5px;
+            }
+            .footer {
+                margin-top: 30px;
+                padding-top: 15px;
+                border-top: 1px solid #ddd;
+                text-align: center;
+                color: #666;
+                font-size: 8pt;
+            }
+            .footer p {
+                margin: 2px 0;
+            }
+        ''')
+        
+        # Generate PDF
+        pdf = html.write_pdf(stylesheets=[css])
+        
+        # Create response
+        from django.utils import timezone
+        from datetime import datetime
+        
+        # Get group name from context (already set in get_context_data)
+        group_name = context.get('group_name', self.object.name)
+        
+        # Format date for filename
+        date_str = timezone.now().strftime('%Y-%m-%d')
+        
+        # Create filename: group_name_stand_date.pdf
+        # Replace spaces and special characters for filename safety
+        safe_group_name = group_name.replace(' ', '_').replace('/', '_').replace('\\', '_')
+        filename = f"{safe_group_name}_Stand_{date_str}.pdf"
+        
+        response = HttpResponse(pdf, content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        
+        return response
+
+
+@login_required
+@require_http_methods(["POST"])
+def update_motion_order(request, session_pk):
+    """AJAX view to update the order/rank of motions in a session"""
+    from motion.models import Motion
+    
+    # Check permissions - user must be superuser or have session view permission
+    if not (request.user.is_superuser or request.user.has_role_permission('session.view')):
+        return JsonResponse({'error': 'Permission denied'}, status=403)
+    
+    try:
+        session = get_object_or_404(Session, pk=session_pk)
+        data = json.loads(request.body)
+        motion_orders = data.get('motion_orders', [])
+        
+        # Update each motion's session_rank
+        for order_data in motion_orders:
+            motion_id = order_data.get('motion_id')
+            rank = order_data.get('rank')
+            
+            if motion_id and rank is not None:
+                try:
+                    motion = Motion.objects.get(pk=motion_id, session=session)
+                    motion.session_rank = rank
+                    motion.save(update_fields=['session_rank'])
+                except Motion.DoesNotExist:
+                    continue
+        
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
+
+
+@login_required
+@require_http_methods(["POST"])
+def update_inquiry_order(request, session_pk):
+    """AJAX view to update the order/rank of inquiries in a session"""
+    from motion.models import Inquiry
+    
+    # Check permissions - user must be superuser or have session view permission
+    if not (request.user.is_superuser or request.user.has_role_permission('session.view')):
+        return JsonResponse({'error': 'Permission denied'}, status=403)
+    
+    try:
+        session = get_object_or_404(Session, pk=session_pk)
+        data = json.loads(request.body)
+        inquiry_orders = data.get('inquiry_orders', [])
+        
+        # Update each inquiry's session_rank
+        for order_data in inquiry_orders:
+            inquiry_id = order_data.get('inquiry_id')
+            rank = order_data.get('rank')
+            
+            if inquiry_id and rank is not None:
+                try:
+                    inquiry = Inquiry.objects.get(pk=inquiry_id, session=session)
+                    inquiry.session_rank = rank
+                    inquiry.save(update_fields=['session_rank'])
+                except Inquiry.DoesNotExist:
+                    continue
+        
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
+
+
+@login_required
+@require_http_methods(["POST"])
+def update_session_presence(request, session_pk, party_pk):
+    """AJAX view to update presence count for a party in a session"""
+    # Check permissions - user must be superuser or have session view permission
+    if not (request.user.is_superuser or request.user.has_role_permission('session.view')):
+        return JsonResponse({'error': 'Permission denied'}, status=403)
+    
+    try:
+        session = get_object_or_404(Session, pk=session_pk)
+        party = get_object_or_404(Party, pk=party_pk)
+        
+        # Verify party belongs to the session's council local
+        if not (session.council and session.council.district and party.district == session.council.district):
+            return JsonResponse({'error': 'Party does not belong to this session\'s local'}, status=400)
+        
+        data = json.loads(request.body)
+        action = data.get('action')  # 'increment' or 'decrement'
+        
+        # Get or create presence record
+        presence, created = SessionPresence.objects.get_or_create(
+            session=session,
+            party=party,
+            defaults={'present_count': 0}
+        )
+        
+        # Update count based on action
+        if action == 'increment':
+            # Get seat distribution to ensure we don't exceed total seats
+            today = timezone.now().date()
+            current_term = Term.objects.filter(
+                start_date__lte=today,
+                end_date__gte=today,
+                is_active=True
+            ).first()
+            
+            if current_term:
+                seat_dist = TermSeatDistribution.objects.filter(
+                    term=current_term,
+                    party=party
+                ).first()
+                max_seats = seat_dist.seats if seat_dist else 999
+                
+                if presence.present_count < max_seats:
+                    presence.present_count += 1
+                    presence.save(update_fields=['present_count'])
+        elif action == 'decrement':
+            if presence.present_count > 0:
+                presence.present_count -= 1
+                presence.save(update_fields=['present_count'])
+        else:
+            return JsonResponse({'error': 'Invalid action'}, status=400)
+        
+        # Calculate totals
+        total_seats = 0
+        total_present = 0
+        gruene_present = 0
+        today = timezone.now().date()
+        current_term = Term.objects.filter(
+            start_date__lte=today,
+            end_date__gte=today,
+            is_active=True
+        ).first()
+        
+        if current_term and session.council and session.council.district:
+            seat_distributions = TermSeatDistribution.objects.filter(
+                term=current_term,
+                party__district=session.council.district,
+                party__is_active=True
+            )
+            
+            for dist in seat_distributions:
+                total_seats += dist.seats
+                presence_record = SessionPresence.objects.filter(
+                    session=session,
+                    party=dist.party
+                ).first()
+                present_count = presence_record.present_count if presence_record else 0
+                total_present += present_count
+                
+                # Check if this is GRÜNE party (check both name and short_name)
+                party_name = dist.party.name.upper()
+                party_short = dist.party.short_name.upper() if dist.party.short_name else ""
+                if 'GRÜNE' in party_name or 'GRÜNE' in party_short or 'GRUNE' in party_name or 'GRUNE' in party_short:
+                    gruene_present = present_count
+        
+        # Majority is GRÜNE >= half of total present
+        majority_needed = (total_present // 2) + 1 if total_present > 0 else 0
+        has_majority = gruene_present >= majority_needed if total_present > 0 else False
+        
+        return JsonResponse({
+            'success': True,
+            'present_count': presence.present_count,
+            'total_present': total_present,
+            'total_seats': total_seats,
+            'majority_needed': majority_needed,
+            'has_majority': has_majority
+        })
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
+
+
+# Committee Views
+class CommitteeListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
+    """View for listing all Committee objects"""
+    model = Committee
+    context_object_name = 'committees'
+    template_name = 'district/committee_list.html'
+    paginate_by = 20
+
+    def test_func(self):
+        """Allow superuser or any user who can access at least one council (via connected group)."""
+        if self.request.user.is_superuser:
+            return True
+        return bool(_get_user_accessible_council_ids(self.request.user))
+
+    def get_queryset(self):
+        """Filter queryset: superusers see all committees; others see only committees of their connected councils."""
+        user = self.request.user
+        base = Committee.objects.all().select_related('council', 'council__district').order_by('name')
+        if user.is_superuser:
+            queryset = base
+        else:
+            council_ids = _get_user_accessible_council_ids(user)
+            queryset = base.filter(council_id__in=council_ids) if council_ids else base.none()
+        
+        # Filter by search query
+        search_query = self.request.GET.get('search', '')
+        if search_query:
+            queryset = queryset.filter(
+                Q(name__icontains=search_query) |
+                Q(description__icontains=search_query) |
+                Q(chairperson__icontains=search_query) |
+                Q(council__name__icontains=search_query)
+            )
+        
+        # Filter by committee type
+        committee_type_filter = self.request.GET.get('committee_type', '')
+        if committee_type_filter:
+            queryset = queryset.filter(committee_type=committee_type_filter)
+        
+        # Filter by council
+        council_filter = self.request.GET.get('council', '')
+        if council_filter:
+            queryset = queryset.filter(council_id=council_filter)
+
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        """Add filter form and can_edit flags to context"""
+        context = super().get_context_data(**kwargs)
+        context['search_query'] = self.request.GET.get('search', '')
+        context['committee_type_filter'] = self.request.GET.get('committee_type', '')
+        context['council_filter'] = self.request.GET.get('council', '')
+        context['councils'] = Council.objects.filter(is_active=True)
+        committees = context.get('committees') or context.get('object_list') or []
+        context['can_edit_committee_ids'] = (
+            {c.pk for c in committees} if self.request.user.is_superuser else set()
+        )
+        return context
+
+
+class CommitteeDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
+    """View for displaying a single Committee object"""
+    model = Committee
+    context_object_name = 'committee'
+    template_name = 'district/committee_detail.html'
+
+    def test_func(self):
+        """Allow superuser or members of a group connected to the committee's council."""
+        if self.request.user.is_superuser:
+            return True
+        committee_pk = self.kwargs.get('pk')
+        if committee_pk is None:
+            return False
+        try:
+            committee_pk = int(committee_pk)
+        except (TypeError, ValueError):
+            return False
+        council_id = Committee.objects.filter(pk=committee_pk).values_list('council_id', flat=True).first()
+        if council_id is None:
+            return False
+        return council_id in _get_user_accessible_council_ids(self.request.user)
+
+    def get_context_data(self, **kwargs):
+        """Add committee members and motions data to context"""
+        from django.db.models import Case, When, CharField, Value
+        from group.models import GroupMember
+
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        # Permission flags: show edit/add buttons only to users who can access those views
+        context['can_edit_committee'] = user.is_superuser
+        context['can_add_committee_member'] = (
+            user.is_superuser
+            or GroupMember.objects.filter(
+                user=user,
+                is_active=True,
+                roles__name__in=['Leader', 'Deputy Leader'],
+            ).exists()
+        )
+        context['can_edit_committee_member'] = user.is_superuser
+        context['can_add_committee_meeting'] = user.is_superuser
+        context['can_edit_committee_meeting'] = user.is_superuser
+        # Get active members for this committee with custom role ordering
+        context['members'] = self.object.members.filter(is_active=True).select_related('user').annotate(
+            role_order=Case(
+                When(role='chairperson', then=Value(1)),
+                When(role='vice_chairperson', then=Value(2)),
+                When(role='member', then=Value(3)),
+                When(role='substitute_member', then=Value(4)),
+                default=Value(5),
+                output_field=CharField(),
+            )
+        ).order_by('role_order', 'user__first_name', 'user__last_name')
+        context['total_members'] = self.object.members.count()
+        # Get motions assigned to this committee
+        context['motions'] = self.object.motions.filter(is_active=True).order_by('-submitted_date')[:5]
+        context['total_motions'] = self.object.motions.count()
+        # Get committee meetings (replaces committee sessions)
+        context['meetings'] = self.object.meetings.filter(is_active=True).order_by('-scheduled_date')
+        context['total_meetings'] = self.object.meetings.count()
+        return context
+
+
+class CommitteeCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
+    """View for creating a new Committee object"""
+    model = Committee
+    form_class = CommitteeForm
+    template_name = 'district/committee_form.html'
+
+    def test_func(self):
+        """Check if user has permission to create Committee objects"""
+        return self.request.user.is_superuser
+
+    def get_initial(self):
+        """Set initial council if provided in URL"""
+        initial = super().get_initial()
+        council_id = self.request.GET.get('council')
+        if council_id:
+            try:
+                council = Council.objects.get(pk=council_id)
+                initial['council'] = council.pk
+            except Council.DoesNotExist:
+                pass
+        return initial
+    
+    def get_context_data(self, **kwargs):
+        """Add local to context if council is pre-filled"""
+        context = super().get_context_data(**kwargs)
+        council_id = self.request.GET.get('council')
+        if council_id:
+            try:
+                council = Council.objects.get(pk=council_id)
+                context['district'] = council.district
+            except Council.DoesNotExist:
+                pass
+        return context
+
+    def get_success_url(self):
+        """Redirect to the linked council after successful creation"""
+        if hasattr(self.object, 'council') and self.object.council:
+            return reverse('district:council-detail', kwargs={'pk': self.object.council.pk})
+        return reverse('district:committee-list')
+
+    def form_valid(self, form):
+        """Display success message on form validation"""
+        messages.success(self.request, f"Committee '{form.instance.name}' created successfully.")
+        return super().form_valid(form)
+
+
+class CommitteeUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
+    """View for updating an existing Committee object"""
+    model = Committee
+    form_class = CommitteeForm
+    template_name = 'district/committee_form.html'
+    success_url = reverse_lazy('district:committee-list')
+
+    def test_func(self):
+        """Check if user has permission to edit Committee objects"""
+        return self.request.user.is_superuser
+
+    def get_success_url(self):
+        """Redirect to committee detail after edit"""
+        return reverse('district:committee-detail', kwargs={'pk': self.object.pk})
+
+    def get_context_data(self, **kwargs):
+        """Add local to context"""
+        context = super().get_context_data(**kwargs)
+        if self.object and self.object.council:
+            context['district'] = self.object.council.district
+        return context
+
+    def form_valid(self, form):
+        """Display success message on form validation"""
+        messages.success(self.request, f"Committee '{form.instance.name}' updated successfully.")
+        return super().form_valid(form)
+
+
+class CommitteeDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
+    """View for deleting a Committee object"""
+    model = Committee
+    template_name = 'district/committee_confirm_delete.html'
+    success_url = reverse_lazy('district:committee-list')
+
+    def test_func(self):
+        """Check if user has permission to delete Committee objects"""
+        return self.request.user.is_superuser
+
+    def delete(self, request, *args, **kwargs):
+        """Display success message on deletion"""
+        committee_obj = self.get_object()
+        messages.success(request, f"Committee '{committee_obj.name}' deleted successfully.")
+        return super().delete(request, *args, **kwargs)
+
+
+# Committee Meeting Views
+class CommitteeMeetingCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
+    """View for creating a new CommitteeMeeting (optionally for a specific committee)."""
+    model = CommitteeMeeting
+    form_class = CommitteeMeetingForm
+    template_name = 'district/committee_meeting_form.html'
+
+    def test_func(self):
+        return self.request.user.is_superuser
+
+    def get_initial(self):
+        initial = super().get_initial()
+        committee_pk = self.kwargs.get('committee_pk') or self.request.GET.get('committee')
+        if committee_pk:
+            try:
+                committee = Committee.objects.get(pk=committee_pk)
+                initial['committee'] = committee
+            except Committee.DoesNotExist:
+                pass
+        return initial
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        committee_pk = self.kwargs.get('committee_pk') or self.request.GET.get('committee')
+        if committee_pk:
+            try:
+                kwargs['committee'] = Committee.objects.get(pk=committee_pk)
+            except Committee.DoesNotExist:
+                pass
+        return kwargs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        committee_pk = self.kwargs.get('committee_pk') or self.request.GET.get('committee')
+        if committee_pk:
+            try:
+                context['committee'] = Committee.objects.get(pk=committee_pk)
+            except Committee.DoesNotExist:
+                context['committee'] = None
+        else:
+            context['committee'] = None
+        return context
+
+    def get_success_url(self):
+        if self.object.committee_id:
+            return reverse('district:committee-detail', kwargs={'pk': self.object.committee_id})
+        return reverse('district:committee-list')
+
+    def form_valid(self, form):
+        messages.success(self.request, _("Committee meeting '%(title)s' created successfully.") % {'title': form.instance.title})
+        return super().form_valid(form)
+
+
+class CommitteeMeetingDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
+    """View for displaying a single CommitteeMeeting."""
+    model = CommitteeMeeting
+    context_object_name = 'meeting'
+    template_name = 'district/committee_meeting_detail.html'
+
+    def test_func(self):
+        """Allow superuser or members of a group connected to the meeting's committee's council."""
+        if self.request.user.is_superuser:
+            return True
+        meeting_pk = self.kwargs.get('pk')
+        if meeting_pk is None:
+            return False
+        try:
+            meeting_pk = int(meeting_pk)
+        except (TypeError, ValueError):
+            return False
+        council_id = (
+            CommitteeMeeting.objects.filter(pk=meeting_pk)
+            .values_list('committee__council_id', flat=True)
+            .first()
+        )
+        if council_id is None:
+            return False
+        return council_id in _get_user_accessible_council_ids(self.request.user)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['committee'] = self.object.committee
+        # Show edit button to superusers or group leaders of groups that have members on this committee
+        context['can_edit_committee_meeting'] = _can_user_edit_committee_meeting(self.request.user, self.object)
+        # Participants: committee members who take part in the meeting (excluding substitute members)
+        role_order = Case(
+            When(role='chairperson', then=Value(1)),
+            When(role='vice_chairperson', then=Value(2)),
+            When(role='member', then=Value(3)),
+            default=Value(4),
+            output_field=IntegerField(),
+        )
+        participants = list(
+            self.object.committee.members
+            .filter(is_active=True)
+            .exclude(role='substitute_member')
+            .order_by(role_order, 'user__last_name', 'user__first_name')
+        )
+        context['participants'] = participants
+        # Map participant member pk -> substitute_member (CommitteeMember) for this meeting
+        substitute_map = {
+            s.member_id: s.substitute_member
+            for s in CommitteeParticipationSubstitute.objects.filter(
+                committee_meeting=self.object
+            ).select_related('substitute_member', 'substitute_member__user')
+        }
+        context['participants_with_substitute'] = [(m, substitute_map.get(m.pk)) for m in participants]
+        context['can_set_substitute_member_pks'] = {
+            m.pk for m in participants
+            if _can_user_set_substitute_for_member(self.request.user, m, self.object)
+        }
+        my_participant = next((p for p in participants if p.user_id == self.request.user.pk), None)
+        existing_sub = None
+        if my_participant:
+            existing_sub = CommitteeParticipationSubstitute.objects.filter(
+                committee_meeting=self.object, member=my_participant
+            ).first()
+        context['substitute_form'] = CommitteeParticipationSubstituteForm(
+            committee=self.object.committee,
+            initial={'substitute_member': existing_sub.substitute_member_id} if existing_sub else None,
+        )
+        context['my_participant'] = my_participant
+        return context
+
+
+def _can_user_set_substitute_for_member(user, member, meeting=None):
+    """Check if user can set a substitute for this committee member. Superuser, the member themselves, or group leader of a group that has a member on this committee."""
+    if user.is_superuser:
+        return True
+    if member.role == 'substitute_member':
+        return False
+    if member.user_id == user.pk:
+        return True
+    if meeting and _can_user_edit_committee_meeting(user, meeting):
+        return True
+    return False
+
+
+def _can_user_edit_committee_meeting(user, meeting):
+    """Check if user can edit this committee meeting. Superuser or group leader of a group that has a member on this committee."""
+    if user.is_superuser:
+        return True
+    from group.models import GroupMember
+    committee_user_ids = meeting.committee.members.filter(
+        is_active=True
+    ).values_list('user_id', flat=True).distinct()
+    if not committee_user_ids:
+        return False
+    leader_group_ids = GroupMember.objects.filter(
+        user=user, is_active=True
+    ).filter(
+        roles__name__in=['Group Admin', 'Leader', 'Deputy Leader']
+    ).values_list('group_id', flat=True).distinct()
+    if not leader_group_ids:
+        return False
+    return GroupMember.objects.filter(
+        group_id__in=leader_group_ids,
+        user_id__in=committee_user_ids,
+        is_active=True
+    ).exists()
+
+
+def _complete_committee_meeting_if_protocol_uploaded(meeting, file_type):
+    """
+    Set committee meeting status to completed when a protocol (minutes) attachment is uploaded.
+    Does not override cancelled or already completed meetings.
+    """
+    if file_type != 'minutes':
+        return False
+    if meeting.status in ('cancelled', 'completed'):
+        return False
+    meeting.status = 'completed'
+    meeting.save(update_fields=['status'])
+    return True
+
+
+def _invite_committee_meeting_if_invitation_uploaded(meeting, file_type):
+    """
+    Set committee meeting status to invited when an invitation attachment is uploaded.
+    Only transitions from scheduled (same rule as session invitation upload).
+    """
+    if file_type != 'invitation':
+        return False
+    if meeting.status != 'scheduled':
+        return False
+    meeting.status = 'invited'
+    meeting.save(update_fields=['status'])
+    return True
+
+
+class CommitteeMeetingSetSubstituteView(LoginRequiredMixin, View):
+    """View to set or clear a substitute. Members can only set their own substitute; superusers can set for anyone."""
+    http_method_names = ['get', 'post']
+
+    def get(self, request, pk):
+        return redirect('district:committee-meeting-detail', pk=pk)
+
+    def post(self, request, pk):
+        meeting = get_object_or_404(CommitteeMeeting, pk=pk)
+        member_pk = request.POST.get('member')
+        if not member_pk:
+            messages.error(request, _('Invalid request.'))
+            return redirect('district:committee-meeting-detail', pk=pk)
+        member = get_object_or_404(CommitteeMember, pk=member_pk)
+        if member.committee_id != meeting.committee_id:
+            messages.error(request, _('Invalid request.'))
+            return redirect('district:committee-meeting-detail', pk=pk)
+        if not _can_user_set_substitute_for_member(request.user, member, meeting):
+            messages.error(request, _('Permission denied.'))
+            return redirect('district:committee-meeting-detail', pk=pk)
+        form = CommitteeParticipationSubstituteForm(request.POST, committee=meeting.committee)
+        if not form.is_valid():
+            err = next(iter(form.errors.values()), [_('Invalid selection.')])
+            messages.error(request, err[0] if err else _('Invalid selection.'))
+            return redirect('district:committee-meeting-detail', pk=pk)
+        substitute_member = form.cleaned_data.get('substitute_member')
+        if substitute_member:
+            if substitute_member.committee_id != meeting.committee_id or substitute_member.role != 'substitute_member':
+                messages.error(request, _('Invalid substitute member.'))
+                return redirect('district:committee-meeting-detail', pk=pk)
+            CommitteeParticipationSubstitute.objects.update_or_create(
+                committee_meeting=meeting, member=member,
+                defaults={'substitute_member': substitute_member},
+            )
+            messages.success(request, _('Substitute set: %(name)s will attend in your place.') % {'name': substitute_member.user.get_full_name() or substitute_member.user.username})
+        else:
+            deleted_count, _by_model = CommitteeParticipationSubstitute.objects.filter(committee_meeting=meeting, member=member).delete()
+            if deleted_count:
+                messages.success(request, _('Substitute cleared.'))
+        return redirect('district:committee-meeting-detail', pk=pk)
+
+
+class CommitteeMeetingUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
+    """View for updating a CommitteeMeeting. Allowed for superuser or group leaders of groups that have members on this committee."""
+    model = CommitteeMeeting
+    form_class = CommitteeMeetingForm
+    context_object_name = 'meeting'
+    template_name = 'district/committee_meeting_form.html'
+
+    def test_func(self):
+        return _can_user_edit_committee_meeting(self.request.user, self.get_object())
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        if self.object and self.object.committee_id:
+            kwargs['committee'] = self.object.committee
+        return kwargs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['committee'] = self.object.committee if self.object else None
+        return context
+
+    def get_success_url(self):
+        if self.object.committee_id:
+            return reverse('district:committee-detail', kwargs={'pk': self.object.committee_id})
+        return reverse('district:committee-list')
+
+    def form_valid(self, form):
+        messages.success(self.request, _("Committee meeting '%(title)s' updated successfully.") % {'title': form.instance.title})
+        return super().form_valid(form)
+
+
+class CommitteeMeetingDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
+    """View for deleting a CommitteeMeeting."""
+    model = CommitteeMeeting
+    template_name = 'district/committee_meeting_confirm_delete.html'
+    context_object_name = 'meeting'
+
+    def test_func(self):
+        return self.request.user.is_superuser
+
+    def get_success_url(self):
+        if self.object.committee_id:
+            return reverse('district:committee-detail', kwargs={'pk': self.object.committee_id})
+        return reverse('district:committee-list')
+
+    def delete(self, request, *args, **kwargs):
+        meeting = self.get_object()
+        committee_pk = meeting.committee_id
+        messages.success(request, _("Committee meeting '%(title)s' deleted successfully.") % {'title': meeting.title})
+        result = super().delete(request, *args, **kwargs)
+        return result
+
+
+# Committee Member Views
+class CommitteeMemberListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
+    """View for listing all CommitteeMember objects"""
+    model = CommitteeMember
+    context_object_name = 'members'
+    template_name = 'district/committee_member_list.html'
+    paginate_by = 20
+
+    def test_func(self):
+        """Check if user has permission to view CommitteeMember objects"""
+        return self.request.user.is_superuser
+
+    def get_queryset(self):
+        """Filter queryset based on search parameters"""
+        queryset = CommitteeMember.objects.all().select_related('committee', 'user').order_by('-joined_date')
+        
+        # Filter by search query
+        search_query = self.request.GET.get('search', '')
+        if search_query:
+            queryset = queryset.filter(
+                Q(user__username__icontains=search_query) |
+                Q(user__first_name__icontains=search_query) |
+                Q(user__last_name__icontains=search_query) |
+                Q(committee__name__icontains=search_query)
+            )
+        
+        # Filter by role
+        role_filter = self.request.GET.get('role', '')
+        if role_filter:
+            queryset = queryset.filter(role=role_filter)
+        
+        # Filter by committee
+        committee_filter = self.request.GET.get('committee', '')
+        if committee_filter:
+            queryset = queryset.filter(committee_id=committee_filter)
+        
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        """Add filter form to context"""
+        context = super().get_context_data(**kwargs)
+        context['search_query'] = self.request.GET.get('search', '')
+        context['role_filter'] = self.request.GET.get('role', '')
+        context['committee_filter'] = self.request.GET.get('committee', '')
+        context['committees'] = Committee.objects.filter(is_active=True)
+        return context
+
+
+class CommitteeMemberCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
+    """View for creating a new CommitteeMember object"""
+    model = CommitteeMember
+    form_class = CommitteeMemberForm
+    template_name = 'district/committee_member_form.html'
+
+    def test_func(self):
+        """Check if user has permission to create CommitteeMember objects"""
+        # Allow superusers
+        if self.request.user.is_superuser:
+            return True
+        
+        # Allow Group Leaders and Deputy Leaders
+        from group.models import GroupMember
+        return GroupMember.objects.filter(
+            user=self.request.user,
+            is_active=True,
+            roles__name__in=['Leader', 'Deputy Leader']
+        ).exists()
+
+    def get_initial(self):
+        """Set initial committee if provided in URL"""
+        initial = super().get_initial()
+        committee_id = self.request.GET.get('committee')
+        if committee_id:
+            try:
+                committee = Committee.objects.get(pk=committee_id)
+                initial['committee'] = committee.pk
+            except Committee.DoesNotExist:
+                pass
+        return initial
+
+    def get_success_url(self):
+        """Redirect to the linked committee after successful creation"""
+        if hasattr(self.object, 'committee') and self.object.committee:
+            return reverse('district:committee-detail', kwargs={'pk': self.object.committee.pk})
+        return reverse('district:committee-member-list')
+
+    def form_valid(self, form):
+        """Display success message on form validation"""
+        messages.success(self.request, f"Member '{form.instance.user.username}' added to committee '{form.instance.committee.name}' successfully.")
+        return super().form_valid(form)
+
+
+class CommitteeMemberUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
+    """View for updating an existing CommitteeMember object"""
+    model = CommitteeMember
+    form_class = CommitteeMemberForm
+    template_name = 'district/committee_member_form.html'
+
+    def test_func(self):
+        """Check if user has permission to edit CommitteeMember objects"""
+        return self.request.user.is_superuser
+
+    def get_success_url(self):
+        """Redirect to the committee detail page after successful update"""
+        return reverse('district:committee-detail', kwargs={'pk': self.object.committee.pk})
+
+    def form_valid(self, form):
+        """Display success message on form validation"""
+        messages.success(self.request, f"Committee member '{form.instance.user.username}' updated successfully.")
+        return super().form_valid(form)
+
+
+class CommitteeMemberDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
+    """View for deleting a CommitteeMember object. Uses JS confirm, no separate template."""
+    model = CommitteeMember
+
+    def get(self, request, *args, **kwargs):
+        """Only POST allowed; redirect to committee on GET."""
+        self.object = self.get_object()
+        return redirect('district:committee-detail', pk=self.object.committee_id)
+
+    def test_func(self):
+        """Check if user has permission to delete CommitteeMember objects"""
+        return self.request.user.is_superuser
+
+    def get_success_url(self):
+        """Redirect to committee detail after deletion"""
+        return reverse('district:committee-detail', kwargs={'pk': self.object.committee_id})
+
+    def delete(self, request, *args, **kwargs):
+        """Display success message on deletion"""
+        member_obj = self.get_object()
+        messages.success(request, f"Member '{member_obj.user.username}' removed from committee '{member_obj.committee.name}' successfully.")
+        return super().delete(request, *args, **kwargs)
+
+
+class SessionAttachmentView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
+    """View for uploading attachments to sessions"""
+    model = SessionAttachment
+    form_class = SessionAttachmentForm
+    template_name = 'district/session_attachment_form.html'
+    
+    def test_func(self):
+        """Check if user has permission to upload session attachments"""
+        return self.request.user.is_superuser
+    
+    def get_session(self):
+        """Get the session from URL parameter"""
+        from django.shortcuts import get_object_or_404
+        return get_object_or_404(Session, pk=self.kwargs['session_pk'])
+    
+    def get_form_kwargs(self):
+        """Pass session and user to form"""
+        kwargs = super().get_form_kwargs()
+        kwargs['session'] = self.get_session()
+        kwargs['uploaded_by'] = self.request.user
+        return kwargs
+    
+    def get_success_url(self):
+        """Redirect to session detail page"""
+        return reverse_lazy('district:session-detail', kwargs={'pk': self.get_session().pk})
+    
+    def get_context_data(self, **kwargs):
+        """Add session to context"""
+        context = super().get_context_data(**kwargs)
+        context['session'] = self.get_session()
+        return context
+    
+    def form_valid(self, form):
+        """Display success message on form validation"""
+        messages.success(self.request, f"Attachment '{form.instance.filename}' uploaded successfully.")
+        return super().form_valid(form)
+
+
+class SessionInvitationUploadView(LoginRequiredMixin, UserPassesTestMixin, FormView):
+    """View for uploading invitation PDF and setting session status to invited."""
+    form_class = SessionInvitationForm
+    template_name = 'district/session_invitation_form.html'
+
+    def test_func(self):
+        return self.request.user.is_superuser
+
+    def get_session(self):
+        return get_object_or_404(Session, pk=self.kwargs['session_pk'])
+
+    def dispatch(self, request, *args, **kwargs):
+        session = self.get_session()
+        if session.status != 'scheduled':
+            messages.error(request, _("Invitation can only be added when the session is scheduled."))
+            return redirect('district:session-detail', pk=session.pk)
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_success_url(self):
+        return reverse('district:session-detail', kwargs={'pk': self.get_session().pk})
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['session'] = self.get_session()
+        return context
+
+    def form_valid(self, form):
+        import os
+        session = self.get_session()
+        file = form.cleaned_data['file']
+        description = form.cleaned_data.get('description') or ''
+        attachment = SessionAttachment(
+            session=session,
+            file=file,
+            file_type='invitation',
+            filename=os.path.basename(file.name),
+            description=description,
+            uploaded_by=self.request.user,
+        )
+        attachment.save()
+        session.status = 'invited'
+        session.save(update_fields=['status'])
+        messages.success(self.request, _("Invitation uploaded and session status set to Invited."))
+        return redirect(self.get_success_url())
+
+
+class SessionCancelView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
+    """View to confirm and cancel a session (set status to cancelled)."""
+    model = Session
+    context_object_name = 'session'
+    template_name = 'district/session_cancel_confirm.html'
+
+    def test_func(self):
+        return self.request.user.is_superuser
+
+    def dispatch(self, request, *args, **kwargs):
+        session = self.get_object()
+        if session.status not in ('scheduled', 'invited'):
+            messages.error(request, _("Only scheduled or invited sessions can be cancelled."))
+            return redirect('district:session-detail', pk=session.pk)
+        return super().dispatch(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        session = self.get_object()
+        session.status = 'cancelled'
+        session.save(update_fields=['status'])
+        messages.success(request, _("Session has been cancelled."))
+        return redirect('district:session-detail', pk=session.pk)
+
+
+class SessionMinutesUpdateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
+    """View for adding or editing session minutes (when status is completed)."""
+    form_class = SessionMinutesForm
+    template_name = 'district/session_minutes_form.html'
+
+    def test_func(self):
+        return self.request.user.is_superuser
+
+    def get_session(self):
+        return get_object_or_404(Session, pk=self.kwargs['session_pk'])
+
+    def dispatch(self, request, *args, **kwargs):
+        session = self.get_session()
+        if session.status != 'completed':
+            messages.error(request, _("Minutes can only be added for completed sessions."))
+            return redirect('district:session-detail', pk=session.pk)
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_initial(self):
+        return {'minutes': self.get_session().minutes}
+
+    def get_success_url(self):
+        return reverse('district:session-detail', kwargs={'pk': self.get_session().pk})
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['session'] = self.get_session()
+        return context
+
+    def form_valid(self, form):
+        session = self.get_session()
+        session.minutes = form.cleaned_data.get('minutes') or ''
+        session.save(update_fields=['minutes'])
+        messages.success(self.request, _("Minutes saved successfully."))
+        return redirect(self.get_success_url())
+
+
+class CommitteeMeetingAttachmentView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
+    """View for uploading attachments to committee meetings. Allowed for superuser or group leaders."""
+    model = CommitteeMeetingAttachment
+    form_class = CommitteeMeetingAttachmentForm
+    template_name = 'district/committee_meeting_attachment_form.html'
+
+    def test_func(self):
+        """Check if user has permission to upload committee meeting attachments"""
+        meeting = get_object_or_404(CommitteeMeeting, pk=self.kwargs['committee_meeting_pk'])
+        return _can_user_edit_committee_meeting(self.request.user, meeting)
+
+    def get_committee_meeting(self):
+        """Get the committee meeting from URL parameter"""
+        from django.shortcuts import get_object_or_404
+        return get_object_or_404(CommitteeMeeting, pk=self.kwargs['committee_meeting_pk'])
+
+    def get_form_kwargs(self):
+        """Pass committee_meeting and user to form"""
+        kwargs = super().get_form_kwargs()
+        kwargs['committee_meeting'] = self.get_committee_meeting()
+        kwargs['uploaded_by'] = self.request.user
+        return kwargs
+
+    def get_success_url(self):
+        """Redirect to committee meeting detail page"""
+        return reverse_lazy(
+            'district:committee-meeting-detail',
+            kwargs={'pk': self.get_committee_meeting().pk}
+        )
+
+    def get_context_data(self, **kwargs):
+        """Add meeting to context"""
+        context = super().get_context_data(**kwargs)
+        context['meeting'] = self.get_committee_meeting()
+        return context
+
+    def form_valid(self, form):
+        """Save attachment; update meeting status for protocol or invitation uploads."""
+        response = super().form_valid(form)
+        meeting = self.get_committee_meeting()
+        filename = form.instance.filename
+        if _complete_committee_meeting_if_protocol_uploaded(meeting, form.instance.file_type):
+            messages.success(
+                self.request,
+                _("Attachment '%(filename)s' uploaded and meeting marked as completed.")
+                % {'filename': filename},
+            )
+        elif _invite_committee_meeting_if_invitation_uploaded(meeting, form.instance.file_type):
+            messages.success(
+                self.request,
+                _("Attachment '%(filename)s' uploaded and meeting marked as invited.")
+                % {'filename': filename},
+            )
+        else:
+            messages.success(
+                self.request,
+                _("Attachment '%(filename)s' uploaded successfully.")
+                % {'filename': filename},
+            )
+        return response
+
+
+class DistrictEventCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
+    """Create a district event."""
+    model = DistrictEvent
+    form_class = DistrictEventForm
+    template_name = 'district/event_form.html'
+
+    def test_func(self):
+        district_obj = get_object_or_404(District, pk=self.kwargs['pk'])
+        return user_can_manage_district_events(self.request.user, district_obj)
+
+    def get_initial(self):
+        initial = super().get_initial()
+        initial['district'] = self.kwargs.get('pk')
+        return initial
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['district'] = get_object_or_404(District, pk=self.kwargs['pk'])
+        return context
+
+    def form_valid(self, form):
+        form.instance.created_by = self.request.user
+        if not form.instance.district_id:
+            form.instance.district = get_object_or_404(District, pk=self.kwargs['pk'])
+        messages.success(
+            self.request,
+            _("Event '%(title)s' created successfully.") % {'title': form.instance.title},
+        )
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse('district:district-detail', kwargs={'pk': self.object.district.pk})
+
+
+class DistrictEventDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
+    """Detail view for a district event."""
+    model = DistrictEvent
+    context_object_name = 'event'
+    template_name = 'district/event_detail.html'
+
+    def test_func(self):
+        return user_is_district_member(self.request.user, self.get_object().district)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        event = self.object
+        context['district'] = event.district
+        context['can_edit_event'] = user_can_manage_district_events(self.request.user, event.district)
+        attending = DistrictEventParticipation.objects.filter(
+            event=event, will_attend=True,
+        ).select_related('user').order_by('user__last_name', 'user__first_name')
+        context['attending_members'] = attending
+        context['attending_count'] = attending.count()
+        part = DistrictEventParticipation.objects.filter(
+            event=event, user=self.request.user,
+        ).first()
+        if part is None:
+            context['user_rsvp_status'] = 'none'
+        elif part.will_attend:
+            context['user_rsvp_status'] = 'attending'
+        else:
+            context['user_rsvp_status'] = 'declined'
+        return context
+
+
+class DistrictEventUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
+    """Update a district event."""
+    model = DistrictEvent
+    form_class = DistrictEventForm
+    template_name = 'district/event_form.html'
+    context_object_name = 'event'
+
+    def test_func(self):
+        return user_can_manage_district_events(self.request.user, self.get_object().district)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['district'] = self.object.district
+        return context
+
+    def form_valid(self, form):
+        messages.success(
+            self.request,
+            _("Event '%(title)s' updated successfully.") % {'title': form.instance.title},
+        )
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse('district:event-detail', kwargs={'pk': self.object.pk})
+
+
+class DistrictEventDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
+    """Delete a district event."""
+    model = DistrictEvent
+    template_name = 'district/event_confirm_delete.html'
+    context_object_name = 'event'
+
+    def test_func(self):
+        return user_can_manage_district_events(self.request.user, self.get_object().district)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['district'] = self.object.district
+        return context
+
+    def delete(self, request, *args, **kwargs):
+        event = self.get_object()
+        messages.success(
+            request,
+            _("Event '%(title)s' deleted successfully.") % {'title': event.title},
+        )
+        return super().delete(request, *args, **kwargs)
+
+    def get_success_url(self):
+        return reverse('district:district-detail', kwargs={'pk': self.object.district.pk})
+
+
+@login_required
+@require_http_methods(["POST"])
+def district_event_attend(request, pk):
+    """RSVP for a district event."""
+    event = get_object_or_404(DistrictEvent, pk=pk)
+    if not user_is_district_member(request.user, event.district):
+        messages.error(request, _("You don't have permission to RSVP to this event."))
+        return redirect('district:district-detail', pk=event.district.pk)
+    will_attend = request.POST.get('will_attend') == '1'
+    part, _created = DistrictEventParticipation.objects.get_or_create(
+        event=event,
+        user=request.user,
+        defaults={'will_attend': will_attend},
+    )
+    part.will_attend = will_attend
+    part.save(update_fields=['will_attend', 'updated_at'])
+    if will_attend:
+        messages.success(request, _("You are marked as attending this event."))
+    else:
+        messages.info(request, _("You are marked as not attending."))
+    next_url = request.POST.get('next')
+    if next_url and url_has_allowed_host_and_scheme(
+        next_url, allowed_hosts={request.get_host()},
+    ):
+        return redirect(next_url)
+    return redirect('district:event-detail', pk=pk)
+
+
+@login_required
+def district_event_export_ics(request, pk):
+    """Export a single district event as ICS."""
+    event = get_object_or_404(DistrictEvent, pk=pk)
+    if not user_is_district_member(request.user, event.district):
+        messages.error(request, _("You don't have permission to access this page."))
+        return redirect('district:district-detail', pk=event.district.pk)
+
+    dtstart = event.scheduled_date
+    if not timezone.is_aware(dtstart):
+        dtstart = timezone.make_aware(dtstart)
+    dtstart_utc = dtstart.astimezone(timezone.UTC)
+    dtend_utc = dtstart_utc + timezone.timedelta(hours=1)
+    dtstart_str = dtstart_utc.strftime('%Y%m%dT%H%M%SZ')
+    dtend_str = dtend_utc.strftime('%Y%m%dT%H%M%SZ')
+    uid = f"district-event-{event.pk}@{request.get_host()}"
+
+    def escape_ics_text(text):
+        if not text:
+            return ""
+        text = str(text).replace('\\', '\\\\').replace(',', '\\,').replace(';', '\\;').replace('\n', '\\n')
+        return text
+
+    ics_content = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "PRODID:-//Klubtool//District Event//EN",
+        "CALSCALE:GREGORIAN",
+        "METHOD:PUBLISH",
+        "BEGIN:VEVENT",
+        f"UID:{uid}",
+        f"DTSTART:{dtstart_str}",
+        f"DTEND:{dtend_str}",
+        f"SUMMARY:{escape_ics_text(event.title)}",
+    ]
+    if event.description:
+        ics_content.append(f"DESCRIPTION:{escape_ics_text(event.description)}")
+    created = event.created_at
+    if not timezone.is_aware(created):
+        created = timezone.make_aware(created)
+    ics_content.append(f"DTSTAMP:{created.astimezone(timezone.UTC).strftime('%Y%m%dT%H%M%SZ')}")
+    event_url = event.external_link or request.build_absolute_uri(
+        reverse('district:event-detail', args=[event.pk])
+    )
+    ics_content.append(f"URL:{event_url}")
+    ics_content.extend(["STATUS:CONFIRMED", "SEQUENCE:0", "END:VEVENT", "END:VCALENDAR"])
+    response = HttpResponse("\r\n".join(ics_content), content_type='text/calendar; charset=utf-8')
+    safe_title = "".join(c if c.isalnum() or c in ' -_' else '_' for c in event.title)[:50]
+    response['Content-Disposition'] = f'attachment; filename="event_{event.pk}_{safe_title.strip()}.ics"'
+    return response

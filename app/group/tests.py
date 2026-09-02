@@ -12,7 +12,7 @@ from .forms import (
     GroupForm, GroupFilterForm, GroupMemberForm, GroupMemberFilterForm, GroupMeetingForm, AgendaItemForm
 )
 from .models import Group, GroupMember, GroupMeeting, AgendaItem
-from local.models import Local, Party
+from district.models import District, Party
 from user.models import Role
 
 User = get_user_model()
@@ -23,7 +23,7 @@ class GroupFormTests(TestCase):
     
     def setUp(self):
         """Set up test data"""
-        self.local = Local.objects.create(
+        self.district = District.objects.create(
             name='Test Local',
             code='TL',
             description='Test local description'
@@ -31,7 +31,7 @@ class GroupFormTests(TestCase):
         
         self.party = Party.objects.create(
             name='Test Party',
-            local=self.local
+            district=self.district
         )
     
     def test_group_form_valid_data(self):
@@ -70,7 +70,7 @@ class GroupFormTests(TestCase):
         # Create inactive party
         inactive_party = Party.objects.create(
             name='Inactive Party',
-            local=self.local,
+            district=self.district,
             is_active=False
         )
         
@@ -110,7 +110,7 @@ class GroupMemberFormTests(TestCase):
             password='testpass123'
         )
         
-        self.local = Local.objects.create(
+        self.district = District.objects.create(
             name='Test Local',
             code='TL',
             description='Test local description'
@@ -118,7 +118,7 @@ class GroupMemberFormTests(TestCase):
         
         self.party = Party.objects.create(
             name='Test Party',
-            local=self.local
+            district=self.district
         )
         
         self.group = Group.objects.create(
@@ -261,7 +261,7 @@ class GroupModelTests(TestCase):
     
     def setUp(self):
         """Set up test data"""
-        self.local = Local.objects.create(
+        self.district = District.objects.create(
             name='Test Local',
             code='TL',
             description='Test local description'
@@ -269,7 +269,7 @@ class GroupModelTests(TestCase):
         
         self.party = Party.objects.create(
             name='Test Party',
-            local=self.local
+            district=self.district
         )
     
     def test_group_creation(self):
@@ -358,7 +358,7 @@ class GroupMemberModelTests(TestCase):
             password='testpass123'
         )
         
-        self.local = Local.objects.create(
+        self.district = District.objects.create(
             name='Test Local',
             code='TL',
             description='Test local description'
@@ -366,7 +366,7 @@ class GroupMemberModelTests(TestCase):
         
         self.party = Party.objects.create(
             name='Test Party',
-            local=self.local
+            district=self.district
         )
         
         self.group = Group.objects.create(
@@ -600,7 +600,7 @@ class GroupMeetingFormTests(TestCase):
             password='testpass123'
         )
         
-        self.local = Local.objects.create(
+        self.district = District.objects.create(
             name='Test Local',
             code='TL',
             description='Test local description'
@@ -608,7 +608,7 @@ class GroupMeetingFormTests(TestCase):
         
         self.party = Party.objects.create(
             name='Test Party',
-            local=self.local
+            district=self.district
         )
         
         self.group = Group.objects.create(
@@ -727,7 +727,7 @@ class GroupMeetingModelTests(TestCase):
             password='testpass123'
         )
         
-        self.local = Local.objects.create(
+        self.district = District.objects.create(
             name='Test Local',
             code='TL',
             description='Test local description'
@@ -735,7 +735,7 @@ class GroupMeetingModelTests(TestCase):
         
         self.party = Party.objects.create(
             name='Test Party',
-            local=self.local
+            district=self.district
         )
         
         self.group = Group.objects.create(
@@ -922,7 +922,7 @@ class AgendaItemFormTests(TestCase):
             password='testpass123'
         )
         
-        self.local = Local.objects.create(
+        self.district = District.objects.create(
             name='Test Local',
             code='TL',
             description='Test local description'
@@ -930,7 +930,7 @@ class AgendaItemFormTests(TestCase):
         
         self.party = Party.objects.create(
             name='Test Party',
-            local=self.local
+            district=self.district
         )
         
         self.group = Group.objects.create(
@@ -1056,7 +1056,7 @@ class AgendaItemModelTests(TestCase):
             password='testpass123'
         )
         
-        self.local = Local.objects.create(
+        self.district = District.objects.create(
             name='Test Local',
             code='TL',
             description='Test local description'
@@ -1064,7 +1064,7 @@ class AgendaItemModelTests(TestCase):
         
         self.party = Party.objects.create(
             name='Test Party',
-            local=self.local
+            district=self.district
         )
         
         self.group = Group.objects.create(
@@ -1345,7 +1345,7 @@ class GroupMeetingICSExportTests(TestCase):
         )
         
         # Create local, party, and group
-        self.local = Local.objects.create(
+        self.district = District.objects.create(
             name='Test Local',
             code='TL',
             description='Test local description'
@@ -1353,7 +1353,7 @@ class GroupMeetingICSExportTests(TestCase):
         
         self.party = Party.objects.create(
             name='Test Party',
-            local=self.local
+            district=self.district
         )
         
         self.group = Group.objects.create(
@@ -1596,8 +1596,8 @@ class GroupInviteMemberEmailTests(TestCase):
             email='admin@example.com',
             password='adminpass123',
         )
-        self.local = Local.objects.create(name='Test Local', code='TL', description='Test')
-        self.party = Party.objects.create(name='Test Party', local=self.local)
+        self.district = District.objects.create(name='Test Local', code='TL', description='Test')
+        self.party = Party.objects.create(name='Test Party', district=self.district)
         self.group = Group.objects.create(name='Test Group', party=self.party)
         mail.outbox.clear()
 
@@ -1633,8 +1633,8 @@ class GroupSendMeetingInvitesEmailTests(TestCase):
             email='member1@example.com',
             password='pass123',
         )
-        self.local = Local.objects.create(name='Test Local', code='TL', description='Test')
-        self.party = Party.objects.create(name='Test Party', local=self.local)
+        self.district = District.objects.create(name='Test Local', code='TL', description='Test')
+        self.party = Party.objects.create(name='Test Party', district=self.district)
         self.group = Group.objects.create(name='Test Group', party=self.party)
         leader_membership = GroupMember.objects.create(
             user=self.superuser,

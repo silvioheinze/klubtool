@@ -54,7 +54,7 @@
                                 {% if object.session %}
                                 <dt class="col-sm-3">{% trans "Session" %}</dt>
                                 <dd class="col-sm-9">
-                                    <a href="{% url 'local:session-detail' object.session.pk %}">{{ object.session.title }}</a>
+                                    <a href="{% url 'district:session-detail' object.session.pk %}">{{ object.session.title }}</a>
                                 </dd>
                                 {% endif %}
                                 
@@ -117,7 +117,7 @@
                             <i class="bi bi-pencil"></i> {% trans "Edit Motion" %}
                         </a>
                         {% if object.session %}
-                        <a href="{% url 'local:session-detail' object.session.pk %}" class="btn btn-outline-secondary">
+                        <a href="{% url 'district:session-detail' object.session.pk %}" class="btn btn-outline-secondary">
                             <i class="bi bi-calendar-event"></i> {% trans "View Session" %}
                         </a>
                         {% endif %}

@@ -38,7 +38,7 @@
                     {% if user.is_authenticated and user_councils %}
                         {% for council in user_councils %}
                             <li class="nav-item">
-                                <a class="nav-link" href="{% url 'local:council-detail' council.pk %}">
+                                <a class="nav-link" href="{% url 'district:council-detail' council.pk %}">
                                     <i class="bi bi-building"></i> {{ council.name }}
                                     {% if not council.is_active %}
                                         <span class="badge bg-danger ms-1">{% trans "Inactive" %}</span>
@@ -63,7 +63,7 @@
 
                     {% if user.is_authenticated and next_session %}
                         <li class="nav-item">
-                            <a class="nav-link text-warning" href="{% url 'local:session-detail' next_session.pk %}">
+                            <a class="nav-link text-warning" href="{% url 'district:session-detail' next_session.pk %}">
                                 <i class="bi bi-calendar-event"></i> {% trans "Next Session" %}
                                 <span class="badge bg-warning ms-1">{{ next_session.scheduled_date|date:"M d" }}</span>
                             </a>
@@ -120,12 +120,12 @@
                                     </a>
                                 </li>
                                 <li>
-                                    <a class="dropdown-item" href="{% url 'local:local-list' %}">
-                                        <i class="bi bi-geo-alt me-2"></i>{% trans "Local Management" %}
+                                    <a class="dropdown-item" href="{% url 'district:district-list' %}">
+                                        <i class="bi bi-geo-alt me-2"></i>{% trans "District Management" %}
                                     </a>
                                 </li>
                                 <li>
-                                    <a class="dropdown-item" href="{% url 'local:council-list' %}">
+                                    <a class="dropdown-item" href="{% url 'district:council-list' %}">
                                         <i class="bi bi-building me-2"></i>{% trans "Council Management" %}
                                     </a>
                                 </li>

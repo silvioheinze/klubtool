@@ -146,122 +146,122 @@ class MotionTemplatesTests(TestCase):
         get_template('motion/inquiry_status_confirm_delete.html')
 
 
-class LocalTemplatesTests(TestCase):
-    """Test templates for local app."""
+class DistrictTemplatesTests(TestCase):
+    """Test templates for district app."""
 
-    def test_local_list_template_exists(self):
-        get_template('local/local_list.html')
+    def test_district_list_template_exists(self):
+        get_template('district/district_list.html')
 
-    def test_local_detail_template_exists(self):
-        get_template('local/local_detail.html')
+    def test_district_detail_template_exists(self):
+        get_template('district/district_detail.html')
 
-    def test_local_form_template_exists(self):
-        get_template('local/local_form.html')
+    def test_district_form_template_exists(self):
+        get_template('district/district_form.html')
 
-    def test_local_confirm_delete_template_exists(self):
-        get_template('local/local_confirm_delete.html')
+    def test_district_confirm_delete_template_exists(self):
+        get_template('district/district_confirm_delete.html')
 
     def test_council_name_form_template_exists(self):
-        get_template('local/council_name_form.html')
+        get_template('district/council_name_form.html')
 
     def test_council_list_template_exists(self):
-        get_template('local/council_list.html')
+        get_template('district/council_list.html')
 
     def test_council_detail_template_exists(self):
-        get_template('local/council_detail.html')
+        get_template('district/council_detail.html')
 
     def test_council_form_template_exists(self):
-        get_template('local/council_form.html')
+        get_template('district/council_form.html')
 
     def test_council_confirm_delete_template_exists(self):
-        get_template('local/council_confirm_delete.html')
+        get_template('district/council_confirm_delete.html')
 
     def test_term_list_template_exists(self):
-        get_template('local/term_list.html')
+        get_template('district/term_list.html')
 
     def test_term_detail_template_exists(self):
-        get_template('local/term_detail.html')
+        get_template('district/term_detail.html')
 
     def test_term_form_template_exists(self):
-        get_template('local/term_form.html')
+        get_template('district/term_form.html')
 
     def test_term_confirm_delete_template_exists(self):
-        get_template('local/term_confirm_delete.html')
+        get_template('district/term_confirm_delete.html')
 
     def test_term_seat_distribution_list_template_exists(self):
-        get_template('local/term_seat_distribution_list.html')
+        get_template('district/term_seat_distribution_list.html')
 
     def test_term_seat_distribution_form_template_exists(self):
-        get_template('local/term_seat_distribution_form.html')
+        get_template('district/term_seat_distribution_form.html')
 
     def test_term_seat_distribution_template_exists(self):
-        get_template('local/term_seat_distribution.html')
+        get_template('district/term_seat_distribution.html')
 
     def test_party_list_template_exists(self):
-        get_template('local/party_list.html')
+        get_template('district/party_list.html')
 
     def test_party_detail_template_exists(self):
-        get_template('local/party_detail.html')
+        get_template('district/party_detail.html')
 
     def test_party_form_template_exists(self):
-        get_template('local/party_form.html')
+        get_template('district/party_form.html')
 
     def test_party_confirm_delete_template_exists(self):
-        get_template('local/party_confirm_delete.html')
+        get_template('district/party_confirm_delete.html')
 
     def test_session_detail_template_exists(self):
-        get_template('local/session_detail.html')
+        get_template('district/session_detail.html')
 
     def test_session_form_template_exists(self):
-        get_template('local/session_form.html')
+        get_template('district/session_form.html')
 
     def test_session_confirm_delete_template_exists(self):
-        get_template('local/session_confirm_delete.html')
+        get_template('district/session_confirm_delete.html')
 
     def test_session_export_pdf_template_exists(self):
-        get_template('local/session_export_pdf.html')
+        get_template('district/session_export_pdf.html')
 
     def test_council_committees_export_pdf_template_exists(self):
-        get_template('local/council_committees_export_pdf.html')
+        get_template('district/council_committees_export_pdf.html')
 
     def test_committee_list_template_exists(self):
-        get_template('local/committee_list.html')
+        get_template('district/committee_list.html')
 
     def test_committee_detail_template_exists(self):
-        get_template('local/committee_detail.html')
+        get_template('district/committee_detail.html')
 
     def test_committee_form_template_exists(self):
-        get_template('local/committee_form.html')
+        get_template('district/committee_form.html')
 
     def test_committee_confirm_delete_template_exists(self):
-        get_template('local/committee_confirm_delete.html')
+        get_template('district/committee_confirm_delete.html')
 
     def test_committee_meeting_form_template_exists(self):
-        get_template('local/committee_meeting_form.html')
+        get_template('district/committee_meeting_form.html')
 
     def test_committee_meeting_detail_template_exists(self):
-        get_template('local/committee_meeting_detail.html')
+        get_template('district/committee_meeting_detail.html')
 
     def test_committee_meeting_confirm_delete_template_exists(self):
-        get_template('local/committee_meeting_confirm_delete.html')
+        get_template('district/committee_meeting_confirm_delete.html')
 
     def test_committee_member_form_template_exists(self):
-        get_template('local/committee_member_form.html')
+        get_template('district/committee_member_form.html')
 
     def test_session_attachment_form_template_exists(self):
-        get_template('local/session_attachment_form.html')
+        get_template('district/session_attachment_form.html')
 
     def test_session_invitation_form_template_exists(self):
-        get_template('local/session_invitation_form.html')
+        get_template('district/session_invitation_form.html')
 
     def test_session_cancel_confirm_template_exists(self):
-        get_template('local/session_cancel_confirm.html')
+        get_template('district/session_cancel_confirm.html')
 
     def test_session_minutes_form_template_exists(self):
-        get_template('local/session_minutes_form.html')
+        get_template('district/session_minutes_form.html')
 
     def test_committee_meeting_attachment_form_template_exists(self):
-        get_template('local/committee_meeting_attachment_form.html')
+        get_template('district/committee_meeting_attachment_form.html')
 
 
 class GroupTemplatesTests(TestCase):

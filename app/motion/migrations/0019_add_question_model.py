@@ -9,7 +9,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('group', '0012_add_agenda_item'),
-        ('local', '0017_add_committee_abbreviation'),
+        ('district', '0017_add_committee_abbreviation'),
         ('motion', '0018_add_not_admitted_status'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
@@ -30,8 +30,8 @@ class Migration(migrations.Migration):
                 ('updated_at', models.DateTimeField(auto_now=True)),
                 ('group', models.ForeignKey(help_text='Group asking this question', on_delete=django.db.models.deletion.CASCADE, related_name='questions', to='group.group')),
                 ('interventions', models.ManyToManyField(blank=True, help_text='Wortmeldung: Users from the corresponding group who can speak in session', related_name='question_interventions', to=settings.AUTH_USER_MODEL)),
-                ('parties', models.ManyToManyField(blank=True, help_text='Parties supporting this question', related_name='questions', to='local.party')),
-                ('session', models.ForeignKey(help_text='Session where this question will be presented', on_delete=django.db.models.deletion.CASCADE, related_name='questions', to='local.session')),
+                ('parties', models.ManyToManyField(blank=True, help_text='Parties supporting this question', related_name='questions', to='district.party')),
+                ('session', models.ForeignKey(help_text='Session where this question will be presented', on_delete=django.db.models.deletion.CASCADE, related_name='questions', to='district.session')),
                 ('submitted_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='submitted_questions', to=settings.AUTH_USER_MODEL)),
             ],
             options={

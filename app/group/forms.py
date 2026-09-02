@@ -5,7 +5,7 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 import bleach
 from .models import Group, GroupMember, GroupMeeting, GroupEvent, AgendaItem, MinuteItem
-from local.models import Party
+from district.models import Party
 from user.models import Role
 
 # Allowed HTML for minute item rich text description (sanitized on save)

@@ -1,0 +1,135 @@
+{% extends "_base.html" %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}
+    {% if object %}
+        {% trans "Edit Council" %} - {{ object.name }}
+    {% else %}
+        {% trans "Create Council" %}
+    {% endif %}
+{% endblock title %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1>
+                    <i class="bi bi-building"></i>
+                    {% if object %}
+                        {% trans "Edit Council" %}: {{ object.name }}
+                    {% else %}
+                        {% trans "Create Council" %}
+                    {% endif %}
+                </h1>
+                <div>
+                    <a href="{% url 'district:council-list' %}" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left"></i> {% trans "Back to List" %}
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">{% trans "Council Information" %}</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                {% for error in form.non_field_errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.name.id_for_label }}" class="form-label">
+                                        {% trans "Council Name" %} *
+                                    </label>
+                                    {{ form.name }}
+                                    {% if form.name.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.name.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.district.id_for_label }}" class="form-label">
+                                        {% trans "District" %} *
+                                    </label>
+                                    {{ form.district }}
+                                    {% if form.district.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.district.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="{{ form.calendar_badge_name.id_for_label }}" class="form-label">
+                                {% trans "Calendar badge name" %}
+                            </label>
+                            {{ form.calendar_badge_name }}
+                            <div class="form-text">{% trans "Label for this council's sessions in the calendar (e.g. City Council). Leave empty for default." %}</div>
+                            {% if form.calendar_badge_name.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.calendar_badge_name.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'district:council-list' %}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> {% trans "Cancel" %}
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i>
+                                {% if object %}
+                                    {% trans "Update Council" %}
+                                {% else %}
+                                    {% trans "Create Council" %}
+                                {% endif %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">{% trans "Help" %}</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li><strong>{% trans "Council Name" %}:</strong> {% trans "Enter a descriptive name for the council." %}</li>
+                        <li><strong>{% trans "District" %}:</strong> {% trans "Select the district this council belongs to." %}</li>
+                        <li><strong>{% trans "Calendar badge name" %}:</strong> {% trans "Optional short label shown next to this council's sessions on the home calendar (e.g. City Council, District Council)." %}</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

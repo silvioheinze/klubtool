@@ -51,15 +51,15 @@
                                 
                                 <dt class="col-sm-4">{% trans "Party" %}</dt>
                                 <dd class="col-sm-8">
-                                    <a href="{% url 'local:party-detail' member.group.party.pk %}">
+                                    <a href="{% url 'district:party-detail' member.group.party.pk %}">
                                         {{ member.group.party.name }}
                                     </a>
                                 </dd>
                                 
-                                <dt class="col-sm-4">{% trans "Local District" %}</dt>
+                                <dt class="col-sm-4">{% trans "District" %}</dt>
                                 <dd class="col-sm-8">
-                                    <a href="{% url 'local:local-detail' member.group.party.local.pk %}">
-                                        {{ member.group.party.local.name }}
+                                    <a href="{% url 'district:district-detail' member.group.party.district.pk %}">
+                                        {{ member.group.party.district.name }}
                                     </a>
                                 </dd>
                             </dl>

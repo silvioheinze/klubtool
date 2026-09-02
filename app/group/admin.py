@@ -3,8 +3,8 @@ from .models import Group, GroupMember
 
 @admin.register(Group)
 class GroupAdmin(admin.ModelAdmin):
-    list_display = ['name', 'party', 'local', 'member_count', 'is_active', 'created_at']
-    list_filter = ['is_active', 'party', 'party__local', 'created_at']
+    list_display = ['name', 'party', 'district', 'member_count', 'is_active', 'created_at']
+    list_filter = ['is_active', 'party', 'party__district', 'created_at']
     search_fields = ['name', 'party__name']
     readonly_fields = ['created_at', 'updated_at', 'member_count']
     ordering = ['name']
@@ -13,9 +13,9 @@ class GroupAdmin(admin.ModelAdmin):
         ('Dates', {'fields': ('created_at', 'updated_at'), 'classes': ('collapse',)}),
     )
 
-    def local(self, obj):
-        return obj.party.local.name if obj.party and obj.party.local else '-'
-    local.short_description = 'Local District'
+    def district(self, obj):
+        return obj.party.district.name if obj.party and obj.party.district else '-'
+    district.short_description = 'District'
 
     def member_count(self, obj):
         return obj.member_count

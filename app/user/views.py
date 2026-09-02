@@ -177,8 +177,8 @@ class UsersListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
     def get_queryset(self):
         queryset = CustomUser.objects.select_related('role').prefetch_related(
             'group_memberships__roles',
-            'group_memberships__group__party__local',
-            'committee_memberships__committee__council__local'
+            'group_memberships__group__party__district',
+            'committee_memberships__committee__council__district'
         ).all().order_by('username')
         
         # Filter by search query
@@ -217,13 +217,13 @@ class UsersListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
             locals_set = set()
             # Get locals from group memberships
             for membership in user.group_memberships.filter(is_active=True):
-                if membership.group.party and membership.group.party.local:
-                    locals_set.add(membership.group.party.local)
+                if membership.group.party and membership.group.party.district:
+                    locals_set.add(membership.group.party.district)
             # Get locals from committee memberships
             for membership in user.committee_memberships.filter(is_active=True):
-                if membership.committee.council and membership.committee.council.local:
-                    locals_set.add(membership.committee.council.local)
-            user.unique_locals = sorted(locals_set, key=lambda x: x.name)
+                if membership.committee.council and membership.committee.council.district:
+                    locals_set.add(membership.committee.council.district)
+            user.unique_districts = sorted(locals_set, key=lambda x: x.name)
         
         return context
 

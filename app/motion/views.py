@@ -20,8 +20,8 @@ from .models import (
 )
 from .forms import MotionForm, MotionFilterForm, MotionVoteForm, MotionVoteFormSetFactory, MotionVoteTypeForm, MotionCommentForm, MotionAttachmentForm, MotionStatusForm, MotionGroupDecisionForm, InquiryForm, InquiryFilterForm, InquiryStatusForm, InquiryAttachmentForm
 from user.models import CustomUser
-from local.models import Session, Party
-from local.views import _get_user_accessible_council_ids
+from district.models import Session, Party
+from district.views import _get_user_accessible_council_ids
 from group.models import Group, GroupMember
 
 
@@ -291,7 +291,7 @@ class MotionDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         
         # Add vote formset
         parties = Party.objects.filter(
-            local=motion.session.council.local,
+            district=motion.session.council.district,
             is_active=True
         )
         context['vote_formset'] = MotionVoteFormSetFactory(
@@ -329,11 +329,11 @@ class MotionDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         votes = motion.votes.all().select_related('party', 'status', 'vote_session').order_by('-voted_at', 'party__name')
         
         # Get term and seat distributions for displaying max seats
-        from local.models import Term, TermSeatDistribution
+        from district.models import Term, TermSeatDistribution
         from django.utils.translation import gettext_lazy as _
         session = motion.session
         term = session.term
-        if not term and session.council and session.council.local:
+        if not term and session.council and session.council.district:
             today = timezone.now().date()
             term = Term.objects.filter(
                 start_date__lte=today,
@@ -345,7 +345,7 @@ class MotionDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         if term:
             seat_distributions = TermSeatDistribution.objects.filter(
                 term=term,
-                party__local=session.council.local,
+                party__district=session.council.district,
                 party__is_active=True
             ).select_related('party')
             party_seat_map = {dist.party.pk: dist.seats for dist in seat_distributions}
@@ -509,7 +509,7 @@ class MotionCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     def get_success_url(self):
         """Redirect to session detail page after successful motion creation"""
         if hasattr(self.object, 'session') and self.object.session:
-            return reverse('local:session-detail', kwargs={'pk': self.object.session.pk})
+            return reverse('district:session-detail', kwargs={'pk': self.object.session.pk})
         return super().get_success_url()
 
     def form_valid(self, form):
@@ -609,20 +609,20 @@ class MotionDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
 @user_passes_test(is_superuser_or_has_permission('motion.vote'))
 def motion_vote_view(request, pk):
     """View for recording party votes on a motion"""
-    from local.models import Term, TermSeatDistribution
+    from district.models import Term, TermSeatDistribution
 
     motion = get_object_or_404(Motion, pk=pk)
 
     # Get parties for this motion's session council
     parties = Party.objects.filter(
-        local=motion.session.council.local,
+        district=motion.session.council.district,
         is_active=True
     )
 
     # Get term and seat distributions for formset validation
     session = motion.session
     term = session.term
-    if not term and session.council and session.council.local:
+    if not term and session.council and session.council.district:
         today = timezone.now().date()
         term = Term.objects.filter(
             start_date__lte=today,
@@ -633,7 +633,7 @@ def motion_vote_view(request, pk):
     if term:
         seat_distributions = TermSeatDistribution.objects.filter(
             term=term,
-            party__local=session.council.local,
+            party__district=session.council.district,
             party__is_active=True
         ).select_related('party')
         party_seat_map = {dist.party.pk: dist.seats for dist in seat_distributions}
@@ -873,29 +873,29 @@ def motion_status_change_view(request, pk):
     
     # Get parties for this motion's session council
     parties = Party.objects.filter(
-        local=motion.session.council.local,
+        district=motion.session.council.district,
         is_active=True
     )
     
     # Get term and seat distributions for vote validation
-    from local.models import Term, TermSeatDistribution
+    from district.models import Term, TermSeatDistribution
     from django.utils import timezone
     session = motion.session
     term = session.term
-    if not term and session.council and session.council.local:
+    if not term and session.council and session.council.district:
         today = timezone.now().date()
         term = Term.objects.filter(
             start_date__lte=today,
             end_date__gte=today,
             is_active=True,
-            local=session.council.local
+            district=session.council.district
         ).first()
     
     party_seat_map = {}
     if term:
         seat_distributions = TermSeatDistribution.objects.filter(
             term=term,
-            party__local=session.council.local,
+            party__district=session.council.district,
             party__is_active=True
         ).select_related('party')
         party_seat_map = {dist.party.pk: dist.seats for dist in seat_distributions}
@@ -1285,7 +1285,7 @@ def motion_vote_edit_view(request, motion_pk, vote_type, vote_name_encoded):
     from urllib.parse import unquote
     from django.utils.translation import gettext_lazy as _
     from django.utils import timezone
-    from local.models import Term, TermSeatDistribution, Party, Session, Committee
+    from district.models import Term, TermSeatDistribution, Party, Session, Committee
     import logging
     logger = logging.getLogger(__name__)
     
@@ -1311,7 +1311,7 @@ def motion_vote_edit_view(request, motion_pk, vote_type, vote_name_encoded):
     session = motion.session
     term = session.term
     
-    if not term and session.council and session.council.local:
+    if not term and session.council and session.council.district:
         today = timezone.now().date()
         term = Term.objects.filter(
             start_date__lte=today,
@@ -1324,7 +1324,7 @@ def motion_vote_edit_view(request, motion_pk, vote_type, vote_name_encoded):
         return redirect('motion:motion-detail', pk=motion_pk)
     
     parties = Party.objects.filter(
-        local=session.council.local,
+        district=session.council.district,
         is_active=True
     ).order_by('name')
     
@@ -1570,7 +1570,7 @@ class MotionExportPDFView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         # Prepare parties with logo paths for PDF generation
         # Order parties by seat count in the council (if available)
         from django.utils import timezone
-        from local.models import Term, TermSeatDistribution
+        from district.models import Term, TermSeatDistribution
         
         parties_with_logos = []
         party_seat_map = {}
@@ -1588,11 +1588,11 @@ class MotionExportPDFView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
                 is_active=True
             ).first()
             
-            if current_term and council.local:
+            if current_term and council.district:
                 # Get seat distributions for parties in this council's local
                 seat_distributions = TermSeatDistribution.objects.filter(
                     term=current_term,
-                    party__local=council.local
+                    party__district=council.district
                 ).select_related('party')
                 
                 # Create a map of party ID to seat count
@@ -1709,7 +1709,7 @@ class InquiryExportPDFView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             'answer_files',
         ).all().order_by('-changed_at')
 
-        from local.models import Term, TermSeatDistribution
+        from district.models import Term, TermSeatDistribution
 
         parties_with_logos = []
         party_seat_map = {}
@@ -1722,10 +1722,10 @@ class InquiryExportPDFView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
                 end_date__gte=today,
                 is_active=True,
             ).first()
-            if current_term and council.local:
+            if current_term and council.district:
                 for distribution in TermSeatDistribution.objects.filter(
                     term=current_term,
-                    party__local=council.local,
+                    party__district=council.district,
                 ).select_related('party'):
                     party_seat_map[distribution.party.pk] = distribution.seats
 
@@ -1953,7 +1953,7 @@ class InquiryCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     def get_success_url(self):
         """Redirect to session detail page after successful inquiry creation"""
         if hasattr(self.object, 'session') and self.object.session:
-            return reverse('local:session-detail', kwargs={'pk': self.object.session.pk})
+            return reverse('district:session-detail', kwargs={'pk': self.object.session.pk})
         return super().get_success_url()
 
     def form_valid(self, form):

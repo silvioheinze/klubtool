@@ -9,7 +9,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('group', '0020_remove_groupmeetingparticipation_group_groupmeetingparticipation_meeting_member_uniq_and_more'),
-        ('local', '0033_merge_20260202_1418'),
+        ('district', '0033_merge_20260202_1418'),
         ('motion', '0034_rename_question_to_inquiry'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
@@ -45,12 +45,12 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='inquiry',
             name='parties',
-            field=models.ManyToManyField(blank=True, help_text='Parties supporting this inquiry', related_name='inquiries', to='local.party'),
+            field=models.ManyToManyField(blank=True, help_text='Parties supporting this inquiry', related_name='inquiries', to='district.party'),
         ),
         migrations.AlterField(
             model_name='inquiry',
             name='session',
-            field=models.ForeignKey(help_text='Session where this inquiry will be presented', on_delete=django.db.models.deletion.CASCADE, related_name='inquiries', to='local.session'),
+            field=models.ForeignKey(help_text='Session where this inquiry will be presented', on_delete=django.db.models.deletion.CASCADE, related_name='inquiries', to='district.session'),
         ),
         migrations.AlterField(
             model_name='inquiry',
@@ -95,6 +95,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='inquirystatus',
             name='committee',
-            field=models.ForeignKey(blank=True, help_text="Committee when status is 'refer_to_committee'", null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='inquiry_status_changes', to='local.committee'),
+            field=models.ForeignKey(blank=True, help_text="Committee when status is 'refer_to_committee'", null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='inquiry_status_changes', to='district.committee'),
         ),
     ]

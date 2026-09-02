@@ -6,7 +6,7 @@ from datetime import timedelta
 
 from .forms import InquiryForm
 from .models import Inquiry
-from local.models import Local, Council, Session, Term, Party
+from district.models import District, Council, Session, Term, Party
 from group.models import Group
 
 User = get_user_model()
@@ -24,14 +24,14 @@ class InquiryFormTests(TestCase):
         )
         
         # Create test data
-        self.local = Local.objects.create(
+        self.district = District.objects.create(
             name='Test Local',
             code='TL',
             description='Test local description'
         )
         
         self.council, created = Council.objects.get_or_create(
-            local=self.local,
+            district=self.district,
             defaults={'name': 'Test Council'}
         )
         
@@ -50,7 +50,7 @@ class InquiryFormTests(TestCase):
         
         self.party = Party.objects.create(
             name='Test Party',
-            local=self.local
+            district=self.district
         )
         
         self.group = Group.objects.create(
@@ -118,7 +118,7 @@ class InquiryListViewTests(TestCase):
         )
         
         # Create test data
-        self.local = Local.objects.create(
+        self.district = District.objects.create(
             name='Test Local',
             code='TL',
             description='Test local description',
@@ -126,7 +126,7 @@ class InquiryListViewTests(TestCase):
         )
         
         self.council, created = Council.objects.get_or_create(
-            local=self.local,
+            district=self.district,
             defaults={'name': 'Test Council', 'is_active': True}
         )
         
@@ -146,7 +146,7 @@ class InquiryListViewTests(TestCase):
         
         self.party = Party.objects.create(
             name='Test Party',
-            local=self.local,
+            district=self.district,
             is_active=True
         )
         
@@ -236,7 +236,7 @@ class InquiryDetailViewTests(TestCase):
         )
         
         # Create test data
-        self.local = Local.objects.create(
+        self.district = District.objects.create(
             name='Test Local',
             code='TL',
             description='Test local description',
@@ -244,7 +244,7 @@ class InquiryDetailViewTests(TestCase):
         )
         
         self.council, created = Council.objects.get_or_create(
-            local=self.local,
+            district=self.district,
             defaults={'name': 'Test Council', 'is_active': True}
         )
         
@@ -264,7 +264,7 @@ class InquiryDetailViewTests(TestCase):
         
         self.party = Party.objects.create(
             name='Test Party',
-            local=self.local,
+            district=self.district,
             is_active=True
         )
         
@@ -343,7 +343,7 @@ class InquiryCreateViewTests(TestCase):
         )
         
         # Create test data
-        self.local = Local.objects.create(
+        self.district = District.objects.create(
             name='Test Local',
             code='TL',
             description='Test local description',
@@ -351,7 +351,7 @@ class InquiryCreateViewTests(TestCase):
         )
         
         self.council, created = Council.objects.get_or_create(
-            local=self.local,
+            district=self.district,
             defaults={'name': 'Test Council', 'is_active': True}
         )
         
@@ -371,7 +371,7 @@ class InquiryCreateViewTests(TestCase):
         
         self.party = Party.objects.create(
             name='Test Party',
-            local=self.local,
+            district=self.district,
             color='#FF0000',
             is_active=True
         )
@@ -401,7 +401,7 @@ class InquiryCreateViewTests(TestCase):
         
         # Should redirect to session detail page
         self.assertEqual(response.status_code, 302)
-        self.assertRedirects(response, reverse('local:session-detail', kwargs={'pk': self.session.pk}))
+        self.assertRedirects(response, reverse('district:session-detail', kwargs={'pk': self.session.pk}))
         
         # Check that inquiry was created
         self.assertTrue(Inquiry.objects.filter(title='Test Inquiry', session=self.session).exists())
@@ -425,7 +425,7 @@ class InquiryCreateViewTests(TestCase):
         
         # Should redirect to session detail page
         self.assertEqual(response.status_code, 302)
-        self.assertRedirects(response, reverse('local:session-detail', kwargs={'pk': self.session.pk}))
+        self.assertRedirects(response, reverse('district:session-detail', kwargs={'pk': self.session.pk}))
         
         # Check that inquiry was created with the correct session
         inquiry = Inquiry.objects.get(title='Test Inquiry')
@@ -516,7 +516,7 @@ class InquiryUpdateViewTests(TestCase):
         )
         
         # Create test data
-        self.local = Local.objects.create(
+        self.district = District.objects.create(
             name='Test Local',
             code='TL',
             description='Test local description',
@@ -524,7 +524,7 @@ class InquiryUpdateViewTests(TestCase):
         )
         
         self.council, created = Council.objects.get_or_create(
-            local=self.local,
+            district=self.district,
             defaults={'name': 'Test Council', 'is_active': True}
         )
         
@@ -544,7 +544,7 @@ class InquiryUpdateViewTests(TestCase):
         
         self.party = Party.objects.create(
             name='Test Party',
-            local=self.local,
+            district=self.district,
             is_active=True
         )
         
@@ -612,7 +612,7 @@ class InquiryDeleteViewTests(TestCase):
         )
         
         # Create test data
-        self.local = Local.objects.create(
+        self.district = District.objects.create(
             name='Test Local',
             code='TL',
             description='Test local description',
@@ -620,7 +620,7 @@ class InquiryDeleteViewTests(TestCase):
         )
         
         self.council, created = Council.objects.get_or_create(
-            local=self.local,
+            district=self.district,
             defaults={'name': 'Test Council', 'is_active': True}
         )
         
@@ -640,7 +640,7 @@ class InquiryDeleteViewTests(TestCase):
         
         self.party = Party.objects.create(
             name='Test Party',
-            local=self.local,
+            district=self.district,
             is_active=True
         )
         

@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('local', '0007_alter_termseatdistribution_options_and_more'),
+        ('district', '0007_alter_termseatdistribution_options_and_more'),
         ('motion', '0003_remove_motion_priority'),
     ]
 
@@ -15,7 +15,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='motion',
             name='committee',
-            field=models.ForeignKey(blank=True, help_text='Committee this motion is assigned to (optional)', null=True, on_delete=django.db.models.deletion.CASCADE, related_name='motions', to='local.committee'),
+            field=models.ForeignKey(blank=True, help_text='Committee this motion is assigned to (optional)', null=True, on_delete=django.db.models.deletion.CASCADE, related_name='motions', to='district.committee'),
         ),
         migrations.AlterField(
             model_name='motion',

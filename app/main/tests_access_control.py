@@ -16,7 +16,7 @@ from django.utils import timezone
 from datetime import timedelta
 
 from user.models import Role
-from local.models import Local, Council, Session, Term, Party, Committee
+from district.models import District, Council, Session, Term, Party, Committee
 from group.models import Group, GroupMember, GroupMeeting
 from motion.models import Motion, Inquiry
 
@@ -69,18 +69,18 @@ class AccessControlTestCase(TestCase):
         )
         
         # Create local, council, party, group for group-based tests
-        self.local = Local.objects.create(
+        self.district = District.objects.create(
             name='Test Local',
             code='TL',
             description='Test local description',
             is_active=True
         )
         
-        self.council = self.local.council
+        self.council = self.district.council
         
         self.party = Party.objects.create(
             name='Test Party',
-            local=self.local,
+            district=self.district,
             is_active=True
         )
         
@@ -679,96 +679,96 @@ class GroupAccessTests(AccessControlTestCase):
         self.assertEqual(response.status_code, 403)
 
 
-class LocalAccessTests(AccessControlTestCase):
+class DistrictAccessTests(AccessControlTestCase):
     """Test access control for local/council/session views"""
     
     def test_local_list_view_superuser_access(self):
         """Test that superuser can view local list"""
         self.client.login(username='admin', password='adminpass123')
-        response = self.client.get(reverse('local:local-list'))
+        response = self.client.get(reverse('district:district-list'))
         self.assertEqual(response.status_code, 200)
     
     def test_local_list_view_regular_user_denied(self):
         """Test that regular user cannot view local list"""
         self.client.login(username='regular', password='regularpass123')
-        response = self.client.get(reverse('local:local-list'))
+        response = self.client.get(reverse('district:district-list'))
         self.assertEqual(response.status_code, 403)
     
     def test_local_list_view_role_user_denied(self):
         """Test that user with role permissions cannot view local list (superuser only)"""
         self.client.login(username='editor', password='editorpass123')
-        response = self.client.get(reverse('local:local-list'))
+        response = self.client.get(reverse('district:district-list'))
         self.assertEqual(response.status_code, 403)
     
     def test_session_detail_view_superuser_access(self):
         """Test that superuser can view session detail"""
         self.client.login(username='admin', password='adminpass123')
-        response = self.client.get(reverse('local:session-detail', kwargs={'pk': self.session.pk}))
+        response = self.client.get(reverse('district:session-detail', kwargs={'pk': self.session.pk}))
         self.assertEqual(response.status_code, 200)
     
     def test_session_detail_view_regular_user_denied(self):
         """Test that regular user cannot view session detail"""
         self.client.login(username='regular', password='regularpass123')
-        response = self.client.get(reverse('local:session-detail', kwargs={'pk': self.session.pk}))
+        response = self.client.get(reverse('district:session-detail', kwargs={'pk': self.session.pk}))
         self.assertEqual(response.status_code, 403)
     
     def test_session_create_view_superuser_access(self):
         """Test that superuser can create sessions"""
         self.client.login(username='admin', password='adminpass123')
-        response = self.client.get(reverse('local:session-create'))
+        response = self.client.get(reverse('district:session-create'))
         self.assertEqual(response.status_code, 200)
     
     def test_session_create_view_regular_user_denied(self):
         """Test that regular user cannot create sessions"""
         self.client.login(username='regular', password='regularpass123')
-        response = self.client.get(reverse('local:session-create'))
+        response = self.client.get(reverse('district:session-create'))
         self.assertEqual(response.status_code, 403)
     
     def test_council_detail_view_superuser_access(self):
         """Test that superuser can view council detail"""
         self.client.login(username='admin', password='adminpass123')
-        response = self.client.get(reverse('local:council-detail', kwargs={'pk': self.council.pk}))
+        response = self.client.get(reverse('district:council-detail', kwargs={'pk': self.council.pk}))
         self.assertEqual(response.status_code, 200)
     
     def test_council_detail_view_regular_user_denied(self):
         """Test that regular user cannot view council detail"""
         self.client.login(username='regular', password='regularpass123')
-        response = self.client.get(reverse('local:council-detail', kwargs={'pk': self.council.pk}))
+        response = self.client.get(reverse('district:council-detail', kwargs={'pk': self.council.pk}))
         self.assertEqual(response.status_code, 403)
 
     def test_council_detail_view_group_member_access(self):
         """Test that group member can view council detail for council connected to their group"""
-        # group_leader is member of self.group; self.group.party.local.council == self.council
+        # group_leader is member of self.group; self.group.party.district.council == self.council
         self.client.login(username='leader', password='leaderpass123')
-        response = self.client.get(reverse('local:council-detail', kwargs={'pk': self.council.pk}))
+        response = self.client.get(reverse('district:council-detail', kwargs={'pk': self.council.pk}))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, self.council.name)
 
     def test_session_detail_view_group_member_access(self):
         """Test that group member can view session detail for session of council connected to their group"""
         self.client.login(username='leader', password='leaderpass123')
-        response = self.client.get(reverse('local:session-detail', kwargs={'pk': self.session.pk}))
+        response = self.client.get(reverse('district:session-detail', kwargs={'pk': self.session.pk}))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, self.session.title)
 
     def test_local_detail_view_superuser_access(self):
         """Test that superuser can view local detail"""
         self.client.login(username='admin', password='adminpass123')
-        response = self.client.get(reverse('local:local-detail', kwargs={'pk': self.local.pk}))
+        response = self.client.get(reverse('district:district-detail', kwargs={'pk': self.district.pk}))
         self.assertEqual(response.status_code, 200)
 
     def test_local_detail_view_regular_user_denied(self):
         """Test that regular user cannot view local detail"""
         self.client.login(username='regular', password='regularpass123')
-        response = self.client.get(reverse('local:local-detail', kwargs={'pk': self.local.pk}))
+        response = self.client.get(reverse('district:district-detail', kwargs={'pk': self.district.pk}))
         self.assertEqual(response.status_code, 403)
 
     def test_local_detail_view_group_member_access(self):
         """Test that group member can view local detail for local connected to their group (via party)"""
         self.client.login(username='leader', password='leaderpass123')
-        response = self.client.get(reverse('local:local-detail', kwargs={'pk': self.local.pk}))
+        response = self.client.get(reverse('district:district-detail', kwargs={'pk': self.district.pk}))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, self.local.name)
+        self.assertContains(response, self.district.name)
 
 
 class GroupMeetingAccessTests(AccessControlTestCase):
@@ -908,7 +908,7 @@ class AnonymousUserAccessTests(AccessControlTestCase):
     
     def test_local_list_view_anonymous_denied(self):
         """Test that anonymous user cannot access local list"""
-        response = self.client.get(reverse('local:local-list'))
+        response = self.client.get(reverse('district:district-list'))
         # Should redirect to login
         self.assertEqual(response.status_code, 302)
 

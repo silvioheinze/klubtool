@@ -8,7 +8,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('motion', '0010_motiongroupdecision'),
-        ('local', '0014_alter_sessionattachment_file_type'),
+        ('district', '0014_alter_sessionattachment_file_type'),
     ]
 
     operations = [
@@ -20,7 +20,7 @@ class Migration(migrations.Migration):
                 help_text='Party casting the vote',
                 on_delete=django.db.models.deletion.CASCADE,
                 related_name='motion_votes',
-                to='local.party',
+                to='district.party',
                 null=True,  # Allow null temporarily for migration
             ),
         ),
@@ -64,7 +64,7 @@ class Migration(migrations.Migration):
                 help_text='Party casting the vote',
                 on_delete=django.db.models.deletion.CASCADE,
                 related_name='motion_votes',
-                to='local.party',
+                to='district.party',
             ),
         ),
     ]

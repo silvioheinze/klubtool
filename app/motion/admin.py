@@ -37,7 +37,7 @@ class MotionAdmin(admin.ModelAdmin):
         'submitted_by', 'submitted_date', 'supporting_parties_count'
     ]
     list_filter = [
-        'motion_type', 'status', 'tags', 'group__party__local', 
+        'motion_type', 'status', 'tags', 'group__party__district', 
         'session__council', 'submitted_date', 'is_active'
     ]
     search_fields = ['title', 'description', 'group__name', 'submitted_by__username']
@@ -77,7 +77,7 @@ class MotionVoteAdmin(admin.ModelAdmin):
     search_fields = ['motion__title', 'party__name', 'vote_name']
     readonly_fields = ['total_favor', 'total_against', 'outcome', 'voted_at']
     list_display = ['motion', 'party', 'status', 'get_vote_summary', 'total_votes_cast', 'participation_rate', 'voted_at']
-    list_filter = ['voted_at', 'motion__status', 'party__local', 'status__status']
+    list_filter = ['voted_at', 'motion__status', 'party__district', 'status__status']
     search_fields = ['motion__title', 'party__name', 'notes']
     readonly_fields = ['voted_at', 'total_votes_cast', 'participation_rate']
     date_hierarchy = 'voted_at'
@@ -200,7 +200,7 @@ class InquiryAdmin(admin.ModelAdmin):
         'submitted_by', 'submitted_date', 'supporting_parties_count'
     ]
     list_filter = [
-        'status', 'tags', 'group__party__local', 
+        'status', 'tags', 'group__party__district', 
         'session__council', 'submitted_date', 'is_active'
     ]
     search_fields = ['title', 'text', 'answer', 'group__name', 'submitted_by__username']

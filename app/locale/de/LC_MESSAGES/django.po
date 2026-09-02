@@ -63,21 +63,21 @@ msgid "Party event"
 msgstr "Parteiveranstaltung"
 
 #: group/views.py:84 pages/calendar_utils.py:75
-#: templates/local/committee_confirm_delete.html:42
-#: templates/local/committee_confirm_delete.html:131
-#: templates/local/committee_form.html:114
-#: templates/local/committee_list.html:45
-#: templates/local/committee_list.html:96 templates/local/local_detail.html:30
-#: templates/local/session_confirm_delete.html:91
+#: templates/district/committee_confirm_delete.html:42
+#: templates/district/committee_confirm_delete.html:131
+#: templates/district/committee_form.html:114
+#: templates/district/committee_list.html:45
+#: templates/district/committee_list.html:96 templates/district/local_detail.html:30
+#: templates/district/session_confirm_delete.html:91
 msgid "Council"
 msgstr "Vertretung"
 
-#: group/views.py:105 templates/local/committee_meeting_confirm_delete.html:29
-#: templates/local/committee_meeting_detail.html:42
-#: templates/local/committee_meeting_form.html:83
-#: templates/local/committee_meeting_form.html:90
-#: templates/local/committee_member_form.html:69
-#: templates/local/session_detail.html:80
+#: group/views.py:105 templates/district/committee_meeting_confirm_delete.html:29
+#: templates/district/committee_meeting_detail.html:42
+#: templates/district/committee_meeting_form.html:83
+#: templates/district/committee_meeting_form.html:90
+#: templates/district/committee_member_form.html:69
+#: templates/district/session_detail.html:80
 #: templates/motion/inquiry_status_change.html:85
 #: templates/motion/inquiry_status_confirm_delete.html:57
 #: templates/motion/motion_group_decision.html:61
@@ -241,28 +241,28 @@ msgstr "Ersatzmitglied"
 #: templates/group/group_meetings_list_partial.html:8
 #: templates/group/meeting_cancel_confirm.html:50
 #: templates/group/meeting_detail.html:76
-#: templates/local/council_sessions_list_partial.html:19
-#: templates/local/session_cancel_confirm.html:51
-#: templates/local/session_confirm_delete.html:61
-#: templates/local/session_detail.html:50 templates/local/session_form.html:307
+#: templates/district/council_sessions_list_partial.html:19
+#: templates/district/session_cancel_confirm.html:51
+#: templates/district/session_confirm_delete.html:61
+#: templates/district/session_detail.html:50 templates/district/session_form.html:307
 msgid "Scheduled"
 msgstr "Geplant"
 
 #: local/models.py:165 templates/group/group_detail.html:124
 #: templates/group/group_meetings_list_partial.html:12
 #: templates/group/meeting_detail.html:80
-#: templates/local/council_sessions_list_partial.html:23
-#: templates/local/session_confirm_delete.html:65
-#: templates/local/session_detail.html:54 templates/local/session_form.html:309
+#: templates/district/council_sessions_list_partial.html:23
+#: templates/district/session_confirm_delete.html:65
+#: templates/district/session_detail.html:54 templates/district/session_form.html:309
 msgid "Completed"
 msgstr "Abgeschlossen"
 
 #: local/models.py:166 templates/group/group_detail.html:126
 #: templates/group/group_meetings_list_partial.html:14
 #: templates/group/meeting_detail.html:82
-#: templates/local/council_sessions_list_partial.html:25
-#: templates/local/session_confirm_delete.html:67
-#: templates/local/session_detail.html:56 templates/local/session_form.html:310
+#: templates/district/council_sessions_list_partial.html:25
+#: templates/district/session_confirm_delete.html:67
+#: templates/district/session_detail.html:56 templates/district/session_form.html:310
 msgid "Cancelled"
 msgstr "Abgesetzt"
 
@@ -270,10 +270,10 @@ msgstr "Abgesetzt"
 #: templates/group/group_meetings_list_partial.html:10
 #: templates/group/meeting_cancel_confirm.html:52
 #: templates/group/meeting_detail.html:78
-#: templates/local/council_sessions_list_partial.html:27
-#: templates/local/session_cancel_confirm.html:53
-#: templates/local/session_confirm_delete.html:69
-#: templates/local/session_detail.html:58 templates/local/session_form.html:311
+#: templates/district/council_sessions_list_partial.html:27
+#: templates/district/session_cancel_confirm.html:53
+#: templates/district/session_confirm_delete.html:69
+#: templates/district/session_detail.html:58 templates/district/session_form.html:311
 msgid "Invited"
 msgstr "Eingeladen"
 
@@ -288,8 +288,8 @@ msgstr "Aktueller Stand der Sitzung"
 #: templates/group/meeting_agenda_export_pdf.html:7
 #: templates/group/meeting_agenda_export_pdf.html:12
 #: templates/group/meeting_detail.html:123
-#: templates/local/committee_meeting_detail.html:70
-#: templates/local/committee_meeting_form.html:134
+#: templates/district/committee_meeting_detail.html:70
+#: templates/district/committee_meeting_form.html:134
 msgid "Agenda"
 msgstr "Tagesordnung"
 
@@ -300,7 +300,7 @@ msgstr "Einladung"
 #: local/models.py:219 local/models.py:462
 #: templates/group/meeting_minutes_export_pdf.html:8
 #: templates/group/meeting_minutes_export_pdf.html:13
-#: templates/local/session_minutes_form.html:36
+#: templates/district/session_minutes_form.html:36
 msgid "Minutes"
 msgstr "Protokoll"
 
@@ -308,23 +308,23 @@ msgstr "Protokoll"
 msgid "Other"
 msgstr "Sonstiges"
 
-#: local/models.py:257 templates/local/committee_confirm_delete.html:48
-#: templates/local/committee_detail.html:51
-#: templates/local/committee_list.html:98
-#: templates/local/committee_member_form.html:214
+#: local/models.py:257 templates/district/committee_confirm_delete.html:48
+#: templates/district/committee_detail.html:51
+#: templates/district/committee_list.html:98
+#: templates/district/committee_member_form.html:214
 msgid "Chairperson"
 msgstr "Vorsitzende/r"
 
-#: local/models.py:258 templates/local/committee_detail.html:60
-#: templates/local/committee_member_form.html:215
+#: local/models.py:258 templates/district/committee_detail.html:60
+#: templates/district/committee_member_form.html:215
 msgid "Vice Chairperson"
 msgstr "Stellv. Vorsitzende/r"
 
 #: local/models.py:259 templates/group/group_detail.html:318
 #: templates/group/group_detail.html:386 templates/group/member_detail.html:92
 #: templates/group/member_form.html:226
-#: templates/local/committee_detail.html:264
-#: templates/local/committee_member_form.html:216
+#: templates/district/committee_detail.html:264
+#: templates/district/committee_member_form.html:216
 msgid "Member"
 msgstr "Mitglied"
 
@@ -584,7 +584,7 @@ msgstr "Optionale Beschreibung für diese Abstimmungsrunde"
 msgid "Use motion's session"
 msgstr "Abstimmungssitzungen"
 
-#: motion/forms.py:816 templates/local/session_cancel_confirm.html:40
+#: motion/forms.py:816 templates/district/session_cancel_confirm.html:40
 #: templates/motion/inquiry_confirm_delete.html:52
 #: templates/motion/inquiry_detail.html:78
 #: templates/motion/inquiry_form.html:86 templates/motion/inquiry_form.html:209
@@ -638,8 +638,8 @@ msgid "The file must be smaller than 20 MB."
 msgstr "Die Datei darf maximal 20 MB groß sein."
 
 #: motion/models.py:41 motion/models.py:510
-#: templates/local/session_detail.html:170
-#: templates/local/session_detail.html:261
+#: templates/district/session_detail.html:170
+#: templates/district/session_detail.html:261
 #: templates/motion/inquiry_detail.html:92
 #: templates/motion/inquiry_list.html:177
 #: templates/motion/inquiry_status_change.html:36
@@ -648,9 +648,9 @@ msgid "Draft"
 msgstr "Entwurf"
 
 #: motion/models.py:42 motion/models.py:511
-#: templates/local/committee_detail.html:182
-#: templates/local/session_detail.html:172
-#: templates/local/session_detail.html:263
+#: templates/district/committee_detail.html:182
+#: templates/district/session_detail.html:172
+#: templates/district/session_detail.html:263
 #: templates/motion/inquiry_detail.html:94
 #: templates/motion/inquiry_list.html:179
 #: templates/motion/inquiry_status_change.html:38
@@ -664,7 +664,7 @@ msgid "Tabled"
 msgstr "Zugelassen"
 
 #: motion/models.py:44 motion/models.py:183 motion/models.py:486
-#: motion/models.py:512 templates/local/session_detail.html:265
+#: motion/models.py:512 templates/district/session_detail.html:265
 #: templates/motion/inquiry_detail.html:96
 #: templates/motion/inquiry_list.html:181
 #: templates/motion/inquiry_status_change.html:40
@@ -683,8 +683,8 @@ msgid "Voted upon in Committee"
 msgstr "Kommissionen und Ausschüsse"
 
 #: motion/models.py:47 motion/models.py:513
-#: templates/local/session_detail.html:174
-#: templates/local/session_detail.html:267
+#: templates/district/session_detail.html:174
+#: templates/district/session_detail.html:267
 #: templates/motion/inquiry_detail.html:98
 #: templates/motion/inquiry_list.html:183
 #: templates/motion/inquiry_status_change.html:42
@@ -693,8 +693,8 @@ msgid "Approved"
 msgstr "Angenommen"
 
 #: motion/models.py:48 motion/models.py:514
-#: templates/local/session_detail.html:176
-#: templates/local/session_detail.html:269
+#: templates/district/session_detail.html:176
+#: templates/district/session_detail.html:269
 #: templates/motion/inquiry_detail.html:100
 #: templates/motion/inquiry_list.html:185
 #: templates/motion/inquiry_status_change.html:44
@@ -704,8 +704,8 @@ msgid "Rejected"
 msgstr "Abgelehnt"
 
 #: motion/models.py:49 motion/models.py:516
-#: templates/local/session_detail.html:178
-#: templates/local/session_detail.html:273
+#: templates/district/session_detail.html:178
+#: templates/district/session_detail.html:273
 #: templates/motion/inquiry_detail.html:104
 #: templates/motion/inquiry_list.html:189
 #: templates/motion/inquiry_status_change.html:48
@@ -715,8 +715,8 @@ msgid "Withdrawn"
 msgstr "Zurückgezogen"
 
 #: motion/models.py:50 motion/models.py:517
-#: templates/local/session_detail.html:180
-#: templates/local/session_detail.html:275
+#: templates/district/session_detail.html:180
+#: templates/district/session_detail.html:275
 #: templates/motion/inquiry_detail.html:106
 #: templates/motion/inquiry_list.html:191
 #: templates/motion/inquiry_status_change.html:50
@@ -726,7 +726,7 @@ msgid "Nicht zugelassen"
 msgstr "Nicht zugelassen"
 
 #: motion/models.py:51 motion/models.py:515
-#: templates/local/session_detail.html:271
+#: templates/district/session_detail.html:271
 #: templates/motion/inquiry_detail.html:102
 #: templates/motion/inquiry_list.html:187
 #: templates/motion/inquiry_status_change.html:46
@@ -888,19 +888,19 @@ msgstr "Navigation umschalten"
 #: templates/group/member_confirm_delete.html:66
 #: templates/group/member_detail.html:101 templates/home.html:166
 #: templates/home.html:189 templates/home.html:214
-#: templates/local/committee_confirm_delete.html:128
-#: templates/local/council_confirm_delete.html:54
-#: templates/local/council_list.html:50 templates/local/council_list.html:102
-#: templates/local/council_name_form.html:88 templates/local/local_list.html:39
-#: templates/local/local_list.html:93
-#: templates/local/party_confirm_delete.html:57
-#: templates/local/party_list.html:50 templates/local/party_list.html:114
-#: templates/local/session_detail.html:165
-#: templates/local/session_detail.html:256
-#: templates/local/term_confirm_delete.html:60
-#: templates/local/term_detail.html:47 templates/local/term_detail.html:112
-#: templates/local/term_list.html:49 templates/local/term_list.html:116
-#: templates/local/term_seat_distribution.html:135 templates/user/list.html:57
+#: templates/district/committee_confirm_delete.html:128
+#: templates/district/council_confirm_delete.html:54
+#: templates/district/council_list.html:50 templates/district/council_list.html:102
+#: templates/district/council_name_form.html:88 templates/district/local_list.html:39
+#: templates/district/local_list.html:93
+#: templates/district/party_confirm_delete.html:57
+#: templates/district/party_list.html:50 templates/district/party_list.html:114
+#: templates/district/session_detail.html:165
+#: templates/district/session_detail.html:256
+#: templates/district/term_confirm_delete.html:60
+#: templates/district/term_detail.html:47 templates/district/term_detail.html:112
+#: templates/district/term_list.html:49 templates/district/term_list.html:116
+#: templates/district/term_seat_distribution.html:135 templates/user/list.html:57
 #: templates/user/role_list.html:42 templates/user/role_list.html:96
 msgid "Inactive"
 msgstr "Inaktiv"
@@ -932,13 +932,13 @@ msgstr "Systemeinstellungen"
 msgid "User Management"
 msgstr "Benutzerverwaltung"
 
-#: templates/_base.html:124 templates/local/local_list.html:6
-#: templates/local/local_list.html:13
-msgid "Local Management"
+#: templates/_base.html:124 templates/district/local_list.html:6
+#: templates/district/local_list.html:13
+msgid "District Management"
 msgstr "Bezirksverwaltung"
 
-#: templates/_base.html:129 templates/local/council_list.html:6
-#: templates/local/council_list.html:13
+#: templates/_base.html:129 templates/district/council_list.html:6
+#: templates/district/council_list.html:13
 msgid "Council Management"
 msgstr "Vertretungsverwaltung"
 
@@ -1087,36 +1087,36 @@ msgstr "Wirklich abmelden?"
 #: templates/group/member_confirm_delete.html:86
 #: templates/group/member_form.html:176 templates/group/member_form.html:184
 #: templates/group/member_form.html:188 templates/group/member_invite.html:45
-#: templates/local/committee_confirm_delete.html:84
-#: templates/local/committee_form.html:218
-#: templates/local/committee_form.html:222
-#: templates/local/committee_form.html:226
-#: templates/local/committee_meeting_attachment_form.html:93
-#: templates/local/committee_meeting_confirm_delete.html:55
-#: templates/local/committee_meeting_detail.html:208
-#: templates/local/committee_meeting_form.html:162
-#: templates/local/committee_meeting_form.html:164
-#: templates/local/committee_meeting_form.html:166
-#: templates/local/committee_member_form.html:185
-#: templates/local/committee_member_form.html:189
-#: templates/local/council_confirm_delete.html:74
-#: templates/local/council_form.html:103
-#: templates/local/council_name_form.html:59
-#: templates/local/local_confirm_delete.html:37
-#: templates/local/local_form.html:113
-#: templates/local/party_confirm_delete.html:77
-#: templates/local/party_form.html:213
-#: templates/local/session_attachment_form.html:94
-#: templates/local/session_confirm_delete.html:117
-#: templates/local/session_detail.html:447
-#: templates/local/session_detail.html:474
-#: templates/local/session_form.html:263 templates/local/session_form.html:268
-#: templates/local/session_form.html:272
-#: templates/local/session_invitation_form.html:70
-#: templates/local/session_minutes_form.html:54
-#: templates/local/term_confirm_delete.html:83
-#: templates/local/term_form.html:137
-#: templates/local/term_seat_distribution_form.html:151
+#: templates/district/committee_confirm_delete.html:84
+#: templates/district/committee_form.html:218
+#: templates/district/committee_form.html:222
+#: templates/district/committee_form.html:226
+#: templates/district/committee_meeting_attachment_form.html:93
+#: templates/district/committee_meeting_confirm_delete.html:55
+#: templates/district/committee_meeting_detail.html:208
+#: templates/district/committee_meeting_form.html:162
+#: templates/district/committee_meeting_form.html:164
+#: templates/district/committee_meeting_form.html:166
+#: templates/district/committee_member_form.html:185
+#: templates/district/committee_member_form.html:189
+#: templates/district/council_confirm_delete.html:74
+#: templates/district/council_form.html:103
+#: templates/district/council_name_form.html:59
+#: templates/district/local_confirm_delete.html:37
+#: templates/district/local_form.html:113
+#: templates/district/party_confirm_delete.html:77
+#: templates/district/party_form.html:213
+#: templates/district/session_attachment_form.html:94
+#: templates/district/session_confirm_delete.html:117
+#: templates/district/session_detail.html:447
+#: templates/district/session_detail.html:474
+#: templates/district/session_form.html:263 templates/district/session_form.html:268
+#: templates/district/session_form.html:272
+#: templates/district/session_invitation_form.html:70
+#: templates/district/session_minutes_form.html:54
+#: templates/district/term_confirm_delete.html:83
+#: templates/district/term_form.html:137
+#: templates/district/term_seat_distribution_form.html:151
 #: templates/motion/inquiry_attachment.html:75
 #: templates/motion/inquiry_confirm_delete.html:92
 #: templates/motion/inquiry_form.html:171
@@ -1209,7 +1209,7 @@ msgstr "Sitzungstitel"
 #: templates/group/member_confirm_delete.html:50
 #: templates/group/member_detail.html:45 templates/group/member_form.html:113
 #: templates/group/member_form.html:220
-#: templates/local/committee_detail.html:181
+#: templates/district/committee_detail.html:181
 #: templates/motion/inquiry_confirm_delete.html:59
 #: templates/motion/inquiry_detail.html:67
 #: templates/motion/motion_confirm_delete.html:62
@@ -1222,9 +1222,9 @@ msgstr "Klub"
 #: templates/group/event_detail.html:46
 #: templates/group/meeting_confirm_delete.html:42
 #: templates/group/meeting_detail.html:58 templates/group/meeting_form.html:243
-#: templates/local/committee_meeting_confirm_delete.html:34
-#: templates/local/committee_meeting_detail.html:51
-#: templates/local/committee_meeting_form.html:115
+#: templates/district/committee_meeting_confirm_delete.html:34
+#: templates/district/committee_meeting_detail.html:51
+#: templates/district/committee_meeting_form.html:115
 msgid "Date & Time"
 msgstr "Datum & Uhrzeit"
 
@@ -1233,11 +1233,11 @@ msgstr "Datum & Uhrzeit"
 #: templates/group/meeting_confirm_delete.html:46
 #: templates/group/meeting_detail.html:69 templates/group/meeting_form.html:249
 #: templates/group/meeting_list.html:94
-#: templates/local/committee_detail.html:109
-#: templates/local/committee_meeting_confirm_delete.html:37
-#: templates/local/committee_meeting_detail.html:54
-#: templates/local/committee_meeting_form.html:124
-#: templates/local/session_detail.html:71
+#: templates/district/committee_detail.html:109
+#: templates/district/committee_meeting_confirm_delete.html:37
+#: templates/district/committee_meeting_detail.html:54
+#: templates/district/committee_meeting_form.html:124
+#: templates/district/session_detail.html:71
 msgid "Location"
 msgstr "Ort"
 
@@ -1250,23 +1250,23 @@ msgstr "Ort"
 #: templates/group/meeting_detail.html:434
 #: templates/group/meeting_detail.html:477
 #: templates/group/meeting_form.html:250 templates/group/meeting_list.html:100
-#: templates/local/committee_confirm_delete.html:67
-#: templates/local/committee_detail.html:74
-#: templates/local/committee_form.html:190
-#: templates/local/committee_meeting_attachment_form.html:72
-#: templates/local/committee_meeting_form.html:134
-#: templates/local/council_confirm_delete.html:64
-#: templates/local/local_confirm_delete.html:28
-#: templates/local/local_form.html:91 templates/local/local_list.html:71
-#: templates/local/party_confirm_delete.html:67
-#: templates/local/party_detail.html:70 templates/local/party_form.html:251
-#: templates/local/session_attachment_form.html:73
-#: templates/local/session_confirm_delete.html:105
-#: templates/local/session_detail.html:114
-#: templates/local/session_invitation_form.html:53
-#: templates/local/term_confirm_delete.html:73
-#: templates/local/term_detail.html:74 templates/local/term_form.html:121
-#: templates/local/term_form.html:164
+#: templates/district/committee_confirm_delete.html:67
+#: templates/district/committee_detail.html:74
+#: templates/district/committee_form.html:190
+#: templates/district/committee_meeting_attachment_form.html:72
+#: templates/district/committee_meeting_form.html:134
+#: templates/district/council_confirm_delete.html:64
+#: templates/district/local_confirm_delete.html:28
+#: templates/district/local_form.html:91 templates/district/local_list.html:71
+#: templates/district/party_confirm_delete.html:67
+#: templates/district/party_detail.html:70 templates/district/party_form.html:251
+#: templates/district/session_attachment_form.html:73
+#: templates/district/session_confirm_delete.html:105
+#: templates/district/session_detail.html:114
+#: templates/district/session_invitation_form.html:53
+#: templates/district/term_confirm_delete.html:73
+#: templates/district/term_detail.html:74 templates/district/term_form.html:121
+#: templates/district/term_form.html:164
 #: templates/motion/inquiry_attachment.html:61
 #: templates/motion/inquiry_attachment.html:95
 #: templates/motion/motion_attachment.html:61
@@ -1322,12 +1322,12 @@ msgstr "Veranstaltung löschen"
 #: templates/group/group_confirm_delete.html:30
 #: templates/group/meeting_confirm_delete.html:17
 #: templates/group/member_confirm_delete.html:30
-#: templates/local/committee_confirm_delete.html:31
-#: templates/local/committee_meeting_confirm_delete.html:17
-#: templates/local/council_confirm_delete.html:30
-#: templates/local/local_confirm_delete.html:19
-#: templates/local/party_confirm_delete.html:30
-#: templates/local/term_confirm_delete.html:30
+#: templates/district/committee_confirm_delete.html:31
+#: templates/district/committee_meeting_confirm_delete.html:17
+#: templates/district/council_confirm_delete.html:30
+#: templates/district/local_confirm_delete.html:19
+#: templates/district/party_confirm_delete.html:30
+#: templates/district/term_confirm_delete.html:30
 #: templates/motion/inquiry_confirm_delete.html:30
 #: templates/motion/inquiry_status_confirm_delete.html:34
 #: templates/motion/motion_confirm_delete.html:30
@@ -1364,17 +1364,17 @@ msgstr "Veranstaltungsdetails"
 #: templates/group/meeting_detail.html:430
 #: templates/group/meeting_detail.html:473
 #: templates/group/meeting_minutes_export_pdf.html:35
-#: templates/local/committee_detail.html:107
-#: templates/local/committee_detail.html:179
-#: templates/local/committee_meeting_confirm_delete.html:26
-#: templates/local/committee_meeting_detail.html:39
-#: templates/local/committee_meeting_form.html:102
-#: templates/local/council_sessions_list_partial.html:7
-#: templates/local/session_cancel_confirm.html:44
-#: templates/local/session_confirm_delete.html:50
-#: templates/local/session_detail.html:39
-#: templates/local/session_detail.html:140
-#: templates/local/session_detail.html:231
+#: templates/district/committee_detail.html:107
+#: templates/district/committee_detail.html:179
+#: templates/district/committee_meeting_confirm_delete.html:26
+#: templates/district/committee_meeting_detail.html:39
+#: templates/district/committee_meeting_form.html:102
+#: templates/district/council_sessions_list_partial.html:7
+#: templates/district/session_cancel_confirm.html:44
+#: templates/district/session_confirm_delete.html:50
+#: templates/district/session_detail.html:39
+#: templates/district/session_detail.html:140
+#: templates/district/session_detail.html:231
 #: templates/motion/inquiry_confirm_delete.html:43
 #: templates/motion/inquiry_detail.html:52
 #: templates/motion/inquiry_form.html:34 templates/motion/inquiry_form.html:206
@@ -1399,16 +1399,16 @@ msgstr "Nur auf Einladung"
 #: templates/group/meeting_detail.html:167
 #: templates/group/meeting_detail.html:234
 #: templates/group/meeting_list.html:119 templates/group/member_detail.html:16
-#: templates/local/committee_detail.html:17
-#: templates/local/committee_meeting_detail.html:18
-#: templates/local/council_detail.html:17 templates/local/council_list.html:114
-#: templates/local/local_detail.html:17 templates/local/local_detail.html:186
-#: templates/local/local_detail.html:264 templates/local/local_list.html:105
-#: templates/local/party_detail.html:16 templates/local/party_list.html:126
-#: templates/local/session_detail.html:19 templates/local/term_detail.html:16
-#: templates/local/term_list.html:131
-#: templates/local/term_seat_distribution.html:90
-#: templates/local/term_seat_distribution_list.html:129
+#: templates/district/committee_detail.html:17
+#: templates/district/committee_meeting_detail.html:18
+#: templates/district/council_detail.html:17 templates/district/council_list.html:114
+#: templates/district/local_detail.html:17 templates/district/local_detail.html:186
+#: templates/district/local_detail.html:264 templates/district/local_list.html:105
+#: templates/district/party_detail.html:16 templates/district/party_list.html:126
+#: templates/district/session_detail.html:19 templates/district/term_detail.html:16
+#: templates/district/term_list.html:131
+#: templates/district/term_seat_distribution.html:90
+#: templates/district/term_seat_distribution_list.html:129
 #: templates/motion/inquiry_detail.html:21
 #: templates/motion/motion_detail.html:22
 #: templates/motion/motion_detail.html:342 templates/user/list.html:105
@@ -1423,11 +1423,11 @@ msgstr "Möchtest du diese Veranstaltung wirklich löschen?"
 #: templates/group/event_detail.html:27 templates/group/event_form.html:132
 #: templates/group/group_list.html:100 templates/group/meeting_detail.html:170
 #: templates/group/meeting_detail.html:237
-#: templates/group/meeting_list.html:123 templates/local/council_list.html:118
-#: templates/local/local_detail.html:192 templates/local/local_list.html:109
-#: templates/local/party_list.html:130 templates/local/term_list.html:135
-#: templates/local/term_seat_distribution.html:94
-#: templates/local/term_seat_distribution_list.html:133
+#: templates/group/meeting_list.html:123 templates/district/council_list.html:118
+#: templates/district/local_detail.html:192 templates/district/local_list.html:109
+#: templates/district/party_list.html:130 templates/district/term_list.html:135
+#: templates/district/term_seat_distribution.html:94
+#: templates/district/term_seat_distribution_list.html:133
 #: templates/motion/inquiry_detail.html:26
 #: templates/motion/motion_detail.html:345 templates/user/role_list.html:110
 #: templates/user/role_list.html:115
@@ -1445,8 +1445,8 @@ msgstr "Infos zur Veranstaltung"
 #: templates/group/event_detail.html:50 templates/group/event_list.html:45
 #: templates/group/meeting_confirm_delete.html:55
 #: templates/group/meeting_detail.html:87 templates/group/meeting_list.html:109
-#: templates/local/committee_meeting_confirm_delete.html:45
-#: templates/local/committee_meeting_detail.html:63
+#: templates/district/committee_meeting_confirm_delete.html:45
+#: templates/district/committee_meeting_detail.html:63
 msgid "Upcoming"
 msgstr "Anstehend"
 
@@ -1478,21 +1478,21 @@ msgstr "Teilnehmen"
 #: templates/group/meeting_detail.html:263
 #: templates/group/member_confirm_delete.html:100
 #: templates/group/member_detail.html:126
-#: templates/local/committee_confirm_delete.html:98
-#: templates/local/committee_detail.html:111
-#: templates/local/committee_detail.html:183
-#: templates/local/committee_list.html:100
-#: templates/local/committee_meeting_detail.html:141
-#: templates/local/council_confirm_delete.html:88
-#: templates/local/council_list.html:84 templates/local/local_detail.html:159
-#: templates/local/local_detail.html:242 templates/local/local_list.html:74
-#: templates/local/party_confirm_delete.html:91
-#: templates/local/party_list.html:86
-#: templates/local/term_confirm_delete.html:97
-#: templates/local/term_detail.html:84 templates/local/term_list.html:93
-#: templates/local/term_seat_distribution.html:62
-#: templates/local/term_seat_distribution.html:147
-#: templates/local/term_seat_distribution_list.html:93
+#: templates/district/committee_confirm_delete.html:98
+#: templates/district/committee_detail.html:111
+#: templates/district/committee_detail.html:183
+#: templates/district/committee_list.html:100
+#: templates/district/committee_meeting_detail.html:141
+#: templates/district/council_confirm_delete.html:88
+#: templates/district/council_list.html:84 templates/district/local_detail.html:159
+#: templates/district/local_detail.html:242 templates/district/local_list.html:74
+#: templates/district/party_confirm_delete.html:91
+#: templates/district/party_list.html:86
+#: templates/district/term_confirm_delete.html:97
+#: templates/district/term_detail.html:84 templates/district/term_list.html:93
+#: templates/district/term_seat_distribution.html:62
+#: templates/district/term_seat_distribution.html:147
+#: templates/district/term_seat_distribution_list.html:93
 #: templates/motion/inquiry_confirm_delete.html:106
 #: templates/motion/motion_confirm_delete.html:109 templates/user/list.html:47
 #: templates/user/role_list.html:77
@@ -1561,8 +1561,8 @@ msgstr "Bevorstehende Veranstaltungen"
 #: templates/group/event_list.html:43
 #: templates/group/meeting_confirm_delete.html:53
 #: templates/group/meeting_detail.html:85 templates/group/meeting_list.html:107
-#: templates/local/committee_meeting_confirm_delete.html:43
-#: templates/local/committee_meeting_detail.html:61
+#: templates/district/committee_meeting_confirm_delete.html:43
+#: templates/district/committee_meeting_detail.html:61
 msgid "Past"
 msgstr "Vergangen"
 
@@ -1571,22 +1571,22 @@ msgid "Event pagination"
 msgstr "Veranstaltungs-Paginierung"
 
 #: templates/group/event_list.html:54 templates/group/meeting_list.html:144
-#: templates/local/council_sessions_list_partial.html:40
+#: templates/district/council_sessions_list_partial.html:40
 msgid "Previous"
 msgstr "Nächstes"
 
 #: templates/group/event_list.html:56 templates/group/meeting_list.html:151
-#: templates/local/committee_list.html:177
-#: templates/local/council_list.html:147 templates/local/local_list.html:138
-#: templates/local/party_list.html:159 templates/local/term_list.html:164
-#: templates/local/term_seat_distribution_list.html:162
+#: templates/district/committee_list.html:177
+#: templates/district/council_list.html:147 templates/district/local_list.html:138
+#: templates/district/party_list.html:159 templates/district/term_list.html:164
+#: templates/district/term_seat_distribution_list.html:162
 #: templates/motion/inquiry_list.html:219 templates/motion/motion_list.html:232
 #: templates/user/list.html:151 templates/user/role_list.html:145
 msgid "Page"
 msgstr "Seite"
 
 #: templates/group/event_list.html:58 templates/group/meeting_list.html:158
-#: templates/local/council_sessions_list_partial.html:48
+#: templates/district/council_sessions_list_partial.html:48
 msgid "Next"
 msgstr "Nächstes"
 
@@ -1666,9 +1666,9 @@ msgstr "Kalender"
 #: templates/group/group_meetings_export_pdf.html:18
 #: templates/group/meeting_cancel_confirm.html:45
 #: templates/group/meeting_list.html:89
-#: templates/local/session_cancel_confirm.html:46
-#: templates/local/session_confirm_delete.html:76
-#: templates/local/session_detail.html:65
+#: templates/district/session_cancel_confirm.html:46
+#: templates/district/session_confirm_delete.html:76
+#: templates/district/session_detail.html:65
 #: templates/pages/personal_calendar_export_pdf.html:17
 msgid "Date"
 msgstr "Datum"
@@ -1702,25 +1702,25 @@ msgstr "Gruppe löschen"
 
 #: templates/group/group_confirm_delete.html:15
 #: templates/group/group_form.html:28 templates/group/meeting_form.html:37
-#: templates/group/member_form.html:33 templates/local/committee_form.html:37
-#: templates/local/committee_meeting_form.html:51
-#: templates/local/committee_member_form.html:33
-#: templates/local/council_confirm_delete.html:15
-#: templates/local/council_form.html:28
-#: templates/local/party_confirm_delete.html:15
-#: templates/local/party_detail.html:19 templates/local/party_form.html:28
-#: templates/local/session_form.html:44
-#: templates/local/term_confirm_delete.html:15
-#: templates/local/term_detail.html:19 templates/local/term_form.html:28
-#: templates/local/term_seat_distribution_form.html:28
+#: templates/group/member_form.html:33 templates/district/committee_form.html:37
+#: templates/district/committee_meeting_form.html:51
+#: templates/district/committee_member_form.html:33
+#: templates/district/council_confirm_delete.html:15
+#: templates/district/council_form.html:28
+#: templates/district/party_confirm_delete.html:15
+#: templates/district/party_detail.html:19 templates/district/party_form.html:28
+#: templates/district/session_form.html:44
+#: templates/district/term_confirm_delete.html:15
+#: templates/district/term_detail.html:19 templates/district/term_form.html:28
+#: templates/district/term_seat_distribution_form.html:28
 msgid "Back to List"
 msgstr "Zurück zur Liste"
 
 #: templates/group/group_confirm_delete.html:26
-#: templates/local/committee_confirm_delete.html:27
-#: templates/local/council_confirm_delete.html:26
-#: templates/local/party_confirm_delete.html:26
-#: templates/local/term_confirm_delete.html:26
+#: templates/district/committee_confirm_delete.html:27
+#: templates/district/council_confirm_delete.html:26
+#: templates/district/party_confirm_delete.html:26
+#: templates/district/term_confirm_delete.html:26
 #: templates/motion/inquiry_confirm_delete.html:26
 #: templates/motion/inquiry_status_confirm_delete.html:29
 #: templates/motion/motion_confirm_delete.html:26
@@ -1736,9 +1736,9 @@ msgstr "Sind Sie sicher, dass Sie die Gruppe löschen möchten"
 
 #: templates/group/group_confirm_delete.html:33
 #: templates/group/member_confirm_delete.html:34
-#: templates/local/council_confirm_delete.html:33
-#: templates/local/party_confirm_delete.html:33
-#: templates/local/term_confirm_delete.html:33
+#: templates/district/council_confirm_delete.html:33
+#: templates/district/party_confirm_delete.html:33
+#: templates/district/term_confirm_delete.html:33
 #: templates/motion/inquiry_confirm_delete.html:33
 #: templates/motion/inquiry_status_confirm_delete.html:34
 #: templates/motion/motion_confirm_delete.html:33
@@ -1755,29 +1755,29 @@ msgstr "Klubdetails"
 
 #: templates/group/group_confirm_delete.html:43
 #: templates/group/group_form.html:167 templates/group/group_list.html:54
-#: templates/local/committee_confirm_delete.html:39
-#: templates/local/committee_detail.html:40
-#: templates/local/committee_list.html:95
-#: templates/local/council_confirm_delete.html:43
-#: templates/local/council_list.html:80
-#: templates/local/local_confirm_delete.html:26
-#: templates/local/local_detail.html:156 templates/local/local_detail.html:238
-#: templates/local/local_list.html:69
-#: templates/local/party_confirm_delete.html:43
-#: templates/local/party_detail.html:36 templates/local/party_form.html:242
-#: templates/local/party_list.html:80
-#: templates/local/term_confirm_delete.html:43
-#: templates/local/term_detail.html:36 templates/local/term_list.html:87
-#: templates/local/term_seat_distribution.html:124
+#: templates/district/committee_confirm_delete.html:39
+#: templates/district/committee_detail.html:40
+#: templates/district/committee_list.html:95
+#: templates/district/council_confirm_delete.html:43
+#: templates/district/council_list.html:80
+#: templates/district/local_confirm_delete.html:26
+#: templates/district/local_detail.html:156 templates/district/local_detail.html:238
+#: templates/district/local_list.html:69
+#: templates/district/party_confirm_delete.html:43
+#: templates/district/party_detail.html:36 templates/district/party_form.html:242
+#: templates/district/party_list.html:80
+#: templates/district/term_confirm_delete.html:43
+#: templates/district/term_detail.html:36 templates/district/term_list.html:87
+#: templates/district/term_seat_distribution.html:124
 #: templates/user/role_confirm_delete.html:26 templates/user/role_list.html:72
 msgid "Name"
 msgstr "Name"
 
 #: templates/group/group_confirm_delete.html:46
-#: templates/local/local_detail.html:157
-#: templates/local/party_confirm_delete.html:46
-#: templates/local/party_detail.html:39 templates/local/party_form.html:248
-#: templates/local/party_list.html:81
+#: templates/district/local_detail.html:157
+#: templates/district/party_confirm_delete.html:46
+#: templates/district/party_detail.html:39 templates/district/party_form.html:248
+#: templates/district/party_list.html:81
 msgid "Short Name"
 msgstr "Abkürzung"
 
@@ -1785,11 +1785,11 @@ msgstr "Abkürzung"
 #: templates/group/group_detail.html:35 templates/group/group_form.html:168
 #: templates/group/group_list.html:55
 #: templates/group/member_confirm_delete.html:53
-#: templates/group/member_detail.html:52 templates/local/council_detail.html:47
-#: templates/local/local_detail.html:50
-#: templates/local/term_seat_distribution.html:59
-#: templates/local/term_seat_distribution_list.html:41
-#: templates/local/term_seat_distribution_list.html:89
+#: templates/group/member_detail.html:52 templates/district/council_detail.html:47
+#: templates/district/local_detail.html:50
+#: templates/district/term_seat_distribution.html:59
+#: templates/district/term_seat_distribution_list.html:41
+#: templates/district/term_seat_distribution_list.html:89
 #: templates/motion/inquiry_list.html:85
 #: templates/motion/motion_detail.html:550 templates/motion/motion_list.html:95
 #: templates/motion/motion_status_change.html:215
@@ -1802,23 +1802,23 @@ msgstr "Partei"
 #: templates/group/group_confirm_delete.html:52
 #: templates/group/group_detail.html:46 templates/group/group_list.html:56
 #: templates/group/member_detail.html:59
-#: templates/local/committee_confirm_delete.html:132
-#: templates/local/council_confirm_delete.html:46
-#: templates/local/council_detail.html:29 templates/local/council_form.html:72
-#: templates/local/council_form.html:127 templates/local/council_list.html:35
-#: templates/local/council_list.html:81
-#: templates/local/council_name_form.html:80
-#: templates/local/party_confirm_delete.html:49
-#: templates/local/party_detail.html:58 templates/local/party_form.html:243
-#: templates/local/party_list.html:35 templates/local/party_list.html:82
-msgid "Local District"
+#: templates/district/committee_confirm_delete.html:132
+#: templates/district/council_confirm_delete.html:46
+#: templates/district/council_detail.html:29 templates/district/council_form.html:72
+#: templates/district/council_form.html:127 templates/district/council_list.html:35
+#: templates/district/council_list.html:81
+#: templates/district/council_name_form.html:80
+#: templates/district/party_confirm_delete.html:49
+#: templates/district/party_detail.html:58 templates/district/party_form.html:243
+#: templates/district/party_list.html:35 templates/district/party_list.html:82
+msgid "District"
 msgstr "Bezirk"
 
 #: templates/group/group_confirm_delete.html:55
 #: templates/group/group_list.html:57
-#: templates/local/committee_confirm_delete.html:57
-#: templates/local/committee_list.html:99
-#: templates/local/council_committees_export_pdf.html:29
+#: templates/district/committee_confirm_delete.html:57
+#: templates/district/committee_list.html:99
+#: templates/district/council_committees_export_pdf.html:29
 msgid "Members"
 msgstr "Mitglieder"
 
@@ -1829,28 +1829,28 @@ msgstr "Mitglieder"
 #: templates/group/meeting_detail.html:73 templates/group/meeting_list.html:105
 #: templates/group/member_confirm_delete.html:61
 #: templates/group/member_detail.html:96
-#: templates/local/committee_confirm_delete.html:124
-#: templates/local/committee_detail.html:110
-#: templates/local/committee_meeting_confirm_delete.html:40
-#: templates/local/committee_meeting_detail.html:57
-#: templates/local/committee_meeting_form.html:143
-#: templates/local/council_confirm_delete.html:49
-#: templates/local/council_list.html:46 templates/local/council_list.html:82
-#: templates/local/council_name_form.html:83
-#: templates/local/council_sessions_list_partial.html:8
-#: templates/local/local_detail.html:241 templates/local/local_list.html:35
-#: templates/local/local_list.html:72
-#: templates/local/party_confirm_delete.html:52
-#: templates/local/party_list.html:46 templates/local/party_list.html:84
-#: templates/local/session_cancel_confirm.html:48
-#: templates/local/session_confirm_delete.html:58
-#: templates/local/session_detail.html:47
-#: templates/local/session_detail.html:141
-#: templates/local/session_detail.html:232
-#: templates/local/term_confirm_delete.html:55
-#: templates/local/term_detail.html:42 templates/local/term_detail.html:108
-#: templates/local/term_list.html:45 templates/local/term_list.html:91
-#: templates/local/term_seat_distribution.html:130
+#: templates/district/committee_confirm_delete.html:124
+#: templates/district/committee_detail.html:110
+#: templates/district/committee_meeting_confirm_delete.html:40
+#: templates/district/committee_meeting_detail.html:57
+#: templates/district/committee_meeting_form.html:143
+#: templates/district/council_confirm_delete.html:49
+#: templates/district/council_list.html:46 templates/district/council_list.html:82
+#: templates/district/council_name_form.html:83
+#: templates/district/council_sessions_list_partial.html:8
+#: templates/district/local_detail.html:241 templates/district/local_list.html:35
+#: templates/district/local_list.html:72
+#: templates/district/party_confirm_delete.html:52
+#: templates/district/party_list.html:46 templates/district/party_list.html:84
+#: templates/district/session_cancel_confirm.html:48
+#: templates/district/session_confirm_delete.html:58
+#: templates/district/session_detail.html:47
+#: templates/district/session_detail.html:141
+#: templates/district/session_detail.html:232
+#: templates/district/term_confirm_delete.html:55
+#: templates/district/term_detail.html:42 templates/district/term_detail.html:108
+#: templates/district/term_list.html:45 templates/district/term_list.html:91
+#: templates/district/term_seat_distribution.html:130
 #: templates/motion/inquiry_confirm_delete.html:46
 #: templates/motion/inquiry_detail.html:89
 #: templates/motion/inquiry_list.html:73 templates/motion/inquiry_list.html:153
@@ -1868,36 +1868,36 @@ msgstr "Status"
 #: templates/group/member_confirm_delete.html:64
 #: templates/group/member_detail.html:99 templates/home.html:164
 #: templates/home.html:187 templates/home.html:212
-#: templates/local/committee_confirm_delete.html:126
-#: templates/local/council_confirm_delete.html:52
-#: templates/local/council_list.html:49 templates/local/council_list.html:100
-#: templates/local/council_name_form.html:86 templates/local/local_list.html:38
-#: templates/local/local_list.html:91
-#: templates/local/party_confirm_delete.html:55
-#: templates/local/party_list.html:49 templates/local/party_list.html:112
-#: templates/local/term_confirm_delete.html:58
-#: templates/local/term_detail.html:45 templates/local/term_detail.html:110
-#: templates/local/term_list.html:48 templates/local/term_list.html:114
-#: templates/local/term_seat_distribution.html:133
+#: templates/district/committee_confirm_delete.html:126
+#: templates/district/council_confirm_delete.html:52
+#: templates/district/council_list.html:49 templates/district/council_list.html:100
+#: templates/district/council_name_form.html:86 templates/district/local_list.html:38
+#: templates/district/local_list.html:91
+#: templates/district/party_confirm_delete.html:55
+#: templates/district/party_list.html:49 templates/district/party_list.html:112
+#: templates/district/term_confirm_delete.html:58
+#: templates/district/term_detail.html:45 templates/district/term_detail.html:110
+#: templates/district/term_list.html:48 templates/district/term_list.html:114
+#: templates/district/term_seat_distribution.html:133
 #: templates/user/role_list.html:41 templates/user/role_list.html:94
 msgid "Active"
 msgstr "Aktiv"
 
 #: templates/group/group_confirm_delete.html:67
 #: templates/group/group_list.html:59 templates/group/member_detail.html:108
-#: templates/local/committee_confirm_delete.html:62
-#: templates/local/committee_confirm_delete.html:133
-#: templates/local/council_confirm_delete.html:58
-#: templates/local/council_list.html:83
-#: templates/local/council_name_form.html:92
-#: templates/local/local_confirm_delete.html:29
-#: templates/local/local_list.html:73
-#: templates/local/party_confirm_delete.html:61
-#: templates/local/party_list.html:85
-#: templates/local/term_confirm_delete.html:67
-#: templates/local/term_detail.html:66 templates/local/term_detail.html:119
-#: templates/local/term_list.html:92
-#: templates/local/term_seat_distribution_list.html:92
+#: templates/district/committee_confirm_delete.html:62
+#: templates/district/committee_confirm_delete.html:133
+#: templates/district/council_confirm_delete.html:58
+#: templates/district/council_list.html:83
+#: templates/district/council_name_form.html:92
+#: templates/district/local_confirm_delete.html:29
+#: templates/district/local_list.html:73
+#: templates/district/party_confirm_delete.html:61
+#: templates/district/party_list.html:85
+#: templates/district/term_confirm_delete.html:67
+#: templates/district/term_detail.html:66 templates/district/term_detail.html:119
+#: templates/district/term_list.html:92
+#: templates/district/term_seat_distribution_list.html:92
 #: templates/user/role_confirm_delete.html:29 templates/user/role_list.html:76
 msgid "Created"
 msgstr "Erstellt"
@@ -1915,7 +1915,7 @@ msgid "Edit Group"
 msgstr "Klub bearbeiten"
 
 #: templates/group/group_confirm_delete.html:108
-#: templates/local/party_confirm_delete.html:96
+#: templates/district/party_confirm_delete.html:96
 msgid "View Party"
 msgstr "Partei anzeigen"
 
@@ -1931,12 +1931,12 @@ msgstr "Parteiveranstaltungen"
 #: templates/group/group_detail.html:270
 #: templates/group/meeting_detail.html:127
 #: templates/group/meeting_detail.html:202
-#: templates/local/committee_detail.html:96
-#: templates/local/committee_detail.html:253
-#: templates/local/council_detail.html:137
-#: templates/local/council_detail.html:163
-#: templates/local/session_detail.html:128
-#: templates/local/session_detail.html:219
+#: templates/district/committee_detail.html:96
+#: templates/district/committee_detail.html:253
+#: templates/district/council_detail.html:137
+#: templates/district/council_detail.html:163
+#: templates/district/session_detail.html:128
+#: templates/district/session_detail.html:219
 #: templates/motion/motion_detail.html:226
 msgid "Add"
 msgstr "Hinzufügen"
@@ -1991,7 +1991,7 @@ msgstr "Nächste Seite"
 #: templates/group/group_detail.html:153 templates/group/group_detail.html:164
 #: templates/group/group_meetings_list_partial.html:41
 #: templates/group/group_meetings_list_partial.html:50
-#: templates/local/committee_detail.html:153
+#: templates/district/committee_detail.html:153
 msgid "No Meetings found"
 msgstr "Keine Sitzungen gefunden"
 
@@ -2038,22 +2038,22 @@ msgstr "Mitglied einladen"
 #: templates/group/group_detail.html:281
 #: templates/group/member_confirm_delete.html:44
 #: templates/group/member_detail.html:36 templates/group/member_form.html:219
-#: templates/local/committee_member_form.html:98
+#: templates/district/committee_member_form.html:98
 msgid "User"
 msgstr "Benutzer"
 
 #: templates/group/group_detail.html:282
 #: templates/group/member_confirm_delete.html:56
 #: templates/group/member_form.html:221
-#: templates/local/committee_detail.html:265
-#: templates/local/committee_member_form.html:117 templates/user/list.html:45
+#: templates/district/committee_detail.html:265
+#: templates/district/committee_member_form.html:117 templates/user/list.html:45
 msgid "Role"
 msgstr "Rolle"
 
 #: templates/group/group_detail.html:283
 #: templates/group/member_confirm_delete.html:70
 #: templates/group/member_detail.html:105
-#: templates/local/committee_member_form.html:135
+#: templates/district/committee_member_form.html:135
 msgid "Joined"
 msgstr "Beigetreten"
 
@@ -2091,7 +2091,7 @@ msgid "Manage Roles"
 msgstr "Berechtigungen vergeben"
 
 #: templates/group/group_detail.html:351
-#: templates/local/committee_detail.html:292
+#: templates/district/committee_detail.html:292
 msgid "No Members found"
 msgstr "Keine Mitglieder gefunden"
 
@@ -2101,7 +2101,7 @@ msgstr "Füge Klubmitglieder hin."
 
 #: templates/group/group_detail.html:361 templates/group/member_form.html:9
 #: templates/group/member_form.html:23 templates/group/member_form.html:197
-#: templates/local/committee_member_form.html:196
+#: templates/district/committee_member_form.html:196
 msgid "Add Member"
 msgstr "Mitglied hinzufügen"
 
@@ -2133,7 +2133,7 @@ msgid "Create New Group"
 msgstr "Neuen Klub erstellen"
 
 #: templates/group/group_form.html:111 templates/group/group_form.html:170
-#: templates/local/council_form.html:87 templates/local/council_form.html:128
+#: templates/district/council_form.html:87 templates/district/council_form.html:128
 #, fuzzy
 msgid "Calendar badge name"
 msgstr "Name des Kalender-Badges"
@@ -2156,11 +2156,11 @@ msgid "Update Group"
 msgstr "Klub aktualisieren"
 
 #: templates/group/group_form.html:157 templates/group/meeting_form.html:233
-#: templates/group/member_form.html:209 templates/local/committee_form.html:246
-#: templates/local/committee_member_form.html:209
-#: templates/local/council_form.html:122 templates/local/party_form.html:232
-#: templates/local/session_form.html:295 templates/local/term_form.html:156
-#: templates/local/term_seat_distribution_form.html:170
+#: templates/group/member_form.html:209 templates/district/committee_form.html:246
+#: templates/district/committee_member_form.html:209
+#: templates/district/council_form.html:122 templates/district/party_form.html:232
+#: templates/district/session_form.html:295 templates/district/term_form.html:156
+#: templates/district/term_seat_distribution_form.html:170
 #: templates/motion/inquiry_attachment.html:89
 #: templates/motion/inquiry_form.html:202
 #: templates/motion/motion_attachment.html:89
@@ -2180,7 +2180,7 @@ msgstr ""
 "politischen Partei."
 
 #: templates/group/group_form.html:165 templates/group/meeting_form.html:241
-#: templates/group/member_form.html:217 templates/local/party_form.html:240
+#: templates/group/member_form.html:217 templates/district/party_form.html:240
 msgid "Required Fields"
 msgstr "Pflichtfelder"
 
@@ -2202,8 +2202,8 @@ msgstr ""
 "Startkalender angezeigt wird (z. B. Gruppentreffen, Fraktion)."
 
 #: templates/group/group_form.html:173 templates/group/member_form.html:234
-#: templates/local/party_form.html:254
-#: templates/local/term_seat_distribution_form.html:178
+#: templates/district/party_form.html:254
+#: templates/district/term_seat_distribution_form.html:178
 msgid "Validation"
 msgstr "Validierung"
 
@@ -2225,16 +2225,16 @@ msgid "Filters"
 msgstr "Filter"
 
 #: templates/group/group_list.html:42 templates/group/meeting_list.html:59
-#: templates/local/committee_list.html:59
+#: templates/district/committee_list.html:59
 msgid "Filter"
 msgstr "Filter"
 
 #: templates/group/group_list.html:93 templates/group/meeting_list.html:116
-#: templates/local/council_list.html:111 templates/local/local_detail.html:181
-#: templates/local/local_detail.html:261 templates/local/local_list.html:102
-#: templates/local/party_list.html:123 templates/local/term_list.html:128
-#: templates/local/term_seat_distribution.html:87
-#: templates/local/term_seat_distribution_list.html:126
+#: templates/district/council_list.html:111 templates/district/local_detail.html:181
+#: templates/district/local_detail.html:261 templates/district/local_list.html:102
+#: templates/district/party_list.html:123 templates/district/term_list.html:128
+#: templates/district/term_seat_distribution.html:87
+#: templates/district/term_seat_distribution_list.html:126
 msgid "View"
 msgstr "Anzeigen"
 
@@ -2273,8 +2273,8 @@ msgstr "Bestätigen Sie die Absage dieser Sitzung."
 #: templates/group/meeting_cancel_confirm.html:17
 #: templates/group/meeting_cancel_confirm.html:62
 #: templates/group/meeting_form.html:29
-#: templates/local/committee_meeting_attachment_form.html:19
-#: templates/local/committee_meeting_form.html:41
+#: templates/district/committee_meeting_attachment_form.html:19
+#: templates/district/committee_meeting_form.html:41
 msgid "Back to Meeting"
 msgstr "Zurück zur Sitzung"
 
@@ -2302,13 +2302,13 @@ msgstr "Sitzung"
 #: templates/group/meeting_confirm_delete.html:13
 #: templates/group/meeting_confirm_delete.html:69
 #: templates/group/meeting_form.html:204
-#: templates/local/committee_meeting_confirm_delete.html:58
-#: templates/local/committee_meeting_form.html:156
+#: templates/district/committee_meeting_confirm_delete.html:58
+#: templates/district/committee_meeting_form.html:156
 msgid "Delete Meeting"
 msgstr "Sitzung löschen"
 
 #: templates/group/meeting_confirm_delete.html:18
-#: templates/local/committee_meeting_confirm_delete.html:18
+#: templates/district/committee_meeting_confirm_delete.html:18
 msgid ""
 "Are you sure you want to delete this meeting? This action cannot be undone."
 msgstr ""
@@ -2317,24 +2317,24 @@ msgstr ""
 
 #: templates/group/meeting_confirm_delete.html:23
 #: templates/group/meeting_detail.html:6
-#: templates/local/committee_meeting_confirm_delete.html:22
+#: templates/district/committee_meeting_confirm_delete.html:22
 msgid "Meeting Details"
 msgstr "Sitzungsdetails"
 
 #: templates/group/meeting_confirm_delete.html:30
-#: templates/local/committee_confirm_delete.html:45
-#: templates/local/committee_detail.html:43
-#: templates/local/committee_detail.html:180
-#: templates/local/committee_list.html:97
-#: templates/local/session_confirm_delete.html:53
-#: templates/local/session_detail.html:42
+#: templates/district/committee_confirm_delete.html:45
+#: templates/district/committee_detail.html:43
+#: templates/district/committee_detail.html:180
+#: templates/district/committee_list.html:97
+#: templates/district/session_confirm_delete.html:53
+#: templates/district/session_detail.html:42
 #: templates/motion/motion_detail.html:45
 msgid "Type"
 msgstr "Typ"
 
 #: templates/group/meeting_detail.html:41 templates/group/meeting_form.html:236
-#: templates/local/committee_meeting_detail.html:33
-#: templates/local/committee_meeting_form.html:67
+#: templates/district/committee_meeting_detail.html:33
+#: templates/district/committee_meeting_form.html:67
 msgid "Meeting Information"
 msgstr "Sitzungsinformation"
 
@@ -2359,8 +2359,8 @@ msgid "Cancel meeting"
 msgstr "Sitzung absagen"
 
 #: templates/group/meeting_detail.html:182
-#: templates/local/session_detail.html:200
-#: templates/local/session_detail.html:295
+#: templates/district/session_detail.html:200
+#: templates/district/session_detail.html:295
 #, fuzzy
 msgid "Order saved successfully!"
 msgstr "Bestellung erfolgreich gespeichert!"
@@ -2478,8 +2478,8 @@ msgid "Are you sure you want to delete this minute item?"
 msgstr "Möchten Sie diesen Protokollpunkt wirklich löschen?"
 
 #: templates/group/meeting_form.html:7 templates/group/meeting_form.html:51
-#: templates/local/committee_detail.html:139
-#: templates/local/committee_meeting_form.html:65
+#: templates/district/committee_detail.html:139
+#: templates/district/committee_meeting_form.html:65
 msgid "Edit Meeting"
 msgstr "Sitzung bearbeiten"
 
@@ -2496,17 +2496,17 @@ msgid "Add New Meeting"
 msgstr "Sitzung hinzufügen"
 
 #: templates/group/meeting_form.html:203 templates/group/meeting_list.html:122
-#: templates/local/committee_meeting_form.html:155
+#: templates/district/committee_meeting_form.html:155
 msgid "Are you sure you want to delete this meeting?"
 msgstr "Sind Sie sicher, dass Sie diese Sitzung löschen möchten?"
 
 #: templates/group/meeting_form.html:219
-#: templates/local/committee_meeting_form.html:170
+#: templates/district/committee_meeting_form.html:170
 msgid "Update Meeting"
 msgstr "Sitzung aktualisieren"
 
 #: templates/group/meeting_form.html:221
-#: templates/local/committee_meeting_form.html:170
+#: templates/district/committee_meeting_form.html:170
 msgid "Create Meeting"
 msgstr "Erstelle Sitzung"
 
@@ -2525,7 +2525,7 @@ msgstr "Wann die Sitzung stattfindet"
 msgid "Which group is holding the meeting"
 msgstr "Welcher Klub macht das Treffen?"
 
-#: templates/group/meeting_form.html:247 templates/local/party_form.html:246
+#: templates/group/meeting_form.html:247 templates/district/party_form.html:246
 msgid "Optional Fields"
 msgstr "Optionale Felder"
 
@@ -2537,12 +2537,12 @@ msgstr "Wo findet die Klubsitzung statt?"
 msgid "Agenda or additional details"
 msgstr "Tagesordnung oder weitere Infos"
 
-#: templates/group/meeting_list.html:29 templates/local/committee_list.html:32
-#: templates/local/council_list.html:30 templates/local/council_list.html:55
-#: templates/local/local_list.html:30 templates/local/local_list.html:44
-#: templates/local/party_list.html:30 templates/local/party_list.html:55
-#: templates/local/term_list.html:40 templates/local/term_list.html:62
-#: templates/local/term_seat_distribution_list.html:63
+#: templates/group/meeting_list.html:29 templates/district/committee_list.html:32
+#: templates/district/council_list.html:30 templates/district/council_list.html:55
+#: templates/district/local_list.html:30 templates/district/local_list.html:44
+#: templates/district/party_list.html:30 templates/district/party_list.html:55
+#: templates/district/term_list.html:40 templates/district/term_list.html:62
+#: templates/district/term_seat_distribution_list.html:63
 #: templates/motion/inquiry_list.html:47 templates/motion/motion_list.html:51
 #: templates/user/role_list.html:33 templates/user/role_list.html:47
 msgid "Search"
@@ -2556,7 +2556,7 @@ msgstr "Suche nach Sitzungen…"
 msgid "Meeting Type"
 msgstr "Sitzungstyp"
 
-#: templates/group/meeting_list.html:36 templates/local/committee_list.html:39
+#: templates/group/meeting_list.html:36 templates/district/committee_list.html:39
 msgid "All Types"
 msgstr "Alle Typen"
 
@@ -2573,11 +2573,11 @@ msgid "First"
 msgstr "Erstes"
 
 #: templates/group/meeting_list.html:151
-#: templates/local/committee_detail.html:226
-#: templates/local/committee_list.html:177
-#: templates/local/council_list.html:147 templates/local/local_list.html:138
-#: templates/local/party_list.html:159 templates/local/term_list.html:164
-#: templates/local/term_seat_distribution_list.html:162
+#: templates/district/committee_detail.html:226
+#: templates/district/committee_list.html:177
+#: templates/district/council_list.html:147 templates/district/local_list.html:138
+#: templates/district/party_list.html:159 templates/district/term_list.html:164
+#: templates/district/term_seat_distribution_list.html:162
 #: templates/motion/inquiry_list.html:219 templates/motion/motion_list.html:232
 #: templates/user/list.html:151 templates/user/role_list.html:145
 msgid "of"
@@ -2607,7 +2607,7 @@ msgstr "Teilnehmer"
 #: templates/group/member_confirm_delete.html:12
 #: templates/group/member_confirm_delete.html:89
 #: templates/group/member_detail.html:135 templates/group/member_form.html:180
-#: templates/local/committee_member_form.html:177
+#: templates/district/committee_member_form.html:177
 msgid "Remove Member"
 msgstr "Mitglied entfernen"
 
@@ -2629,7 +2629,7 @@ msgstr "Mitgliedschaftsdetails"
 
 #: templates/group/member_confirm_delete.html:76
 #: templates/group/member_detail.html:116
-#: templates/local/committee_member_form.html:155
+#: templates/district/committee_member_form.html:155
 #: templates/motion/motion_status_change.html:219
 #: templates/motion/motion_vote.html:134
 msgid "Notes"
@@ -2642,7 +2642,7 @@ msgstr "Mitglied anzeigen"
 #: templates/group/member_confirm_delete.html:108
 #: templates/group/member_form.html:7 templates/group/member_form.html:21
 #: templates/group/member_form.html:47
-#: templates/local/committee_detail.html:275
+#: templates/district/committee_detail.html:275
 msgid "Edit Member"
 msgstr "Mitglied bearbeiten"
 
@@ -2663,7 +2663,7 @@ msgid "Edit Membership"
 msgstr "Mitgliedschaft bearbeiten"
 
 #: templates/group/member_detail.html:134 templates/group/member_form.html:179
-#: templates/local/committee_member_form.html:174
+#: templates/district/committee_member_form.html:174
 msgid "Are you sure you want to remove this member?"
 msgstr "Möchten Sie dieses Mitglied wirklich entfernen?"
 
@@ -2672,7 +2672,7 @@ msgid "Add New Member"
 msgstr "Neues Mitglied hinzufügen"
 
 #: templates/group/member_form.html:195
-#: templates/local/committee_member_form.html:194
+#: templates/district/committee_member_form.html:194
 msgid "Update Member"
 msgstr "Mitglied aktualisieren"
 
@@ -2798,7 +2798,7 @@ msgid "Quick Access"
 msgstr "Schnellzugriff"
 
 #: templates/home.html:154
-msgid "Your Locals"
+msgid "Your Districts"
 msgstr "Dein Bezirk"
 
 #: templates/home.html:177
@@ -2841,39 +2841,39 @@ msgstr "Persönlicher Monatskalender"
 msgid "Loading…"
 msgstr "Lade…"
 
-#: templates/local/committee_confirm_delete.html:6
-#: templates/local/committee_confirm_delete.html:13
-#: templates/local/committee_confirm_delete.html:87
-#: templates/local/committee_form.html:211
-#: templates/local/committee_list.html:145
+#: templates/district/committee_confirm_delete.html:6
+#: templates/district/committee_confirm_delete.html:13
+#: templates/district/committee_confirm_delete.html:87
+#: templates/district/committee_form.html:211
+#: templates/district/committee_list.html:145
 msgid "Delete Committee"
 msgstr "Ausschuss löschen"
 
-#: templates/local/committee_confirm_delete.html:16
-#: templates/local/committee_meeting_detail.html:22
-#: templates/local/committee_meeting_form.html:46
-#: templates/local/committee_member_form.html:29
+#: templates/district/committee_confirm_delete.html:16
+#: templates/district/committee_meeting_detail.html:22
+#: templates/district/committee_meeting_form.html:46
+#: templates/district/committee_member_form.html:29
 msgid "Back to Committee"
 msgstr "Zurück zum Ausschuss"
 
-#: templates/local/committee_confirm_delete.html:32
+#: templates/district/committee_confirm_delete.html:32
 msgid ""
 "This action cannot be undone. All committee data will be permanently deleted."
 msgstr ""
 "Das kann man nicht rückgängig machen. Alle Daten des Ausschusses werden "
 "endgültig gelöscht."
 
-#: templates/local/committee_confirm_delete.html:36
-#: templates/local/committee_detail.html:33
-#: templates/local/committee_form.html:53
+#: templates/district/committee_confirm_delete.html:36
+#: templates/district/committee_detail.html:33
+#: templates/district/committee_form.html:53
 msgid "Committee Information"
 msgstr "Ausschussinformation"
 
-#: templates/local/committee_confirm_delete.html:53
-#: templates/local/committee_detail.html:56
-#: templates/local/committee_detail.html:65
-#: templates/local/committee_list.html:129
-#: templates/local/session_confirm_delete.html:96
+#: templates/district/committee_confirm_delete.html:53
+#: templates/district/committee_detail.html:56
+#: templates/district/committee_detail.html:65
+#: templates/district/committee_list.html:129
+#: templates/district/session_confirm_delete.html:96
 #: templates/motion/inquiry_detail.html:74
 #: templates/motion/inquiry_detail.html:85
 #: templates/motion/motion_detail.html:69
@@ -2881,19 +2881,19 @@ msgstr "Ausschussinformation"
 msgid "Not assigned"
 msgstr "Nicht zugewiesen"
 
-#: templates/local/committee_confirm_delete.html:72
+#: templates/district/committee_confirm_delete.html:72
 msgid "What will be deleted"
 msgstr "Was wird gelöscht"
 
-#: templates/local/committee_confirm_delete.html:74
+#: templates/district/committee_confirm_delete.html:74
 msgid "The committee itself"
 msgstr "Der Ausschuss selbst"
 
-#: templates/local/committee_confirm_delete.html:75
+#: templates/district/committee_confirm_delete.html:75
 msgid "All committee member records"
 msgstr "Alle Aufzeichnungen der Ausschussmitglieder"
 
-#: templates/local/committee_confirm_delete.html:76
+#: templates/district/committee_confirm_delete.html:76
 msgid ""
 "Committee assignments in motions (motions will remain but lose committee "
 "assignment)"
@@ -2901,256 +2901,256 @@ msgstr ""
 "Ausschusszuweisungen in Anträgen (Anträge bleiben bestehen, aber die "
 "Ausschusszuweisung geht verloren)"
 
-#: templates/local/committee_confirm_delete.html:103
+#: templates/district/committee_confirm_delete.html:103
 msgid "View Committee"
 msgstr "Ausschuss anzeigen"
 
-#: templates/local/committee_confirm_delete.html:106
-#: templates/local/committee_form.html:7 templates/local/committee_form.html:21
-#: templates/local/committee_list.html:141
+#: templates/district/committee_confirm_delete.html:106
+#: templates/district/committee_form.html:7 templates/district/committee_form.html:21
+#: templates/district/committee_list.html:141
 msgid "Edit Committee"
 msgstr "Ausschuss bearbeiten"
 
-#: templates/local/committee_confirm_delete.html:109
+#: templates/district/committee_confirm_delete.html:109
 msgid "View All Committees"
 msgstr "Alle Ausschüsse anzeigen"
 
-#: templates/local/committee_confirm_delete.html:112
-#: templates/local/council_confirm_delete.html:93
+#: templates/district/committee_confirm_delete.html:112
+#: templates/district/council_confirm_delete.html:93
 msgid "View Council"
 msgstr "Bezirksvertretung anschauen"
 
-#: templates/local/committee_confirm_delete.html:120
-#: templates/local/term_detail.html:104
+#: templates/district/committee_confirm_delete.html:120
+#: templates/district/term_detail.html:104
 msgid "Quick Info"
 msgstr "Schnellinfo"
 
-#: templates/local/committee_detail.html:6
+#: templates/district/committee_detail.html:6
 msgid "Committee Details"
 msgstr "Ausschussdetails"
 
-#: templates/local/committee_detail.html:21
+#: templates/district/committee_detail.html:21
 msgid "Back"
 msgstr "Zurück"
 
-#: templates/local/committee_detail.html:91
+#: templates/district/committee_detail.html:91
 #, fuzzy
 #| msgctxt "Ausschuss"
 #| msgid "Committee Meetings"
 msgid "Committee Meetings"
 msgstr "Ausschusssitzungen"
 
-#: templates/local/committee_detail.html:108
+#: templates/district/committee_detail.html:108
 msgid "Scheduled Date"
 msgstr "Geplant"
 
-#: templates/local/committee_detail.html:135
-#: templates/local/committee_detail.html:209
-#: templates/local/committee_list.html:137
+#: templates/district/committee_detail.html:135
+#: templates/district/committee_detail.html:209
+#: templates/district/committee_list.html:137
 msgid "View Details"
 msgstr "Details anschauen"
 
-#: templates/local/committee_detail.html:154
+#: templates/district/committee_detail.html:154
 msgid "Create committee meetings to organize sessions."
 msgstr "Erstellen Sie Gremiumssitzungen, um Sitzungen zu organisieren."
 
-#: templates/local/committee_detail.html:157
+#: templates/district/committee_detail.html:157
 msgid "Create First Meeting"
 msgstr "Erstelle erste Sitzung"
 
-#: templates/local/committee_detail.html:169
+#: templates/district/committee_detail.html:169
 #, fuzzy
 #| msgctxt "Ausschuss"
 #| msgid "Committee Motions"
 msgid "Committee Motions"
 msgstr "Anträge des Ausschusses"
 
-#: templates/local/committee_detail.html:212
+#: templates/district/committee_detail.html:212
 #: templates/motion/motion_confirm_delete.html:117
 #: templates/motion/motion_form.html:7 templates/motion/motion_form.html:22
 msgid "Edit Motion"
 msgstr "Antrag bearbeiten"
 
-#: templates/local/committee_detail.html:226
+#: templates/district/committee_detail.html:226
 msgid "Showing"
 msgstr "Anzeigen"
 
-#: templates/local/committee_detail.html:226
+#: templates/district/committee_detail.html:226
 msgid "motions"
 msgstr "Anträge"
 
-#: templates/local/committee_detail.html:229
+#: templates/district/committee_detail.html:229
 msgid "View All Motions"
 msgstr "Alle Anträge anzeigen"
 
-#: templates/local/committee_detail.html:236
+#: templates/district/committee_detail.html:236
 msgid "No Motions found"
 msgstr "Keine Anträge gefunden"
 
-#: templates/local/committee_detail.html:248
+#: templates/district/committee_detail.html:248
 #, fuzzy
 #| msgctxt "Ausschuss"
 #| msgid "Committee Members"
 msgid "Committee Members"
 msgstr "Ausschussmitglieder"
 
-#: templates/local/committee_detail.html:293
+#: templates/district/committee_detail.html:293
 msgid "Add committee members to start organizing the committee work."
 msgstr "Fügen Sie Mitglieder hinzu, um die Gremiumsarbeit zu organisieren."
 
-#: templates/local/committee_detail.html:296
+#: templates/district/committee_detail.html:296
 msgid "Add First Member"
 msgstr "Erstes Mitglied hinzufügen"
 
-#: templates/local/committee_form.html:9 templates/local/committee_form.html:23
-#: templates/local/committee_form.html:233
+#: templates/district/committee_form.html:9 templates/district/committee_form.html:23
+#: templates/district/committee_form.html:233
 msgid "Create Committee"
 msgstr "Ausschuss erstellen"
 
-#: templates/local/committee_form.html:29
-#: templates/local/committee_form.html:33
-#: templates/local/council_name_form.html:18
-msgid "Back to Local"
+#: templates/district/committee_form.html:29
+#: templates/district/committee_form.html:33
+#: templates/district/council_name_form.html:18
+msgid "Back to District"
 msgstr "Zurück zur Bezirksvertretung"
 
-#: templates/local/committee_form.html:51
+#: templates/district/committee_form.html:51
 msgid "Edit Committee Information"
 msgstr "Information zum Ausschuss bearbeiten"
 
-#: templates/local/committee_form.html:73
+#: templates/district/committee_form.html:73
 msgid "Committee Name"
 msgstr "Name des Ausschusses"
 
-#: templates/local/committee_form.html:93
+#: templates/district/committee_form.html:93
 msgid "Abbreviation"
 msgstr "Abkürzung"
 
-#: templates/local/committee_form.html:147
-#: templates/local/term_seat_distribution_list.html:30
-#: templates/local/term_seat_distribution_list.html:88
+#: templates/district/committee_form.html:147
+#: templates/district/term_seat_distribution_list.html:30
+#: templates/district/term_seat_distribution_list.html:88
 #: templates/motion/motion_vote.html:18
 msgid "Term"
 msgstr "Amtsperiode"
 
-#: templates/local/committee_form.html:167
-#: templates/local/committee_list.html:37
+#: templates/district/committee_form.html:167
+#: templates/district/committee_list.html:37
 msgid "Committee Type"
 msgstr "Ausschussart"
 
-#: templates/local/committee_form.html:210
+#: templates/district/committee_form.html:210
 msgid "Are you sure you want to delete this Committee?"
 msgstr "Bist du sicher, dass du diesen Ausschuss löschen möchtest?"
 
-#: templates/local/committee_form.html:231
+#: templates/district/committee_form.html:231
 #, fuzzy
 msgid "Update Committee"
 msgstr "Aktualisierungsausschuss"
 
-#: templates/local/committee_form.html:249
+#: templates/district/committee_form.html:249
 #, fuzzy
 msgid "Committee Types"
 msgstr "Arten von Ausschüssen"
 
-#: templates/local/committee_form.html:251
-#: templates/local/committee_list.html:40
+#: templates/district/committee_form.html:251
+#: templates/district/committee_list.html:40
 #, fuzzy
 msgid "Ausschuss"
 msgstr "Ausschuss"
 
-#: templates/local/committee_form.html:251
+#: templates/district/committee_form.html:251
 #, fuzzy
 msgid "Committee for specific areas of responsibility"
 msgstr "Ausschuss für bestimmte Zuständigkeitsbereiche"
 
-#: templates/local/committee_form.html:252
-#: templates/local/committee_list.html:41
+#: templates/district/committee_form.html:252
+#: templates/district/committee_list.html:41
 msgid "Kommission"
 msgstr "Kommission"
 
-#: templates/local/committee_form.html:252
+#: templates/district/committee_form.html:252
 #, fuzzy
 msgid "Commission for specialized tasks and investigations"
 msgstr "Kommission für Sonderaufgaben und Untersuchungen"
 
-#: templates/local/committee_form.html:257
-#: templates/local/committee_member_form.html:221
-#: templates/local/session_form.html:314
+#: templates/district/committee_form.html:257
+#: templates/district/committee_member_form.html:221
+#: templates/district/session_form.html:314
 msgid "Tips"
 msgstr "Tipps"
 
-#: templates/local/committee_form.html:259
+#: templates/district/committee_form.html:259
 #, fuzzy
 msgid "Choose a descriptive name for the committee"
 msgstr "Wähle einen aussagekräftigen Namen für den Ausschuss"
 
-#: templates/local/committee_form.html:260
+#: templates/district/committee_form.html:260
 #, fuzzy
 msgid "Provide a clear description of the committee's purpose"
 msgstr "Beschreibe kurz und prägnant den Zweck des Ausschusses"
 
-#: templates/local/committee_list.html:5 templates/local/committee_list.html:12
+#: templates/district/committee_list.html:5 templates/district/committee_list.html:12
 msgid "Committees"
 msgstr "Gremien"
 
-#: templates/local/committee_list.html:15
+#: templates/district/committee_list.html:15
 #, fuzzy
 msgid "Add Committee"
 msgstr "Ausschuss hinzufügen"
 
-#: templates/local/committee_list.html:27
+#: templates/district/committee_list.html:27
 #, fuzzy
 msgid "Filter Committees"
 msgstr "Filterausschüsse"
 
-#: templates/local/committee_list.html:34
+#: templates/district/committee_list.html:34
 msgid "Search by name, description, chairperson..."
 msgstr "Suche nach Name, Beschreibung, Vorsitzende..."
 
-#: templates/local/committee_list.html:47
+#: templates/district/committee_list.html:47
 msgid "All Councils"
 msgstr "Alle Bezirksvertretungen"
 
-#: templates/local/committee_list.html:68
+#: templates/district/committee_list.html:68
 msgid "Clear Filters"
 msgstr "Filter zurücksetzen"
 
-#: templates/local/committee_list.html:83
+#: templates/district/committee_list.html:83
 #, fuzzy
 msgid "Committee List"
 msgstr "Liste der Ausschüsse"
 
-#: templates/local/committee_list.html:160
+#: templates/district/committee_list.html:160
 #, fuzzy
 msgid "Committee pagination"
 msgstr "Seitenzahlen im Ausschuss"
 
-#: templates/local/committee_list.html:199
+#: templates/district/committee_list.html:199
 #, fuzzy
 msgid "No Committees Found"
 msgstr "Es wurden keine Ausschüsse gefunden"
 
-#: templates/local/committee_list.html:202
+#: templates/district/committee_list.html:202
 #, fuzzy
 msgid "No committees match your current filters."
 msgstr ""
 "Es wurden keine Ausschüsse gefunden, die deinen aktuellen Filtern "
 "entsprechen."
 
-#: templates/local/committee_list.html:204
+#: templates/district/committee_list.html:204
 #, fuzzy
 msgid "No committees have been created yet."
 msgstr "Es wurden noch keine Ausschüsse gebildet."
 
-#: templates/local/committee_list.html:208
-#: templates/local/council_detail.html:183
+#: templates/district/committee_list.html:208
+#: templates/district/council_detail.html:183
 #, fuzzy
 msgid "Create First Committee"
 msgstr "Erste Kommission gründen"
 
-#: templates/local/committee_meeting_attachment_form.html:5
-#: templates/local/committee_meeting_attachment_form.html:13
-#: templates/local/session_attachment_form.html:5
-#: templates/local/session_attachment_form.html:14
+#: templates/district/committee_meeting_attachment_form.html:5
+#: templates/district/committee_meeting_attachment_form.html:13
+#: templates/district/session_attachment_form.html:5
+#: templates/district/session_attachment_form.html:14
 #: templates/motion/inquiry_attachment.html:6
 #: templates/motion/inquiry_attachment.html:16
 #: templates/motion/motion_attachment.html:6
@@ -3158,20 +3158,20 @@ msgstr "Erste Kommission gründen"
 msgid "Upload Attachment"
 msgstr "Anhänge"
 
-#: templates/local/committee_meeting_attachment_form.html:28
-#: templates/local/committee_meeting_attachment_form.html:90
-#: templates/local/committee_meeting_detail.html:87
-#: templates/local/session_attachment_form.html:29
-#: templates/local/session_attachment_form.html:91
-#: templates/local/session_detail.html:314
+#: templates/district/committee_meeting_attachment_form.html:28
+#: templates/district/committee_meeting_attachment_form.html:90
+#: templates/district/committee_meeting_detail.html:87
+#: templates/district/session_attachment_form.html:29
+#: templates/district/session_attachment_form.html:91
+#: templates/district/session_detail.html:314
 #: templates/motion/inquiry_detail.html:163
 #: templates/motion/motion_detail.html:384
 msgid "Upload File"
 msgstr "Datei hochladen"
 
-#: templates/local/committee_meeting_attachment_form.html:38
-#: templates/local/session_attachment_form.html:39
-#: templates/local/session_invitation_form.html:39
+#: templates/district/committee_meeting_attachment_form.html:38
+#: templates/district/session_attachment_form.html:39
+#: templates/district/session_invitation_form.html:39
 #: templates/motion/inquiry_attachment.html:30
 #: templates/motion/inquiry_attachment.html:93
 #: templates/motion/motion_attachment.html:30
@@ -3179,8 +3179,8 @@ msgstr "Datei hochladen"
 msgid "File"
 msgstr "Dateien"
 
-#: templates/local/committee_meeting_attachment_form.html:49
-#: templates/local/session_attachment_form.html:50
+#: templates/district/committee_meeting_attachment_form.html:49
+#: templates/district/session_attachment_form.html:50
 msgid ""
 "Maximum file size: 50MB. Allowed types: PDF, DOC, DOCX, TXT, JPG, PNG, GIF, "
 "XLS, XLSX, PPT, PPTX"
@@ -3188,8 +3188,8 @@ msgstr ""
 "Maximale Dateigröße: 50 MB. Erlaubte Dateiformate: PDF, DOC, DOCX, TXT, JPG, "
 "PNG, GIF, XLS, XLSX, PPT, PPTX"
 
-#: templates/local/committee_meeting_attachment_form.html:56
-#: templates/local/session_attachment_form.html:57
+#: templates/district/committee_meeting_attachment_form.html:56
+#: templates/district/session_attachment_form.html:57
 #: templates/motion/inquiry_attachment.html:47
 #: templates/motion/inquiry_attachment.html:94
 #: templates/motion/motion_attachment.html:47
@@ -3197,83 +3197,83 @@ msgstr ""
 msgid "File Type"
 msgstr "Dateityp"
 
-#: templates/local/committee_meeting_attachment_form.html:73
-#: templates/local/session_attachment_form.html:74
-#: templates/local/session_invitation_form.html:54
-#: templates/local/session_minutes_form.html:37
+#: templates/district/committee_meeting_attachment_form.html:73
+#: templates/district/session_attachment_form.html:74
+#: templates/district/session_invitation_form.html:54
+#: templates/district/session_minutes_form.html:37
 #: templates/motion/inquiry_status_change.html:96
 #: templates/motion/motion_group_decision.html:81
 #: templates/motion/motion_status_change.html:177
 msgid "optional"
 msgstr "optional"
 
-#: templates/local/committee_meeting_attachment_form.html:84
-#: templates/local/session_attachment_form.html:85
+#: templates/district/committee_meeting_attachment_form.html:84
+#: templates/district/session_attachment_form.html:85
 msgid "Provide a brief description of the file content."
 msgstr "Geben Sie eine kurze Beschreibung des Dateiinhalts."
 
-#: templates/local/committee_meeting_confirm_delete.html:5
-#: templates/local/committee_meeting_confirm_delete.html:13
+#: templates/district/committee_meeting_confirm_delete.html:5
+#: templates/district/committee_meeting_confirm_delete.html:13
 msgid "Delete Committee Meeting"
 msgstr "Ausschusssitzung löschen"
 
-#: templates/local/committee_meeting_detail.html:5
+#: templates/district/committee_meeting_detail.html:5
 msgid "Committee Meeting"
 msgstr "Ausschusssitzung"
 
-#: templates/local/committee_meeting_detail.html:74
+#: templates/district/committee_meeting_detail.html:74
 msgid "No agenda available."
 msgstr "Keine Tagesordnung vorhanden."
 
-#: templates/local/committee_meeting_detail.html:83
+#: templates/district/committee_meeting_detail.html:83
 msgid "Meeting Attachments"
 msgstr "Sitzungsanhänge"
 
-#: templates/local/committee_meeting_detail.html:106
+#: templates/district/committee_meeting_detail.html:106
 msgid "Uploaded by"
 msgstr "Hochgeladen von"
 
-#: templates/local/committee_meeting_detail.html:116
+#: templates/district/committee_meeting_detail.html:116
 #: templates/motion/inquiry_detail.html:193
 #: templates/motion/motion_detail.html:414
 msgid "Download"
 msgstr "Herunterladen"
 
-#: templates/local/committee_meeting_detail.html:127
+#: templates/district/committee_meeting_detail.html:127
 msgid "No attachments uploaded for this meeting yet."
 msgstr "Noch keine Anhänge für diese Sitzung hochgeladen."
 
-#: templates/local/committee_meeting_detail.html:130
+#: templates/district/committee_meeting_detail.html:130
 msgid "Upload First File"
 msgstr "Erste Datei hochladen"
 
-#: templates/local/committee_meeting_detail.html:146
+#: templates/district/committee_meeting_detail.html:146
 msgid "Download Calendar (ICS)"
 msgstr "Kalender herunterladen (ICS)"
 
-#: templates/local/committee_meeting_detail.html:154
-#: templates/local/session_detail.html:375
+#: templates/district/committee_meeting_detail.html:154
+#: templates/district/session_detail.html:375
 msgid "Participants"
 msgstr "Teilnehmende"
 
-#: templates/local/committee_meeting_detail.html:166
-#: templates/local/committee_meeting_detail.html:193
+#: templates/district/committee_meeting_detail.html:166
+#: templates/district/committee_meeting_detail.html:193
 msgid "Set substitute"
 msgstr "Vertretung festlegen"
 
-#: templates/local/committee_meeting_detail.html:167
+#: templates/district/committee_meeting_detail.html:167
 msgid "Substitute"
 msgstr "Vertretung"
 
-#: templates/local/committee_meeting_detail.html:173
+#: templates/district/committee_meeting_detail.html:173
 msgid "In place of"
 msgstr "Anstelle von"
 
-#: templates/local/committee_meeting_detail.html:179
+#: templates/district/committee_meeting_detail.html:179
 msgid "No committee members (excluding substitutes)."
 msgstr "Keine Ausschussmitglieder (ohne Stellvertreter)."
 
-#: templates/local/committee_meeting_detail.html:200
+#: templates/district/committee_meeting_detail.html:200
 msgid ""
 "Select a substitute member who will attend this meeting in place of the "
 "regular member."
@@ -3281,183 +3281,183 @@ msgstr ""
 "Wählen Sie ein Ersatzmitglied, das an der Stelle des regulären Mitglieds an "
 "der Sitzung teilnimmt."
 
-#: templates/local/committee_meeting_detail.html:209
+#: templates/district/committee_meeting_detail.html:209
 #: templates/motion/motion_detail.html:360 templates/user/edit.html:134
 msgid "Save"
 msgstr "Speichern"
 
-#: templates/local/committee_meeting_form.html:7
-#: templates/local/committee_meeting_form.html:27
+#: templates/district/committee_meeting_form.html:7
+#: templates/district/committee_meeting_form.html:27
 msgid "Edit Committee Meeting"
 msgstr "Ausschusssitzung bearbeiten"
 
-#: templates/local/committee_meeting_form.html:11
-#: templates/local/committee_meeting_form.html:14
-#: templates/local/committee_meeting_form.html:31
-#: templates/local/committee_meeting_form.html:34
+#: templates/district/committee_meeting_form.html:11
+#: templates/district/committee_meeting_form.html:14
+#: templates/district/committee_meeting_form.html:31
+#: templates/district/committee_meeting_form.html:34
 msgid "Add Committee Meeting"
 msgstr "Ausschusssitzung hinzufügen"
 
-#: templates/local/committee_member_form.html:7
-#: templates/local/committee_member_form.html:21
+#: templates/district/committee_member_form.html:7
+#: templates/district/committee_member_form.html:21
 msgid "Edit Committee Member"
 msgstr "Gremiumsmitglied bearbeiten"
 
-#: templates/local/committee_member_form.html:9
-#: templates/local/committee_member_form.html:23
+#: templates/district/committee_member_form.html:9
+#: templates/district/committee_member_form.html:23
 msgid "Add Committee Member"
 msgstr "Gremiumsmitglied hinzufügen"
 
-#: templates/local/committee_member_form.html:47
+#: templates/district/committee_member_form.html:47
 msgid "Edit Member Information"
 msgstr "Mitgliedsinformation bearbeiten"
 
-#: templates/local/committee_member_form.html:49
+#: templates/district/committee_member_form.html:49
 msgid "Member Information"
 msgstr "Mitgliedsinformation"
 
-#: templates/local/committee_member_form.html:212
+#: templates/district/committee_member_form.html:212
 msgid "Member Roles"
 msgstr "Mitgliedsrollen"
 
-#: templates/local/committee_member_form.html:214
+#: templates/district/committee_member_form.html:214
 msgid "Leader of the committee with full authority"
 msgstr "Leitung des Gremiums mit voller Befugnis"
 
-#: templates/local/committee_member_form.html:215
+#: templates/district/committee_member_form.html:215
 msgid "Deputy leader who can act in the chairperson's absence"
 msgstr "Stellvertretung, die bei Abwesenheit des Vorsitzenden handeln kann"
 
-#: templates/local/committee_member_form.html:216
+#: templates/district/committee_member_form.html:216
 msgid "Regular committee member with voting rights"
 msgstr "Ordentliches Gremiumsmitglied mit Stimmrecht"
 
-#: templates/local/committee_member_form.html:223
+#: templates/district/committee_member_form.html:223
 msgid "Only active users can be added to committees"
 msgstr "Nur aktive Benutzer können Gremien hinzugefügt werden"
 
-#: templates/local/committee_member_form.html:224
+#: templates/district/committee_member_form.html:224
 msgid "Each user can only be a member of a committee once"
 msgstr "Jeder Benutzer kann nur einmal Mitglied eines Gremiums sein"
 
-#: templates/local/committee_member_form.html:225
+#: templates/district/committee_member_form.html:225
 msgid "Use notes to record special responsibilities or conditions"
 msgstr "Nutzen Sie Notizen für besondere Aufgaben oder Bedingungen"
 
-#: templates/local/council_committees_export_pdf.html:12
+#: templates/district/council_committees_export_pdf.html:12
 msgid "Stand"
 msgstr "Stand"
 
-#: templates/local/council_committees_export_pdf.html:30
+#: templates/district/council_committees_export_pdf.html:30
 msgid "Substitute Members"
 msgstr "Ersatzmitglieder"
 
-#: templates/local/council_committees_export_pdf.html:54
+#: templates/district/council_committees_export_pdf.html:54
 msgid "No committees found for this council."
 msgstr "Keine Ausschüsse oder Kommissionen gefunden."
 
-#: templates/local/council_confirm_delete.html:5
-#: templates/local/council_confirm_delete.html:12
-#: templates/local/council_confirm_delete.html:77
+#: templates/district/council_confirm_delete.html:5
+#: templates/district/council_confirm_delete.html:12
+#: templates/district/council_confirm_delete.html:77
 #, fuzzy
 msgid "Delete Council"
 msgstr "Rat löschen"
 
-#: templates/local/council_confirm_delete.html:32
+#: templates/district/council_confirm_delete.html:32
 #, fuzzy
 msgid "Are you sure you want to delete the Council"
 msgstr "Bist du sicher, dass du den Rat löschen möchtest?"
 
-#: templates/local/council_confirm_delete.html:39
-#: templates/local/council_detail.html:6
+#: templates/district/council_confirm_delete.html:39
+#: templates/district/council_detail.html:6
 #, fuzzy
 msgid "Council Details"
 msgstr "Details zum Rat"
 
-#: templates/local/council_confirm_delete.html:96
-#: templates/local/council_form.html:7 templates/local/council_form.html:21
+#: templates/district/council_confirm_delete.html:96
+#: templates/district/council_form.html:7 templates/district/council_form.html:21
 #, fuzzy
 msgid "Edit Council"
 msgstr "Rat bearbeiten"
 
-#: templates/local/council_confirm_delete.html:99
-#: templates/local/party_confirm_delete.html:102
+#: templates/district/council_confirm_delete.html:99
+#: templates/district/party_confirm_delete.html:102
 #, fuzzy
-msgid "View Local District"
+msgid "View District"
 msgstr "Lokalen Bezirk anzeigen"
 
-#: templates/local/council_detail.html:36 templates/local/local_detail.html:39
+#: templates/district/council_detail.html:36 templates/district/local_detail.html:39
 msgid "Current Term Seat Distribution"
 msgstr "Aktuelle Sitzverteilung der Wahlperiode"
 
-#: templates/local/council_detail.html:48 templates/local/local_detail.html:51
-#: templates/local/local_detail.html:267
-#: templates/local/term_seat_distribution.html:60
-#: templates/local/term_seat_distribution_list.html:90
+#: templates/district/council_detail.html:48 templates/district/local_detail.html:51
+#: templates/district/local_detail.html:267
+#: templates/district/term_seat_distribution.html:60
+#: templates/district/term_seat_distribution_list.html:90
 msgid "Seats"
 msgstr "Sitze"
 
-#: templates/local/council_detail.html:107
-#: templates/local/local_detail.html:110
+#: templates/district/council_detail.html:107
+#: templates/district/local_detail.html:110
 #, fuzzy
 msgid "No seat distribution configured for the current term."
 msgstr ""
 "Für die aktuelle Legislaturperiode ist keine Sitzverteilung konfiguriert."
 
-#: templates/local/council_detail.html:109
-#: templates/local/local_detail.html:112
+#: templates/district/council_detail.html:109
+#: templates/district/local_detail.html:112
 #, fuzzy
 msgid "Configure Seats"
 msgstr "Plätze konfigurieren"
 
-#: templates/local/council_detail.html:117
-#: templates/local/local_detail.html:121
+#: templates/district/council_detail.html:117
+#: templates/district/local_detail.html:121
 #, fuzzy
 msgid "No Current Term"
 msgstr "Derzeit keine Amtszeit"
 
-#: templates/local/council_detail.html:119
-#: templates/local/local_detail.html:123
+#: templates/district/council_detail.html:119
+#: templates/district/local_detail.html:123
 #, fuzzy
 msgid "There is no active term for the current date range."
 msgstr "Für den aktuellen Datumsbereich gibt es keinen aktiven Zeitraum."
 
-#: templates/local/council_detail.html:133
+#: templates/district/council_detail.html:133
 msgid "Council Sessions"
 msgstr "Sitzungen"
 
-#: templates/local/council_detail.html:154
+#: templates/district/council_detail.html:154
 msgid "Council Committees"
 msgstr "Kommissionen und Ausschüsse"
 
-#: templates/local/council_detail.html:158
+#: templates/district/council_detail.html:158
 msgid "Export PDF"
 msgstr "Exportiere PDF"
 
-#: templates/local/council_detail.html:180
+#: templates/district/council_detail.html:180
 #, fuzzy
 msgid "No Committees found"
 msgstr "Es wurden keine Ausschüsse gefunden"
 
-#: templates/local/council_form.html:9 templates/local/council_form.html:23
-#: templates/local/council_form.html:110 templates/local/local_detail.html:133
+#: templates/district/council_form.html:9 templates/district/council_form.html:23
+#: templates/district/council_form.html:110 templates/district/local_detail.html:133
 #, fuzzy
 msgid "Create Council"
 msgstr "Rat gründen"
 
-#: templates/local/council_form.html:39
-#: templates/local/council_name_form.html:73
+#: templates/district/council_form.html:39
+#: templates/district/council_name_form.html:73
 msgid "Council Information"
 msgstr "Informationen"
 
-#: templates/local/council_form.html:57 templates/local/council_form.html:126
-#: templates/local/council_name_form.html:29
-#: templates/local/council_name_form.html:45
+#: templates/district/council_form.html:57 templates/district/council_form.html:126
+#: templates/district/council_name_form.html:29
+#: templates/district/council_name_form.html:45
 #, fuzzy
 msgid "Council Name"
 msgstr "Name des Rates"
 
-#: templates/local/council_form.html:90
+#: templates/district/council_form.html:90
 #, fuzzy
 msgid ""
 "Label for this council's sessions in the calendar (e.g. City Council). Leave "
@@ -3466,22 +3466,22 @@ msgstr ""
 "Bezeichnung für die Sitzungen dieses Gremiums im Kalender (z. B. Stadtrat). "
 "Für die Standardbezeichnung leer lassen."
 
-#: templates/local/council_form.html:108
+#: templates/district/council_form.html:108
 #, fuzzy
 msgid "Update Council"
 msgstr "Rat informieren"
 
-#: templates/local/council_form.html:126
+#: templates/district/council_form.html:126
 #, fuzzy
 msgid "Enter a descriptive name for the council."
 msgstr "Gib einen aussagekräftigen Namen für den Rat ein."
 
-#: templates/local/council_form.html:127
+#: templates/district/council_form.html:127
 #, fuzzy
 msgid "Select the local district this council belongs to."
 msgstr "Wähle den Bezirk aus, zu dem dieser Gemeinderat gehört."
 
-#: templates/local/council_form.html:128
+#: templates/district/council_form.html:128
 #, fuzzy
 msgid ""
 "Optional short label shown next to this council's sessions on the home "
@@ -3490,372 +3490,372 @@ msgstr ""
 "Optionale Kurzbezeichnung, die im Startkalender neben den Sitzungen dieses "
 "Gremiums angezeigt wird (z. B. Stadtrat, Bezirksrat)."
 
-#: templates/local/council_list.html:16
+#: templates/district/council_list.html:16
 #, fuzzy
 msgid "Create New Council"
 msgstr "Neuen Rat gründen"
 
-#: templates/local/council_list.html:32
+#: templates/district/council_list.html:32
 msgid "Search by name, description or local"
 msgstr "Suche nach Name, Beschreibung oder Bezirk"
 
-#: templates/local/council_list.html:37 templates/local/party_list.html:37
+#: templates/district/council_list.html:37 templates/district/party_list.html:37
 msgid "All Locals"
 msgstr "Alle Gemeinden"
 
-#: templates/local/council_list.html:48 templates/local/local_list.html:37
-#: templates/local/party_list.html:48 templates/local/term_list.html:47
-#: templates/local/term_list.html:55 templates/user/role_list.html:40
+#: templates/district/council_list.html:48 templates/district/local_list.html:37
+#: templates/district/party_list.html:48 templates/district/term_list.html:47
+#: templates/district/term_list.html:55 templates/user/role_list.html:40
 msgid "All"
 msgstr "Alle"
 
-#: templates/local/council_list.html:58 templates/local/local_list.html:47
-#: templates/local/party_list.html:58 templates/local/term_list.html:65
-#: templates/local/term_seat_distribution_list.html:66
+#: templates/district/council_list.html:58 templates/district/local_list.html:47
+#: templates/district/party_list.html:58 templates/district/term_list.html:65
+#: templates/district/term_seat_distribution_list.html:66
 #: templates/motion/inquiry_list.html:50 templates/motion/motion_list.html:54
 #: templates/user/role_list.html:50
 msgid "Clear"
 msgstr "Zurücksetzen"
 
-#: templates/local/council_list.html:72
+#: templates/district/council_list.html:72
 #, fuzzy
 msgid "Councils"
 msgstr "Gemeinderäte"
 
-#: templates/local/council_list.html:117
+#: templates/district/council_list.html:117
 #, fuzzy
 msgid "Are you sure you want to delete this Council?"
 msgstr "Bist du sicher, dass du diesen Rat löschen möchtest?"
 
-#: templates/local/council_list.html:130
+#: templates/district/council_list.html:130
 #, fuzzy
 msgid "Council pagination"
 msgstr "Seitenzahlen des Rates"
 
-#: templates/local/council_list.html:169
+#: templates/district/council_list.html:169
 #, fuzzy
 msgid "No Councils found"
 msgstr "Es wurden keine Gemeinden gefunden"
 
-#: templates/local/council_list.html:170
+#: templates/district/council_list.html:170
 #, fuzzy
 msgid "Create your first Council to get started."
 msgstr "Erstelle deinen ersten Rat, um loszulegen."
 
-#: templates/local/council_list.html:172
+#: templates/district/council_list.html:172
 #, fuzzy
 msgid "Create First Council"
 msgstr "Erste Ratssitzung einberufen"
 
-#: templates/local/council_name_form.html:5
-#: templates/local/council_name_form.html:14
+#: templates/district/council_name_form.html:5
+#: templates/district/council_name_form.html:14
 #, fuzzy
 msgid "Edit Council Name"
 msgstr "Ratnamen bearbeiten"
 
-#: templates/local/council_name_form.html:62
+#: templates/district/council_name_form.html:62
 #, fuzzy
 msgid "Update Name"
 msgstr "Name aktualisieren"
 
-#: templates/local/council_name_form.html:77
+#: templates/district/council_name_form.html:77
 #, fuzzy
 msgid "Current Name"
 msgstr "Aktueller Name"
 
-#: templates/local/council_sessions_list_partial.html:21
-#: templates/local/session_confirm_delete.html:63
-#: templates/local/session_detail.html:52 templates/local/session_form.html:308
+#: templates/district/council_sessions_list_partial.html:21
+#: templates/district/session_confirm_delete.html:63
+#: templates/district/session_detail.html:52 templates/district/session_form.html:308
 msgid "In Progress"
 msgstr "In Bearbeitung"
 
-#: templates/local/council_sessions_list_partial.html:36
+#: templates/district/council_sessions_list_partial.html:36
 #, fuzzy
 #| msgid "Council session"
 msgid "Council sessions pagination"
 msgstr "Seitenzahlen der Ratssitzungen"
 
-#: templates/local/council_sessions_list_partial.html:57
+#: templates/district/council_sessions_list_partial.html:57
 #, fuzzy
 msgid "No Sessions found"
 msgstr "Keine Sitzungen gefunden"
 
-#: templates/local/council_sessions_list_partial.html:58
+#: templates/district/council_sessions_list_partial.html:58
 #, fuzzy
 msgid "Create council sessions to manage meetings and events."
 msgstr "Erstelle Ratssitzungen, um Sitzungen und Veranstaltungen zu verwalten."
 
-#: templates/local/council_sessions_list_partial.html:61
+#: templates/district/council_sessions_list_partial.html:61
 #, fuzzy
 msgid "Create First Session"
 msgstr "Erste Sitzung erstellen"
 
-#: templates/local/local_confirm_delete.html:5
-#: templates/local/local_confirm_delete.html:14
-#: templates/local/local_confirm_delete.html:40
+#: templates/district/local_confirm_delete.html:5
+#: templates/district/local_confirm_delete.html:14
+#: templates/district/local_confirm_delete.html:40
 #, fuzzy
-msgid "Delete Local"
+msgid "Delete District"
 msgstr "Lokal löschen"
 
-#: templates/local/local_confirm_delete.html:20
+#: templates/district/local_confirm_delete.html:20
 #, fuzzy
 msgid "Are you sure you want to delete the Local"
 msgstr "Bist du sicher, dass du den lokalen Ordner löschen möchtest?"
 
-#: templates/local/local_confirm_delete.html:24
-#: templates/local/local_detail.html:6
+#: templates/district/local_confirm_delete.html:24
+#: templates/district/local_detail.html:6
 #, fuzzy
-msgid "Local Details"
+msgid "District Details"
 msgstr "Lokale Details"
 
-#: templates/local/local_confirm_delete.html:27
-#: templates/local/local_list.html:70
+#: templates/district/local_confirm_delete.html:27
+#: templates/district/local_list.html:70
 msgid "Code"
 msgstr "Code"
 
-#: templates/local/local_detail.html:130
+#: templates/district/local_detail.html:130
 #, fuzzy
 msgid "No Council found"
 msgstr "Es wurde kein Rat gefunden"
 
-#: templates/local/local_detail.html:131
+#: templates/district/local_detail.html:131
 #, fuzzy
 msgid "A council should be automatically created with each local."
 msgstr "Bei jeder Ortsgruppe sollte automatisch ein Rat gebildet werden."
 
-#: templates/local/local_detail.html:143
+#: templates/district/local_detail.html:143
 msgid "Political Parties"
 msgstr "Politische Parteien"
 
-#: templates/local/local_detail.html:146
+#: templates/district/local_detail.html:146
 #, fuzzy
 msgid "Add Party"
 msgstr "Party hinzufügen"
 
-#: templates/local/local_detail.html:158 templates/local/party_detail.html:47
-#: templates/local/party_form.html:249 templates/local/party_list.html:83
+#: templates/district/local_detail.html:158 templates/district/party_detail.html:47
+#: templates/district/party_form.html:249 templates/district/party_list.html:83
 msgid "Color"
 msgstr "Farbe"
 
-#: templates/local/local_detail.html:191 templates/local/party_list.html:129
+#: templates/district/local_detail.html:191 templates/district/party_list.html:129
 #, fuzzy
 msgid "Are you sure you want to delete this Party?"
 msgstr "Bist du sicher, dass du diese Party löschen möchtest?"
 
-#: templates/local/local_detail.html:208 templates/local/party_list.html:181
+#: templates/district/local_detail.html:208 templates/district/party_list.html:181
 #, fuzzy
 msgid "No Parties found"
 msgstr "Keine Partys gefunden"
 
-#: templates/local/local_detail.html:209
+#: templates/district/local_detail.html:209
 #, fuzzy
 msgid "Create political parties to manage seat distributions in terms."
 msgstr ""
 "Gründe politische Parteien, um die Sitzverteilung in den Legislaturperioden "
 "zu regeln."
 
-#: templates/local/local_detail.html:212 templates/local/party_list.html:184
+#: templates/district/local_detail.html:212 templates/district/party_list.html:184
 #, fuzzy
 msgid "Create First Party"
 msgstr "Erstelle eine First-Party-Datei"
 
-#: templates/local/local_detail.html:225
+#: templates/district/local_detail.html:225
 msgid "Political Terms"
 msgstr "Amtsperiode"
 
-#: templates/local/local_detail.html:228
+#: templates/district/local_detail.html:228
 #, fuzzy
 msgid "Add Term"
 msgstr "Begriff hinzufügen"
 
-#: templates/local/local_detail.html:239
-#: templates/local/term_confirm_delete.html:46
-#: templates/local/term_detail.html:39 templates/local/term_list.html:88
-#: templates/local/term_seat_distribution.html:127
+#: templates/district/local_detail.html:239
+#: templates/district/term_confirm_delete.html:46
+#: templates/district/term_detail.html:39 templates/district/term_list.html:88
+#: templates/district/term_seat_distribution.html:127
 msgid "Period"
 msgstr "Periode"
 
-#: templates/local/local_detail.html:240
-#: templates/local/term_confirm_delete.html:49
-#: templates/local/term_detail.html:57 templates/local/term_form.html:72
-#: templates/local/term_form.html:161 templates/local/term_list.html:89
-#: templates/local/term_seat_distribution.html:37
+#: templates/district/local_detail.html:240
+#: templates/district/term_confirm_delete.html:49
+#: templates/district/term_detail.html:57 templates/district/term_form.html:72
+#: templates/district/term_form.html:161 templates/district/term_list.html:89
+#: templates/district/term_seat_distribution.html:37
 msgid "Total Seats"
 msgstr "Gesamtzahl der Sitze"
 
-#: templates/local/local_detail.html:254
-#: templates/local/term_confirm_delete.html:63
-#: templates/local/term_detail.html:50 templates/local/term_detail.html:116
-#: templates/local/term_list.html:56 templates/local/term_list.html:119
-#: templates/local/term_seat_distribution.html:138
+#: templates/district/local_detail.html:254
+#: templates/district/term_confirm_delete.html:63
+#: templates/district/term_detail.html:50 templates/district/term_detail.html:116
+#: templates/district/term_list.html:56 templates/district/term_list.html:119
+#: templates/district/term_seat_distribution.html:138
 msgid "Current"
 msgstr "Aktuell"
 
-#: templates/local/local_detail.html:282 templates/local/term_list.html:186
+#: templates/district/local_detail.html:282 templates/district/term_list.html:186
 msgid "No Terms found"
 msgstr "Keine Begriffe gefunden"
 
-#: templates/local/local_detail.html:283
+#: templates/district/local_detail.html:283
 #, fuzzy
 msgid "Create a political term to manage seat distributions."
 msgstr "Erstelle einen politischen Begriff zur Verwaltung der Sitzverteilung."
 
-#: templates/local/local_detail.html:286 templates/local/term_list.html:189
+#: templates/district/local_detail.html:286 templates/district/term_list.html:189
 #, fuzzy
 msgid "Create First Term"
 msgstr "Erste Periode erstellen"
 
-#: templates/local/local_form.html:6 templates/local/local_form.html:18
+#: templates/district/local_form.html:6 templates/district/local_form.html:18
 #, fuzzy
-msgid "Edit Local"
+msgid "Edit District"
 msgstr "Lokal bearbeiten"
 
-#: templates/local/local_form.html:6 templates/local/local_form.html:120
+#: templates/district/local_form.html:6 templates/district/local_form.html:120
 #, fuzzy
-msgid "Create Local"
-msgstr "Lokal erstellen"
+msgid "Create District"
+msgstr "Bezirk erstellen"
 
-#: templates/local/local_form.html:20 templates/local/local_list.html:16
+#: templates/district/local_form.html:20 templates/district/local_list.html:16
 #, fuzzy
-msgid "Create New Local"
+msgid "Create New District"
 msgstr "Neues lokales Konto erstellen"
 
-#: templates/local/local_form.html:30 templates/user/role_form.html:30
+#: templates/district/local_form.html:30 templates/user/role_form.html:30
 #, fuzzy
 msgid "Please correct the following errors:"
 msgstr "Bitte korrigiere die folgenden Fehler:"
 
-#: templates/local/local_form.html:39
+#: templates/district/local_form.html:39
 #, fuzzy
 msgid "Creating Local for:"
 msgstr "Erstellen von „Local“ für:"
 
-#: templates/local/local_form.html:43
+#: templates/district/local_form.html:43
 #, fuzzy
 msgid "Parent Local:"
 msgstr "Eltern vor Ort:"
 
-#: templates/local/local_form.html:46
+#: templates/district/local_form.html:46
 msgid "Code:"
 msgstr "Code:"
 
-#: templates/local/local_form.html:51
+#: templates/district/local_form.html:51
 msgid "Description:"
 msgstr "Beschreibung:"
 
-#: templates/local/local_form.html:60
+#: templates/district/local_form.html:60
 #, fuzzy
-msgid "Local Name"
+msgid "District Name"
 msgstr "Lokaler Name"
 
-#: templates/local/local_form.html:69
+#: templates/district/local_form.html:69
 #, fuzzy
 msgid "The full name of the administrative district"
 msgstr "Der vollständige Name des Verwaltungsbezirks"
 
-#: templates/local/local_form.html:75
+#: templates/district/local_form.html:75
 #, fuzzy
-msgid "Local Code"
+msgid "District Code"
 msgstr "Lokaler Code"
 
-#: templates/local/local_form.html:84
+#: templates/district/local_form.html:84
 #, fuzzy
 msgid "A short, unique code for the district (e.g., 'W01', 'W02')"
 msgstr "Ein kurzer, eindeutiger Code für den Bezirk (z. B. „W01“, „W02“)"
 
-#: templates/local/local_form.html:100
+#: templates/district/local_form.html:100
 #, fuzzy
 msgid "Optional description of the district"
 msgstr "Optionale Beschreibung des Stadtteils"
 
-#: templates/local/local_form.html:107
+#: templates/district/local_form.html:107
 #, fuzzy
 msgid "Inactive Locals will not be available for selection"
 msgstr "Inaktive Ortsgruppen stehen nicht zur Auswahl"
 
-#: templates/local/local_form.html:118
+#: templates/district/local_form.html:118
 #, fuzzy
 msgid "Update Local"
 msgstr "Lokal aktualisieren"
 
-#: templates/local/local_list.html:32
+#: templates/district/local_list.html:32
 msgid "Search by name, code or description"
 msgstr "Suche nach Name, Postleitzahl oder Beschreibung"
 
-#: templates/local/local_list.html:61
+#: templates/district/local_list.html:61
 #, fuzzy
-msgid "Locals"
-msgstr "Einheimische"
+msgid "Districts"
+msgstr "Bezirke"
 
-#: templates/local/local_list.html:108
+#: templates/district/local_list.html:108
 #, fuzzy
 msgid "Are you sure you want to delete this Local?"
 msgstr "Bist du sicher, dass du diesen lokalen Eintrag löschen möchtest?"
 
-#: templates/local/local_list.html:121
+#: templates/district/local_list.html:121
 #, fuzzy
-msgid "Local pagination"
+msgid "District pagination"
 msgstr "Lokale Paginierung"
 
-#: templates/local/local_list.html:160
+#: templates/district/local_list.html:160
 #, fuzzy
 msgid "No Locals found"
 msgstr "Es wurden keine Einträge gefunden"
 
-#: templates/local/local_list.html:161
+#: templates/district/local_list.html:161
 #, fuzzy
 msgid "Create your first Local to get started."
 msgstr "Mach dein erstes Local, um loszulegen."
 
-#: templates/local/local_list.html:163
+#: templates/district/local_list.html:163
 #, fuzzy
 msgid "Create First Local"
 msgstr "Erste lokale Datei erstellen"
 
-#: templates/local/party_confirm_delete.html:5
-#: templates/local/party_confirm_delete.html:12
-#: templates/local/party_confirm_delete.html:80
+#: templates/district/party_confirm_delete.html:5
+#: templates/district/party_confirm_delete.html:12
+#: templates/district/party_confirm_delete.html:80
 msgid "Delete Party"
 msgstr "Partei löschen"
 
-#: templates/local/party_confirm_delete.html:32
+#: templates/district/party_confirm_delete.html:32
 #, fuzzy
 msgid "Are you sure you want to delete the Party"
 msgstr "Bist du sicher, dass du die Party löschen möchtest?"
 
-#: templates/local/party_confirm_delete.html:39
-#: templates/local/party_detail.html:6
+#: templates/district/party_confirm_delete.html:39
+#: templates/district/party_detail.html:6
 msgid "Party Details"
 msgstr "Parteidetails"
 
-#: templates/local/party_confirm_delete.html:99
-#: templates/local/party_form.html:7 templates/local/party_form.html:21
-#: templates/local/party_form.html:41
+#: templates/district/party_confirm_delete.html:99
+#: templates/district/party_form.html:7 templates/district/party_form.html:21
+#: templates/district/party_form.html:41
 msgid "Edit Party"
 msgstr "Partei bearbeiten"
 
-#: templates/local/party_detail.html:30 templates/local/party_form.html:235
+#: templates/district/party_detail.html:30 templates/district/party_form.html:235
 msgid "Party Information"
 msgstr "Parteinformation"
 
-#: templates/local/party_detail.html:76 templates/local/party_form.html:250
+#: templates/district/party_detail.html:76 templates/district/party_form.html:250
 msgid "Logo"
 msgstr "Logo"
 
-#: templates/local/party_form.html:9 templates/local/party_form.html:23
-#: templates/local/party_form.html:220
+#: templates/district/party_form.html:9 templates/district/party_form.html:23
+#: templates/district/party_form.html:220
 msgid "Create Party"
 msgstr "Partei erstellen"
 
-#: templates/local/party_form.html:43 templates/local/party_list.html:16
+#: templates/district/party_form.html:43 templates/district/party_list.html:16
 msgid "Create New Party"
 msgstr "Neue Partei erstellen"
 
-#: templates/local/party_form.html:218
+#: templates/district/party_form.html:218
 msgid "Update Party"
 msgstr "Partei aktualisieren"
 
-#: templates/local/party_form.html:237
+#: templates/district/party_form.html:237
 #, fuzzy
 msgid ""
 "A political party represents a group within a local district that can "
@@ -3864,97 +3864,97 @@ msgstr ""
 "Eine politische Partei ist eine Gruppe innerhalb eines Bezirks, die bei "
 "Wahlen mitmachen und Sitze bekommen kann."
 
-#: templates/local/party_form.html:242
+#: templates/district/party_form.html:242
 msgid "Full name of the party"
 msgstr "Vollständiger Name der Partei"
 
-#: templates/local/party_form.html:243
+#: templates/district/party_form.html:243
 msgid "The local district this party belongs to"
 msgstr "Der Bezirk, zu dem diese Partei gehört"
 
-#: templates/local/party_form.html:248
+#: templates/district/party_form.html:248
 msgid "Abbreviated name for display"
 msgstr "Abgekürzung für die Anzeige"
 
-#: templates/local/party_form.html:249
+#: templates/district/party_form.html:249
 msgid "Hex color code for visual identification"
 msgstr "Hex-Farbcode zur visuellen Identifizierung"
 
-#: templates/local/party_form.html:250
+#: templates/district/party_form.html:250
 msgid "Party logo image file"
 msgstr "Bilddatei mit dem Logo der Partei"
 
-#: templates/local/party_form.html:251
+#: templates/district/party_form.html:251
 msgid "Detailed description of the party"
 msgstr "Detaillierte Beschreibung der Partei"
 
-#: templates/local/party_form.html:256
+#: templates/district/party_form.html:256
 msgid "Party names must be unique within each local district"
 msgstr "Parteinamen müssen innerhalb jedes Bezirks einzigartig sein"
 
-#: templates/local/party_form.html:257
+#: templates/district/party_form.html:257
 msgid "Color should be a valid hex code (e.g., #FF0000)"
 msgstr "Die Farbe sollte ein gültiger Hex-Code sein (z. B. #FF0000)."
 
-#: templates/local/party_form.html:258
+#: templates/district/party_form.html:258
 msgid "Logo files should be image formats (JPG, PNG, etc.)"
 msgstr "Logo-Dateien sollten Bildformate sein (JPG, PNG usw.)."
 
-#: templates/local/party_list.html:6 templates/local/party_list.html:13
+#: templates/district/party_list.html:6 templates/district/party_list.html:13
 msgid "Party Management"
 msgstr "Partei-Management"
 
-#: templates/local/party_list.html:32
+#: templates/district/party_list.html:32
 msgid "Search by name, short name, description or local"
 msgstr "Suche nach Name, Abkürzung, Beschreibung oder Bezirk"
 
-#: templates/local/party_list.html:72 templates/local/session_detail.html:142
-#: templates/local/session_detail.html:233
+#: templates/district/party_list.html:72 templates/district/session_detail.html:142
+#: templates/district/session_detail.html:233
 #: templates/motion/inquiry_list.html:152 templates/motion/motion_list.html:162
 #: templates/motion/motion_vote_confirm_delete.html:72
 msgid "Parties"
 msgstr "Parteien"
 
-#: templates/local/party_list.html:142
+#: templates/district/party_list.html:142
 #, fuzzy
 msgid "Party pagination"
 msgstr "Party-Paginierung"
 
-#: templates/local/party_list.html:182
+#: templates/district/party_list.html:182
 #, fuzzy
 msgid "Create your first Party to get started."
 msgstr "Mach deine erste Party, um loszulegen."
 
-#: templates/local/session_attachment_form.html:20
-#: templates/local/session_cancel_confirm.html:18
-#: templates/local/session_cancel_confirm.html:63
-#: templates/local/session_confirm_delete.html:19
-#: templates/local/session_invitation_form.html:20
-#: templates/local/session_minutes_form.html:20
+#: templates/district/session_attachment_form.html:20
+#: templates/district/session_cancel_confirm.html:18
+#: templates/district/session_cancel_confirm.html:63
+#: templates/district/session_confirm_delete.html:19
+#: templates/district/session_invitation_form.html:20
+#: templates/district/session_minutes_form.html:20
 #: templates/motion/inquiry_detail.html:31
 #: templates/motion/motion_detail.html:26
 msgid "Back to Session"
 msgstr "Zurück zur Sitzung"
 
-#: templates/local/session_cancel_confirm.html:4
-#: templates/local/session_cancel_confirm.html:12
-#: templates/local/session_cancel_confirm.html:66
+#: templates/district/session_cancel_confirm.html:4
+#: templates/district/session_cancel_confirm.html:12
+#: templates/district/session_cancel_confirm.html:66
 msgid "Cancel Session"
 msgstr "Sitzung absagen"
 
-#: templates/local/session_cancel_confirm.html:14
+#: templates/district/session_cancel_confirm.html:14
 msgid "Confirm cancellation of this session."
 msgstr "Bestätige das Absagen dieser Sitzung."
 
-#: templates/local/session_cancel_confirm.html:28
+#: templates/district/session_cancel_confirm.html:28
 msgid "Cancel this session?"
 msgstr "Diese Sitzung absagen?"
 
-#: templates/local/session_cancel_confirm.html:33
+#: templates/district/session_cancel_confirm.html:33
 msgid "Are you sure you want to cancel this session?"
 msgstr "Bist du sicher, dass du diese Sitzung absagen möchtest?"
 
-#: templates/local/session_cancel_confirm.html:35
+#: templates/district/session_cancel_confirm.html:35
 #, fuzzy
 msgid ""
 "The session status will be set to Cancelled. You can still edit the session "
@@ -3963,27 +3963,27 @@ msgstr ""
 "Der Status der Sitzung wird auf „Abgebrochen“ gesetzt. Du kannst die Sitzung "
 "bei Bedarf später noch bearbeiten."
 
-#: templates/local/session_confirm_delete.html:5
-#: templates/local/session_confirm_delete.html:13
-#: templates/local/session_confirm_delete.html:127
-#: templates/local/session_form.html:256
+#: templates/district/session_confirm_delete.html:5
+#: templates/district/session_confirm_delete.html:13
+#: templates/district/session_confirm_delete.html:127
+#: templates/district/session_form.html:256
 msgid "Delete Session"
 msgstr "Sitzung löschen"
 
-#: templates/local/session_confirm_delete.html:15
+#: templates/district/session_confirm_delete.html:15
 msgid "Confirm deletion of this session."
 msgstr "Bestätige das Löschen dieser Sitzung."
 
-#: templates/local/session_confirm_delete.html:30
+#: templates/district/session_confirm_delete.html:30
 msgid "Warning: This action cannot be undone!"
 msgstr "Achtung: Diese Aktion kann nicht rückgängig gemacht werden!"
 
-#: templates/local/session_confirm_delete.html:35
-#: templates/local/session_form.html:255
+#: templates/district/session_confirm_delete.html:35
+#: templates/district/session_form.html:255
 msgid "Are you sure you want to delete this session?"
 msgstr "Willst du diese Sitzung wirklich löschen?"
 
-#: templates/local/session_confirm_delete.html:37
+#: templates/district/session_confirm_delete.html:37
 msgid ""
 "This will permanently remove the session and all associated data. This "
 "action cannot be undone."
@@ -3991,64 +3991,64 @@ msgstr ""
 "Damit löschst du die Sitzung und alle dazugehörigen Daten endgültig. Das "
 "kannst du nicht rückgängig machen."
 
-#: templates/local/session_confirm_delete.html:44
+#: templates/district/session_confirm_delete.html:44
 msgid "Session to be deleted"
 msgstr "Zu löschende Sitzung"
 
-#: templates/local/session_confirm_delete.html:79
-#: templates/local/session_detail.html:68
+#: templates/district/session_confirm_delete.html:79
+#: templates/district/session_detail.html:68
 msgid "Time"
 msgstr "Zeit"
 
-#: templates/local/session_confirm_delete.html:87
-#: templates/local/session_detail.html:76
+#: templates/district/session_confirm_delete.html:87
+#: templates/district/session_detail.html:76
 msgid "Not specified"
 msgstr "Nicht angegeben"
 
-#: templates/local/session_confirm_delete.html:121
-#: templates/local/session_detail.html:23 templates/local/session_form.html:36
-#: templates/local/session_form.html:40
+#: templates/district/session_confirm_delete.html:121
+#: templates/district/session_detail.html:23 templates/district/session_form.html:36
+#: templates/district/session_form.html:40
 msgid "Back to Council"
 msgstr "Zurück zur Bezirksvertretung"
 
-#: templates/local/session_detail.html:5 templates/local/session_detail.html:33
-#: templates/local/session_form.html:57
+#: templates/district/session_detail.html:5 templates/district/session_detail.html:33
+#: templates/district/session_form.html:57
 msgid "Session Details"
 msgstr "Sitzungsdetails"
 
-#: templates/local/session_detail.html:93
+#: templates/district/session_detail.html:93
 msgid "Add invitation"
 msgstr "Einladung hinzufügen"
 
-#: templates/local/session_detail.html:99
+#: templates/district/session_detail.html:99
 msgid "Cancel session"
 msgstr "Sitzung absagen"
 
-#: templates/local/session_detail.html:105
+#: templates/district/session_detail.html:105
 msgid "Add minutes"
 msgstr "Protokoll hinzufügen"
 
-#: templates/local/session_detail.html:124
+#: templates/district/session_detail.html:124
 msgid "Session Motions"
 msgstr "Anträge"
 
-#: templates/local/session_detail.html:205
+#: templates/district/session_detail.html:205
 msgid "No motions have been submitted for this session yet."
 msgstr "Es wurden noch keine Anträge für diese Sitzung erstellt."
 
-#: templates/local/session_detail.html:215
+#: templates/district/session_detail.html:215
 msgid "Session Inquiries"
 msgstr "Anfragen der Sitzung"
 
-#: templates/local/session_detail.html:300
+#: templates/district/session_detail.html:300
 msgid "No inquiries have been submitted for this session yet."
 msgstr "Es wurden noch keine Anfragen für diese Sitzung erstellt."
 
-#: templates/local/session_detail.html:310
+#: templates/district/session_detail.html:310
 msgid "Session Attachments"
 msgstr "Sitzungsanhänge"
 
-#: templates/local/session_detail.html:326
+#: templates/district/session_detail.html:326
 #: templates/motion/inquiry_detail.html:196
 #: templates/motion/motion_detail.html:417
 #, fuzzy
@@ -4056,66 +4056,66 @@ msgstr "Sitzungsanhänge"
 msgid "Remove this attachment?"
 msgstr "Soll dieser Anhang entfernt werden?"
 
-#: templates/local/session_detail.html:328
+#: templates/district/session_detail.html:328
 #, fuzzy
 #| msgid "Meeting Attachments"
 msgid "Remove attachment"
 msgstr "Anhang entfernen"
 
-#: templates/local/session_detail.html:328
+#: templates/district/session_detail.html:328
 #: templates/motion/inquiry_detail.html:199
 #: templates/motion/motion_detail.html:420 templates/user/list.html:120
 msgid "Remove"
 msgstr "Entfernen"
 
-#: templates/local/session_detail.html:349
+#: templates/district/session_detail.html:349
 msgid "No attachments uploaded for this session yet."
 msgstr "Es wurden noch keine Anhänge für diese Sitzung hochgeladen."
 
-#: templates/local/session_detail.html:361
+#: templates/district/session_detail.html:361
 msgid "Exports"
 msgstr "Exporte"
 
-#: templates/local/session_detail.html:366
+#: templates/district/session_detail.html:366
 msgid "Export Session as PDF"
 msgstr "Sitzung als PDF exportieren"
 
-#: templates/local/session_detail.html:386
-#: templates/local/session_detail.html:424
-#: templates/local/session_detail.html:448
+#: templates/district/session_detail.html:386
+#: templates/district/session_detail.html:424
+#: templates/district/session_detail.html:448
 msgid "Excuse myself"
 msgstr "Mich entschuldigen"
 
-#: templates/local/session_detail.html:387
-#: templates/local/session_detail.html:395
-#: templates/local/session_detail.html:424
-#: templates/local/session_detail.html:436
+#: templates/district/session_detail.html:387
+#: templates/district/session_detail.html:395
+#: templates/district/session_detail.html:424
+#: templates/district/session_detail.html:436
 msgid "Cancel excuse"
 msgstr "Entschuldigung zurücknehmen"
 
-#: templates/local/session_detail.html:387
-#: templates/local/session_detail.html:399
-#: templates/local/session_detail.html:400
-#: templates/local/session_detail.html:475
-#: templates/local/session_detail.html:486
+#: templates/district/session_detail.html:387
+#: templates/district/session_detail.html:399
+#: templates/district/session_detail.html:400
+#: templates/district/session_detail.html:475
+#: templates/district/session_detail.html:486
 msgid "Excuse"
 msgstr "Entschuldigen"
 
-#: templates/local/session_detail.html:395
+#: templates/district/session_detail.html:395
 #, fuzzy
 #| msgid "Cancel excuse"
 msgid "Cancel excuse for"
 msgstr "Entschuldigung für"
 
-#: templates/local/session_detail.html:407
+#: templates/district/session_detail.html:407
 msgid "Excused"
 msgstr "Entschuldigt"
 
-#: templates/local/session_detail.html:413
+#: templates/district/session_detail.html:413
 msgid "No political group members for the current term."
 msgstr "Keine Klubmitglieder für die aktuelle Wahlperiode."
 
-#: templates/local/session_detail.html:432
+#: templates/district/session_detail.html:432
 msgid ""
 "You have excused yourself from this session. Cancel to mark yourself as "
 "attending again."
@@ -4123,326 +4123,326 @@ msgstr ""
 "Sie haben sich von dieser Sitzung entschuldigt. Zurücknehmen, um sich wieder "
 "als teilnehmend zu markieren."
 
-#: templates/local/session_detail.html:435
+#: templates/district/session_detail.html:435
 msgid "Close"
 msgstr "Schliessen"
 
-#: templates/local/session_detail.html:443
+#: templates/district/session_detail.html:443
 msgid "You will be marked as excused from this session. Optional note:"
 msgstr ""
 "Sie werden als von dieser Sitzung entschuldigt markiert. Optionale Anmerkung:"
 
-#: templates/local/session_detail.html:444
-#: templates/local/session_detail.html:471
+#: templates/district/session_detail.html:444
+#: templates/district/session_detail.html:471
 msgid "Optional reason (e.g. illness, other commitment)"
 msgstr "Optionale Begründung (z. B. Krankheit, andere Verpflichtung)"
 
-#: templates/local/session_detail.html:463
+#: templates/district/session_detail.html:463
 #, fuzzy
 #| msgid "Participants"
 msgid "Excuse participant"
 msgstr "Teilnehmer entschuldigen"
 
-#: templates/local/session_detail.html:470
+#: templates/district/session_detail.html:470
 #, fuzzy
 msgid "Mark this participant as excused. Optional note:"
 msgstr "Markiere diesen Teilnehmer als entschuldigt. Optionaler Vermerk:"
 
-#: templates/local/session_detail.html:500
+#: templates/district/session_detail.html:500
 msgid "Presence Tracker"
 msgstr "Anwesendheit"
 
-#: templates/local/session_detail.html:506
+#: templates/district/session_detail.html:506
 msgid "Total Present"
 msgstr "Anwesend (gesamt)"
 
-#: templates/local/session_detail.html:511
-#: templates/local/session_detail.html:515
+#: templates/district/session_detail.html:511
+#: templates/district/session_detail.html:515
 msgid "Majority reached!"
 msgstr "Die Mehrheit ist da!"
 
-#: templates/local/session_detail.html:528
+#: templates/district/session_detail.html:528
 msgid "seats"
 msgstr "Plätze"
 
-#: templates/local/session_form.html:7 templates/local/session_form.html:20
+#: templates/district/session_form.html:7 templates/district/session_form.html:20
 msgid "Edit Session"
 msgstr "Sitzung bearbeiten"
 
-#: templates/local/session_form.html:9 templates/local/session_form.html:22
+#: templates/district/session_form.html:9 templates/district/session_form.html:22
 msgid "Create New Session"
 msgstr "Neue Sitzung erstellen"
 
-#: templates/local/session_form.html:27
+#: templates/district/session_form.html:27
 msgid "Update session details and information."
 msgstr "Aktualisier die Details und Infos zur Sitzung."
 
-#: templates/local/session_form.html:29
+#: templates/district/session_form.html:29
 msgid "Create a new council session for meetings and events."
 msgstr "Mach eine neue Sitzung für Treffen und Veranstaltungen."
 
-#: templates/local/session_form.html:59
+#: templates/district/session_form.html:59
 msgid "Session Information"
 msgstr "Sitzungsinformation"
 
-#: templates/local/session_form.html:279
+#: templates/district/session_form.html:279
 msgid "Update Session"
 msgstr "Sitzung aktualisieren"
 
-#: templates/local/session_form.html:281
+#: templates/district/session_form.html:281
 msgid "Create Session"
 msgstr "Sitzung erstellen"
 
-#: templates/local/session_form.html:298
+#: templates/district/session_form.html:298
 msgid "Session Types"
 msgstr "Sitzungstypen"
 
-#: templates/local/session_form.html:300
+#: templates/district/session_form.html:300
 msgid "Regular"
 msgstr "Normal"
 
-#: templates/local/session_form.html:300
+#: templates/district/session_form.html:300
 msgid "Standard council meeting"
 msgstr "Normale Sitzung"
 
-#: templates/local/session_form.html:301
+#: templates/district/session_form.html:301
 msgid "Special"
 msgstr "Spezial"
 
-#: templates/local/session_form.html:301
+#: templates/district/session_form.html:301
 msgid "Special or emergency meeting"
 msgstr "Sondersitzung oder Dringlichkeitssitzung"
 
-#: templates/local/session_form.html:302
+#: templates/district/session_form.html:302
 msgid "Inaugural"
 msgstr "Konstituierung"
 
-#: templates/local/session_form.html:302
+#: templates/district/session_form.html:302
 msgid "Inaugural session"
 msgstr "Konstituierende Sitzung"
 
-#: templates/local/session_form.html:305
+#: templates/district/session_form.html:305
 msgid "Session Status"
 msgstr "Sitzungsstatus"
 
-#: templates/local/session_form.html:307
+#: templates/district/session_form.html:307
 msgid "Session is planned and confirmed"
 msgstr "Die Sitzung ist geplant und bestätigt"
 
-#: templates/local/session_form.html:308
+#: templates/district/session_form.html:308
 msgid "Session is currently happening"
 msgstr "Die Sitzung läuft gerade"
 
-#: templates/local/session_form.html:309
+#: templates/district/session_form.html:309
 msgid "Session has finished"
 msgstr "Die Sitzung ist beendet"
 
-#: templates/local/session_form.html:310
+#: templates/district/session_form.html:310
 msgid "Session was cancelled"
 msgstr "Die Sitzung wurde abgesagt"
 
-#: templates/local/session_form.html:311
+#: templates/district/session_form.html:311
 #, fuzzy
 msgid "Invitations have been sent for this session"
 msgstr "Die Einladungen für diese Sitzung wurden verschickt"
 
-#: templates/local/session_form.html:316
+#: templates/district/session_form.html:316
 #, fuzzy
 msgid "Use descriptive titles for easy identification"
 msgstr "Verwende aussagekräftige Titel, damit man sie leicht erkennen kann"
 
-#: templates/local/session_form.html:317
+#: templates/district/session_form.html:317
 #, fuzzy
 msgid "Set the correct date and time for scheduling"
 msgstr ""
 "Stell das richtige Datum und die richtige Uhrzeit für die Terminplanung ein"
 
-#: templates/local/session_form.html:318
+#: templates/district/session_form.html:318
 #, fuzzy
 msgid "Include location details for physical meetings"
 msgstr "Gib die Details zum Veranstaltungsort für persönliche Treffen an"
 
-#: templates/local/session_form.html:319
+#: templates/district/session_form.html:319
 msgid "Add description for additional context"
 msgstr "Beschreibung für mehr Kontext hinzufügen"
 
-#: templates/local/session_invitation_form.html:5
-#: templates/local/session_invitation_form.html:14
-#: templates/local/session_invitation_form.html:67
+#: templates/district/session_invitation_form.html:5
+#: templates/district/session_invitation_form.html:14
+#: templates/district/session_invitation_form.html:67
 msgid "Add Invitation"
 msgstr "Einladung hinzufügen"
 
-#: templates/local/session_invitation_form.html:29
+#: templates/district/session_invitation_form.html:29
 msgid "Upload Invitation (PDF)"
 msgstr "Einladung hochladen (PDF)"
 
-#: templates/local/session_invitation_form.html:33
+#: templates/district/session_invitation_form.html:33
 msgid "Upload the invitation PDF. The session status will be set to Invited."
 msgstr ""
 "Lade die Einladung als PDF hoch. Der Status der Sitzung wird auf "
 "„Eingeladen“ gesetzt."
 
-#: templates/local/session_invitation_form.html:49
+#: templates/district/session_invitation_form.html:49
 msgid "PDF only. Maximum file size: 50MB."
 msgstr "Nur PDF. Maximale Dateigröße: 50 MB."
 
-#: templates/local/session_minutes_form.html:5
-#: templates/local/session_minutes_form.html:14
+#: templates/district/session_minutes_form.html:5
+#: templates/district/session_minutes_form.html:14
 msgid "Add Minutes"
 msgstr "Protokoll hinzufügen"
 
-#: templates/local/session_minutes_form.html:29
+#: templates/district/session_minutes_form.html:29
 msgid "Session Minutes"
 msgstr "Sitzungsprotokoll"
 
-#: templates/local/session_minutes_form.html:47
+#: templates/district/session_minutes_form.html:47
 #, fuzzy
 msgid "Enter or edit the session minutes."
 msgstr "Gib das Sitzungsprotokoll ein oder bearbeite es."
 
-#: templates/local/session_minutes_form.html:51
+#: templates/district/session_minutes_form.html:51
 msgid "Save Minutes"
 msgstr "Protokoll speichern"
 
-#: templates/local/term_confirm_delete.html:5
-#: templates/local/term_confirm_delete.html:12
-#: templates/local/term_confirm_delete.html:86
-#: templates/local/term_detail.html:93
+#: templates/district/term_confirm_delete.html:5
+#: templates/district/term_confirm_delete.html:12
+#: templates/district/term_confirm_delete.html:86
+#: templates/district/term_detail.html:93
 #, fuzzy
 msgid "Delete Term"
 msgstr "Begriff löschen"
 
-#: templates/local/term_confirm_delete.html:32
+#: templates/district/term_confirm_delete.html:32
 #, fuzzy
 msgid "Are you sure you want to delete the Term"
 msgstr "Bist du sicher, dass du den Begriff löschen möchtest?"
 
-#: templates/local/term_confirm_delete.html:39
-#: templates/local/term_detail.html:6
+#: templates/district/term_confirm_delete.html:39
+#: templates/district/term_detail.html:6
 #, fuzzy
 msgid "Term Details"
 msgstr "Details zum Begriff"
 
-#: templates/local/term_confirm_delete.html:52
-#: templates/local/term_detail.html:60 templates/local/term_list.html:90
-#: templates/local/term_seat_distribution.html:43
+#: templates/district/term_confirm_delete.html:52
+#: templates/district/term_detail.html:60 templates/district/term_list.html:90
+#: templates/district/term_seat_distribution.html:43
 #, fuzzy
 msgid "Allocated Seats"
 msgstr "Reservierte Plätze"
 
-#: templates/local/term_confirm_delete.html:102
+#: templates/district/term_confirm_delete.html:102
 msgid "View Term"
 msgstr "Begriff ansehen"
 
-#: templates/local/term_confirm_delete.html:105
-#: templates/local/term_detail.html:89 templates/local/term_form.html:7
-#: templates/local/term_form.html:21
+#: templates/district/term_confirm_delete.html:105
+#: templates/district/term_detail.html:89 templates/district/term_form.html:7
+#: templates/district/term_form.html:21
 msgid "Edit Term"
 msgstr "Bearbeite Begriff"
 
-#: templates/local/term_confirm_delete.html:108
-#: templates/local/term_detail.html:96
+#: templates/district/term_confirm_delete.html:108
+#: templates/district/term_detail.html:96
 #, fuzzy
 msgid "View All Terms"
 msgstr "Alle Begriffe anzeigen"
 
-#: templates/local/term_detail.html:30 templates/local/term_form.html:39
-#: templates/local/term_seat_distribution.html:120
+#: templates/district/term_detail.html:30 templates/district/term_form.html:39
+#: templates/district/term_seat_distribution.html:120
 #, fuzzy
 msgid "Term Information"
 msgstr "Informationen zum Begriff"
 
-#: templates/local/term_detail.html:63
+#: templates/district/term_detail.html:63
 #, fuzzy
 msgid "Unallocated"
 msgstr "Nicht zugewiesen"
 
-#: templates/local/term_detail.html:92 templates/local/term_list.html:134
+#: templates/district/term_detail.html:92 templates/district/term_list.html:134
 #, fuzzy
 msgid "Are you sure you want to delete this Term?"
 msgstr "Bist du sicher, dass du diesen Begriff löschen möchtest?"
 
-#: templates/local/term_detail.html:116
+#: templates/district/term_detail.html:116
 msgid "Yes"
 msgstr "Ja"
 
-#: templates/local/term_detail.html:118
+#: templates/district/term_detail.html:118
 msgid "Duration"
 msgstr "Dauer"
 
-#: templates/local/term_form.html:9 templates/local/term_form.html:23
-#: templates/local/term_form.html:144
+#: templates/district/term_form.html:9 templates/district/term_form.html:23
+#: templates/district/term_form.html:144
 #, fuzzy
 msgid "Create Term"
 msgstr "Begriff erstellen"
 
-#: templates/local/term_form.html:57 templates/local/term_form.html:160
+#: templates/district/term_form.html:57 templates/district/term_form.html:160
 #, fuzzy
 msgid "Term Name"
 msgstr "Begriff"
 
-#: templates/local/term_form.html:90 templates/local/term_form.html:162
+#: templates/district/term_form.html:90 templates/district/term_form.html:162
 msgid "Start Date"
 msgstr "Startdatum"
 
-#: templates/local/term_form.html:105 templates/local/term_form.html:163
+#: templates/district/term_form.html:105 templates/district/term_form.html:163
 msgid "End Date"
 msgstr "Enddatum"
 
-#: templates/local/term_form.html:142
+#: templates/district/term_form.html:142
 msgid "Update Term"
 msgstr "Aktualisieren"
 
-#: templates/local/term_form.html:160
+#: templates/district/term_form.html:160
 #, fuzzy
 msgid "Enter a descriptive name for the political term."
 msgstr "Gib einen aussagekräftigen Namen für den politischen Begriff ein."
 
-#: templates/local/term_form.html:161
+#: templates/district/term_form.html:161
 #, fuzzy
 msgid "Total number of seats available in this term."
 msgstr "Gesamtzahl der verfügbaren Plätze in diesem Semester."
 
-#: templates/local/term_form.html:162
+#: templates/district/term_form.html:162
 #, fuzzy
 msgid "When this term begins."
 msgstr "Wenn dieses Semester beginnt."
 
-#: templates/local/term_form.html:163
+#: templates/district/term_form.html:163
 #, fuzzy
 msgid "When this term ends (must be after start date)."
 msgstr "Wenn dieser Zeitraum endet (muss nach dem Startdatum liegen)."
 
-#: templates/local/term_form.html:164
+#: templates/district/term_form.html:164
 #, fuzzy
 msgid "Optional description of the term."
 msgstr "Optionale Beschreibung des Begriffs."
 
-#: templates/local/term_list.html:6 templates/local/term_list.html:14
+#: templates/district/term_list.html:6 templates/district/term_list.html:14
 #, fuzzy
 msgid "Term Management"
 msgstr "Begriffsverwaltung"
 
-#: templates/local/term_list.html:17
+#: templates/district/term_list.html:17
 #, fuzzy
 msgid "Showing terms for"
 msgstr "Ergebnisse für"
 
-#: templates/local/term_list.html:19
+#: templates/district/term_list.html:19
 #, fuzzy
 msgid "Show All Terms"
 msgstr "Alle Begriffe anzeigen"
 
-#: templates/local/term_list.html:26
+#: templates/district/term_list.html:26
 #, fuzzy
 msgid "Create New Term"
 msgstr "Neuen Begriff erstellen"
 
-#: templates/local/term_list.html:42 templates/user/role_list.html:35
+#: templates/district/term_list.html:42 templates/user/role_list.html:35
 msgid "Search by name or description"
 msgstr "Suche nach Name oder Beschreibung"
 
-#: templates/local/term_list.html:53
+#: templates/district/term_list.html:53
 #: templates/motion/inquiry_status_change.html:30
 #: templates/motion/motion_status_change.html:40
 #: templates/motion/motion_status_change.html:48
@@ -4450,120 +4450,120 @@ msgstr "Suche nach Name oder Beschreibung"
 msgid "Current Status"
 msgstr "Aktueller Stand"
 
-#: templates/local/term_list.html:57
+#: templates/district/term_list.html:57
 #, fuzzy
 msgid "Not Current"
 msgstr "Nicht aktuell"
 
-#: templates/local/term_list.html:79
+#: templates/district/term_list.html:79
 msgid "Terms"
 msgstr "Begriffe"
 
-#: templates/local/term_list.html:147
+#: templates/district/term_list.html:147
 #, fuzzy
 msgid "Term pagination"
 msgstr "Seitenumbruch"
 
-#: templates/local/term_list.html:187
+#: templates/district/term_list.html:187
 #, fuzzy
 msgid "Create your first Term to get started."
 msgstr "Erstelle deinen ersten Begriff, um loszulegen."
 
-#: templates/local/term_seat_distribution.html:6
-#: templates/local/term_seat_distribution.html:13
-#: templates/local/term_seat_distribution_form.html:173
+#: templates/district/term_seat_distribution.html:6
+#: templates/district/term_seat_distribution.html:13
+#: templates/district/term_seat_distribution_form.html:173
 #, fuzzy
 msgid "Seat Distribution"
 msgstr "Sitzverteilung"
 
-#: templates/local/term_seat_distribution.html:16
-#: templates/local/term_seat_distribution.html:152
+#: templates/district/term_seat_distribution.html:16
+#: templates/district/term_seat_distribution.html:152
 #, fuzzy
 msgid "Add Seat Distribution"
 msgstr "Sitzplatzverteilung hinzufügen"
 
-#: templates/local/term_seat_distribution.html:19
+#: templates/district/term_seat_distribution.html:19
 #, fuzzy
 msgid "Back to Term"
 msgstr "Zurück zum Semester"
 
-#: templates/local/term_seat_distribution.html:30
+#: templates/district/term_seat_distribution.html:30
 #, fuzzy
 msgid "Seat Distribution Overview"
 msgstr "Übersicht über die Sitzplatzverteilung"
 
-#: templates/local/term_seat_distribution.html:49
+#: templates/district/term_seat_distribution.html:49
 #, fuzzy
 msgid "Unallocated Seats"
 msgstr "Nicht zugewiesene Plätze"
 
-#: templates/local/term_seat_distribution.html:61
-#: templates/local/term_seat_distribution_list.html:91
+#: templates/district/term_seat_distribution.html:61
+#: templates/district/term_seat_distribution_list.html:91
 msgid "Percentage"
 msgstr "Prozentsatz"
 
-#: templates/local/term_seat_distribution.html:93
+#: templates/district/term_seat_distribution.html:93
 #, fuzzy
 msgid "Are you sure you want to delete this seat distribution?"
 msgstr "Bist du sicher, dass du diese Sitzplatzverteilung löschen möchtest?"
 
-#: templates/local/term_seat_distribution.html:106
-#: templates/local/term_seat_distribution_list.html:184
+#: templates/district/term_seat_distribution.html:106
+#: templates/district/term_seat_distribution_list.html:184
 #, fuzzy
 msgid "No Seat Distributions found"
 msgstr "Es wurden keine Sitzplatzverteilungen gefunden"
 
-#: templates/local/term_seat_distribution.html:107
+#: templates/district/term_seat_distribution.html:107
 #, fuzzy
 msgid "Add seat distributions to manage party representation in this term."
 msgstr ""
 "Füge Sitzverteilungen hinzu, um die Vertretung der Parteien in dieser "
 "Legislaturperiode zu verwalten."
 
-#: templates/local/term_seat_distribution.html:109
+#: templates/district/term_seat_distribution.html:109
 #, fuzzy
 msgid "Add First Distribution"
 msgstr "Erste Verteilung hinzufügen"
 
-#: templates/local/term_seat_distribution.html:155
+#: templates/district/term_seat_distribution.html:155
 #, fuzzy
 msgid "View All Distributions"
 msgstr "Alle Distributionen anzeigen"
 
-#: templates/local/term_seat_distribution.html:158
+#: templates/district/term_seat_distribution.html:158
 #, fuzzy
 msgid "View Term Details"
 msgstr "Details zum Begriff anzeigen"
 
-#: templates/local/term_seat_distribution_form.html:7
-#: templates/local/term_seat_distribution_form.html:21
-#: templates/local/term_seat_distribution_form.html:41
+#: templates/district/term_seat_distribution_form.html:7
+#: templates/district/term_seat_distribution_form.html:21
+#: templates/district/term_seat_distribution_form.html:41
 #, fuzzy
 msgid "Edit Seat Distribution"
 msgstr "Sitzplatzverteilung bearbeiten"
 
-#: templates/local/term_seat_distribution_form.html:9
-#: templates/local/term_seat_distribution_form.html:23
+#: templates/district/term_seat_distribution_form.html:9
+#: templates/district/term_seat_distribution_form.html:23
 #, fuzzy
 msgid "Create Seat Distribution"
 msgstr "Sitzplatzverteilung erstellen"
 
-#: templates/local/term_seat_distribution_form.html:43
+#: templates/district/term_seat_distribution_form.html:43
 #, fuzzy
 msgid "Create New Seat Distribution"
 msgstr "Neue Sitzplatzverteilung erstellen"
 
-#: templates/local/term_seat_distribution_form.html:156
+#: templates/district/term_seat_distribution_form.html:156
 #, fuzzy
 msgid "Update Distribution"
 msgstr "Update-Verteilung"
 
-#: templates/local/term_seat_distribution_form.html:158
+#: templates/district/term_seat_distribution_form.html:158
 #, fuzzy
 msgid "Create Distribution"
 msgstr "Verteilung erstellen"
 
-#: templates/local/term_seat_distribution_form.html:175
+#: templates/district/term_seat_distribution_form.html:175
 #, fuzzy
 msgid ""
 "A seat distribution defines how many seats a political party has in a "
@@ -4572,75 +4572,75 @@ msgstr ""
 "Eine Sitzverteilung legt fest, wie viele Sitze eine politische Partei in "
 "einer bestimmten Legislaturperiode hat."
 
-#: templates/local/term_seat_distribution_form.html:180
+#: templates/district/term_seat_distribution_form.html:180
 #, fuzzy
 msgid "Total allocated seats cannot exceed the term's total seats"
 msgstr ""
 "Die Gesamtzahl der zugewiesenen Sitze darf die Gesamtzahl der Sitze in "
 "diesem Wahlzeitraum nicht überschreiten"
 
-#: templates/local/term_seat_distribution_form.html:181
+#: templates/district/term_seat_distribution_form.html:181
 #, fuzzy
 msgid "Each party can only have one distribution per term"
 msgstr "Jede Partei darf pro Legislaturperiode nur eine Verteilung vornehmen"
 
-#: templates/local/term_seat_distribution_form.html:182
+#: templates/district/term_seat_distribution_form.html:182
 #, fuzzy
 msgid "Percentage is automatically calculated"
 msgstr "Der Prozentsatz wird automatisch berechnet"
 
-#: templates/local/term_seat_distribution_list.html:6
-#: templates/local/term_seat_distribution_list.html:13
+#: templates/district/term_seat_distribution_list.html:6
+#: templates/district/term_seat_distribution_list.html:13
 #, fuzzy
 msgid "Term Seat Distribution Management"
 msgstr "Verwaltung der Sitzverteilung"
 
-#: templates/local/term_seat_distribution_list.html:16
+#: templates/district/term_seat_distribution_list.html:16
 #, fuzzy
 msgid "Create New Distribution"
 msgstr "Neue Verteilung erstellen"
 
-#: templates/local/term_seat_distribution_list.html:32
+#: templates/district/term_seat_distribution_list.html:32
 #, fuzzy
 msgid "All Terms"
 msgstr "Alle Begriffe"
 
-#: templates/local/term_seat_distribution_list.html:43
+#: templates/district/term_seat_distribution_list.html:43
 msgid "All Parties"
 msgstr "Alle Parteien"
 
-#: templates/local/term_seat_distribution_list.html:52
+#: templates/district/term_seat_distribution_list.html:52
 #, fuzzy
 msgid "Min Seats"
 msgstr "Mindestanzahl an Sitzplätzen"
 
-#: templates/local/term_seat_distribution_list.html:57
+#: templates/district/term_seat_distribution_list.html:57
 #: templates/motion/motion_vote.html:130
 #, fuzzy
 msgid "Max Seats"
 msgstr "Maximale Mandate"
 
-#: templates/local/term_seat_distribution_list.html:80
+#: templates/district/term_seat_distribution_list.html:80
 #, fuzzy
 msgid "Seat Distributions"
 msgstr "Sitzverteilung"
 
-#: templates/local/term_seat_distribution_list.html:132
+#: templates/district/term_seat_distribution_list.html:132
 #, fuzzy
 msgid "Are you sure you want to delete this distribution?"
 msgstr "Bist du sicher, dass du diese Distribution löschen möchtest?"
 
-#: templates/local/term_seat_distribution_list.html:145
+#: templates/district/term_seat_distribution_list.html:145
 #, fuzzy
 msgid "Distribution pagination"
 msgstr "Seitenumbruch"
 
-#: templates/local/term_seat_distribution_list.html:185
+#: templates/district/term_seat_distribution_list.html:185
 #, fuzzy
 msgid "Create your first seat distribution to get started."
 msgstr "Erstelle deine erste Sitzplatzverteilung, um loszulegen."
 
-#: templates/local/term_seat_distribution_list.html:187
+#: templates/district/term_seat_distribution_list.html:187
 #, fuzzy
 msgid "Create First Distribution"
 msgstr "Erste Verteilung erstellen"
@@ -5692,8 +5692,8 @@ msgid "ID"
 msgstr "ID"
 
 #: templates/user/list.html:44
-msgid "Local"
-msgstr "Meine Bezirke"
+msgid "District"
+msgstr "Bezirk"
 
 #: templates/user/list.html:46
 msgid "Date joined"

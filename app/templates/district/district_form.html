@@ -1,0 +1,141 @@
+{% extends "_base.html" %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}
+    {% if object %}{% trans "Edit District" %}{% else %}{% trans "Create District" %}{% endif %}
+{% endblock title %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="bi bi-geo-alt"></i>
+                        {% if object %}
+                            {% trans "Edit District" %}: {{ object.name }}
+                        {% else %}
+                            {% trans "Create New District" %}
+                        {% endif %}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        {% if form.errors %}
+                            <div class="alert alert-danger">
+                                <h5>{% trans "Please correct the following errors:" %}</h5>
+                                {{ form.errors }}
+                            </div>
+                        {% endif %}
+                        
+                        {% if parent_district %}
+                            <div class="alert alert-info mb-3">
+                                <h6 class="mb-2">
+                                    <i class="bi bi-info-circle"></i>
+                                    {% trans "Creating District for:" %}
+                                </h6>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <strong>{% trans "Parent District:" %}</strong> {{ parent_district.name }}
+                                    </div>
+                                    <div class="col-md-6">
+                                        <strong>{% trans "Code:" %}</strong> {{ parent_district.code }}
+                                    </div>
+                                </div>
+                                {% if parent_district.description %}
+                                    <div class="mt-2">
+                                        <strong>{% trans "Description:" %}</strong> {{ parent_district.description }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.name.id_for_label }}" class="form-label">
+                                    {% trans "District Name" %} *
+                                </label>
+                                {{ form.name }}
+                                {% if form.name.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.name.errors.0 }}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">
+                                    {% trans "The full name of the administrative district" %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.code.id_for_label }}" class="form-label">
+                                    {% trans "District Code" %} *
+                                </label>
+                                {{ form.code }}
+                                {% if form.code.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.code.errors.0 }}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">
+                                    {% trans "A short, unique code for the district (e.g., 'W01', 'W02')" %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.description.id_for_label }}" class="form-label">
+                                {% trans "Description" %}
+                            </label>
+                            {{ form.description }}
+                            {% if form.description.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.description.errors.0 }}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">
+                                {% trans "Optional description of the district" %}
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+
+                            <div class="form-text">
+                                {% trans "Inactive Locals will not be available for selection" %}
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'district:district-list' %}" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> {% trans "Cancel" %}
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i>
+                                {% if object %}
+                                    {% trans "Update District" %}
+                                {% else %}
+                                    {% trans "Create District" %}
+                                {% endif %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .form-control, .form-select {
+        border-radius: 0.375rem;
+    }
+    
+    .form-check-input:checked {
+        background-color: #0d6efd;
+        border-color: #0d6efd;
+    }
+</style>
+{% endblock content %}

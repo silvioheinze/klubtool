@@ -10,7 +10,7 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('local', '0006_party_local_alter_party_name_and_more'),
+        ('district', '0006_party_local_alter_party_name_and_more'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
@@ -27,7 +27,7 @@ class Migration(migrations.Migration):
                 ('created_at', models.DateTimeField(auto_now_add=True)),
                 ('updated_at', models.DateTimeField(auto_now=True)),
                 ('history', models.JSONField(blank=True, default=dict)),
-                ('party', models.ForeignKey(help_text='Party this group belongs to', on_delete=django.db.models.deletion.CASCADE, related_name='groups', to='local.party')),
+                ('party', models.ForeignKey(help_text='Party this group belongs to', on_delete=django.db.models.deletion.CASCADE, related_name='groups', to='district.party')),
             ],
             options={
                 'verbose_name': 'Political Group',

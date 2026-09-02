@@ -68,10 +68,10 @@ def _get_group_calendar_events_for_month(group, year, month, user=None):
             'type': 'group_event',
             'badge_label': _('Party event'),
         })
-    local = getattr(group.party, 'local', None)
+    local = getattr(group.party, 'district', None)
     if local:
         try:
-            from local.models import Session, CommitteeMeeting
+            from district.models import Session, CommitteeMeeting
             council = getattr(local, 'council', None)
             if council:
                 council_sessions = Session.objects.filter(
@@ -121,7 +121,7 @@ class GroupListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
         return self.request.user.is_superuser or self.request.user.has_role_permission('group.view')
 
     def get_queryset(self):
-        queryset = Group.objects.select_related('party', 'party__local').all()
+        queryset = Group.objects.select_related('party', 'party__district').all()
         
         # Apply filters
         form = GroupFilterForm(self.request.GET)

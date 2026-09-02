@@ -139,8 +139,8 @@
                 </div>
             {% endif %}
             
-            <!-- Quick Access to Connected Locals, Councils, and Groups -->
-            {% if locals_from_memberships or councils_from_memberships or user_all_groups %}
+            <!-- Quick Access to Connected Districts, Councils, and Groups -->
+            {% if districts_from_memberships or councils_from_memberships or user_all_groups %}
                 <div class="row mt-4">
                     <div class="col-12">
                         <div class="card">
@@ -149,18 +149,18 @@
                             </div>
                             <div class="card-body">
                                 <div class="row">
-                                    {% if locals_from_memberships %}
+                                    {% if districts_from_memberships %}
                                         <div class="col-md-4">
-                                            <h6><i class="bi bi-geo-alt"></i> {% trans "Your Locals" %}</h6>
+                                            <h6><i class="bi bi-geo-alt"></i> {% trans "Your Districts" %}</h6>
                                             <div class="list-group">
-                                                {% for local in locals_from_memberships %}
-                                                    <a href="{% url 'local:local-detail' local.pk %}" class="list-group-item list-group-item-action">
+                                                {% for district in districts_from_memberships %}
+                                                    <a href="{% url 'district:district-detail' district.pk %}" class="list-group-item list-group-item-action">
                                                         <div class="d-flex w-100 justify-content-between">
-                                                            <h6 class="mb-1">{{ local.name }}</h6>
-                                                            <small class="text-muted">{{ local.code }}</small>
+                                                            <h6 class="mb-1">{{ district.name }}</h6>
+                                                            <small class="text-muted">{{ district.code }}</small>
                                                         </div>
                                                         <small class="text-muted">
-                                                            {% if local.is_active %}
+                                                            {% if district.is_active %}
                                                                 <span class="badge bg-success">{% trans "Active" %}</span>
                                                             {% else %}
                                                                 <span class="badge bg-danger">{% trans "Inactive" %}</span>
@@ -177,10 +177,10 @@
                                             <h6><i class="bi bi-building"></i> {% trans "Your Councils" %}</h6>
                                             <div class="list-group">
                                                 {% for council in councils_from_memberships %}
-                                                    <a href="{% url 'local:council-detail' council.pk %}" class="list-group-item list-group-item-action">
+                                                    <a href="{% url 'district:council-detail' council.pk %}" class="list-group-item list-group-item-action">
                                                         <div class="d-flex w-100 justify-content-between">
                                                             <h6 class="mb-1">{{ council.name }}</h6>
-                                                            <small class="text-muted">{{ council.local.name }}</small>
+                                                            <small class="text-muted">{{ council.district.name }}</small>
                                                         </div>
                                                         <small class="text-muted">
                                                             {% if council.is_active %}
@@ -265,7 +265,7 @@
                                                             <span class="badge bg-success">{{ event.badge_label }}</span>
                                                         {% elif event.type == 'group_event' %}
                                                             <span class="badge bg-warning text-dark">{{ event.badge_label }}</span>
-                                                        {% elif event.type == 'local_event' %}
+                                                        {% elif event.type == 'district_event' %}
                                                             <span class="badge bg-danger">{{ event.badge_label }}</span>
                                                         {% endif %}
                                                     </div>
@@ -349,7 +349,7 @@
                                                                                     <span class="badge bg-success me-1">{{ event.badge_label }}</span>
                                                                                 {% elif event.type == 'group_event' %}
                                                                                     <span class="badge bg-warning text-dark me-1">{{ event.badge_label }}</span>
-                                                                                {% elif event.type == 'local_event' %}
+                                                                                {% elif event.type == 'district_event' %}
                                                                                     <span class="badge bg-danger me-1">{{ event.badge_label }}</span>
                                                                                 {% endif %}
                                                                                 <a href="{{ event.url }}" class="text-decoration-none">{{ event.title }}</a>

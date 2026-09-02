@@ -22,7 +22,7 @@
                     <i class="bi bi-pencil"></i> {% trans "Edit" %}
                 </a>
             {% endif %}
-            <a href="{% url 'local:session-detail' motion.session.pk %}" class="btn btn-outline-secondary">
+            <a href="{% url 'district:session-detail' motion.session.pk %}" class="btn btn-outline-secondary">
                 <i class="bi bi-arrow-left"></i> {% trans "Back to Session" %}
             </a>
         </div>
@@ -73,7 +73,7 @@
                                 <dt class="col-sm-4">{% trans "Session" %}</dt>
                                 <dd class="col-sm-8">
                                     {% if motion.session %}
-                                        <a href="{% url 'local:session-detail' motion.session.pk %}">
+                                        <a href="{% url 'district:session-detail' motion.session.pk %}">
                                             {{ motion.session.title }}
                                         </a>
                                     {% else %}

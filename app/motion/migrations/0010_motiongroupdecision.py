@@ -8,7 +8,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('local', '0012_remove_session_time_fields'),
+        ('district', '0012_remove_session_time_fields'),
         ('motion', '0009_motionstatus_committee_alter_motion_status_and_more'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
@@ -22,7 +22,7 @@ class Migration(migrations.Migration):
                 ('description', models.TextField(blank=True, help_text='Description of the group decision')),
                 ('decision_time', models.DateTimeField(help_text='When the decision was made')),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('committee', models.ForeignKey(blank=True, help_text="Committee when decision is 'refer_to_committee'", null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='motion_group_decisions', to='local.committee')),
+                ('committee', models.ForeignKey(blank=True, help_text="Committee when decision is 'refer_to_committee'", null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='motion_group_decisions', to='district.committee')),
                 ('created_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='motion_group_decisions_created', to=settings.AUTH_USER_MODEL)),
                 ('motion', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='group_decisions', to='motion.motion')),
             ],

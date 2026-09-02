@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('local', '0020_add_committee_to_session'),
+        ('district', '0020_add_committee_to_session'),
         ('motion', '0028_add_voted_in_committee_status'),
     ]
 
@@ -20,7 +20,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='motionstatus',
             name='committee',
-            field=models.ForeignKey(blank=True, help_text="Committee when status is 'refer_to_committee' or 'voted_in_committee'", null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='motion_status_changes', to='local.committee'),
+            field=models.ForeignKey(blank=True, help_text="Committee when status is 'refer_to_committee' or 'voted_in_committee'", null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='motion_status_changes', to='district.committee'),
         ),
         migrations.AlterField(
             model_name='motionstatus',

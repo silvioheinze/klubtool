@@ -9,7 +9,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('motion', '0022_add_motion_statuses_to_questions'),
-        ('local', '0017_add_committee_abbreviation'),
+        ('district', '0017_add_committee_abbreviation'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
@@ -22,7 +22,7 @@ class Migration(migrations.Migration):
                 ('changed_at', models.DateTimeField(auto_now_add=True)),
                 ('reason', models.TextField(blank=True, help_text='Reason for the status change')),
                 ('changed_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='question_status_changes', to=settings.AUTH_USER_MODEL)),
-                ('committee', models.ForeignKey(blank=True, help_text="Committee when status is 'refer_to_committee'", null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='question_status_changes', to='local.committee')),
+                ('committee', models.ForeignKey(blank=True, help_text="Committee when status is 'refer_to_committee'", null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='question_status_changes', to='district.committee')),
                 ('question', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='status_history', to='motion.question')),
             ],
             options={

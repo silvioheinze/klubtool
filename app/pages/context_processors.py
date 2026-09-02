@@ -2,7 +2,7 @@ def group_memberships(request):
     """Context processor to provide group membership data to all templates"""
     context = {
         'user_group_memberships': [],
-        'user_locals': [],
+        'user_districts': [],
         'user_councils': [],
         'user_group_admin_groups': [],
         'user_leader_groups': [],
@@ -13,7 +13,7 @@ def group_memberships(request):
     if request.user.is_authenticated:
         try:
             from group.models import GroupMember
-            from local.models import Local, Council
+            from district.models import District, Council
             
             # Get user's group memberships
             group_memberships = GroupMember.objects.filter(
@@ -22,7 +22,7 @@ def group_memberships(request):
             ).select_related(
                 'group',
                 'group__party',
-                'group__party__local'
+                'group__party__district'
             ).order_by('group__name')
             
             context['user_group_memberships'] = group_memberships
@@ -35,7 +35,7 @@ def group_memberships(request):
             ).select_related(
                 'group',
                 'group__party',
-                'group__party__local'
+                'group__party__district'
             ).order_by('group__name')
             
             context['user_group_admin_groups'] = group_admin_groups
@@ -48,7 +48,7 @@ def group_memberships(request):
             ).select_related(
                 'group',
                 'group__party',
-                'group__party__local'
+                'group__party__district'
             ).order_by('group__name')
             
             context['user_leader_groups'] = leader_groups
@@ -57,25 +57,25 @@ def group_memberships(request):
             context['user_all_groups'] = list(group_memberships)
             
             # Get unique locals and councils from memberships
-            locals_from_memberships = set()
+            districts_from_memberships = set()
             councils_from_memberships = set()
             
             for membership in group_memberships:
-                if membership.group.party and membership.group.party.local:
-                    locals_from_memberships.add(membership.group.party.local)
-                    if hasattr(membership.group.party.local, 'council') and membership.group.party.local.council:
-                        councils_from_memberships.add(membership.group.party.local.council)
+                if membership.group.party and membership.group.party.district:
+                    districts_from_memberships.add(membership.group.party.district)
+                    if hasattr(membership.group.party.district, 'council') and membership.group.party.district.council:
+                        councils_from_memberships.add(membership.group.party.district.council)
             
             # For superusers, show all councils
             if request.user.is_superuser:
-                from local.models import Council
+                from district.models import Council
                 all_councils = Council.objects.filter(is_active=True)
                 councils_from_memberships.update(all_councils)
                 for council in all_councils:
-                    if council.local:
-                        locals_from_memberships.add(council.local)
+                    if council.district:
+                        districts_from_memberships.add(council.district)
             
-            context['user_locals'] = sorted(locals_from_memberships, key=lambda x: x.name)
+            context['user_districts'] = sorted(districts_from_memberships, key=lambda x: x.name)
             context['user_councils'] = sorted(councils_from_memberships, key=lambda x: x.name)
             
             # Get next session (any future session) for user's councils
@@ -84,7 +84,7 @@ def group_memberships(request):
             now = timezone.now()
             
             if councils_from_memberships:
-                from local.models import Session
+                from district.models import Session
                 next_session = Session.objects.filter(
                     council__in=councils_from_memberships,
                     scheduled_date__date__gte=now.date(),

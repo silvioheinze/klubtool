@@ -3,7 +3,7 @@ from datetime import timedelta
 from django.db import models
 from django.contrib.auth import get_user_model
 from auditlog.registry import auditlog
-from local.models import Party
+from district.models import Party
 from django.utils import timezone
 from user.models import Role
 
@@ -42,9 +42,9 @@ class Group(models.Model):
         return self.members.filter(is_active=True).count()
 
     @property
-    def local(self):
-        """Get the local district through the party"""
-        return self.party.local
+    def district(self):
+        """Get the district through the party"""
+        return self.party.district
 
     def get_group_admins(self):
         """Get all group admin members"""
