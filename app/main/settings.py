@@ -200,8 +200,13 @@ ACCOUNT_LOGIN_METHODS = {'email'}  # Use email for authentication
 ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']  # Email required, username not required
 ACCOUNT_EMAIL_VERIFICATION = 'optional'  # Changed to optional so users can continue without verification
 ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True  # Keep user logged in after email confirmation
+ACCOUNT_LOGIN_BY_CODE_ENABLED = True
+ACCOUNT_LOGIN_BY_CODE_TIMEOUT = 600  # 10 minutes
+ACCOUNT_LOGIN_BY_CODE_MAX_ATTEMPTS = 3
+ACCOUNT_LOGIN_BY_CODE_SUPPORTS_RESEND = True
 ACCOUNT_RATE_LIMITS = {
     'login_failed': '5/5m',
+    'request_login_code': '20/m/ip,3/m/key',
 }
 ACCOUNT_ADAPTER = 'user.adapters.CustomAccountAdapter'  # Custom adapter to handle email confirmation
 ACCOUNT_FORMS = {'change_password': 'user.forms.CustomChangePasswordForm'}  # Superusers can change password without current password

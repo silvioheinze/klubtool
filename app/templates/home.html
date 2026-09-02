@@ -22,7 +22,10 @@
                             </h5>
                         </div>
                         <div class="card-body">
-                            <form method="post" action="{% url 'account_login' %}">
+                            <p class="text-muted small mb-3">
+                                {% trans "Enter your email address and we will send you a one-time sign-in code and a magic link." %}
+                            </p>
+                            <form method="post" action="{% url 'account_request_login_code' %}">
                                 {% csrf_token %}
                                 {% if redirect_field_value %}
                                     <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}">
@@ -42,71 +45,37 @@
                                 {% endif %}
 
                                 <div class="mb-3">
-                                    <label for="{{ login_form.login.id_for_label }}" class="form-label">
+                                    <label for="{{ login_form.email.id_for_label }}" class="form-label">
                                         <i class="bi bi-envelope me-1"></i>
                                         {% trans "Email Address" %}
                                     </label>
                                     <input
                                         type="email"
-                                        name="{{ login_form.login.name }}"
-                                        class="form-control {% if login_form.login.errors %}is-invalid{% endif %}"
-                                        id="{{ login_form.login.id_for_label }}"
+                                        name="{{ login_form.email.name }}"
+                                        class="form-control {% if login_form.email.errors %}is-invalid{% endif %}"
+                                        id="{{ login_form.email.id_for_label }}"
                                         placeholder="{% trans 'Enter your email address' %}"
                                         required
                                     >
-                                    {% if login_form.login.errors %}
+                                    {% if login_form.email.errors %}
                                         <div class="invalid-feedback">
-                                            {{ login_form.login.errors.0 }}
+                                            {{ login_form.email.errors.0 }}
                                         </div>
                                     {% endif %}
                                 </div>
-
-                                <div class="mb-3">
-                                    <label for="{{ login_form.password.id_for_label }}" class="form-label">
-                                        <i class="bi bi-key me-1"></i>
-                                        {% trans "Password" %}
-                                    </label>
-                                    <input
-                                        type="password"
-                                        name="{{ login_form.password.name }}"
-                                        class="form-control {% if login_form.password.errors %}is-invalid{% endif %}"
-                                        id="{{ login_form.password.id_for_label }}"
-                                        placeholder="{% trans 'Enter your password' %}"
-                                        required
-                                    >
-                                    {% if login_form.password.errors %}
-                                        <div class="invalid-feedback">
-                                            {{ login_form.password.errors.0 }}
-                                        </div>
-                                    {% endif %}
-                                </div>
-
-                                {% if login_form.remember %}
-                                <div class="mb-3 form-check">
-                                    <input
-                                        type="checkbox"
-                                        name="{{ login_form.remember.name }}"
-                                        class="form-check-input"
-                                        id="{{ login_form.remember.id_for_label }}"
-                                    >
-                                    <label class="form-check-label" for="{{ login_form.remember.id_for_label }}">
-                                        {% trans "Remember me" %}
-                                    </label>
-                                </div>
-                                {% endif %}
 
                                 <div class="d-grid gap-2">
                                     <button type="submit" class="btn btn-primary">
-                                        <i class="bi bi-box-arrow-in-right me-2"></i>
-                                        {% trans "Log in" %}
+                                        <i class="bi bi-envelope-check me-2"></i>
+                                        {% trans "Send sign-in email" %}
                                     </button>
                                 </div>
                             </form>
 
                             <div class="text-center mt-3">
-                                <a href="{% url 'account_reset_password' %}" class="text-decoration-none small">
-                                    <i class="bi bi-question-circle me-1"></i>
-                                    {% trans "Forgot your password?" %}
+                                <a href="{% url 'account_login' %}" class="text-decoration-none small">
+                                    <i class="bi bi-key me-1"></i>
+                                    {% trans "Sign in with password" %}
                                 </a>
                             </div>
                         </div>

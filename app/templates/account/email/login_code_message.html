@@ -1,0 +1,13 @@
+{% load i18n %}
+<!DOCTYPE html>
+<html lang="en">
+<body>
+<p>{% blocktranslate %}Use the sign-in code below in your browser, or click the magic link to sign in on any device.{% endblocktranslate %}</p>
+<p><strong>{% trans "Sign-in code:" %}</strong> {{ code }}</p>
+{% if magic_link %}
+<p><a href="{{ magic_link }}">{% trans "Sign in with magic link" %}</a></p>
+<p><small>{{ magic_link }}</small></p>
+{% endif %}
+<p><em>{% blocktranslate %}If you did not request this email, you can safely ignore it.{% endblocktranslate %}</em></p>
+</body>
+</html>

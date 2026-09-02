@@ -86,11 +86,11 @@ class HomePageView(TemplateView):
             context['group_memberships'] = []
             context['districts_from_memberships'] = []
             context['councils_from_memberships'] = []
-            # Login form for unauthenticated users
-            from allauth.account.forms import LoginForm
+            # Email sign-in form for unauthenticated users
+            from allauth.account.forms import RequestLoginCodeForm
             from django.contrib.auth import REDIRECT_FIELD_NAME
             from django.urls import reverse as reverse_fn
-            context['login_form'] = LoginForm(request=self.request)
+            context['login_form'] = RequestLoginCodeForm()
             context['redirect_field_name'] = REDIRECT_FIELD_NAME
             context['redirect_field_value'] = reverse('home')
         

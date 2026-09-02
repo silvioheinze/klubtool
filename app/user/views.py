@@ -5,7 +5,6 @@ from django.views.generic.list import ListView
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth import get_user_model, login
-from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.views.decorators.http import require_POST
@@ -18,8 +17,11 @@ from django.template.loader import render_to_string
 from django.utils.translation import gettext_lazy as _
 from allauth.account.views import ConfirmEmailView as AllauthConfirmEmailView
 from allauth.account.models import EmailConfirmation
+from allauth.account.forms import RequestLoginCodeForm
 
-from .forms import CustomUserCreationForm, CustomUserEditForm, RoleForm, RoleFilterForm, CustomAuthenticationForm, LanguageSelectionForm, UserSettingsForm, AdminUserCreationForm
+from user.login_links import consume_magic_link_token
+
+from .forms import CustomUserCreationForm, CustomUserEditForm, RoleForm, RoleFilterForm, LanguageSelectionForm, UserSettingsForm, AdminUserCreationForm
 from .models import Role, CalendarSubscriptionToken
 
 CustomUser = get_user_model()
@@ -113,14 +115,25 @@ def SettingsView(request):
         }
         return render(request, "user/settings.html", context)
     else:
-        # Process the login form for unauthenticated users
-        form = CustomAuthenticationForm(request=request, data=request.POST or None)
-        if request.method == "POST":
-            if form.is_valid():
-                user = form.get_user()
-                login(request, user)
-                return redirect("home")
+        form = RequestLoginCodeForm()
         return render(request, "user/login.html", {"form": form})
+
+
+def magic_link_login_view(request, token):
+    """Log in via a one-time signed magic link from the sign-in email."""
+    user_id = consume_magic_link_token(token)
+    if user_id is None:
+        messages.error(
+            request,
+            _("This sign-in link is invalid or has expired. Please request a new sign-in email."),
+        )
+        return redirect('user-settings')
+
+    user = get_object_or_404(CustomUser, pk=user_id, is_active=True)
+    login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+
+    next_url = request.GET.get('next') or settings.LOGIN_REDIRECT_URL
+    return redirect(next_url)
 
 
 @login_required

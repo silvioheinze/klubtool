@@ -6,6 +6,7 @@ from user.views import (
     UsersUpdateView, UsersListView, RoleListView, RoleCreateView,
     RoleUpdateView, RoleDeleteView, AdminUserCreateView, AdminSettingsView,
     send_welcome_email, user_remove_view, CustomConfirmEmailView, calendar_subscription_create,
+    magic_link_login_view,
 )
 
 
@@ -17,6 +18,7 @@ urlpatterns = [
     # User Management
     path('delete/', AccountDeleteView.as_view(), name='user-delete'),
     path('settings/', SettingsView, name='user-settings'),
+    path('login/link/<path:token>/', magic_link_login_view, name='user-login-link'),
     path('settings/calendar-subscription/create/', calendar_subscription_create, name='calendar-subscription-create'),
     path("signup/", SignupPageView.as_view(), name="user-signup"),
     path('list/', UsersListView.as_view(), name='user-list'),
