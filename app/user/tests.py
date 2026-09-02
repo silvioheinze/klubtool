@@ -658,72 +658,121 @@ class UserLanguageMiddlewareTests(TestCase):
         self.assertEqual(user_no_lang.language, 'de')
 
 
-class EmailConfirmationTemplateTests(TestCase):
-    """Test cases for email confirmation template"""
-    
-    def test_email_confirm_template_extends_base(self):
-        """Test that email confirmation template extends _base.html"""
-        template_content = render_to_string('user/email_confirm.html', {
-            'confirmation': None
-        })
-        
-        # Check that the template uses Bootstrap classes
-        self.assertIn('container', template_content)
-        self.assertIn('card', template_content)
-        self.assertIn('alert', template_content)
-    
-    def test_email_confirm_template_with_confirmation(self):
-        """Test that email confirmation template renders correctly with confirmation"""
-        # Create a mock confirmation object with a key
-        class MockConfirmation:
-            def __init__(self):
-                self.key = 'test-key-123'
-                self.email_address = MockEmailAddress()
-        
-        class MockEmailAddress:
-            def __init__(self):
-                self.email = 'test@example.com'
-                self.user = MockUser()
-        
-        class MockUser:
-            def __init__(self):
-                self.username = 'testuser'
-                self.email = 'test@example.com'
-            
-            def __str__(self):
-                return 'testuser'
-        
-        template_content = render_to_string('user/email_confirm.html', {
-            'confirmation': MockConfirmation()
-        })
-        
-        # Check that the template contains expected elements (English or German)
-        self.assertTrue(
-            'Confirm E-mail Address' in template_content or 'E-Mail-Adresse bestätigen' in template_content,
-            "Template should show confirm email heading"
+@override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
+class EmailConfirmationFlowTests(TestCase):
+    """End-to-end tests for email confirmation and verification sync."""
+
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(
+            username='confirmuser',
+            email='confirm@example.com',
+            password='testpass123',
         )
-        self.assertIn('test@example.com', template_content)
-        self.assertIn('testuser', template_content)
-        self.assertIn('btn btn-primary', template_content)
-        self.assertIn('bi bi-check-circle', template_content)
-    
-    def test_email_confirm_template_without_confirmation(self):
-        """Test that email confirmation template renders correctly without confirmation"""
-        template_content = render_to_string('user/email_confirm.html', {
-            'confirmation': None
+        mail.outbox.clear()
+
+    def _unverified_address(self, user=None):
+        user = user or self.user
+        from allauth.account.models import EmailAddress
+        return EmailAddress.objects.create(
+            user=user,
+            email=user.email,
+            verified=False,
+            primary=True,
+        )
+
+    def _confirmation_key(self, email_address):
+        from allauth.account.models import EmailConfirmationHMAC
+        return EmailConfirmationHMAC(email_address).key
+
+    def test_get_valid_confirmation_renders_confirm_page(self):
+        email_address = self._unverified_address()
+        url = reverse('account_confirm_email', kwargs={'key': self._confirmation_key(email_address)})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'account/email_confirm.html')
+        self.assertContains(response, 'confirm@example.com')
+
+    def test_post_valid_confirmation_verifies_and_logs_in(self):
+        email_address = self._unverified_address()
+        url = reverse('account_confirm_email', kwargs={'key': self._confirmation_key(email_address)})
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, 302)
+        email_address.refresh_from_db()
+        self.assertTrue(email_address.verified)
+        self.assertIn('_auth_user_id', self.client.session)
+
+    def test_invalid_confirmation_link_shows_error(self):
+        url = reverse('account_confirm_email', kwargs={'key': 'not-a-valid-key'})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        response_text = response.content.decode()
+        self.assertTrue(
+            'Invalid Confirmation Link' in response_text or 'Ungültiger Bestätigungslink' in response_text,
+            response_text,
+        )
+        self.assertNotIn('_auth_user_id', self.client.session)
+
+    def test_confirm_switches_session_when_other_user_logged_in(self):
+        User.objects.create_user(
+            username='otheruser',
+            email='other@example.com',
+            password='otherpass123',
+        )
+        self.client.login(username='otheruser', password='otherpass123')
+
+        email_address = self._unverified_address(self.user)
+        url = reverse('account_confirm_email', kwargs={'key': self._confirmation_key(email_address)})
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(int(self.client.session['_auth_user_id']), self.user.pk)
+
+    def test_signup_creates_email_address_and_sends_confirmation(self):
+        mail.outbox.clear()
+        response = self.client.post(reverse('user-signup'), {
+            'email': 'newsignup@example.com',
+            'first_name': 'New',
+            'last_name': 'Signup',
+            'password1': 'testpass123',
+            'password2': 'testpass123',
         })
-        
-        # Check that the template contains expected elements for invalid link (English or German)
-        self.assertTrue(
-            'Invalid Confirmation Link' in template_content or 'Ungültiger Bestätigungslink' in template_content,
-            "Template should show invalid link message"
+        self.assertEqual(response.status_code, 302)
+        user = User.objects.get(email='newsignup@example.com')
+        from allauth.account.models import EmailAddress
+        email_address = EmailAddress.objects.get(user=user, email='newsignup@example.com')
+        self.assertFalse(email_address.verified)
+        self.assertTrue(email_address.primary)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, ['newsignup@example.com'])
+
+    def test_settings_email_change_syncs_email_address_and_sends_confirmation(self):
+        self.client.force_login(self.user)
+        self._unverified_address()
+        mail.outbox.clear()
+        response = self.client.post(reverse('user-settings'), {
+            'email': 'changed@example.com',
+            'language': 'de',
+        })
+        self.assertEqual(response.status_code, 302)
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.email, 'changed@example.com')
+        from allauth.account.models import EmailAddress
+        self.assertFalse(
+            EmailAddress.objects.filter(user=self.user, email='confirm@example.com').exists()
         )
-        self.assertIn('btn btn-warning', template_content)
-        self.assertIn('bi bi-exclamation-triangle', template_content)
-        self.assertTrue(
-            'Request New Confirmation Email' in template_content or 'Neue Bestätigungs-E-Mail' in template_content,
-            "Template should show request new confirmation link"
-        )
+        email_address = EmailAddress.objects.get(user=self.user, email='changed@example.com')
+        self.assertFalse(email_address.verified)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, ['changed@example.com'])
+
+    def test_resend_verification_sends_mail(self):
+        self.client.force_login(self.user)
+        self._unverified_address()
+        mail.outbox.clear()
+        response = self.client.post(reverse('user-resend-email-verification'))
+        self.assertRedirects(response, reverse('account_email_verification_sent'))
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, [self.user.email])
 
 
 @override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')

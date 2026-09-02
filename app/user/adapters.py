@@ -1,30 +1,12 @@
 from allauth.account.adapter import DefaultAccountAdapter
 from allauth.account.utils import filter_users_by_email
-from django.contrib.auth import login
-from django.http import HttpResponseRedirect
-from django.contrib import messages
-from django.utils.translation import gettext_lazy as _
 
 from user.login_links import create_magic_link_url
 
 
 class CustomAccountAdapter(DefaultAccountAdapter):
-    """Custom account adapter to keep users logged in after email confirmation"""
-    
-    def confirm_email(self, request, email_address):
-        """Override to log the user in after email confirmation"""
-        # Call the parent method to confirm the email
-        super().confirm_email(request, email_address)
-        
-        # Log the user in if they're not already logged in
-        # Note: ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION setting should handle this,
-        # but we ensure it here as well
-        if not request.user.is_authenticated:
-            user = email_address.user
-            login(request, user, backend='django.contrib.auth.backends.ModelBackend')
-        
-        return email_address
-    
+    """Custom account adapter for redirects and login-code emails."""
+
     def is_open_for_signup(self, request):
         """Allow signups"""
         return True

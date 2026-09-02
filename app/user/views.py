@@ -15,11 +15,12 @@ from django.core.mail import send_mail
 from django.conf import settings
 from django.template.loader import render_to_string
 from django.utils.translation import gettext_lazy as _
+from django.http import Http404
 from allauth.account.views import ConfirmEmailView as AllauthConfirmEmailView
-from allauth.account.models import EmailConfirmation
 from allauth.account.forms import RequestLoginCodeForm
 
 from user.login_links import consume_magic_link_token
+from user.email_verification import ensure_primary_email_address, sync_email_change
 
 from .forms import CustomUserCreationForm, CustomUserEditForm, RoleForm, RoleFilterForm, LanguageSelectionForm, UserSettingsForm, AdminUserCreationForm
 from .models import Role, CalendarSubscriptionToken
@@ -65,8 +66,14 @@ class SignupPageView(CreateView):
         return initial
 
     def form_valid(self, form):
-        user = form.instance
-        return super().form_valid(form)
+        response = super().form_valid(form)
+        ensure_primary_email_address(
+            self.request,
+            self.object,
+            send_confirmation=True,
+            signup=True,
+        )
+        return response
 
 
 def SettingsView(request):
@@ -85,10 +92,11 @@ def SettingsView(request):
         settings_form = UserSettingsForm(request.POST or None, instance=request.user)
         
         if request.method == "POST":
+            old_email = request.user.email
             if settings_form.is_valid():
-                # Update user's settings
-                settings_form.save()
-                
+                user = settings_form.save()
+                sync_email_change(request, user, old_email)
+
                 # Set the language in the session and activate it immediately
                 new_language = settings_form.cleaned_data['language']
                 request.session['django_language'] = new_language
@@ -480,43 +488,58 @@ def user_remove_view(request, user_id):
     return redirect('user-list')
 
 
+@login_required
+@require_POST
+def resend_email_verification(request):
+    """Send another verification email for the current user's primary address."""
+    email = request.user.email
+    if not email:
+        messages.error(request, _("Your account does not have an email address configured."))
+        return redirect('home')
+
+    email_address = ensure_primary_email_address(request, request.user, send_confirmation=False)
+    if email_address.verified:
+        messages.info(request, _("Your email is already verified."))
+        return redirect('home')
+
+    from allauth.account.internal.flows.email_verification import send_verification_email_to_address
+    send_verification_email_to_address(request, email_address, signup=False)
+    return redirect('account_email_verification_sent')
+
+
 class CustomConfirmEmailView(AllauthConfirmEmailView):
-    """Custom email confirmation view that logs the user in after confirmation"""
+    """Custom email confirmation view with Bootstrap template and user feedback."""
     template_name = "account/email_confirm.html"
 
-    def get(self, *args, **kwargs):
-        """Handle GET request for email confirmation"""
-        response = super().get(*args, **kwargs)
-        return response
-    
     def post(self, *args, **kwargs):
-        """Override to log user in after email confirmation"""
-        # Get the confirmation key from URL before calling super
-        confirmation_key = kwargs.get('key')
-        user_to_login = None
-        
-        if confirmation_key:
-            try:
-                confirmation = EmailConfirmation.objects.get(key=confirmation_key)
-                user_to_login = confirmation.email_address.user
-            except EmailConfirmation.DoesNotExist:
-                pass
-        
-        # Call parent to confirm email
+        try:
+            confirmation = self.get_object()
+            email_address = confirmation.email_address
+            user_to_confirm = email_address.user
+        except Http404:
+            email_address = None
+            user_to_confirm = None
+
+        prior_user_pk = self.request.user.pk if self.request.user.is_authenticated else None
         response = super().post(*args, **kwargs)
-        
-        # Log the user in after confirmation
-        if user_to_login:
-            if not self.request.user.is_authenticated:
-                login(self.request, user_to_login, backend='django.contrib.auth.backends.ModelBackend')
-                messages.success(self.request, _("Your email has been confirmed and you have been logged in."))
-            elif self.request.user != user_to_login:
-                # If a different user is logged in, log them out and log in the correct user
-                from django.contrib.auth import logout
-                logout(self.request)
-                login(self.request, user_to_login, backend='django.contrib.auth.backends.ModelBackend')
-                messages.success(self.request, _("Your email has been confirmed and you have been logged in."))
-            else:
-                messages.success(self.request, _("Your email has been confirmed."))
-        
+
+        if email_address is not None:
+            email_address.refresh_from_db()
+            if email_address.verified:
+                if prior_user_pk != user_to_confirm.pk:
+                    if prior_user_pk is not None:
+                        from django.contrib.auth import logout
+                        logout(self.request)
+                    login(
+                        self.request,
+                        user_to_confirm,
+                        backend='django.contrib.auth.backends.ModelBackend',
+                    )
+                    messages.success(
+                        self.request,
+                        _("Your email has been confirmed and you have been logged in."),
+                    )
+                else:
+                    messages.success(self.request, _("Your email has been confirmed."))
+
         return response

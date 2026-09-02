@@ -1,8 +1,9 @@
-from django.test import TestCase, Client
+from django.test import TestCase, Client, override_settings
 from django.contrib.auth import get_user_model
 from django.urls import reverse, resolve
 from django.utils import timezone
 from datetime import timedelta
+from django.core import mail
 
 from .views import HomePageView, personal_calendar_export_ics, calendar_subscription_feed
 from district.models import District, Council, Session, Term, Party
@@ -529,3 +530,65 @@ class CalendarSubscriptionFeedTests(TestCase):
         )
         cd = response.get('Content-Disposition', '')
         self.assertIn('inline', cd)
+
+
+@override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
+class HomepageEmailVerificationTests(TestCase):
+    """Homepage banner and resend behavior for email verification."""
+
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(
+            username='homeverify',
+            email='homeverify@example.com',
+            password='testpass123',
+        )
+        mail.outbox.clear()
+
+    def test_unverified_email_shows_banner(self):
+        from allauth.account.models import EmailAddress
+        EmailAddress.objects.create(
+            user=self.user,
+            email=self.user.email,
+            verified=False,
+            primary=True,
+        )
+        self.client.force_login(self.user)
+        response = self.client.get(reverse('home'))
+        self.assertEqual(response.status_code, 200)
+        response_text = response.content.decode()
+        self.assertTrue(
+            'Email Verification Required' in response_text or 'E-Mail-Verifizierung erforderlich' in response_text,
+            response_text,
+        )
+
+    def test_verified_email_hides_banner(self):
+        from allauth.account.models import EmailAddress
+        EmailAddress.objects.create(
+            user=self.user,
+            email=self.user.email,
+            verified=True,
+            primary=True,
+        )
+        self.client.force_login(self.user)
+        response = self.client.get(reverse('home'))
+        self.assertEqual(response.status_code, 200)
+        response_text = response.content.decode()
+        self.assertFalse(
+            'Email Verification Required' in response_text or 'E-Mail-Verifizierung erforderlich' in response_text,
+            response_text,
+        )
+
+    def test_homepage_resend_posts_and_sends_mail(self):
+        from allauth.account.models import EmailAddress
+        EmailAddress.objects.create(
+            user=self.user,
+            email=self.user.email,
+            verified=False,
+            primary=True,
+        )
+        self.client.force_login(self.user)
+        response = self.client.post(reverse('user-resend-email-verification'))
+        self.assertRedirects(response, reverse('account_email_verification_sent'))
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, [self.user.email])
