@@ -180,6 +180,51 @@ class CalendarSubscriptionToken(models.Model):
         CalendarSubscriptionToken.objects.filter(pk=self.pk).update(last_used_at=timezone.now())
 
 
+class McpToken(models.Model):
+    """Personal bearer token for MCP clients (Cursor, etc.)."""
+
+    user = models.ForeignKey(
+        'user.CustomUser',
+        on_delete=models.CASCADE,
+        related_name='mcp_tokens',
+    )
+    token_hash = models.CharField(max_length=64, unique=True, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_used_at = models.DateTimeField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = _('MCP token')
+        verbose_name_plural = _('MCP tokens')
+
+    def __str__(self):
+        return f"MCP token for {self.user}"
+
+    @classmethod
+    def create_token(cls, user):
+        """Deactivate existing tokens, create a new one, return (instance, raw_token)."""
+        cls.objects.filter(user=user).update(is_active=False)
+        raw = secrets.token_urlsafe(48)
+        token_hash = _hash_token(raw)
+        inst = cls.objects.create(user=user, token_hash=token_hash)
+        return inst, raw
+
+    @classmethod
+    def lookup(cls, raw_token):
+        """Look up token by raw value. Returns McpToken or None."""
+        if not raw_token:
+            return None
+        token_hash = _hash_token(raw_token)
+        return cls.objects.filter(
+            token_hash=token_hash,
+            is_active=True,
+        ).select_related('user').first()
+
+    def update_last_used(self):
+        from django.utils import timezone
+        McpToken.objects.filter(pk=self.pk).update(last_used_at=timezone.now())
+
+
 # Register models for audit logging
 auditlog.register(CustomUser)
 auditlog.register(Role)

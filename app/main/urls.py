@@ -20,6 +20,8 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.shortcuts import redirect
 
+from mcp.views import mcp_endpoint
+
 def redirect_to_user_login(request):
     """Redirect /accounts/login/ to /user/settings/"""
     return redirect('/user/settings/')
@@ -38,6 +40,7 @@ def redirect_local_to_district(request, path=''):
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('mcp/', mcp_endpoint, name='mcp'),
     path('i18n/', include('django.conf.urls.i18n')),
     path('', include('pages.urls')),
     path('user/', include('user.urls')),

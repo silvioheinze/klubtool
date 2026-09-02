@@ -402,6 +402,59 @@ POSTGRES_HOST=your-database-host
 POSTGRES_PASSWORD=your-secure-password
 ```
 
+## MCP (district events)
+
+Klubtool exposes an MCP server at `/mcp/` so tools like Claude can list and manage **district events** with the same permissions as the web UI.
+
+### 1. Create a token
+
+1. Log in and open **Settings** (`/user/settings/`).
+2. Under **MCP Access**, click **Create MCP token** (or **Reset MCP token**).
+3. Copy the **MCP server URL** and **Bearer token** immediately — the raw token is shown only once.
+
+### 2. Configure Claude
+
+Add to your Claude Code MCP config (`.mcp.json` in the project, or `claude mcp add`):
+
+```json
+{
+  "mcpServers": {
+    "klubtool": {
+      "type": "http",
+      "url": "https://klub.neubauergruene.at/mcp/",
+      "headers": {
+        "Authorization": "Bearer YOUR_TOKEN_HERE"
+      }
+    }
+  }
+}
+```
+
+For local development use `http://localhost/mcp/` (via nginx) or `http://localhost:8000/mcp/` if hitting Django directly.
+
+### 3. Available tools
+
+| Tool | Description |
+|------|-------------|
+| `list_districts` | Districts you can access (`can_manage_events` flag) |
+| `list_district_events` | Events for a district |
+| `get_district_event` | Single event by id |
+| `create_district_event` | Create event (district managers only) |
+| `update_district_event` | Update event (managers only) |
+| `delete_district_event` | Delete event (managers only) |
+
+Example `create_district_event` arguments:
+
+```json
+{
+  "district_id": 1,
+  "title": "District assembly",
+  "scheduled_date": "2026-09-15T18:00:00+02:00",
+  "description": "Optional details",
+  "external_link": "https://example.com"
+}
+```
+
 ## 🛠️ Development
 
 ### District Development
