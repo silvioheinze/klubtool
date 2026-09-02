@@ -6,7 +6,7 @@ from django.forms import BaseFormSet, formset_factory
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 from .models import Motion, MotionVote, MotionComment, MotionAttachment, MotionStatus, MotionGroupDecision, Inquiry, InquiryStatus, InquiryAttachment, Tag
-from local.models import Session, Party, Committee
+from district.models import Session, Party, Committee
 from group.models import Group, GroupMember
 
 User = get_user_model()
@@ -215,7 +215,7 @@ class MotionForm(forms.ModelForm):
         
         # Ensure group belongs to a party that is in the session's council
         if session and group:
-            if group.party.local != session.council.local:
+            if group.party.district != session.council.district:
                 raise forms.ValidationError(
                     "The selected group must belong to a party in the same local district as the session's council."
                 )
@@ -389,7 +389,7 @@ class InquiryForm(forms.ModelForm):
         
         # Ensure group belongs to a party that is in the session's council
         if session and group:
-            if group.party.local != session.council.local:
+            if group.party.district != session.council.district:
                 raise forms.ValidationError(
                     "The selected group must belong to a party in the same local district as the session's council."
                 )
@@ -535,7 +535,7 @@ class MotionVoteForm(forms.ModelForm):
         # ModelForm builds field values it doesn't trigger RelatedObjectDoesNotExist
         if party_id and 'instance' not in kwargs:
             from motion.models import MotionVote
-            from local.models import Party
+            from district.models import Party
             instance = MotionVote()
             instance.party_id = party_id
             if self.motion:
@@ -559,7 +559,7 @@ class MotionVoteForm(forms.ModelForm):
         # ModelForm and templates access instance.party, so we need the actual object
         if self.initial and self.initial.get('party') and self.instance:
             try:
-                from local.models import Party
+                from district.models import Party
                 party_id = int(self.initial['party'])
                 if not hasattr(self.instance, 'party_id') or self.instance.party_id != party_id:
                     self.instance.party_id = party_id
@@ -603,7 +603,7 @@ class MotionVoteForm(forms.ModelForm):
         # If party is missing from POST (e.g. hidden input not submitted) but we have
         # initial/instance data, use it so validation doesn't fail incorrectly
         if not party and (self.initial.get('party') or getattr(self.instance, 'party_id', None)):
-            from local.models import Party
+            from district.models import Party
             try:
                 party_id = self.initial.get('party') or self.instance.party_id
                 if party_id:

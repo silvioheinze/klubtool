@@ -5,7 +5,7 @@ from django.utils import timezone
 from datetime import timedelta
 
 from .views import HomePageView, personal_calendar_export_ics, calendar_subscription_feed
-from local.models import Local, Council, Session, Term, Party
+from district.models import District, Council, Session, Term, Party
 from group.models import Group, GroupMember, GroupMeeting
 from motion.models import Motion
 
@@ -27,7 +27,7 @@ class HomepageTests(TestCase):
         )
         
         # Create test data
-        self.local = Local.objects.create(
+        self.district = District.objects.create(
             name='Test Local',
             code='TL',
             description='Test local description',
@@ -35,7 +35,7 @@ class HomepageTests(TestCase):
         )
         
         self.council, _ = Council.objects.get_or_create(
-            local=self.local,
+            district=self.district,
             defaults={
                 'name': 'Test Council',
                 'is_active': True
@@ -59,7 +59,7 @@ class HomepageTests(TestCase):
         
         self.party = Party.objects.create(
             name='Test Party',
-            local=self.local,
+            district=self.district,
             is_active=True
         )
         
@@ -213,7 +213,7 @@ class HomepageTests(TestCase):
         # Create another group and motion
         other_party = Party.objects.create(
             name='Other Party',
-            local=self.local,
+            district=self.district,
             is_active=True
         )
         other_group = Group.objects.create(
@@ -249,7 +249,7 @@ class HomepageTests(TestCase):
         # Create another group and motion
         other_party = Party.objects.create(
             name='Other Party',
-            local=self.local,
+            district=self.district,
             is_active=True
         )
         other_group = Group.objects.create(
@@ -299,14 +299,14 @@ class PersonalCalendarExportIcsTests(TestCase):
             email='calendar@example.com',
             password='testpass123',
         )
-        self.local = Local.objects.create(
+        self.district = District.objects.create(
             name='Test Local',
             code='TL',
             description='Test local',
             is_active=True,
         )
         self.council, _ = Council.objects.get_or_create(
-            local=self.local,
+            district=self.district,
             defaults={'name': 'Test Council', 'is_active': True},
         )
         self.term = Term.objects.create(
@@ -317,7 +317,7 @@ class PersonalCalendarExportIcsTests(TestCase):
         )
         self.party = Party.objects.create(
             name='Test Party',
-            local=self.local,
+            district=self.district,
             is_active=True,
         )
         self.group = Group.objects.create(
@@ -460,14 +460,14 @@ class CalendarSubscriptionFeedTests(TestCase):
             email='sub@example.com',
             password='testpass123',
         )
-        self.local = Local.objects.create(
+        self.district = District.objects.create(
             name='Sub Local',
             code='SL',
             description='Sub local',
             is_active=True,
         )
         self.council, _ = Council.objects.get_or_create(
-            local=self.local,
+            district=self.district,
             defaults={'name': 'Sub Council', 'is_active': True},
         )
         self.term = Term.objects.create(
@@ -478,7 +478,7 @@ class CalendarSubscriptionFeedTests(TestCase):
         )
         self.party = Party.objects.create(
             name='Sub Party',
-            local=self.local,
+            district=self.district,
             is_active=True,
         )
         self.group = Group.objects.create(

@@ -11,7 +11,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('group', '0001_initial'),
-        ('local', '0006_party_local_alter_party_name_and_more'),
+        ('district', '0006_party_local_alter_party_name_and_more'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
@@ -36,8 +36,8 @@ class Migration(migrations.Migration):
                 ('updated_at', models.DateTimeField(auto_now=True)),
                 ('history', models.JSONField(blank=True, default=dict)),
                 ('group', models.ForeignKey(help_text='Group proposing this motion', on_delete=django.db.models.deletion.CASCADE, related_name='motions', to='group.group')),
-                ('parties', models.ManyToManyField(blank=True, help_text='Parties supporting this motion', related_name='motions', to='local.party')),
-                ('session', models.ForeignKey(help_text='Session where this motion will be presented', on_delete=django.db.models.deletion.CASCADE, related_name='motions', to='local.session')),
+                ('parties', models.ManyToManyField(blank=True, help_text='Parties supporting this motion', related_name='motions', to='district.party')),
+                ('session', models.ForeignKey(help_text='Session where this motion will be presented', on_delete=django.db.models.deletion.CASCADE, related_name='motions', to='district.session')),
                 ('submitted_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='submitted_motions', to=settings.AUTH_USER_MODEL)),
             ],
             options={

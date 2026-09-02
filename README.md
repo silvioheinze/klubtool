@@ -148,11 +148,11 @@ klubtool/
 │   │   ├── forms.py             # Group forms
 │   │   ├── urls.py              # Group URLs
 │   │   └── templatetags/        # Group template tags
-│   ├── local/                   # Local council/committee management
-│   │   ├── models.py            # Locals, councils, committees, sessions
-│   │   ├── views.py             # Local views
-│   │   ├── forms.py             # Local forms
-│   │   └── urls.py              # Local URLs
+│   ├── district/                # District council/committee management
+│   │   ├── models.py            # Districts, councils, committees, sessions
+│   │   ├── views.py             # District views
+│   │   ├── forms.py             # District forms
+│   │   └── urls.py              # District URLs
 │   ├── motion/                  # Motions and questions
 │   │   ├── models.py            # Motions, votes, questions
 │   │   ├── views.py             # Motion views
@@ -172,7 +172,7 @@ klubtool/
 │   │   ├── help.html            # Help page
 │   │   ├── account/             # django-allauth templates
 │   │   ├── group/               # Group app templates
-│   │   ├── local/               # Local app templates
+│   │   ├── district/            # District app templates
 │   │   ├── motion/              # Motion app templates
 │   │   ├── pages/               # Pages app templates
 │   │   └── user/                # User app templates
@@ -403,7 +403,7 @@ POSTGRES_PASSWORD=your-secure-password
 
 ## 🛠️ Development
 
-### Local Development
+### District Development
 
 ```bash
 # Start development environment

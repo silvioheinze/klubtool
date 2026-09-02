@@ -173,7 +173,7 @@
                             {% else %}
                                 {# When creating, link to session from form if available #}
                                 {% if form.session.value %}
-                                    <a href="{% url 'local:session-detail' form.session.value %}" class="btn btn-secondary">
+                                    <a href="{% url 'district:session-detail' form.session.value %}" class="btn btn-secondary">
                                         <i class="bi bi-x-circle"></i> {% trans "Cancel" %}
                                     </a>
                                 {% else %}

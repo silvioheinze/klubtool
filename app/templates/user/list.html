@@ -41,7 +41,7 @@
                             <tr>
                                 <th>{% trans "ID" %}</th>
                                 <th>{% trans "Username" %}</th>
-                                <th>{% trans "Local" %}</th>
+                                <th>{% trans "District" %}</th>
                                 <th>{% trans "Role" %}</th>
                                 <th>{% trans "Date joined" %}</th>
                                 <th class="text-end">{% trans "Actions" %}</th>
@@ -58,9 +58,9 @@
                                     {% endif %}
                                 </td>
                                 <td>
-                                    {% if user.unique_locals %}
-                                        {% for local in user.unique_locals %}
-                                            <span class="badge bg-primary me-1">{{ local.name }}</span>
+                                    {% if user.unique_districts %}
+                                        {% for district in user.unique_districts %}
+                                            <span class="badge bg-primary me-1">{{ district.name }}</span>
                                         {% endfor %}
                                     {% else %}
                                         <span class="text-muted">-</span>

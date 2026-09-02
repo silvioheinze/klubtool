@@ -27,7 +27,7 @@
                 </a>
             {% endif %}
             {% if inquiry.session %}
-                <a href="{% url 'local:session-detail' inquiry.session.pk %}" class="btn btn-outline-secondary">
+                <a href="{% url 'district:session-detail' inquiry.session.pk %}" class="btn btn-outline-secondary">
                     <i class="bi bi-arrow-left"></i> {% trans "Back to Session" %}
                 </a>
             {% else %}
@@ -78,7 +78,7 @@
                                 <dt class="col-sm-4">{% trans "Session" %}</dt>
                                 <dd class="col-sm-8">
                                     {% if inquiry.session %}
-                                        <a href="{% url 'local:session-detail' inquiry.session.pk %}">
+                                        <a href="{% url 'district:session-detail' inquiry.session.pk %}">
                                             {{ inquiry.session.title }}
                                         </a>
                                     {% else %}

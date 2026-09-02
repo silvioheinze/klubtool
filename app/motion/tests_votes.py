@@ -21,7 +21,7 @@ from datetime import timedelta
 
 from .forms import MotionVoteForm, MotionVoteFormSetFactory, MotionVoteTypeForm
 from .models import Motion, MotionVote
-from local.models import Local, Council, Session, Term, Party, TermSeatDistribution, Committee
+from district.models import District, Council, Session, Term, Party, TermSeatDistribution, Committee
 from group.models import Group, GroupMember
 from user.models import Role
 
@@ -40,7 +40,7 @@ class MotionVoteModelTests(TestCase):
         )
         
         # Create test data
-        self.local = Local.objects.create(
+        self.district = District.objects.create(
             name='Test Local',
             code='TL',
             description='Test local description',
@@ -48,7 +48,7 @@ class MotionVoteModelTests(TestCase):
         )
         
         self.council, _ = Council.objects.get_or_create(
-            local=self.local,
+            district=self.district,
             defaults={'name': 'Test Council', 'is_active': True}
         )
         
@@ -69,13 +69,13 @@ class MotionVoteModelTests(TestCase):
         
         self.party1 = Party.objects.create(
             name='Test Party 1',
-            local=self.local,
+            district=self.district,
             is_active=True
         )
         
         self.party2 = Party.objects.create(
             name='Test Party 2',
-            local=self.local,
+            district=self.district,
             is_active=True
         )
         
@@ -318,7 +318,7 @@ class MotionVoteFormTests(TestCase):
             password='testpass123'
         )
         
-        self.local = Local.objects.create(
+        self.district = District.objects.create(
             name='Test Local',
             code='TL',
             description='Test local description',
@@ -326,7 +326,7 @@ class MotionVoteFormTests(TestCase):
         )
         
         self.council, _ = Council.objects.get_or_create(
-            local=self.local,
+            district=self.district,
             defaults={'name': 'Test Council', 'is_active': True}
         )
         
@@ -347,7 +347,7 @@ class MotionVoteFormTests(TestCase):
         
         self.party = Party.objects.create(
             name='Test Party',
-            local=self.local,
+            district=self.district,
             is_active=True
         )
         
@@ -479,7 +479,7 @@ class MotionVoteTypeFormTests(TestCase):
             password='testpass123'
         )
         
-        self.local = Local.objects.create(
+        self.district = District.objects.create(
             name='Test Local',
             code='TL',
             description='Test local description',
@@ -487,7 +487,7 @@ class MotionVoteTypeFormTests(TestCase):
         )
         
         self.council, _ = Council.objects.get_or_create(
-            local=self.local,
+            district=self.district,
             defaults={'name': 'Test Council', 'is_active': True}
         )
         
@@ -508,7 +508,7 @@ class MotionVoteTypeFormTests(TestCase):
         
         self.party = Party.objects.create(
             name='Test Party',
-            local=self.local,
+            district=self.district,
             is_active=True
         )
         
@@ -594,7 +594,7 @@ class MotionVoteFormSetTests(TestCase):
             password='testpass123'
         )
         
-        self.local = Local.objects.create(
+        self.district = District.objects.create(
             name='Test Local',
             code='TL',
             description='Test local description',
@@ -602,7 +602,7 @@ class MotionVoteFormSetTests(TestCase):
         )
         
         self.council, _ = Council.objects.get_or_create(
-            local=self.local,
+            district=self.district,
             defaults={'name': 'Test Council', 'is_active': True}
         )
         
@@ -623,13 +623,13 @@ class MotionVoteFormSetTests(TestCase):
         
         self.party1 = Party.objects.create(
             name='Test Party 1',
-            local=self.local,
+            district=self.district,
             is_active=True
         )
         
         self.party2 = Party.objects.create(
             name='Test Party 2',
-            local=self.local,
+            district=self.district,
             is_active=True
         )
         
@@ -662,7 +662,7 @@ class MotionVoteFormSetTests(TestCase):
     def test_formset_initialization_with_parties(self):
         """Test formset initialization with parties"""
         parties = Party.objects.filter(
-            local=self.motion.session.council.local,
+            district=self.motion.session.council.district,
             is_active=True
         )
         
@@ -719,7 +719,7 @@ class MotionVoteViewTests(TestCase):
             role=self.role
         )
         
-        self.local = Local.objects.create(
+        self.district = District.objects.create(
             name='Test Local',
             code='TL',
             description='Test local description',
@@ -727,7 +727,7 @@ class MotionVoteViewTests(TestCase):
         )
         
         self.council, _ = Council.objects.get_or_create(
-            local=self.local,
+            district=self.district,
             defaults={'name': 'Test Council', 'is_active': True}
         )
         
@@ -748,13 +748,13 @@ class MotionVoteViewTests(TestCase):
         
         self.party1 = Party.objects.create(
             name='Test Party 1',
-            local=self.local,
+            district=self.district,
             is_active=True
         )
         
         self.party2 = Party.objects.create(
             name='Test Party 2',
-            local=self.local,
+            district=self.district,
             is_active=True
         )
         
@@ -1032,7 +1032,7 @@ class MotionDetailViewVoteTests(TestCase):
             role=self.role
         )
         
-        self.local = Local.objects.create(
+        self.district = District.objects.create(
             name='Test Local',
             code='TL',
             description='Test local description',
@@ -1040,7 +1040,7 @@ class MotionDetailViewVoteTests(TestCase):
         )
         
         self.council, _ = Council.objects.get_or_create(
-            local=self.local,
+            district=self.district,
             defaults={'name': 'Test Council', 'is_active': True}
         )
         
@@ -1061,13 +1061,13 @@ class MotionDetailViewVoteTests(TestCase):
         
         self.party1 = Party.objects.create(
             name='Test Party 1',
-            local=self.local,
+            district=self.district,
             is_active=True
         )
         
         self.party2 = Party.objects.create(
             name='Test Party 2',
-            local=self.local,
+            district=self.district,
             is_active=True
         )
         

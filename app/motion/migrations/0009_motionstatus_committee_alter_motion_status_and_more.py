@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('local', '0012_remove_session_time_fields'),
+        ('district', '0012_remove_session_time_fields'),
         ('motion', '0008_populate_status_history'),
     ]
 
@@ -15,7 +15,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='motionstatus',
             name='committee',
-            field=models.ForeignKey(blank=True, help_text="Committee when status is 'refer_to_committee'", null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='motion_status_changes', to='local.committee'),
+            field=models.ForeignKey(blank=True, help_text="Committee when status is 'refer_to_committee'", null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='motion_status_changes', to='district.committee'),
         ),
         migrations.AlterField(
             model_name='motion',

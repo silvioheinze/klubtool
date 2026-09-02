@@ -50,7 +50,7 @@ class HomePageView(TemplateView):
         if self.request.user.is_authenticated:
             try:
                 from group.models import GroupMember
-                from local.models import Local, Council
+                from district.models import District, Council
                 
                 # Get user's group memberships
                 group_memberships = GroupMember.objects.filter(
@@ -59,32 +59,32 @@ class HomePageView(TemplateView):
                 ).select_related(
                     'group',
                     'group__party',
-                    'group__party__local'
+                    'group__party__district'
                 ).order_by('group__name')
                 
                 context['group_memberships'] = group_memberships
                 
                 # Get unique locals and councils from memberships
-                locals_from_memberships = set()
+                districts_from_memberships = set()
                 councils_from_memberships = set()
                 
                 for membership in group_memberships:
-                    if membership.group.party and membership.group.party.local:
-                        locals_from_memberships.add(membership.group.party.local)
-                        if hasattr(membership.group.party.local, 'council') and membership.group.party.local.council:
-                            councils_from_memberships.add(membership.group.party.local.council)
+                    if membership.group.party and membership.group.party.district:
+                        districts_from_memberships.add(membership.group.party.district)
+                        if hasattr(membership.group.party.district, 'council') and membership.group.party.district.council:
+                            councils_from_memberships.add(membership.group.party.district.council)
                 
-                context['locals_from_memberships'] = sorted(locals_from_memberships, key=lambda x: x.name)
+                context['districts_from_memberships'] = sorted(districts_from_memberships, key=lambda x: x.name)
                 context['councils_from_memberships'] = sorted(councils_from_memberships, key=lambda x: x.name)
                 
             except ImportError:
                 # If models are not available, set empty lists
                 context['group_memberships'] = []
-                context['locals_from_memberships'] = []
+                context['districts_from_memberships'] = []
                 context['councils_from_memberships'] = []
         else:
             context['group_memberships'] = []
-            context['locals_from_memberships'] = []
+            context['districts_from_memberships'] = []
             context['councils_from_memberships'] = []
             # Login form for unauthenticated users
             from allauth.account.forms import LoginForm
@@ -263,22 +263,22 @@ def personal_calendar_export_ics(request):
     """Export the user's personal calendar (council/committee sessions + group meetings) as ICS."""
     try:
         from group.models import GroupMember
-        from local.models import Local, Council
+        from district.models import District, Council
     except ImportError:
         return redirect('home')
 
     group_memberships = GroupMember.objects.filter(
         user=request.user,
         is_active=True,
-    ).select_related('group', 'group__party', 'group__party__local').order_by('group__name')
+    ).select_related('group', 'group__party', 'group__party__district').order_by('group__name')
 
-    locals_from_memberships = set()
+    districts_from_memberships = set()
     councils_from_memberships = set()
     for membership in group_memberships:
-        if membership.group.party and membership.group.party.local:
-            locals_from_memberships.add(membership.group.party.local)
-            if getattr(membership.group.party.local, 'council', None):
-                councils_from_memberships.add(membership.group.party.local.council)
+        if membership.group.party and membership.group.party.district:
+            districts_from_memberships.add(membership.group.party.district)
+            if getattr(membership.group.party.district, 'council', None):
+                councils_from_memberships.add(membership.group.party.district.council)
     councils_from_memberships = sorted(councils_from_memberships, key=lambda x: x.name)
 
     events = _get_personal_calendar_events(request.user, group_memberships, councils_from_memberships, for_export=True)
@@ -319,12 +319,12 @@ def calendar_subscription_feed(request, token):
         group_memberships = GroupMember.objects.filter(
             user=user,
             is_active=True,
-        ).select_related('group', 'group__party', 'group__party__local').order_by('group__name')
+        ).select_related('group', 'group__party', 'group__party__district').order_by('group__name')
 
         councils_from_memberships = []
         for membership in group_memberships:
-            if membership.group.party and getattr(membership.group.party, 'local', None):
-                local = membership.group.party.local
+            if membership.group.party and getattr(membership.group.party, 'district', None):
+                local = membership.group.party.district
                 if getattr(local, 'council', None):
                     councils_from_memberships.append(local.council)
         councils_from_memberships = sorted(set(councils_from_memberships), key=lambda x: x.name)
@@ -349,22 +349,22 @@ def personal_calendar_export_pdf(request):
         from django.http import HttpResponse
         from weasyprint import HTML, CSS
         from group.models import GroupMember
-        from local.models import Local, Council
+        from district.models import District, Council
     except ImportError:
         return redirect('home')
 
     group_memberships = GroupMember.objects.filter(
         user=request.user,
         is_active=True,
-    ).select_related('group', 'group__party', 'group__party__local').order_by('group__name')
+    ).select_related('group', 'group__party', 'group__party__district').order_by('group__name')
 
-    locals_from_memberships = set()
+    districts_from_memberships = set()
     councils_from_memberships = set()
     for membership in group_memberships:
-        if membership.group.party and membership.group.party.local:
-            locals_from_memberships.add(membership.group.party.local)
-            if getattr(membership.group.party.local, 'council', None):
-                councils_from_memberships.add(membership.group.party.local.council)
+        if membership.group.party and membership.group.party.district:
+            districts_from_memberships.add(membership.group.party.district)
+            if getattr(membership.group.party.district, 'council', None):
+                councils_from_memberships.add(membership.group.party.district.council)
     councils_from_memberships = sorted(councils_from_memberships, key=lambda x: x.name)
 
     events = _get_personal_calendar_events(request.user, group_memberships, councils_from_memberships, for_export=True)

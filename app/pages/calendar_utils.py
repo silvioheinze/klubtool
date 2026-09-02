@@ -27,9 +27,9 @@ def get_personal_calendar_events(user, group_memberships, councils_from_membersh
     """
     from django.urls import reverse
     from django.db.models import Q
-    from local.models import (
+    from district.models import (
         Session, CommitteeMeeting, CommitteeMember, CommitteeParticipationSubstitute,
-        SessionExcuse, LocalEventParticipation,
+        SessionExcuse, DistrictEventParticipation,
     )
     from group.models import GroupMeeting, GroupEventParticipation
 
@@ -60,7 +60,7 @@ def get_personal_calendar_events(user, group_memberships, councils_from_membersh
             council_filter = council_filter.filter(Q(is_active=True) | Q(status='cancelled'))
         else:
             council_filter = council_filter.filter(is_active=True)
-        council_sessions = council_filter.select_related('council', 'council__local').order_by('scheduled_date')
+        council_sessions = council_filter.select_related('council', 'council__district').order_by('scheduled_date')
 
         excused_session_ids = set(
             SessionExcuse.objects.filter(user=user, session__in=council_sessions).values_list('session_id', flat=True)
@@ -73,7 +73,7 @@ def get_personal_calendar_events(user, group_memberships, councils_from_membersh
                 'date': s.scheduled_date,
                 'title': s.title,
                 'url': s.get_absolute_url(),
-                'ics_export_url': reverse('local:session-export-ics', args=[s.pk]),
+                'ics_export_url': reverse('district:session-export-ics', args=[s.pk]),
                 'type': 'council_session',
                 'badge_label': badge_name or _('Council'),
                 'subtitle': s.council.name,
@@ -100,7 +100,7 @@ def get_personal_calendar_events(user, group_memberships, councils_from_membersh
                 'date': m.scheduled_date,
                 'title': m.title,
                 'url': m.get_absolute_url(),
-                'ics_export_url': reverse('local:committee-meeting-export-ics', args=[m.pk]),
+                'ics_export_url': reverse('district:committee-meeting-export-ics', args=[m.pk]),
                 'type': 'committee_meeting',
                 'badge_label': m.committee.get_committee_type_display(),
                 'subtitle': m.committee.name,
@@ -162,25 +162,25 @@ def get_personal_calendar_events(user, group_memberships, councils_from_membersh
             'cancelled': False,
         })
 
-    attending_local_events = LocalEventParticipation.objects.filter(
+    attending_district_events = DistrictEventParticipation.objects.filter(
         user=user,
         will_attend=True,
         event__is_active=True,
         event__scheduled_date__gte=date_threshold,
-    ).select_related('event', 'event__local').order_by('event__scheduled_date')
-    for part in attending_local_events:
+    ).select_related('event', 'event__district').order_by('event__scheduled_date')
+    for part in attending_district_events:
         e = part.event
         calendar_events.append({
             'date': e.scheduled_date,
             'title': e.title,
             'url': e.get_absolute_url(),
-            'ics_export_url': reverse('local:event-export-ics', args=[e.pk]),
-            'type': 'local_event',
+            'ics_export_url': reverse('district:event-export-ics', args=[e.pk]),
+            'type': 'district_event',
             'badge_label': _('District event'),
-            'subtitle': e.local.name,
+            'subtitle': e.district.name,
             'location': '',
             'pk': e.pk,
-            'model': 'localevent',
+            'model': 'districtevent',
             'cancelled': False,
         })
 

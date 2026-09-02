@@ -1,0 +1,822 @@
+{% extends "_base.html" %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}{{ session.title }} - {% trans "Session Details" %}{% endblock title %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h1 mb-0">
+                <i class="bi bi-calendar-event"></i> {{ session.title }}
+            </h1>
+        </div>
+        <div>
+            {% if can_edit_session %}
+            <a href="{% url 'district:session-edit' session.pk %}" class="btn btn-primary">
+                <i class="bi bi-pencil"></i> {% trans "Edit" %}
+            </a>
+            {% endif %}
+            <a href="{% url 'district:council-detail' session.council.pk %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> {% trans "Back to Council" %}
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Session Information -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">{% trans "Session Details" %}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">{% trans "Title" %}</dt>
+                                <dd class="col-sm-8"><strong>{{ session.title }}</strong></dd>
+                                
+                                <dt class="col-sm-4">{% trans "Type" %}</dt>
+                                <dd class="col-sm-8">
+                                    <span class="badge bg-secondary">{{ session.get_session_type_display }}</span>
+                                </dd>
+                                
+                                <dt class="col-sm-4">{% trans "Status" %}</dt>
+                                <dd class="col-sm-8">
+                                    {% if session.status == 'scheduled' %}
+                                        <span class="badge bg-primary">{% trans "Scheduled" %}</span>
+                                    {% elif session.status == 'in_progress' %}
+                                        <span class="badge bg-warning">{% trans "In Progress" %}</span>
+                                    {% elif session.status == 'completed' %}
+                                        <span class="badge bg-success">{% trans "Completed" %}</span>
+                                    {% elif session.status == 'cancelled' %}
+                                        <span class="badge bg-danger">{% trans "Cancelled" %}</span>
+                                    {% elif session.status == 'invited' %}
+                                        <span class="badge bg-info">{% trans "Invited" %}</span>
+                                    {% endif %}
+                                </dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">{% trans "Date" %}</dt>
+                                <dd class="col-sm-8">{{ session.scheduled_date|date:"l, F d, Y" }}</dd>
+
+                                <dt class="col-sm-4">{% trans "Time" %}</dt>
+                                <dd class="col-sm-8">{{ session.scheduled_date|time:"H:i" }}</dd>
+                                
+                                <dt class="col-sm-4">{% trans "Location" %}</dt>
+                                <dd class="col-sm-8">
+                                    {% if session.location %}
+                                        <i class="bi bi-geo-alt"></i> {{ session.location }}
+                                    {% else %}
+                                        <span class="text-muted">{% trans "Not specified" %}</span>
+                                    {% endif %}
+                                </dd>
+                                {% if session.committee %}
+                                <dt class="col-sm-4">{% trans "Committee" %}</dt>
+                                <dd class="col-sm-8">
+                                    <a href="{% url 'district:committee-detail' session.committee.pk %}">{{ session.committee.name }}</a>
+                                </dd>
+                                {% endif %}
+                            </dl>
+                        </div>
+                    </div>
+                    {% if session.status != 'cancelled' %}
+                        <div class="mt-3 pt-3 border-top">
+                            <div class="d-flex flex-wrap gap-2">
+                                {% if session.status == 'scheduled' and can_add_invitation %}
+                                    <a href="{% url 'district:session-invitation' session.pk %}" class="btn btn-warning btn-sm">
+                                        <i class="bi bi-envelope-paper"></i> {% trans "Add invitation" %}
+                                    </a>
+                                {% endif %}
+                                {% if session.status == 'scheduled' or session.status == 'invited' %}
+                                    {% if can_cancel_session %}
+                                    <a href="{% url 'district:session-cancel' session.pk %}" class="btn btn-warning btn-sm">
+                                        <i class="bi bi-x-circle"></i> {% trans "Cancel session" %}
+                                    </a>
+                                    {% endif %}
+                                {% endif %}
+                                {% if session.status == 'completed' and can_add_minutes %}
+                                    <a href="{% url 'district:session-minutes' session.pk %}" class="btn btn-warning btn-sm">
+                                        <i class="bi bi-journal-text"></i> {% trans "Add minutes" %}
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    {% if session.description %}
+                        <hr>
+                        <h6>{% trans "Description" %}</h6>
+                        <p>{{ session.description|linebreaks }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Session Motions -->
+            <div class="card mt-3">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-file-text"></i> {% trans "Session Motions" %}
+                    </h5>
+                    {% if can_add_motion %}
+                    <a href="{% url 'motion:motion-create' %}?session={{ session.pk }}" class="btn btn-sm btn-primary">
+                        <i class="bi bi-plus-circle"></i> {% trans "Add" %}
+                    </a>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    {% if motions %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 30px;"><i class="bi bi-grip-vertical"></i></th>
+                                        <th style="width: 50px;">#</th>
+                                        <th>{% trans "Title" %}</th>
+                                        <th>{% trans "Status" %}</th>
+                                        <th>{% trans "Parties" %}</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="motions-sortable">
+                                    {% for motion in motions %}
+                                        <tr data-motion-id="{{ motion.pk }}" {% if motion.status != 'not_admitted' %}style="cursor: move;"{% endif %} data-motion-status="{{ motion.status }}">
+                                            <td class="text-muted">
+                                                {% if motion.status != 'not_admitted' %}
+                                                    <i class="bi bi-grip-vertical"></i>
+                                                {% endif %}
+                                            </td>
+                                            <td class="text-center fw-bold">
+                                                {% if motion.status != 'not_admitted' %}
+                                                    <span class="motion-number"></span>
+                                                {% else %}
+                                                    -
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <a href="{% url 'motion:motion-detail' motion.pk %}">
+                                                    {{ motion.title }}
+                                                </a>
+                                                {% if not motion.is_active %}
+                                                    <span class="badge bg-danger ms-1">{% trans "Inactive" %}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if motion.status == 'draft' %}
+                                                    <span class="badge bg-secondary">{% trans "Draft" %}</span>
+                                                {% elif motion.status == 'submitted' %}
+                                                    <span class="badge bg-primary">{% trans "Submitted" %}</span>
+                                                {% elif motion.status == 'tabled' %}
+                                                    <span class="badge bg-info">{% trans "Tabled" %}</span>
+                                                {% elif motion.status == 'refer_to_committee' %}
+                                                    <span class="badge bg-warning">{% trans "Refer to Committee" %}</span>
+                                                {% elif motion.status == 'refer_no_majority' %}
+                                                    <span class="badge bg-warning text-dark">{% trans "Refer to Committee (no majority)" %}</span>
+                                                {% elif motion.status == 'voted_in_committee' %}
+                                                    <span class="badge bg-warning">{% trans "Voted upon in Committee" %}</span>
+                                                {% elif motion.status == 'approved' %}
+                                                    <span class="badge bg-success">{% trans "Approved" %}</span>
+                                                {% elif motion.status == 'rejected' %}
+                                                    <span class="badge bg-danger">{% trans "Rejected" %}</span>
+                                                {% elif motion.status == 'withdrawn' %}
+                                                    <span class="badge bg-warning">{% trans "Withdrawn" %}</span>
+                                                {% elif motion.status == 'not_admitted' %}
+                                                    <span class="badge bg-dark">{% trans "Nicht zugelassen" %}</span>
+                                                {% elif motion.status == 'answered' %}
+                                                    <span class="badge bg-success">{% trans "Answered" %}</span>
+                                                {% elif motion.status == 'deleted' %}
+                                                    <span class="badge bg-secondary">{% trans "Deleted" %}</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">{{ motion.get_status_display }}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if motion.parties.exists %}
+                                                    {% for party in motion.parties.all %}
+                                                        <span class="badge" style="background-color: {{ party.color }}; color: white; margin-right: 2px;">
+                                                            {{ party.short_name|default:party.name }}
+                                                        </span>
+                                                    {% endfor %}
+                                                {% else %}
+                                                    <span class="text-muted">-</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div id="save-order-message" class="alert alert-info mt-2" style="display: none;">
+                            <i class="bi bi-info-circle"></i> {% trans "Order saved successfully!" %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="bi bi-file-text text-muted" style="font-size: 3rem;"></i>
+                            <p class="text-muted mt-2">{% trans "No motions have been submitted for this session yet." %}</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Session Inquiries -->
+            <div class="card mt-3">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-question-circle"></i> {% trans "Session Inquiries" %}
+                    </h5>
+                    {% if can_add_inquiry %}
+                    <a href="{% url 'inquiry:inquiry-create' %}?session={{ session.pk }}" class="btn btn-sm btn-primary">
+                        <i class="bi bi-plus-circle"></i> {% trans "Add" %}
+                    </a>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    {% if inquiries %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 30px;"><i class="bi bi-grip-vertical"></i></th>
+                                        <th style="width: 50px;">#</th>
+                                        <th>{% trans "Title" %}</th>
+                                        <th>{% trans "Status" %}</th>
+                                        <th>{% trans "Parties" %}</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="inquiries-sortable">
+                                    {% for inquiry in inquiries %}
+                                        <tr data-inquiry-id="{{ inquiry.pk }}" {% if inquiry.status != 'not_admitted' %}style="cursor: move;"{% endif %} data-inquiry-status="{{ inquiry.status }}">
+                                            <td class="text-muted">
+                                                {% if inquiry.status != 'not_admitted' %}
+                                                    <i class="bi bi-grip-vertical"></i>
+                                                {% endif %}
+                                            </td>
+                                            <td class="text-center fw-bold">
+                                                {% if inquiry.status != 'not_admitted' %}
+                                                    <span class="inquiry-number"></span>
+                                                {% else %}
+                                                    -
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <a href="{% url 'inquiry:inquiry-detail' inquiry.pk %}">
+                                                    {{ inquiry.title }}
+                                                </a>
+                                                {% if not inquiry.is_active %}
+                                                    <span class="badge bg-danger ms-1">{% trans "Inactive" %}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if inquiry.status == 'draft' %}
+                                                    <span class="badge bg-secondary">{% trans "Draft" %}</span>
+                                                {% elif inquiry.status == 'submitted' %}
+                                                    <span class="badge bg-primary">{% trans "Submitted" %}</span>
+                                                {% elif inquiry.status == 'refer_to_committee' %}
+                                                    <span class="badge bg-info">{% trans "Refer to Committee" %}</span>
+                                                {% elif inquiry.status == 'approved' %}
+                                                    <span class="badge bg-success">{% trans "Approved" %}</span>
+                                                {% elif inquiry.status == 'rejected' %}
+                                                    <span class="badge bg-danger">{% trans "Rejected" %}</span>
+                                                {% elif inquiry.status == 'answered' %}
+                                                    <span class="badge bg-success">{% trans "Answered" %}</span>
+                                                {% elif inquiry.status == 'withdrawn' %}
+                                                    <span class="badge bg-warning">{% trans "Withdrawn" %}</span>
+                                                {% elif inquiry.status == 'not_admitted' %}
+                                                    <span class="badge bg-dark">{% trans "Nicht zugelassen" %}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if inquiry.parties.exists %}
+                                                    {% for party in inquiry.parties.all %}
+                                                        <span class="badge" style="background-color: {{ party.color }}; color: white; margin-right: 2px;">
+                                                            {{ party.short_name|default:party.name }}
+                                                        </span>
+                                                    {% endfor %}
+                                                {% else %}
+                                                    <span class="text-muted">-</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div id="save-inquiry-order-message" class="alert alert-info mt-2" style="display: none;">
+                            <i class="bi bi-info-circle"></i> {% trans "Order saved successfully!" %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="bi bi-question-circle text-muted" style="font-size: 3rem;"></i>
+                            <p class="text-muted mt-2">{% trans "No inquiries have been submitted for this session yet." %}</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Session Attachments -->
+            <div class="card mt-3">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-paperclip"></i> {% trans "Session Attachments" %}
+                    </h5>
+                    {% if can_attach_session %}
+                    <a href="{% url 'district:session-attach' session.pk %}" class="btn btn-sm btn-primary">
+                        <i class="bi bi-upload"></i> {% trans "Upload File" %}
+                    </a>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    {% if session.attachments.all %}
+                        <div class="row g-2">
+                            {% for attachment in session.attachments.all %}
+                                <div class="col-md-6 col-lg-4 min-w-0">
+                                    <div class="card h-100 border overflow-hidden">
+                                        <div class="card-body position-relative p-2{% if attachment.pk in session_attachment_delete_ids %} pe-4{% endif %} overflow-hidden">
+                                            {% if attachment.pk in session_attachment_delete_ids %}
+                                            <form method="post" action="{% url 'district:session-attachment-delete' session.pk attachment.pk %}" class="position-absolute top-0 end-0 mt-1 me-1" onsubmit="return confirm('{% trans "Remove this attachment?" %}');">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn-close btn-close-sm" aria-label="{% trans 'Remove attachment' %}" title="{% trans 'Remove' %}"></button>
+                                            </form>
+                                            {% endif %}
+                                            <div class="d-flex align-items-start gap-2 min-w-0">
+                                                <i class="bi bi-file-earmark flex-shrink-0 mt-1 text-muted"></i>
+                                                <div class="min-w-0 flex-grow-1 overflow-hidden">
+                                                    <a href="{{ attachment.file.url }}" class="fw-semibold text-truncate d-block w-100 text-decoration-none" target="_blank" rel="noopener" title="{{ attachment.filename }}">{{ attachment.filename }}</a>
+                                                    <small class="text-muted d-block">{{ attachment.get_file_type_display }}</small>
+                                                    {% if attachment.description %}
+                                                        <p class="mb-0 small text-body-secondary mt-1">{{ attachment.description }}</p>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="bi bi-paperclip text-muted" style="font-size: 3rem;"></i>
+                            <p class="text-muted mt-2">{% trans "No attachments uploaded for this session yet." %}</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        {% if user_group_admin_groups or user.is_superuser or can_see_export_and_participants %}
+        <div class="col-lg-4">
+            <!-- Exports -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">{% trans "Exports" %}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'district:session-export-pdf' session.pk %}" class="btn btn-outline-primary">
+                            <i class="bi bi-file-pdf"></i> {% trans "Export Session as PDF" %}
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Participants (political group members from parties with seats in current term) -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-people"></i> {% trans "Participants" %}</h5>
+                </div>
+                <div class="card-body">
+                    {% if session_participants %}
+                        <ul class="list-group list-group-flush">
+                            {% for gm in session_participants %}
+                                <li class="list-group-item px-0">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span>{{ gm.user.get_full_name|default:gm.user.username }}</span>
+                                        <span class="d-flex align-items-center gap-1">
+                                            {% if gm.user_id == user.id and user_is_participant %}
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#sessionExcuseModal" title="{% trans 'Excuse myself' %}">
+                                                {% if user_has_excused %}{% trans "Cancel excuse" %}{% else %}{% trans "Excuse" %}{% endif %}
+                                            </button>
+                                            {% elif gm.group_id in user_leader_group_ids %}
+                                            {% if gm.user_id in excused_user_ids %}
+                                            <form method="post" action="{% url 'district:session-excuse' session.pk %}" style="display: inline;">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="user_id" value="{{ gm.user_id }}">
+                                                <input type="hidden" name="clear" value="1">
+                                                <button type="submit" class="btn btn-sm btn-outline-secondary" title="{% trans 'Cancel excuse for' %} {{ gm.user.get_full_name|default:gm.user.username }}">{% trans "Cancel excuse" %}</button>
+                                            </form>
+                                            {% else %}
+                                            <button type="button" class="btn btn-sm btn-outline-secondary excuse-other-btn" data-bs-toggle="modal" data-bs-target="#sessionExcuseOtherModal"
+                                                    data-user-id="{{ gm.user_id }}" data-user-name="{{ gm.user.get_full_name|default:gm.user.username }}" title="{% trans 'Excuse' %} {{ gm.user.get_full_name|default:gm.user.username }}">
+                                                {% trans "Excuse" %}
+                                            </button>
+                                            {% endif %}
+                                            {% endif %}
+                                        </span>
+                                    </div>
+                                    {% if gm.user_id in excused_user_ids %}
+                                    <small class="text-muted d-block mt-1">{% trans "Excused" %}</small>
+                                    {% endif %}
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="text-muted mb-0">{% trans "No political group members for the current term." %}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if user_is_participant %}
+            <!-- Excuse myself modal -->
+            <div class="modal fade" id="sessionExcuseModal" tabindex="-1" aria-labelledby="sessionExcuseModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="sessionExcuseModalLabel">{% if user_has_excused %}{% trans "Cancel excuse" %}{% else %}{% trans "Excuse myself" %}{% endif %}</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        {% if user_has_excused %}
+                        <form method="post" action="{% url 'district:session-excuse' session.pk %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="clear" value="1">
+                            <div class="modal-body">
+                                <p class="text-muted mb-0">{% trans "You have excused yourself from this session. Cancel to mark yourself as attending again." %}</p>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Close" %}</button>
+                                <button type="submit" class="btn btn-primary">{% trans "Cancel excuse" %}</button>
+                            </div>
+                        </form>
+                        {% else %}
+                        <form method="post" action="{% url 'district:session-excuse' session.pk %}">
+                            {% csrf_token %}
+                            <div class="modal-body">
+                                <p class="text-muted small mb-2">{% trans "You will be marked as excused from this session. Optional note:" %}</p>
+                                <textarea name="note" class="form-control" rows="2" placeholder="{% trans 'Optional reason (e.g. illness, other commitment)' %}"></textarea>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
+                                <button type="submit" class="btn btn-primary">{% trans "Excuse myself" %}</button>
+                            </div>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if user_leader_group_ids %}
+            <!-- Excuse other participant (group leader) modal -->
+            <div class="modal fade" id="sessionExcuseOtherModal" tabindex="-1" aria-labelledby="sessionExcuseOtherModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="sessionExcuseOtherModalLabel">{% trans "Excuse participant" %}</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <form method="post" action="{% url 'district:session-excuse' session.pk %}" id="sessionExcuseOtherForm">
+                            {% csrf_token %}
+                            <input type="hidden" name="user_id" id="sessionExcuseOtherUserId" value="">
+                            <div class="modal-body">
+                                <p class="text-muted small mb-2" id="sessionExcuseOtherIntro">{% trans "Mark this participant as excused. Optional note:" %}</p>
+                                <textarea name="note" class="form-control" rows="2" placeholder="{% trans 'Optional reason (e.g. illness, other commitment)' %}"></textarea>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
+                                <button type="submit" class="btn btn-primary">{% trans "Excuse" %}</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <script>
+            document.getElementById('sessionExcuseOtherModal').addEventListener('show.bs.modal', function(e) {
+                var btn = e.relatedTarget;
+                if (btn && btn.classList.contains('excuse-other-btn')) {
+                    document.getElementById('sessionExcuseOtherUserId').value = btn.dataset.userId || '';
+                    var title = "{% trans 'Excuse' %}";
+                    if (btn.dataset.userName) title += ' ' + btn.dataset.userName;
+                    document.getElementById('sessionExcuseOtherModalLabel').textContent = title;
+                }
+            });
+            </script>
+            {% endif %}
+            
+            <!-- Presence Tracker (only on day of session) -->
+            {% now "Y-m-d" as today %}
+            {% if presence_data and session.scheduled_date|date:"Y-m-d" == today %}
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-people-fill"></i> {% trans "Presence Tracker" %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="fw-bold">{% trans "Total Present" %}:</span>
+                            <span class="badge bg-primary fs-6" id="total-present-count">{{ total_present }}</span>
+                        </div>
+                        {% if has_majority %}
+                        <div class="alert alert-success mt-2 mb-0 py-2" id="majority-alert">
+                            <i class="bi bi-check-circle"></i> {% trans "Majority reached!" %}
+                        </div>
+                        {% else %}
+                        <div class="alert alert-warning mt-2 mb-0 py-2" id="majority-alert" style="display: none;">
+                            <i class="bi bi-check-circle"></i> {% trans "Majority reached!" %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    <hr>
+                    <div class="presence-parties">
+                        {% for item in presence_data %}
+                        <div class="presence-party-item mb-3 p-2 border rounded" data-party-id="{{ item.party.pk }}">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div>
+                                    <span class="badge" style="background-color: {{ item.party.color|default:'#6c757d' }}; color: white;">
+                                        {{ item.party.short_name|default:item.party.name }}
+                                    </span>
+                                    <small class="text-muted ms-2">({{ item.seats }} {% trans "seats" %})</small>
+                                </div>
+                                <span class="fw-bold presence-count" data-party-id="{{ item.party.pk }}">{{ item.present_count }}</span>
+                            </div>
+                            <div class="btn-group w-100" role="group">
+                                <button type="button" class="btn btn-sm btn-outline-danger presence-decrement" data-party-id="{{ item.party.pk }}" data-action="decrement">
+                                    <i class="bi bi-dash-circle"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-success presence-increment" data-party-id="{{ item.party.pk }}" data-action="increment">
+                                    <i class="bi bi-plus-circle"></i>
+                                </button>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const motionsTable = document.getElementById('motions-sortable');
+    const saveMessage = document.getElementById('save-order-message');
+    
+    if (!motionsTable) return;
+    
+    // Set initial numbers for non-not_admitted motions
+    function updateMotionNumbers() {
+        const rows = motionsTable.querySelectorAll('tr[data-motion-id]');
+        let numberCounter = 1;
+        rows.forEach((row) => {
+            const motionStatus = row.getAttribute('data-motion-status');
+            const numberCell = row.querySelector('td:nth-child(2) .motion-number');
+            if (motionStatus !== 'not_admitted' && numberCell) {
+                numberCell.textContent = numberCounter;
+                numberCounter++;
+            }
+        });
+    }
+    
+    // Set initial numbers on page load
+    updateMotionNumbers();
+    
+    // Initialize SortableJS - only allow dragging of non-not_admitted motions
+    const sortable = Sortable.create(motionsTable, {
+        handle: '.bi-grip-vertical',
+        animation: 150,
+        ghostClass: 'sortable-ghost',
+        filter: 'tr[data-motion-status="not_admitted"]',
+        onEnd: function(evt) {
+            // Get all motion rows in their new order (excluding not_admitted)
+            const rows = motionsTable.querySelectorAll('tr[data-motion-id]');
+            const motionOrders = [];
+            let rankCounter = 1;
+            
+            rows.forEach((row) => {
+                const motionId = row.getAttribute('data-motion-id');
+                const motionStatus = row.getAttribute('data-motion-status');
+                
+                // Only assign ranks to non-not_admitted motions
+                if (motionStatus !== 'not_admitted') {
+                    motionOrders.push({
+                        motion_id: parseInt(motionId),
+                        rank: rankCounter
+                    });
+                    rankCounter++;
+                }
+            });
+            
+            // Send AJAX request to save the order
+            fetch('{% url "district:session-update-motion-order" session.pk %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    motion_orders: motionOrders
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update the numbers in the # column (only for non-not_admitted motions)
+                    updateMotionNumbers();
+                    
+                    // Show success message
+                    saveMessage.style.display = 'block';
+                    setTimeout(() => {
+                        saveMessage.style.display = 'none';
+                    }, 3000);
+                } else {
+                    console.error('Error saving order:', data.error);
+                    alert('Error saving order: ' + (data.error || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error saving order. Please try again.');
+            });
+        }
+    });
+    
+    // Inquiries drag and drop functionality
+    const inquiriesTable = document.getElementById('inquiries-sortable');
+    const saveInquiryMessage = document.getElementById('save-inquiry-order-message');
+    
+    if (inquiriesTable) {
+        // Set initial numbers for non-not_admitted inquiries
+        function updateInquiryNumbers() {
+            const rows = inquiriesTable.querySelectorAll('tr[data-inquiry-id]');
+            let numberCounter = 1;
+            rows.forEach((row) => {
+                const inquiryStatus = row.getAttribute('data-inquiry-status');
+                const numberCell = row.querySelector('td:nth-child(2) .inquiry-number');
+                if (inquiryStatus !== 'not_admitted' && numberCell) {
+                    numberCell.textContent = numberCounter;
+                    numberCounter++;
+                }
+            });
+        }
+        
+        // Set initial numbers on page load
+        updateInquiryNumbers();
+        
+        // Initialize SortableJS - only allow dragging of non-not_admitted inquiries
+        const inquirySortable = Sortable.create(inquiriesTable, {
+            handle: '.bi-grip-vertical',
+            animation: 150,
+            ghostClass: 'sortable-ghost',
+            filter: 'tr[data-inquiry-status="not_admitted"]',
+            onEnd: function(evt) {
+                // Get all inquiry rows in their new order (excluding not_admitted)
+                const rows = inquiriesTable.querySelectorAll('tr[data-inquiry-id]');
+                const inquiryOrders = [];
+                let rankCounter = 1;
+                
+                rows.forEach((row) => {
+                    const inquiryId = row.getAttribute('data-inquiry-id');
+                    const inquiryStatus = row.getAttribute('data-inquiry-status');
+                    
+                    // Only assign ranks to non-not_admitted inquiries
+                    if (inquiryStatus !== 'not_admitted') {
+                        inquiryOrders.push({
+                            inquiry_id: parseInt(inquiryId),
+                            rank: rankCounter
+                        });
+                        rankCounter++;
+                    }
+                });
+                
+                // Send AJAX request to save the order
+                fetch('{% url "district:session-update-inquiry-order" session.pk %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({
+                        inquiry_orders: inquiryOrders
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Update the numbers in the # column (only for non-not_admitted inquiries)
+                        updateInquiryNumbers();
+                        
+                        // Show success message
+                        saveInquiryMessage.style.display = 'block';
+                        setTimeout(() => {
+                            saveInquiryMessage.style.display = 'none';
+                        }, 3000);
+                    } else {
+                        console.error('Error saving order:', data.error);
+                        alert('Error saving order: ' + (data.error || 'Unknown error'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error saving order. Please try again.');
+                });
+            }
+        });
+    }
+    
+    // Presence tracking functionality
+    const presenceButtons = document.querySelectorAll('.presence-increment, .presence-decrement');
+    presenceButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const partyId = this.getAttribute('data-party-id');
+            const action = this.getAttribute('data-action');
+            const button = this;
+            
+            // Disable button during request
+            button.disabled = true;
+            
+            const url = `/district/sessions/{{ session.pk }}/presence/${partyId}/update/`;
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    action: action
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update party count
+                    const partyCountElement = document.querySelector(`.presence-count[data-party-id="${partyId}"]`);
+                    if (partyCountElement) {
+                        partyCountElement.textContent = data.present_count;
+                    }
+                    
+                    // Update total present
+                    const totalPresentElement = document.getElementById('total-present-count');
+                    if (totalPresentElement) {
+                        totalPresentElement.textContent = data.total_present;
+                    }
+                    
+                    // Update majority alert
+                    const majorityAlertElement = document.getElementById('majority-alert');
+                    if (majorityAlertElement) {
+                        if (data.has_majority) {
+                            majorityAlertElement.classList.remove('alert-warning');
+                            majorityAlertElement.classList.add('alert-success');
+                            majorityAlertElement.style.display = 'block';
+                        } else {
+                            majorityAlertElement.style.display = 'none';
+                        }
+                    }
+                } else {
+                    console.error('Error updating presence:', data.error);
+                    alert('Error updating presence: ' + (data.error || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error updating presence. Please try again.');
+            })
+            .finally(() => {
+                // Re-enable button
+                button.disabled = false;
+            });
+        });
+    });
+});
+</script>
+<style>
+.sortable-ghost {
+    opacity: 0.4;
+    background-color: #f0f0f0;
+}
+#motions-sortable tr[data-motion-id]:hover {
+    background-color: #f8f9fa;
+}
+#motions-sortable tr[data-motion-id] .bi-grip-vertical {
+    cursor: grab;
+}
+#motions-sortable tr[data-motion-id] .bi-grip-vertical:active {
+    cursor: grabbing;
+}
+#inquiries-sortable tr[data-inquiry-id]:hover {
+    background-color: #f8f9fa;
+}
+#inquiries-sortable tr[data-inquiry-id] .bi-grip-vertical {
+    cursor: grab;
+}
+#inquiries-sortable tr[data-inquiry-id] .bi-grip-vertical:active {
+    cursor: grabbing;
+}
+</style>
+{% endblock content %}

@@ -49,8 +49,8 @@
                                 <dt class="col-sm-3">{% trans "Party" %}</dt>
                                 <dd class="col-sm-9">{{ object.party.name }}</dd>
                                 
-                                <dt class="col-sm-3">{% trans "Local District" %}</dt>
-                                <dd class="col-sm-9">{{ object.party.local.name }}</dd>
+                                <dt class="col-sm-3">{% trans "District" %}</dt>
+                                <dd class="col-sm-9">{{ object.party.district.name }}</dd>
                                 
                                 <dt class="col-sm-3">{% trans "Members" %}</dt>
                                 <dd class="col-sm-9">{{ object.member_count }}</dd>
@@ -104,7 +104,7 @@
                         <a href="{% url 'group:group-edit' object.pk %}" class="btn btn-outline-primary">
                             <i class="bi bi-pencil"></i> {% trans "Edit Group" %}
                         </a>
-                        <a href="{% url 'local:party-detail' object.party.pk %}" class="btn btn-outline-secondary">
+                        <a href="{% url 'district:party-detail' object.party.pk %}" class="btn btn-outline-secondary">
                             <i class="bi bi-flag"></i> {% trans "View Party" %}
                         </a>
                     </div>

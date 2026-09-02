@@ -51,7 +51,7 @@ INSTALLED_APPS = [
     'auditlog',
     'pages',
     'user',
-    'local',
+    'district',
     'group',
     'motion', # Added
 ]

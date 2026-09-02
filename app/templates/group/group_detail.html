@@ -34,7 +34,7 @@
                             <dl class="row">                                
                                 <dt class="col-sm-4">{% trans "Party" %}</dt>
                                 <dd class="col-sm-8">
-                                    <a href="{% url 'local:party-detail' group.party.pk %}">
+                                    <a href="{% url 'district:party-detail' group.party.pk %}">
                                         {{ group.party.name }}
                                     </a>
                                 </dd>
@@ -43,10 +43,10 @@
                         </div>
                         <div class="col-md-6">
                             <dl class="row">
-                                <dt class="col-sm-4">{% trans "Local District" %}</dt>
+                                <dt class="col-sm-4">{% trans "District" %}</dt>
                                 <dd class="col-sm-8">
-                                    <a href="{% url 'local:local-detail' group.party.local.pk %}">
-                                        {{ group.party.local.name }}
+                                    <a href="{% url 'district:district-detail' group.party.district.pk %}">
+                                        {{ group.party.district.name }}
                                     </a>
                                 </dd>
                             </dl>

@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('local', '0020_add_committee_to_session'),
+        ('district', '0020_add_committee_to_session'),
         ('motion', '0029_add_tabled_and_answered_statuses'),
     ]
 
@@ -15,6 +15,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='motionstatus',
             name='session',
-            field=models.ForeignKey(blank=True, help_text="Session when status is 'tabled'", null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='motion_status_changes', to='local.session'),
+            field=models.ForeignKey(blank=True, help_text="Session when status is 'tabled'", null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='motion_status_changes', to='district.session'),
         ),
     ]

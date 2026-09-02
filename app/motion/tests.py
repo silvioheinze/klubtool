@@ -19,7 +19,7 @@ from .models import (
     MotionStatusAnswerFile, MotionGroupDecision, Inquiry, InquiryStatus,
     InquiryStatusAnswerFile,
 )
-from local.models import Local, Council, Session, Term, Party, Committee
+from district.models import District, Council, Session, Term, Party, Committee
 from group.models import Group
 
 User = get_user_model()
@@ -37,14 +37,14 @@ class MotionFormTests(TestCase):
         )
         
         # Create test data
-        self.local = Local.objects.create(
+        self.district = District.objects.create(
             name='Test Local',
             code='TL',
             description='Test local description'
         )
         
         self.council, created = Council.objects.get_or_create(
-            local=self.local,
+            district=self.district,
             defaults={'name': 'Test Council'}
         )
         
@@ -63,7 +63,7 @@ class MotionFormTests(TestCase):
         
         self.party = Party.objects.create(
             name='Test Party',
-            local=self.local
+            district=self.district
         )
         
         self.group = Group.objects.create(
@@ -137,14 +137,14 @@ class MotionVoteFormTests(TestCase):
         )
         
         # Create test data
-        self.local = Local.objects.create(
+        self.district = District.objects.create(
             name='Test Local',
             code='TL',
             description='Test local description'
         )
         
         self.council, created = Council.objects.get_or_create(
-            local=self.local,
+            district=self.district,
             defaults={'name': 'Test Council'}
         )
         
@@ -163,7 +163,7 @@ class MotionVoteFormTests(TestCase):
         
         self.party = Party.objects.create(
             name='Test Party',
-            local=self.local
+            district=self.district
         )
         
         self.group = Group.objects.create(
@@ -228,7 +228,7 @@ class MotionVoteFormTests(TestCase):
         form = MotionVoteForm(motion=self.motion)
         # Should only show parties from the motion's session council local
         expected_parties = Party.objects.filter(
-            local=self.motion.session.council.local,
+            district=self.motion.session.council.district,
             is_active=True
         )
         self.assertQuerySetEqual(
@@ -250,14 +250,14 @@ class MotionVoteFormSetTests(TestCase):
         )
         
         # Create test data
-        self.local = Local.objects.create(
+        self.district = District.objects.create(
             name='Test Local',
             code='TL',
             description='Test local description'
         )
         
         self.council, created = Council.objects.get_or_create(
-            local=self.local,
+            district=self.district,
             defaults={'name': 'Test Council'}
         )
         
@@ -276,12 +276,12 @@ class MotionVoteFormSetTests(TestCase):
         
         self.party1 = Party.objects.create(
             name='Test Party 1',
-            local=self.local
+            district=self.district
         )
         
         self.party2 = Party.objects.create(
             name='Test Party 2',
-            local=self.local
+            district=self.district
         )
         
         self.group = Group.objects.create(
@@ -307,7 +307,7 @@ class MotionVoteFormSetTests(TestCase):
     def test_motion_vote_formset_initialization(self):
         """Test MotionVoteFormSet initialization with parties"""
         parties = Party.objects.filter(
-            local=self.motion.session.council.local,
+            district=self.motion.session.council.district,
             is_active=True
         )
         
@@ -358,14 +358,14 @@ class MotionStatusFormTests(TestCase):
         )
         
         # Create test data
-        self.local = Local.objects.create(
+        self.district = District.objects.create(
             name='Test Local',
             code='TL',
             description='Test local description'
         )
         
         self.council, created = Council.objects.get_or_create(
-            local=self.local,
+            district=self.district,
             defaults={'name': 'Test Council'}
         )
         
@@ -384,7 +384,7 @@ class MotionStatusFormTests(TestCase):
         
         self.party = Party.objects.create(
             name='Test Party',
-            local=self.local
+            district=self.district
         )
         
         self.group = Group.objects.create(
@@ -468,14 +468,14 @@ class MotionCommentFormTests(TestCase):
         )
         
         # Create test data
-        self.local = Local.objects.create(
+        self.district = District.objects.create(
             name='Test Local',
             code='TL',
             description='Test local description'
         )
         
         self.council, created = Council.objects.get_or_create(
-            local=self.local,
+            district=self.district,
             defaults={'name': 'Test Council'}
         )
         
@@ -494,7 +494,7 @@ class MotionCommentFormTests(TestCase):
         
         self.party = Party.objects.create(
             name='Test Party',
-            local=self.local
+            district=self.district
         )
         
         self.group = Group.objects.create(
@@ -556,14 +556,14 @@ class MotionAttachmentFormTests(TestCase):
         )
         
         # Create test data
-        self.local = Local.objects.create(
+        self.district = District.objects.create(
             name='Test Local',
             code='TL',
             description='Test local description'
         )
         
         self.council, created = Council.objects.get_or_create(
-            local=self.local,
+            district=self.district,
             defaults={'name': 'Test Council'}
         )
         
@@ -582,7 +582,7 @@ class MotionAttachmentFormTests(TestCase):
         
         self.party = Party.objects.create(
             name='Test Party',
-            local=self.local
+            district=self.district
         )
         
         self.group = Group.objects.create(
@@ -641,14 +641,14 @@ class MotionGroupDecisionFormTests(TestCase):
         )
         
         # Create test data
-        self.local = Local.objects.create(
+        self.district = District.objects.create(
             name='Test Local',
             code='TL',
             description='Test local description'
         )
         
         self.council, created = Council.objects.get_or_create(
-            local=self.local,
+            district=self.district,
             defaults={'name': 'Test Council'}
         )
         
@@ -667,7 +667,7 @@ class MotionGroupDecisionFormTests(TestCase):
         
         self.party = Party.objects.create(
             name='Test Party',
-            local=self.local
+            district=self.district
         )
         
         self.group = Group.objects.create(
@@ -759,7 +759,7 @@ class MotionCreateViewTests(TestCase):
         )
         
         # Create test data
-        self.local = Local.objects.create(
+        self.district = District.objects.create(
             name='Test Local',
             code='TL',
             description='Test local description',
@@ -767,13 +767,13 @@ class MotionCreateViewTests(TestCase):
         )
         
         self.council, created = Council.objects.get_or_create(
-            local=self.local,
+            district=self.district,
             defaults={'name': 'Test Council', 'is_active': True}
         )
         
         self.party = Party.objects.create(
             name='Test Party',
-            local=self.local,
+            district=self.district,
             color='#FF0000',
             is_active=True
         )
@@ -812,7 +812,7 @@ class MotionCreateViewTests(TestCase):
         
         # Should redirect to session detail page
         self.assertEqual(response.status_code, 302)
-        self.assertRedirects(response, reverse('local:session-detail', kwargs={'pk': self.session.pk}))
+        self.assertRedirects(response, reverse('district:session-detail', kwargs={'pk': self.session.pk}))
         
         # Check that motion was created
         self.assertTrue(Motion.objects.filter(title='Test Motion', session=self.session).exists())
@@ -838,7 +838,7 @@ class MotionCreateViewTests(TestCase):
         
         # Should redirect to session detail page (since session is provided)
         self.assertEqual(response.status_code, 302)
-        self.assertRedirects(response, reverse('local:session-detail', kwargs={'pk': self.session.pk}))
+        self.assertRedirects(response, reverse('district:session-detail', kwargs={'pk': self.session.pk}))
     
     def test_motion_create_with_session_parameter(self):
         """Test that motion creation works with session parameter in URL"""
@@ -861,7 +861,7 @@ class MotionCreateViewTests(TestCase):
         
         # Should redirect to session detail page
         self.assertEqual(response.status_code, 302)
-        self.assertRedirects(response, reverse('local:session-detail', kwargs={'pk': self.session.pk}))
+        self.assertRedirects(response, reverse('district:session-detail', kwargs={'pk': self.session.pk}))
         
         # Check that motion was created with the correct session
         motion = Motion.objects.get(title='Test Motion')
@@ -914,7 +914,7 @@ class MotionCreateViewTests(TestCase):
         
         # Should redirect to session detail page (success)
         self.assertEqual(response.status_code, 302)
-        self.assertRedirects(response, reverse('local:session-detail', kwargs={'pk': self.session.pk}))
+        self.assertRedirects(response, reverse('district:session-detail', kwargs={'pk': self.session.pk}))
         
         # Check that motion was created with the correct session
         motion = Motion.objects.get(title='Test Motion')
@@ -947,16 +947,16 @@ class MotionInquiryStatusPermissionTests(TestCase):
     def setUp(self):
         self.client = Client()
 
-        self.local = Local.objects.create(
+        self.district = District.objects.create(
             name='Status Perm Local',
             code='SPL',
             description='Test local',
             is_active=True,
         )
-        self.council = self.local.council
+        self.council = self.district.council
         self.party = Party.objects.create(
             name='Status Perm Party',
-            local=self.local,
+            district=self.district,
             is_active=True,
         )
         self.group = Group.objects.create(
@@ -1120,16 +1120,16 @@ class StatusAnswerFileTests(TestCase):
             password='adminpass123',
         )
 
-        self.local = Local.objects.create(
+        self.district = District.objects.create(
             name='Answer Local',
             code='AL',
             description='Test local',
             is_active=True,
         )
-        self.council = self.local.council
+        self.council = self.district.council
         self.party = Party.objects.create(
             name='Answer Party',
-            local=self.local,
+            district=self.district,
             is_active=True,
         )
         self.group = Group.objects.create(

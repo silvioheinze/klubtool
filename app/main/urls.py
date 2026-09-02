@@ -32,6 +32,10 @@ def redirect_to_user_logout(request):
     """Redirect /accounts/logout/ to /user/settings/"""
     return redirect('/user/settings/')
 
+def redirect_local_to_district(request, path=''):
+    """Permanent redirect from legacy /local/ URLs to /district/."""
+    return redirect(f'/district/{path}', permanent=True)
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('i18n/', include('django.conf.urls.i18n')),
@@ -40,7 +44,9 @@ urlpatterns = [
     path('accounts/login/', redirect_to_user_login, name='account_login_redirect'),
     path('accounts/signup/', redirect_to_user_signup, name='account_signup_redirect'),
     path('accounts/logout/', redirect_to_user_logout, name='account_logout_redirect'),
-    path('local/', include('local.urls')),
+    path('district/', include('district.urls')),
+    path('local/', redirect_local_to_district),
+    path('local/<path:path>', redirect_local_to_district),
     path('group/', include(('group.urls', 'group'))),
     path('motions/', include('motion.urls')),
     path('inquiries/', include('motion.inquiry_urls')),
