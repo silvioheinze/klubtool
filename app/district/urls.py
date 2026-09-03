@@ -14,6 +14,7 @@ from .views import (
     CommitteeListView, CommitteeDetailView, CommitteeCreateView, CommitteeUpdateView, CommitteeDeleteView,
     CommitteeMeetingCreateView, CommitteeMeetingDetailView, CommitteeMeetingUpdateView, CommitteeMeetingDeleteView, CommitteeMeetingSetSubstituteView, committee_meeting_export_ics, CommitteeMeetingAttachmentView,
     CommitteeMemberListView, CommitteeMemberCreateView, CommitteeMemberUpdateView, CommitteeMemberDeleteView,
+    CommitteeMembershipHistoryView,
     DistrictEventCreateView, DistrictEventDetailView, DistrictEventUpdateView, DistrictEventDeleteView,
     district_event_attend, district_event_export_ics,
 )
@@ -89,6 +90,7 @@ urlpatterns = [
     path('committees/', CommitteeListView.as_view(), name='committee-list'),
     path('committees/create/', CommitteeCreateView.as_view(), name='committee-create'),
     path('committees/<int:pk>/', CommitteeDetailView.as_view(), name='committee-detail'),
+    path('committees/<int:pk>/membership-history/', CommitteeMembershipHistoryView.as_view(), name='committee-membership-history'),
     path('committees/<int:pk>/edit/', CommitteeUpdateView.as_view(), name='committee-edit'),
     path('committees/<int:pk>/delete/', CommitteeDeleteView.as_view(), name='committee-delete'),
     path('committees/<int:committee_pk>/meetings/create/', CommitteeMeetingCreateView.as_view(), name='committee-meeting-create'),

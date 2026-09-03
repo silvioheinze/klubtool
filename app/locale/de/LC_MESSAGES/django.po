@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-03 17:50+0200\n"
+"POT-Creation-Date: 2026-09-03 18:38+0200\n"
 "PO-Revision-Date: 2026-03-24 15:33+0100\n"
 "Last-Translator: Silvio Heinze <s.heinze@dataplexity.eu>\n"
 "Language-Team: \n"
@@ -18,19 +18,42 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "X-Generator: Poedit 3.9\n"
 
-#: district/forms.py:505
+#: district/forms.py:454 group/forms.py:77
+#: templates/district/committee_member_form.html:184
+#: templates/district/committee_membership_history.html:34
+#: templates/group/member_form.html:186
+msgid "Start date"
+msgstr "Startdatum"
+
+#: district/forms.py:455 group/forms.py:78
+#: templates/district/committee_member_form.html:185
+#: templates/district/committee_membership_history.html:35
+#: templates/group/member_form.html:187
+msgid "End date"
+msgstr "Enddatum"
+
+#: district/forms.py:461 group/forms.py:84
+msgid "Leave empty if the member is currently active."
+msgstr "Leer lassen, wenn das Mitglied derzeit aktiv ist."
+
+#: district/forms.py:476 district/models.py:334 group/forms.py:99
+#: group/models.py:191
+msgid "Only one active membership period is allowed."
+msgstr "Es ist nur eine aktive Mitgliedschaftsperiode erlaubt."
+
+#: district/forms.py:554
 msgid "All Roles"
 msgstr "Alle Rollen"
 
-#: district/forms.py:646
+#: district/forms.py:695
 msgid "— None / Clear —"
 msgstr "— Keine / Löschen —"
 
-#: district/forms.py:648
+#: district/forms.py:697
 msgid "Substitute member"
 msgstr "Ersatzmitglied"
 
-#: district/models.py:165
+#: district/models.py:166
 #: templates/district/council_sessions_list_partial.html:19
 #: templates/district/session_cancel_confirm.html:51
 #: templates/district/session_confirm_delete.html:61
@@ -43,7 +66,7 @@ msgstr "Ersatzmitglied"
 msgid "Scheduled"
 msgstr "Geplant"
 
-#: district/models.py:166
+#: district/models.py:167
 #: templates/district/council_sessions_list_partial.html:23
 #: templates/district/session_confirm_delete.html:65
 #: templates/district/session_detail.html:54
@@ -54,7 +77,7 @@ msgstr "Geplant"
 msgid "Completed"
 msgstr "Abgeschlossen"
 
-#: district/models.py:167
+#: district/models.py:168
 #: templates/district/council_sessions_list_partial.html:25
 #: templates/district/session_confirm_delete.html:67
 #: templates/district/session_detail.html:56
@@ -65,7 +88,7 @@ msgstr "Abgeschlossen"
 msgid "Cancelled"
 msgstr "Abgesetzt"
 
-#: district/models.py:168
+#: district/models.py:169
 #: templates/district/council_sessions_list_partial.html:27
 #: templates/district/session_cancel_confirm.html:53
 #: templates/district/session_confirm_delete.html:69
@@ -78,13 +101,13 @@ msgstr "Abgesetzt"
 msgid "Invited"
 msgstr "Eingeladen"
 
-#: district/models.py:188
+#: district/models.py:189
 #, fuzzy
 #| msgid "Create Meeting"
 msgid "Current status of the meeting"
 msgstr "Aktueller Stand der Sitzung"
 
-#: district/models.py:218 district/models.py:460
+#: district/models.py:219 district/models.py:519
 #: templates/district/committee_meeting_detail.html:70
 #: templates/district/committee_meeting_form.html:134
 #: templates/group/email/meeting_invite.txt:23
@@ -94,386 +117,408 @@ msgstr "Aktueller Stand der Sitzung"
 msgid "Agenda"
 msgstr "Tagesordnung"
 
-#: district/models.py:219 district/models.py:462
+#: district/models.py:220 district/models.py:521
 msgid "Invitation"
 msgstr "Einladung"
 
-#: district/models.py:220 district/models.py:463
+#: district/models.py:221 district/models.py:522
 #: templates/district/session_minutes_form.html:36
 #: templates/group/meeting_minutes_export_pdf.html:8
 #: templates/group/meeting_minutes_export_pdf.html:13
 msgid "Minutes"
 msgstr "Protokoll"
 
-#: district/models.py:221 district/models.py:464
+#: district/models.py:222 district/models.py:523
 msgid "Other"
 msgstr "Sonstiges"
 
-#: district/models.py:258 templates/district/committee_confirm_delete.html:48
+#: district/models.py:259 templates/district/committee_confirm_delete.html:48
 #: templates/district/committee_detail.html:51
 #: templates/district/committee_list.html:98
-#: templates/district/committee_member_form.html:214
+#: templates/district/committee_member_form.html:276
 msgid "Chairperson"
 msgstr "Vorsitzende/r"
 
-#: district/models.py:259 templates/district/committee_detail.html:60
-#: templates/district/committee_member_form.html:215
+#: district/models.py:260 templates/district/committee_detail.html:60
+#: templates/district/committee_member_form.html:277
 msgid "Vice Chairperson"
 msgstr "Stellv. Vorsitzende/r"
 
-#: district/models.py:260 templates/district/committee_detail.html:264
-#: templates/district/committee_member_form.html:216
+#: district/models.py:261 templates/district/committee_detail.html:267
+#: templates/district/committee_member_form.html:278
+#: templates/district/committee_membership_history.html:32
 #: templates/group/group_detail.html:326 templates/group/group_detail.html:394
 #: templates/group/member_detail.html:92 templates/group/member_form.html:288
 msgid "Member"
 msgstr "Mitglied"
 
-#: district/models.py:261
+#: district/models.py:262
 msgid "Substitute Member"
 msgstr "Ersatzmitglied"
 
-#: district/models.py:264
+#: district/models.py:265
 msgid "Committee the user belongs to"
 msgstr "Gremium, dem der Benutzer angehört"
 
-#: district/models.py:265
+#: district/models.py:266
 msgid "User who is a member"
 msgstr "Benutzer, der Mitglied ist"
 
-#: district/models.py:266
+#: district/models.py:267
 msgid "Role of the user in the committee"
 msgstr "Rolle des Benutzers im Gremium"
 
-#: district/models.py:267
+#: district/models.py:268
 msgid "Date when the user joined the committee"
 msgstr "Datum des Eintritts in das Gremium"
 
-#: district/models.py:268
+#: district/models.py:269
 msgid "Whether the membership is currently active"
 msgstr "Ob die Mitgliedschaft derzeit aktiv ist"
 
-#: district/models.py:269
+#: district/models.py:270
 msgid "Additional notes about the membership"
 msgstr "Zusätzliche Notizen zur Mitgliedschaft"
 
-#: district/models.py:294
+#: district/models.py:307
+#, fuzzy
+#| msgid "Committee the user belongs to"
+msgid "Committee membership this period belongs to"
+msgstr "Gremium, dem der Benutzer angehört"
+
+#: district/models.py:309
+#, fuzzy
+#| msgid "Membership period"
+msgid "First day of this membership period"
+msgstr "Mitgliedschaftsperiode"
+
+#: district/models.py:313
+#, fuzzy
+#| msgid "Whether the membership is currently active"
+msgid "Last day of this membership period (leave empty if currently active)"
+msgstr "Ob die Mitgliedschaft derzeit aktiv ist"
+
+#: district/models.py:318 group/models.py:175
+msgid "Membership period"
+msgstr "Mitgliedschaftsperiode"
+
+#: district/models.py:319 group/models.py:176
+#: templates/district/committee_member_form.html:171
+#: templates/group/member_form.html:173
+msgid "Membership periods"
+msgstr "Mitgliedschaftsperioden"
+
+#: district/models.py:324 group/models.py:181
+#: templates/district/committee_membership_history.html:49
+msgid "present"
+msgstr "heute"
+
+#: district/models.py:328 group/models.py:185
+msgid "End date must be on or after start date."
+msgstr "Das Enddatum muss am oder nach dem Startdatum liegen."
+
+#: district/models.py:353
 msgid "Committee meeting"
 msgstr "Ausschusssitzung"
 
-#: district/models.py:300
+#: district/models.py:359
 msgid "Regular member who will not attend (replaced by substitute)"
 msgstr ""
 "Normales Mitglied, das nicht dabei sein wird (wird durch Ersatzmitglied "
 "ersetzt)"
 
-#: district/models.py:306
+#: district/models.py:365
 msgid "Substitute member who will attend in place of the member"
 msgstr "Ersatzmitglied, das anstelle des Mitglieds anwesend sein wird"
 
-#: district/models.py:314
+#: district/models.py:373
 msgid "Committee participation substitute"
 msgstr "Ersatzteilnahme im Ausschuss"
 
-#: district/models.py:315
+#: district/models.py:374
 msgid "Committee participation substitutes"
 msgstr "Ersatz für die Teilnahme an Ausschüssen"
 
-#: district/models.py:412
+#: district/models.py:471
 msgid "Regular Session"
 msgstr "Ordentliche Sitzung"
 
-#: district/models.py:413
+#: district/models.py:472
 msgid "Special Session"
 msgstr "Außerordentliche Sitzung"
 
-#: district/models.py:414
+#: district/models.py:473
 msgid "Inaugural Session"
 msgstr "Konstituierende Sitzung"
 
-#: district/models.py:461
+#: district/models.py:520
 msgid "Budget"
 msgstr "Budget"
 
-#: district/models.py:513
+#: district/models.py:572
 msgid "Council session"
 msgstr "Bezirksvertretungssitzung"
 
-#: district/models.py:519
+#: district/models.py:578
 msgid "User who excused themselves"
 msgstr "Benutzer, die sich entschuldigt haben"
 
-#: district/models.py:521
+#: district/models.py:580
 msgid "Optional reason or note"
 msgstr "Optionaler Grund oder Anmerkung"
 
-#: district/models.py:528
+#: district/models.py:587
 msgid "Session excuse"
 msgstr "Entschuldigung für die Sitzung"
 
-#: district/models.py:529
+#: district/models.py:588
 msgid "Session excuses"
 msgstr "Entschuldigungen für die Sitzung"
 
-#: district/models.py:542
+#: district/models.py:601
 #, fuzzy
 #| msgid "The local district this party belongs to"
 msgid "District this event belongs to"
 msgstr "Der Bezirk, zu dem diese Partei gehört"
 
-#: district/models.py:544
+#: district/models.py:603
 #, fuzzy
 #| msgid "Delete Event"
 msgid "Title of the event"
 msgstr "Veranstaltung löschen"
 
-#: district/models.py:545
+#: district/models.py:604
 msgid "Date and time of the event"
 msgstr ""
 
-#: district/models.py:546
+#: district/models.py:605
 #, fuzzy
 msgid "Optional description or details"
 msgstr "Optionale Beschreibung des Begriffs."
 
-#: district/models.py:547
+#: district/models.py:606
 msgid "Optional external link for more information"
 msgstr ""
 
-#: district/models.py:548
+#: district/models.py:607
 #, fuzzy
 #| msgid "Whether the membership is currently active"
 msgid "Whether the event is currently active"
 msgstr "Ob die Mitgliedschaft derzeit aktiv ist"
 
-#: district/models.py:555
+#: district/models.py:614
 #, fuzzy
 #| msgid "User who excused themselves"
 msgid "User who created the event"
 msgstr "Benutzer, die sich entschuldigt haben"
 
-#: district/models.py:562
+#: district/models.py:621
 #, fuzzy
 msgid "District Event"
 msgstr "Lokaler Name"
 
-#: district/models.py:563
+#: district/models.py:622
 #, fuzzy
 msgid "District Events"
 msgstr "Lokale Details"
 
-#: district/models.py:588
+#: district/models.py:647
 #, fuzzy
 #| msgid "Add Event"
 msgid "Event"
 msgstr "Veranstaltung hinzufügen"
 
-#: district/models.py:594 templates/district/committee_member_form.html:98
+#: district/models.py:653 templates/district/committee_member_form.html:98
 #: templates/group/group_detail.html:281
 #: templates/group/member_confirm_delete.html:44
 #: templates/group/member_detail.html:36 templates/group/member_form.html:281
 msgid "User"
 msgstr "Benutzer"
 
-#: district/models.py:596
+#: district/models.py:655
 #, fuzzy
 #| msgid "Whether the membership is currently active"
 msgid "Whether the user will attend"
 msgstr "Ob die Mitgliedschaft derzeit aktiv ist"
 
-#: district/models.py:604
+#: district/models.py:663
 #, fuzzy
 msgid "District Event Participation"
 msgstr "Lokale Paginierung"
 
-#: district/models.py:605
+#: district/models.py:664
 #, fuzzy
 msgid "District Event Participations"
 msgstr "Lokale Paginierung"
 
-#: district/models.py:609 templates/district/district_detail.html:333
+#: district/models.py:668 templates/district/district_detail.html:333
 #: templates/district/event_detail.html:90 templates/group/event_detail.html:90
 msgid "Attending"
 msgstr "Teilnehmen"
 
-#: district/models.py:609 templates/district/district_detail.html:335
+#: district/models.py:668 templates/district/district_detail.html:335
 #, fuzzy
 #| msgid "Attending"
 msgid "Not attending"
 msgstr "Teilnehmen"
 
-#: district/views.py:990 motion/views.py:861 motion/views.py:2098
+#: district/views.py:991 motion/views.py:861 motion/views.py:2098
 #, python-format
 msgid "Attachment \"%(name)s\" has been removed."
 msgstr "Der Anhang „%(name)s“ wurde entfernt."
 
-#: district/views.py:1186
+#: district/views.py:1187
 msgid "You cannot excuse for this session."
 msgstr "Du kannst dich für diese Sitzung nicht entschuldigen."
 
-#: district/views.py:1214
+#: district/views.py:1215
 msgid "You are not a participant of this session."
 msgstr "Sie sind kein Teilnehmer dieser Sitzung."
 
-#: district/views.py:1226
+#: district/views.py:1227
 msgid "That user is not a participant of this session."
 msgstr "Dieser Benutzer nimmt nicht an dieser Sitzung teil."
 
-#: district/views.py:1236
+#: district/views.py:1237
 msgid "You can only excuse members of groups you lead."
 msgstr "Du kannst nur Mitglieder von Gruppen entschuldigen, die du leitest."
 
-#: district/views.py:1244
+#: district/views.py:1245
 msgid "Excuse cancelled."
 msgstr "Entschuldigung zurückgenommen."
 
-#: district/views.py:1246
+#: district/views.py:1247
 #, python-format
 msgid "Excuse cancelled for %(name)s."
 msgstr "Die Entschuldigung für %(name)s wurde storniert."
 
-#: district/views.py:1257
+#: district/views.py:1258
 msgid "You have excused yourself from this session."
 msgstr "Sie haben sich von dieser Sitzung entschuldigt."
 
-#: district/views.py:1259
+#: district/views.py:1260
 #, python-format
 msgid "%(name)s has been excused from this session."
 msgstr "%(name)s wurde von dieser Sitzung entschuldigt."
 
-#: district/views.py:1595
+#: district/views.py:1596
 msgid "You don't have permission to export this meeting."
 msgstr "Sie haben keine Berechtigung, Mitglieder in diese Gruppe einzuladen."
 
-#: district/views.py:2292
+#: district/views.py:2324
 #, python-format
 msgid "Committee meeting '%(title)s' created successfully."
 msgstr "Ausschusssitzung „%(title)s“ wurde erfolgreich angelegt."
 
-#: district/views.py:2444 district/views.py:2448
+#: district/views.py:2476 district/views.py:2480
 msgid "Invalid request."
 msgstr "Ungültige Anfrage."
 
-#: district/views.py:2451 group/views.py:1951 group/views.py:1980
+#: district/views.py:2483 group/views.py:1951 group/views.py:1980
 msgid "Permission denied."
 msgstr "Zugriff verweigert."
 
-#: district/views.py:2455 district/views.py:2456
+#: district/views.py:2487 district/views.py:2488
 msgid "Invalid selection."
 msgstr "Die Auswahl ist ungültig."
 
-#: district/views.py:2461
+#: district/views.py:2493
 msgid "Invalid substitute member."
 msgstr "Ungültiges Stellvertreter-Mitglied."
 
-#: district/views.py:2467
+#: district/views.py:2499
 #, python-format
 msgid "Substitute set: %(name)s will attend in your place."
 msgstr "Vertretung festgelegt: %(name)s nimmt an deiner Stelle teil."
 
-#: district/views.py:2471
+#: district/views.py:2503
 msgid "Substitute cleared."
 msgstr "Vertretung entfernt."
 
-#: district/views.py:2502
+#: district/views.py:2534
 #, python-format
 msgid "Committee meeting '%(title)s' updated successfully."
 msgstr "Die Ausschusssitzung „%(title)s“ wurde erfolgreich aktualisiert."
 
-#: district/views.py:2523
+#: district/views.py:2555
 #, python-format
 msgid "Committee meeting '%(title)s' deleted successfully."
 msgstr "Die Ausschusssitzung „%(title)s“ wurde erfolgreich gelöscht."
 
-#: district/views.py:2716
+#: district/views.py:2800
 msgid "Invitation can only be added when the session is scheduled."
 msgstr ""
 "Eine Einladung kann nur hinzugefügt werden, wenn die Sitzung geplant ist."
 
-#: district/views.py:2744
+#: district/views.py:2828
 msgid "Invitation uploaded and session status set to Invited."
 msgstr "Einladung hochgeladen und Sitzungsstatus auf „Eingeladen“ gesetzt."
 
-#: district/views.py:2760
+#: district/views.py:2844
 msgid "Only scheduled or invited sessions can be cancelled."
 msgstr "Nur geplante oder eingeladene Sitzungen können storniert werden."
 
-#: district/views.py:2768
+#: district/views.py:2852
 msgid "Session has been cancelled."
 msgstr "Die Sitzung wurde abgesagt."
 
-#: district/views.py:2786
+#: district/views.py:2870
 msgid "Minutes can only be added for completed sessions."
 msgstr "Protokolle können nur für abgeschlossene Sitzungen hinzugefügt werden."
 
-#: district/views.py:2805
+#: district/views.py:2889
 msgid "Minutes saved successfully."
 msgstr "Protokoll erfolgreich gespeichert."
 
-#: district/views.py:2853
+#: district/views.py:2937
 #, fuzzy, python-format
 #| msgid "Attachment \"%(name)s\" has been removed."
 msgid "Attachment '%(filename)s' uploaded and meeting marked as completed."
 msgstr "Der Anhang „%(name)s“ wurde entfernt."
 
-#: district/views.py:2859
+#: district/views.py:2943
 #, fuzzy, python-format
 #| msgid "Attachment \"%(name)s\" has been removed."
 msgid "Attachment '%(filename)s' uploaded and meeting marked as invited."
 msgstr "Der Anhang „%(name)s“ wurde entfernt."
 
-#: district/views.py:2865
+#: district/views.py:2949
 #, fuzzy, python-format
 #| msgid "Event '%(title)s' updated successfully."
 msgid "Attachment '%(filename)s' uploaded successfully."
 msgstr "Veranstaltung '%(title)s' erfolgreich aktualisiert."
 
-#: district/views.py:2897 group/views.py:1264
+#: district/views.py:2981 group/views.py:1264
 #, python-format
 msgid "Event '%(title)s' created successfully."
 msgstr "Veranstaltung '%(title)s' erfolgreich erstellt."
 
-#: district/views.py:2954 group/views.py:1336
+#: district/views.py:3038 group/views.py:1336
 #, python-format
 msgid "Event '%(title)s' updated successfully."
 msgstr "Veranstaltung '%(title)s' erfolgreich aktualisiert."
 
-#: district/views.py:2980 group/views.py:1359
+#: district/views.py:3064 group/views.py:1359
 #, python-format
 msgid "Event '%(title)s' deleted successfully."
 msgstr "Veranstaltung '%(title)s' erfolgreich gelöscht."
 
-#: district/views.py:2994 group/views.py:1369
+#: district/views.py:3078 group/views.py:1369
 msgid "You don't have permission to RSVP to this event."
 msgstr "Du hast keine Berechtigung, dich für diese Veranstaltung anzumelden."
 
-#: district/views.py:3005 group/views.py:1384
+#: district/views.py:3089 group/views.py:1384
 msgid "You are marked as attending this event."
 msgstr "Du bist für diese Veranstaltung als teilnehmend markiert."
 
-#: district/views.py:3007 group/views.py:1386
+#: district/views.py:3091 group/views.py:1386
 msgid "You are marked as not attending."
 msgstr "Du bist als nicht anwesend markiert."
 
-#: district/views.py:3021 group/views.py:320 group/views.py:380
+#: district/views.py:3105 group/views.py:320 group/views.py:380
 #: group/views.py:979 group/views.py:1395 templates/403.html:18
 msgid "You don't have permission to access this page."
 msgstr "Sie haben keine Berechtigung, auf diese Seite zuzugreifen."
-
-#: group/forms.py:77 templates/group/member_form.html:186
-msgid "Start date"
-msgstr "Startdatum"
-
-#: group/forms.py:78 templates/group/member_form.html:187
-msgid "End date"
-msgstr "Enddatum"
-
-#: group/forms.py:84
-msgid "Leave empty if the member is currently active."
-msgstr "Leer lassen, wenn das Mitglied derzeit aktiv ist."
-
-#: group/forms.py:99 group/models.py:191
-msgid "Only one active membership period is allowed."
-msgstr "Es ist nur eine aktive Mitgliedschaftsperiode erlaubt."
 
 #: group/forms.py:117 templates/group/member_invite.html:32
 msgid "Email address"
@@ -511,22 +556,6 @@ msgstr ""
 "Wählen Sie die Mitglieder, die diese Veranstaltung bei eingeschränkter "
 "Sichtbarkeit sehen können."
 
-#: group/models.py:175
-msgid "Membership period"
-msgstr "Mitgliedschaftsperiode"
-
-#: group/models.py:176 templates/group/member_form.html:173
-msgid "Membership periods"
-msgstr "Mitgliedschaftsperioden"
-
-#: group/models.py:181
-msgid "present"
-msgstr "heute"
-
-#: group/models.py:185
-msgid "End date must be on or after start date."
-msgstr "Das Enddatum muss am oder nach dem Startdatum liegen."
-
 #: group/views.py:45 pages/calendar_utils.py:132
 msgid "Group meeting"
 msgstr "Klubsitzung"
@@ -552,6 +581,7 @@ msgstr "Vertretung"
 #: templates/district/committee_meeting_form.html:83
 #: templates/district/committee_meeting_form.html:90
 #: templates/district/committee_member_form.html:69
+#: templates/district/committee_membership_history.html:23
 #: templates/district/session_detail.html:80
 #: templates/motion/inquiry_status_change.html:85
 #: templates/motion/inquiry_status_confirm_delete.html:57
@@ -1315,8 +1345,8 @@ msgstr "Wirklich abmelden?"
 #: templates/district/committee_meeting_form.html:162
 #: templates/district/committee_meeting_form.html:164
 #: templates/district/committee_meeting_form.html:166
-#: templates/district/committee_member_form.html:185
-#: templates/district/committee_member_form.html:189
+#: templates/district/committee_member_form.html:247
+#: templates/district/committee_member_form.html:251
 #: templates/district/council_confirm_delete.html:74
 #: templates/district/council_form.html:103
 #: templates/district/council_name_form.html:59
@@ -1445,6 +1475,7 @@ msgstr "Ausschuss löschen"
 #: templates/district/committee_meeting_detail.html:22
 #: templates/district/committee_meeting_form.html:46
 #: templates/district/committee_member_form.html:29
+#: templates/district/committee_membership_history.html:16
 msgid "Back to Committee"
 msgstr "Zurück zum Ausschuss"
 
@@ -1689,6 +1720,7 @@ msgstr "Schnellinfo"
 #: templates/district/committee_meeting_confirm_delete.html:40
 #: templates/district/committee_meeting_detail.html:57
 #: templates/district/committee_meeting_form.html:143
+#: templates/district/committee_membership_history.html:36
 #: templates/district/council_confirm_delete.html:49
 #: templates/district/council_list.html:46
 #: templates/district/council_list.html:82
@@ -1812,7 +1844,7 @@ msgid "Committee Meetings"
 msgstr "Ausschusssitzungen"
 
 #: templates/district/committee_detail.html:96
-#: templates/district/committee_detail.html:253
+#: templates/district/committee_detail.html:256
 #: templates/district/council_detail.html:137
 #: templates/district/council_detail.html:163
 #: templates/district/session_detail.html:128
@@ -1974,31 +2006,38 @@ msgstr "Keine Anträge gefunden"
 msgid "Committee Members"
 msgstr "Ausschussmitglieder"
 
-#: templates/district/committee_detail.html:265
+#: templates/district/committee_detail.html:252
+#: templates/district/committee_membership_history.html:4
+#: templates/district/committee_membership_history.html:13
+msgid "Membership history"
+msgstr "Mitgliedschaftshistorie"
+
+#: templates/district/committee_detail.html:268
 #: templates/district/committee_member_form.html:117
+#: templates/district/committee_membership_history.html:33
 #: templates/group/group_detail.html:283
 #: templates/group/member_confirm_delete.html:56
 #: templates/group/member_form.html:283 templates/user/list.html:45
 msgid "Role"
 msgstr "Rolle"
 
-#: templates/district/committee_detail.html:275
+#: templates/district/committee_detail.html:278
 #: templates/group/member_confirm_delete.html:108
 #: templates/group/member_form.html:7 templates/group/member_form.html:21
 #: templates/group/member_form.html:47
 msgid "Edit Member"
 msgstr "Mitglied bearbeiten"
 
-#: templates/district/committee_detail.html:292
+#: templates/district/committee_detail.html:295
 #: templates/group/group_detail.html:359
 msgid "No Members found"
 msgstr "Keine Mitglieder gefunden"
 
-#: templates/district/committee_detail.html:293
+#: templates/district/committee_detail.html:296
 msgid "Add committee members to start organizing the committee work."
 msgstr "Fügen Sie Mitglieder hinzu, um die Gremiumsarbeit zu organisieren."
 
-#: templates/district/committee_detail.html:296
+#: templates/district/committee_detail.html:299
 msgid "Add First Member"
 msgstr "Erstes Mitglied hinzufügen"
 
@@ -2068,7 +2107,7 @@ msgid "Update Committee"
 msgstr "Aktualisierungsausschuss"
 
 #: templates/district/committee_form.html:246
-#: templates/district/committee_member_form.html:209
+#: templates/district/committee_member_form.html:271
 #: templates/district/council_form.html:122
 #: templates/district/party_form.html:232
 #: templates/district/session_form.html:295
@@ -2110,7 +2149,7 @@ msgid "Commission for specialized tasks and investigations"
 msgstr "Kommission für Sonderaufgaben und Untersuchungen"
 
 #: templates/district/committee_form.html:257
-#: templates/district/committee_member_form.html:221
+#: templates/district/committee_member_form.html:283
 #: templates/district/session_form.html:314
 msgid "Tips"
 msgstr "Tipps"
@@ -2484,12 +2523,29 @@ msgstr "Beigetreten"
 msgid "Notes"
 msgstr "Notizen"
 
-#: templates/district/committee_member_form.html:174
+#: templates/district/committee_member_form.html:187
+#: templates/district/session_detail.html:342
+#: templates/group/member_form.html:189
+#: templates/motion/inquiry_detail.html:217
+#: templates/motion/motion_detail.html:405 templates/user/list.html:120
+msgid "Remove"
+msgstr "Entfernen"
+
+#: templates/district/committee_member_form.html:228
+#: templates/group/member_form.html:230
+msgid ""
+"Leave end date empty for the current active membership. A member can have "
+"several periods over time."
+msgstr ""
+"Lassen Sie das Enddatum leer für die derzeit aktive Mitgliedschaft. Ein "
+"Mitglied kann im Laufe der Zeit mehrere Perioden haben."
+
+#: templates/district/committee_member_form.html:236
 #: templates/group/member_detail.html:134 templates/group/member_form.html:241
 msgid "Are you sure you want to remove this member?"
 msgstr "Möchten Sie dieses Mitglied wirklich entfernen?"
 
-#: templates/district/committee_member_form.html:177
+#: templates/district/committee_member_form.html:239
 #: templates/group/member_confirm_delete.html:5
 #: templates/group/member_confirm_delete.html:12
 #: templates/group/member_confirm_delete.html:89
@@ -2497,44 +2553,58 @@ msgstr "Möchten Sie dieses Mitglied wirklich entfernen?"
 msgid "Remove Member"
 msgstr "Mitglied entfernen"
 
-#: templates/district/committee_member_form.html:194
+#: templates/district/committee_member_form.html:256
 #: templates/group/member_form.html:257
 msgid "Update Member"
 msgstr "Mitglied aktualisieren"
 
-#: templates/district/committee_member_form.html:196
+#: templates/district/committee_member_form.html:258
 #: templates/group/group_detail.html:369 templates/group/member_form.html:9
 #: templates/group/member_form.html:23 templates/group/member_form.html:259
 msgid "Add Member"
 msgstr "Mitglied hinzufügen"
 
-#: templates/district/committee_member_form.html:212
+#: templates/district/committee_member_form.html:274
 msgid "Member Roles"
 msgstr "Mitgliedsrollen"
 
-#: templates/district/committee_member_form.html:214
+#: templates/district/committee_member_form.html:276
 msgid "Leader of the committee with full authority"
 msgstr "Leitung des Gremiums mit voller Befugnis"
 
-#: templates/district/committee_member_form.html:215
+#: templates/district/committee_member_form.html:277
 msgid "Deputy leader who can act in the chairperson's absence"
 msgstr "Stellvertretung, die bei Abwesenheit des Vorsitzenden handeln kann"
 
-#: templates/district/committee_member_form.html:216
+#: templates/district/committee_member_form.html:278
 msgid "Regular committee member with voting rights"
 msgstr "Ordentliches Gremiumsmitglied mit Stimmrecht"
 
-#: templates/district/committee_member_form.html:223
+#: templates/district/committee_member_form.html:285
 msgid "Only active users can be added to committees"
 msgstr "Nur aktive Benutzer können Gremien hinzugefügt werden"
 
-#: templates/district/committee_member_form.html:224
+#: templates/district/committee_member_form.html:286
 msgid "Each user can only be a member of a committee once"
 msgstr "Jeder Benutzer kann nur einmal Mitglied eines Gremiums sein"
 
-#: templates/district/committee_member_form.html:225
+#: templates/district/committee_member_form.html:287
 msgid "Use notes to record special responsibilities or conditions"
 msgstr "Nutzen Sie Notizen für besondere Aufgaben oder Bedingungen"
+
+#: templates/district/committee_membership_history.html:54
+#: templates/group/group_detail.html:301
+msgid "Former member"
+msgstr "Ehemaliges Mitglied"
+
+#: templates/district/committee_membership_history.html:56
+#: templates/group/group_detail.html:299
+msgid "Active member"
+msgstr "Aktives Mitglied"
+
+#: templates/district/committee_membership_history.html:65
+msgid "No membership periods recorded yet."
+msgstr "Noch keine Mitgliedschaftsperioden erfasst."
 
 #: templates/district/council_committees_export_pdf.html:12
 msgid "Stand"
@@ -3543,13 +3613,6 @@ msgstr "Soll dieser Anhang entfernt werden?"
 msgid "Remove attachment"
 msgstr "Anhang entfernen"
 
-#: templates/district/session_detail.html:342
-#: templates/group/member_form.html:189
-#: templates/motion/inquiry_detail.html:217
-#: templates/motion/motion_detail.html:405 templates/user/list.html:120
-msgid "Remove"
-msgstr "Entfernen"
-
 #: templates/district/session_detail.html:363
 msgid "No attachments uploaded for this session yet."
 msgstr "Es wurden noch keine Anhänge für diese Sitzung hochgeladen."
@@ -4457,14 +4520,6 @@ msgstr "Klubmitglieder"
 msgid "Invite member"
 msgstr "Mitglied einladen"
 
-#: templates/group/group_detail.html:299
-msgid "Active member"
-msgstr "Aktives Mitglied"
-
-#: templates/group/group_detail.html:301
-msgid "Former member"
-msgstr "Ehemaliges Mitglied"
-
 #: templates/group/group_detail.html:308 templates/group/group_detail.html:411
 #: templates/group/member_detail.html:74 templates/user/list.html:78
 msgid "Group Admin"
@@ -4884,14 +4939,6 @@ msgstr "Mitgliedschaft bearbeiten"
 #: templates/group/member_form.html:49
 msgid "Add New Member"
 msgstr "Neues Mitglied hinzufügen"
-
-#: templates/group/member_form.html:230
-msgid ""
-"Leave end date empty for the current active membership. A member can have "
-"several periods over time."
-msgstr ""
-"Lassen Sie das Enddatum leer für die derzeit aktive Mitgliedschaft. Ein "
-"Mitglied kann im Laufe der Zeit mehrere Perioden haben."
 
 #: templates/group/member_form.html:274
 msgid "Group Membership Information"

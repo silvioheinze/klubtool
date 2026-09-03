@@ -5,6 +5,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.urls import reverse_lazy, reverse
 from django.db.models import Q, Prefetch, Case, When, Value, IntegerField
+from django.db import transaction
 from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
 from django.http import JsonResponse, HttpResponse
@@ -17,7 +18,7 @@ import json
 
 from .models import (
     District, Term, Council, TermSeatDistribution, Party, Session, Committee,
-    CommitteeMeeting, CommitteeMeetingAttachment, CommitteeMember,
+    CommitteeMeeting, CommitteeMeetingAttachment, CommitteeMember, CommitteeMembershipPeriod,
     CommitteeParticipationSubstitute, SessionAttachment, SessionPresence,
     SessionExcuse, DistrictEvent, DistrictEventParticipation,
 )
@@ -26,7 +27,7 @@ from .forms import (
     TermFilterForm, CouncilNameForm, TermSeatDistributionForm, PartyForm,
     PartyFilterForm, SessionForm, SessionFilterForm, CommitteeForm,
     CommitteeFilterForm, CommitteeMeetingForm, CommitteeMemberForm,
-    CommitteeMemberFilterForm, SessionAttachmentForm,
+    CommitteeMembershipPeriodFormSet, CommitteeMemberFilterForm, SessionAttachmentForm,
     CommitteeMeetingAttachmentForm, SessionInvitationForm, SessionMinutesForm,
     CommitteeParticipationSubstituteForm, DistrictEventForm,
 )
@@ -2149,6 +2150,37 @@ class CommitteeDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         return context
 
 
+class CommitteeMembershipHistoryView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
+    """Show all membership periods (active and former) for a committee."""
+    model = Committee
+    context_object_name = 'committee'
+    template_name = 'district/committee_membership_history.html'
+
+    def test_func(self):
+        if self.request.user.is_superuser:
+            return True
+        committee_pk = self.kwargs.get('pk')
+        if committee_pk is None:
+            return False
+        try:
+            committee_pk = int(committee_pk)
+        except (TypeError, ValueError):
+            return False
+        council_id = Committee.objects.filter(pk=committee_pk).values_list('council_id', flat=True).first()
+        if council_id is None:
+            return False
+        return council_id in _get_user_accessible_council_ids(self.request.user)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['periods'] = (
+            CommitteeMembershipPeriod.objects.filter(member__committee=self.object)
+            .select_related('member', 'member__user')
+            .order_by('-start_date', '-pk')
+        )
+        return context
+
+
 class CommitteeCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     """View for creating a new Committee object"""
     model = Committee
@@ -2611,10 +2643,42 @@ class CommitteeMemberCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateV
             return reverse('district:committee-detail', kwargs={'pk': self.object.committee.pk})
         return reverse('district:committee-member-list')
 
-    def form_valid(self, form):
-        """Display success message on form validation"""
-        messages.success(self.request, f"Member '{form.instance.user.username}' added to committee '{form.instance.committee.name}' successfully.")
-        return super().form_valid(form)
+    def get_period_formset(self):
+        if self.request.method == 'POST':
+            return CommitteeMembershipPeriodFormSet(self.request.POST)
+        return CommitteeMembershipPeriodFormSet(
+            initial=[{'start_date': timezone.localdate()}],
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['period_formset'] = kwargs.get('period_formset', self.get_period_formset())
+        return context
+
+    def post(self, request, *args, **kwargs):
+        self.object = None
+        form = self.get_form()
+        period_formset = None
+        if form.is_valid():
+            with transaction.atomic():
+                self.object = form.save()
+                period_formset = CommitteeMembershipPeriodFormSet(request.POST, instance=self.object)
+                if period_formset.is_valid():
+                    period_formset.save()
+                    self.object.sync_is_active()
+                    messages.success(
+                        request,
+                        f"Member '{form.instance.user.username}' added to committee '{form.instance.committee.name}' successfully.",
+                    )
+                    return redirect(self.get_success_url())
+        if period_formset is None:
+            period_formset = CommitteeMembershipPeriodFormSet(
+                request.POST,
+                instance=getattr(self, 'object', None),
+            )
+        return self.render_to_response(
+            self.get_context_data(form=form, period_formset=period_formset)
+        )
 
 
 class CommitteeMemberUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
@@ -2631,10 +2695,30 @@ class CommitteeMemberUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateV
         """Redirect to the committee detail page after successful update"""
         return reverse('district:committee-detail', kwargs={'pk': self.object.committee.pk})
 
-    def form_valid(self, form):
-        """Display success message on form validation"""
-        messages.success(self.request, f"Committee member '{form.instance.user.username}' updated successfully.")
-        return super().form_valid(form)
+    def get_period_formset(self):
+        if self.request.method == 'POST':
+            return CommitteeMembershipPeriodFormSet(self.request.POST, instance=self.object)
+        return CommitteeMembershipPeriodFormSet(instance=self.object)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['period_formset'] = kwargs.get('period_formset', self.get_period_formset())
+        return context
+
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        form = self.get_form()
+        period_formset = CommitteeMembershipPeriodFormSet(request.POST, instance=self.object)
+        if form.is_valid() and period_formset.is_valid():
+            with transaction.atomic():
+                self.object = form.save()
+                period_formset.save()
+                self.object.sync_is_active()
+            messages.success(request, f"Committee member '{form.instance.user.username}' updated successfully.")
+            return redirect(self.get_success_url())
+        return self.render_to_response(
+            self.get_context_data(form=form, period_formset=period_formset)
+        )
 
 
 class CommitteeMemberDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):

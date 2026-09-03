@@ -17,7 +17,8 @@ from .forms import (
     PartyForm, PartyFilterForm, TermSeatDistributionForm
 )
 from .models import (
-    District, Council, Committee, CommitteeMeeting, CommitteeMember, CommitteeParticipationSubstitute,
+    District, Council, Committee, CommitteeMeeting, CommitteeMember, CommitteeMembershipPeriod,
+    CommitteeParticipationSubstitute,
     Session, Term, Party, TermSeatDistribution, SessionAttachment, DistrictEvent, DistrictEventParticipation,
 )
 from .views import (
@@ -28,6 +29,29 @@ from .views import (
 from pages.calendar_utils import get_personal_calendar_events
 
 User = get_user_model()
+
+PERIOD_FORMSET_PREFIX = 'periods'
+
+
+def committee_period_formset_post_data(count=1, start_date=None, end_date='', initial=0, periods=None):
+    """Build POST data for CommitteeMembershipPeriodFormSet."""
+    from datetime import date
+    if periods is None:
+        start = start_date or date.today().isoformat()
+        periods = [{'start_date': start, 'end_date': end_date} for _ in range(count)]
+    data = {
+        f'{PERIOD_FORMSET_PREFIX}-TOTAL_FORMS': str(len(periods)),
+        f'{PERIOD_FORMSET_PREFIX}-INITIAL_FORMS': str(initial),
+        f'{PERIOD_FORMSET_PREFIX}-MIN_NUM_FORMS': '1',
+        f'{PERIOD_FORMSET_PREFIX}-MAX_NUM_FORMS': '1000',
+    }
+    for i, period in enumerate(periods):
+        data[f'{PERIOD_FORMSET_PREFIX}-{i}-start_date'] = period.get('start_date', '')
+        data[f'{PERIOD_FORMSET_PREFIX}-{i}-end_date'] = period.get('end_date', '')
+        data[f'{PERIOD_FORMSET_PREFIX}-{i}-DELETE'] = period.get('DELETE', '')
+        if period.get('id'):
+            data[f'{PERIOD_FORMSET_PREFIX}-{i}-id'] = period['id']
+    return data
 
 
 class DistrictFormTests(TestCase):
@@ -2120,7 +2144,8 @@ class CommitteeMemberViewTests(TestCase):
             'committee': self.committee.pk,
             'role': 'member',
             'joined_date': date.today().isoformat(),
-            'notes': 'Test member notes'
+            'notes': 'Test member notes',
+            **committee_period_formset_post_data(),
         }
         response = self.client.post(reverse('district:committee-member-create'), form_data)
         self.assertEqual(response.status_code, 302)  # Redirect after successful creation
@@ -2137,7 +2162,8 @@ class CommitteeMemberViewTests(TestCase):
         form_data = {
             'user': '',  # Missing required field
             'committee': self.committee.pk,
-            'role': 'member'
+            'role': 'member',
+            **committee_period_formset_post_data(),
         }
         response = self.client.post(reverse('district:committee-member-create'), form_data)
         self.assertEqual(response.status_code, 200)  # Form errors, stays on page
@@ -2156,6 +2182,7 @@ class CommitteeMemberViewTests(TestCase):
             'committee': self.committee.pk,
             'role': 'member',
             'joined_date': date.today().isoformat(),
+            **committee_period_formset_post_data(),
         }
         response = self.client.post(reverse('district:committee-member-create'), form_data)
         self.assertEqual(response.status_code, 302)
@@ -2180,6 +2207,7 @@ class CommitteeMemberViewTests(TestCase):
             'committee': self.committee.pk,
             'role': 'member',
             'joined_date': date.today().isoformat(),
+            **committee_period_formset_post_data(),
         }
         response = self.client.post(reverse('district:committee-member-create'), form_data)
         self.assertEqual(response.status_code, 200)  # Form errors, stays on page
@@ -2207,6 +2235,7 @@ class CommitteeMemberViewTests(TestCase):
             'committee': self.committee.pk,
             'role': 'member',
             'joined_date': date.today().isoformat(),
+            **committee_period_formset_post_data(),
         }
         response = self.client.post(reverse('district:committee-member-create'), form_data)
         
@@ -2257,6 +2286,88 @@ class CommitteeMemberViewTests(TestCase):
         # Check that active users are present
         self.assertContains(response, 'testuser')
         self.assertContains(response, 'memberuser')
+
+
+class CommitteeMembershipPeriodTests(TestCase):
+    """Tests for committee membership periods and history view."""
+
+    def setUp(self):
+        self.client = Client()
+        self.superuser = User.objects.create_superuser(
+            username='admin',
+            email='admin@example.com',
+            password='adminpass123',
+        )
+        self.active_user = User.objects.create_user(
+            username='activeuser',
+            email='active@example.com',
+            password='pass123',
+        )
+        self.former_user = User.objects.create_user(
+            username='formeruser',
+            email='former@example.com',
+            password='pass123',
+        )
+        self.district = District.objects.create(name='Test Local', code='TL', description='Test')
+        self.council = self.district.council
+        self.committee = Committee.objects.create(
+            name='Test Commission',
+            council=self.council,
+            committee_type='Kommission',
+        )
+
+        self.active_member = CommitteeMember.objects.create(
+            user=self.active_user,
+            committee=self.committee,
+            role='member',
+            is_active=True,
+        )
+        CommitteeMembershipPeriod.objects.create(
+            member=self.active_member,
+            start_date=timezone.localdate() - timedelta(days=30),
+            end_date=None,
+        )
+
+        self.former_member = CommitteeMember.objects.create(
+            user=self.former_user,
+            committee=self.committee,
+            role='member',
+            is_active=False,
+        )
+        CommitteeMembershipPeriod.objects.create(
+            member=self.former_member,
+            start_date=timezone.localdate() - timedelta(days=400),
+            end_date=timezone.localdate() - timedelta(days=30),
+        )
+
+    def test_sync_is_active_from_open_period(self):
+        self.active_member.sync_is_active()
+        self.assertTrue(self.active_member.is_active)
+
+        period = self.active_member.current_period
+        period.end_date = timezone.localdate()
+        period.save()
+        self.active_member.refresh_from_db()
+        self.assertFalse(self.active_member.is_active)
+
+    def test_committee_detail_lists_only_active_members(self):
+        self.client.login(username='admin', password='adminpass123')
+        url = reverse('district:committee-detail', kwargs={'pk': self.committee.pk})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        member_users = {m.user.username for m in response.context['members']}
+        self.assertIn('activeuser', member_users)
+        self.assertNotIn('formeruser', member_users)
+
+    def test_membership_history_lists_all_periods(self):
+        self.client.login(username='admin', password='adminpass123')
+        url = reverse('district:committee-membership-history', kwargs={'pk': self.committee.pk})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode()
+        self.assertIn('activeuser', content)
+        self.assertIn('formeruser', content)
+        self.assertEqual(response.context['periods'].count(), 2)
 
 
 class CommitteeMeetingModelTests(TestCase):

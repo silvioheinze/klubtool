@@ -1,0 +1,72 @@
+{% extends "_base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Membership history" %} - {{ committee.name }}{% endblock title %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+                <h1 class="mb-0">
+                    <i class="bi bi-clock-history"></i>
+                    {% trans "Membership history" %}
+                </h1>
+                <a href="{% url 'district:committee-detail' committee.pk %}" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> {% trans "Back to Committee" %}
+                </a>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    {% with committee_type_label=committee.get_committee_type_display %}
+                    <h5 class="mb-0">{{ committee.name }} — {% trans "Committee" context committee_type_label %}</h5>
+                    {% endwith %}
+                </div>
+                <div class="card-body">
+                    {% if periods %}
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>{% trans "Member" %}</th>
+                                        <th>{% trans "Role" %}</th>
+                                        <th>{% trans "Start date" %}</th>
+                                        <th>{% trans "End date" %}</th>
+                                        <th>{% trans "Status" %}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for period in periods %}
+                                        <tr class="{% if period.end_date %}text-muted{% endif %}">
+                                            <td>{{ period.member.user.get_full_name|default:period.member.user.username }}</td>
+                                            <td><span class="badge bg-primary">{{ period.member.get_role_display }}</span></td>
+                                            <td>{{ period.start_date|date:"M d, Y" }}</td>
+                                            <td>
+                                                {% if period.end_date %}
+                                                    {{ period.end_date|date:"M d, Y" }}
+                                                {% else %}
+                                                    {% trans "present" %}
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if period.end_date %}
+                                                    <span class="badge bg-secondary">{% trans "Former member" %}</span>
+                                                {% else %}
+                                                    <span class="badge bg-success">{% trans "Active member" %}</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted mb-0">{% trans "No membership periods recorded yet." %}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

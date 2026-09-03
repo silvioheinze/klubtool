@@ -1,5 +1,6 @@
 from datetime import date
 
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
@@ -283,6 +284,64 @@ class CommitteeMember(models.Model):
     def get_absolute_url(self):
         from django.urls import reverse
         return reverse('district:committee-detail', kwargs={'pk': self.committee.pk})
+
+    @property
+    def current_period(self):
+        """Return the open membership period, if any."""
+        return self.periods.filter(end_date__isnull=True).order_by('-start_date', '-pk').first()
+
+    def sync_is_active(self):
+        """Keep is_active in sync with open membership periods."""
+        has_open_period = self.periods.filter(end_date__isnull=True).exists()
+        if self.is_active != has_open_period:
+            CommitteeMember.objects.filter(pk=self.pk).update(is_active=has_open_period)
+            self.is_active = has_open_period
+
+
+class CommitteeMembershipPeriod(models.Model):
+    """A date range during which a user was/is a committee member."""
+    member = models.ForeignKey(
+        CommitteeMember,
+        on_delete=models.CASCADE,
+        related_name='periods',
+        help_text=_("Committee membership this period belongs to"),
+    )
+    start_date = models.DateField(help_text=_("First day of this membership period"))
+    end_date = models.DateField(
+        null=True,
+        blank=True,
+        help_text=_("Last day of this membership period (leave empty if currently active)"),
+    )
+
+    class Meta:
+        ordering = ['-start_date', '-pk']
+        verbose_name = _("Membership period")
+        verbose_name_plural = _("Membership periods")
+
+    def __str__(self):
+        if self.end_date:
+            return f"{self.member.user.username}: {self.start_date} – {self.end_date}"
+        return f"{self.member.user.username}: {self.start_date} – {_('present')}"
+
+    def clean(self):
+        if self.end_date and self.end_date < self.start_date:
+            raise ValidationError(_("End date must be on or after start date."))
+        if self.end_date is None and self.member_id:
+            qs = CommitteeMembershipPeriod.objects.filter(member_id=self.member_id, end_date__isnull=True)
+            if self.pk:
+                qs = qs.exclude(pk=self.pk)
+            if qs.exists():
+                raise ValidationError(_("Only one active membership period is allowed."))
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+        self.member.sync_is_active()
+
+    def delete(self, *args, **kwargs):
+        member = self.member
+        super().delete(*args, **kwargs)
+        member.sync_is_active()
 
 
 class CommitteeParticipationSubstitute(models.Model):
@@ -617,6 +676,7 @@ auditlog.register(Committee)
 auditlog.register(CommitteeMeeting)
 auditlog.register(CommitteeMeetingAttachment)
 auditlog.register(CommitteeMember)
+auditlog.register(CommitteeMembershipPeriod)
 auditlog.register(CommitteeParticipationSubstitute)
 auditlog.register(Term)
 auditlog.register(Party)
