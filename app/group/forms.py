@@ -1,10 +1,11 @@
 from django import forms
 from django.db import models
 from django.contrib.auth import get_user_model
+from django.forms import inlineformset_factory, BaseInlineFormSet
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 import bleach
-from .models import Group, GroupMember, GroupMeeting, GroupEvent, AgendaItem, MinuteItem
+from .models import Group, GroupMember, MembershipPeriod, GroupMeeting, GroupEvent, AgendaItem, MinuteItem
 from district.models import Party
 from user.models import Role
 
@@ -60,6 +61,55 @@ class GroupMemberForm(forms.ModelForm):
         self.fields['group'].queryset = self.fields['group'].queryset.filter(is_active=True)
         # Filter to only show active roles
         self.fields['roles'].queryset = Role.objects.filter(is_active=True)
+
+
+class MembershipPeriodForm(forms.ModelForm):
+    """Form for a single membership period."""
+
+    class Meta:
+        model = MembershipPeriod
+        fields = ['start_date', 'end_date']
+        widgets = {
+            'start_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'end_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+        }
+        labels = {
+            'start_date': _('Start date'),
+            'end_date': _('End date'),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['end_date'].required = False
+        self.fields['end_date'].help_text = _('Leave empty if the member is currently active.')
+
+
+class BaseMembershipPeriodFormSet(BaseInlineFormSet):
+    def clean(self):
+        super().clean()
+        if any(self.errors):
+            return
+        open_count = 0
+        for form in self.forms:
+            if not form.cleaned_data or form.cleaned_data.get('DELETE'):
+                continue
+            if form.cleaned_data.get('end_date') is None:
+                open_count += 1
+        if open_count > 1:
+            raise forms.ValidationError(_("Only one active membership period is allowed."))
+
+
+MembershipPeriodFormSet = inlineformset_factory(
+    GroupMember,
+    MembershipPeriod,
+    form=MembershipPeriodForm,
+    formset=BaseMembershipPeriodFormSet,
+    extra=1,
+    min_num=1,
+    validate_min=True,
+    can_delete=True,
+)
+
 
 class GroupInviteForm(forms.Form):
     """Form for inviting a new member by email (sends signup link)"""

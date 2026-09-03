@@ -9,9 +9,10 @@ from datetime import datetime, timedelta
 import re
 
 from .forms import (
-    GroupForm, GroupFilterForm, GroupMemberForm, GroupMemberFilterForm, GroupMeetingForm, AgendaItemForm
+    GroupForm, GroupFilterForm, GroupMemberForm, GroupMemberFilterForm, GroupMeetingForm, AgendaItemForm,
+    MembershipPeriodFormSet,
 )
-from .models import Group, GroupMember, GroupMeeting, AgendaItem
+from .models import Group, GroupMember, MembershipPeriod, GroupMeeting, AgendaItem
 from district.models import District, Party
 from user.models import Role
 
@@ -1669,3 +1670,154 @@ class GroupSendMeetingInvitesEmailTests(TestCase):
         for msg in mail.outbox:
             self.assertIn(self.meeting.title, msg.subject)
             self.assertIn(self.meeting.title, msg.body)
+
+
+class MembershipPeriodTests(TestCase):
+    """Tests for membership periods and active-member behaviour."""
+
+    def setUp(self):
+        self.client = Client()
+        self.superuser = User.objects.create_superuser(
+            username='admin',
+            email='admin@example.com',
+            password='adminpass123',
+        )
+        self.active_user = User.objects.create_user(
+            username='activeuser',
+            email='active@example.com',
+            password='pass123',
+        )
+        self.former_user = User.objects.create_user(
+            username='formeruser',
+            email='former@example.com',
+            password='pass123',
+        )
+        self.district = District.objects.create(name='Test Local', code='TL', description='Test')
+        self.party = Party.objects.create(name='Test Party', district=self.district)
+        self.group = Group.objects.create(name='Test Group', party=self.party)
+        self.role = Role.objects.get_or_create(name='Member', defaults={'is_active': True})[0]
+        self.leader_role = Role.objects.get_or_create(name='Leader', defaults={'is_active': True})[0]
+
+        self.active_member = GroupMember.objects.create(user=self.active_user, group=self.group, is_active=True)
+        self.active_member.roles.add(self.role)
+        MembershipPeriod.objects.create(
+            member=self.active_member,
+            start_date=timezone.localdate() - timedelta(days=30),
+            end_date=None,
+        )
+
+        self.former_member = GroupMember.objects.create(user=self.former_user, group=self.group, is_active=False)
+        self.former_member.roles.add(self.role)
+        MembershipPeriod.objects.create(
+            member=self.former_member,
+            start_date=timezone.localdate() - timedelta(days=400),
+            end_date=timezone.localdate() - timedelta(days=30),
+        )
+
+    def test_sync_is_active_from_open_period(self):
+        """Closing the open period marks the member inactive."""
+        self.active_member.sync_is_active()
+        self.assertTrue(self.active_member.is_active)
+
+        period = self.active_member.current_period
+        period.end_date = timezone.localdate()
+        period.save()
+        self.active_member.refresh_from_db()
+        self.assertFalse(self.active_member.is_active)
+
+    def test_group_detail_shows_all_members(self):
+        """Group detail lists active and former members."""
+        self.client.login(username='admin', password='adminpass123')
+        url = reverse('group:group-detail', kwargs={'pk': self.group.pk})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode()
+        self.assertIn('activeuser', content)
+        self.assertIn('formeruser', content)
+
+    def test_meeting_detail_lists_only_active_members(self):
+        """Meeting detail attendance list includes only active members."""
+        meeting = GroupMeeting.objects.create(
+            group=self.group,
+            title='Members Meeting',
+            scheduled_date=timezone.now() + timedelta(days=2),
+            status='scheduled',
+            created_by=self.superuser,
+        )
+        self.client.login(username='admin', password='adminpass123')
+        url = reverse('group:meeting-detail', kwargs={'pk': meeting.pk})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        members = list(response.context['group_members'])
+        member_users = {m.user.username for m in members}
+        self.assertIn('activeuser', member_users)
+        self.assertNotIn('formeruser', member_users)
+
+
+@override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
+class MembershipPeriodInviteTests(TestCase):
+    """Former members must not receive meeting invitation emails."""
+
+    def setUp(self):
+        self.client = Client()
+        self.leader_role = Role.objects.get_or_create(name='Leader')[0]
+        self.superuser = User.objects.create_superuser(
+            username='admin',
+            email='admin@example.com',
+            password='adminpass123',
+        )
+        self.active_user = User.objects.create_user(
+            username='activemember',
+            email='active@example.com',
+            password='pass123',
+        )
+        self.former_user = User.objects.create_user(
+            username='formermember',
+            email='former@example.com',
+            password='pass123',
+        )
+        self.district = District.objects.create(name='Test Local', code='TL', description='Test')
+        self.party = Party.objects.create(name='Test Party', district=self.district)
+        self.group = Group.objects.create(name='Test Group', party=self.party)
+
+        leader = GroupMember.objects.create(user=self.superuser, group=self.group, is_active=True)
+        leader.roles.add(self.leader_role)
+        MembershipPeriod.objects.create(
+            member=leader,
+            start_date=timezone.localdate(),
+            end_date=None,
+        )
+
+        active = GroupMember.objects.create(user=self.active_user, group=self.group, is_active=True)
+        active.roles.add(Role.objects.get_or_create(name='Member')[0])
+        MembershipPeriod.objects.create(
+            member=active,
+            start_date=timezone.localdate(),
+            end_date=None,
+        )
+
+        former = GroupMember.objects.create(user=self.former_user, group=self.group, is_active=False)
+        former.roles.add(Role.objects.get_or_create(name='Member')[0])
+        MembershipPeriod.objects.create(
+            member=former,
+            start_date=timezone.localdate() - timedelta(days=200),
+            end_date=timezone.localdate() - timedelta(days=1),
+        )
+
+        self.meeting = GroupMeeting.objects.create(
+            group=self.group,
+            title='Invite Test Meeting',
+            scheduled_date=timezone.now() + timedelta(days=1),
+            status='scheduled',
+            created_by=self.superuser,
+        )
+        mail.outbox.clear()
+
+    def test_inactive_member_does_not_receive_meeting_invite(self):
+        self.client.login(username='admin', password='adminpass123')
+        url = reverse('group:meeting-send-invites', kwargs={'pk': self.meeting.pk})
+        response = self.client.post(url, {}, follow=False)
+        self.assertEqual(response.status_code, 302)
+        recipients = {msg.to[0] for msg in mail.outbox}
+        self.assertIn('active@example.com', recipients)
+        self.assertNotIn('former@example.com', recipients)
