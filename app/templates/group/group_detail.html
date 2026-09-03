@@ -279,6 +279,7 @@
                                 <thead>
                                     <tr>
                                         <th>{% trans "User" %}</th>
+                                        <th>{% trans "Status" %}</th>
                                         <th>{% trans "Role" %}</th>
                                         <th>{% trans "Joined" %}</th>
                                         <th>{% trans "Actions" %}</th>
@@ -286,11 +287,18 @@
                                 </thead>
                                 <tbody>
                                     {% for member in members %}
-                                        <tr>
+                                        <tr class="{% if not member.is_active %}text-muted{% endif %}">
                                             <td>
                                                 <strong>{{ member.user.get_full_name|default:member.user.username }}</strong>
                                                 {% if member.user.phone %}
                                                 <br><small class="text-muted"><i class="bi bi-telephone"></i> {{ member.user.phone }}</small>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if member.is_active %}
+                                                    <span class="badge bg-success">{% trans "Active member" %}</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">{% trans "Former member" %}</span>
                                                 {% endif %}
                                             </td>
                                             <td>

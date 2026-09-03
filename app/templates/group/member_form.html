@@ -169,6 +169,68 @@
                             {% endif %}
                         </div>
 
+                        <div class="mb-4">
+                            <h6 class="mb-3">{% trans "Membership periods" %}</h6>
+                            {% if period_formset.non_form_errors %}
+                                <div class="alert alert-danger">
+                                    {% for error in period_formset.non_form_errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            {{ period_formset.management_form }}
+                            <div class="table-responsive">
+                                <table class="table table-sm align-middle">
+                                    <thead>
+                                        <tr>
+                                            <th>{% trans "Start date" %}</th>
+                                            <th>{% trans "End date" %}</th>
+                                            {% if period_formset.can_delete %}
+                                            <th>{% trans "Remove" %}</th>
+                                            {% endif %}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for period_form in period_formset %}
+                                        <tr>
+                                            {% for hidden in period_form.hidden_fields %}
+                                                {{ hidden }}
+                                            {% endfor %}
+                                            <td>
+                                                {{ period_form.start_date }}
+                                                {% if period_form.start_date.errors %}
+                                                    <div class="invalid-feedback d-block">
+                                                        {% for error in period_form.start_date.errors %}{{ error }}{% endfor %}
+                                                    </div>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {{ period_form.end_date }}
+                                                {% if period_form.end_date.errors %}
+                                                    <div class="invalid-feedback d-block">
+                                                        {% for error in period_form.end_date.errors %}{{ error }}{% endfor %}
+                                                    </div>
+                                                {% endif %}
+                                            </td>
+                                            {% if period_formset.can_delete %}
+                                            <td>
+                                                {% if period_form.DELETE %}
+                                                    <div class="form-check">
+                                                        {{ period_form.DELETE }}
+                                                    </div>
+                                                {% endif %}
+                                            </td>
+                                            {% endif %}
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <p class="form-text text-muted mb-0">
+                                {% trans "Leave end date empty for the current active membership. A member can have several periods over time." %}
+                            </p>
+                        </div>
+
                         <div class="d-flex justify-content-between align-items-center">
                             <div class="d-flex gap-2">
                                 {% if object %}

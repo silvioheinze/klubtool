@@ -1,5 +1,12 @@
 from django.contrib import admin
-from .models import Group, GroupMember
+from .models import Group, GroupMember, MembershipPeriod
+
+
+class MembershipPeriodInline(admin.TabularInline):
+    model = MembershipPeriod
+    extra = 1
+    fields = ['start_date', 'end_date']
+
 
 @admin.register(Group)
 class GroupAdmin(admin.ModelAdmin):
@@ -28,6 +35,7 @@ class GroupMemberAdmin(admin.ModelAdmin):
     search_fields = ['user__username', 'user__email', 'user__first_name', 'user__last_name', 'group__name']
     readonly_fields = ['created_at', 'updated_at']
     ordering = ['-joined_date']
+    inlines = [MembershipPeriodInline]
     fieldsets = (
         ('Membership', {'fields': ('user', 'group', 'roles', 'is_active')}),
         ('Dates', {'fields': ('joined_date', 'created_at', 'updated_at'), 'classes': ('collapse',)}),

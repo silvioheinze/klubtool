@@ -4,7 +4,8 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.urls import reverse_lazy, reverse
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView, View
-from django.db.models import Q
+from django.db.models import Q, Case, When, Value, IntegerField
+from django.db import transaction
 from django.contrib.auth import get_user_model
 from django.core.mail import send_mail
 from django.conf import settings
@@ -15,7 +16,10 @@ from django.views.decorators.http import require_http_methods
 from django.utils import timezone
 import json
 from .models import Group, GroupMember, GroupMeeting, GroupEvent, GroupEventParticipation, AgendaItem, MinuteItem, GroupMeetingParticipation
-from .forms import GroupForm, GroupFilterForm, GroupMemberForm, GroupMeetingForm, GroupEventForm, AgendaItemForm, MinuteItemForm, GroupInviteForm
+from .forms import (
+    GroupForm, GroupFilterForm, GroupMemberForm, GroupMeetingForm, GroupEventForm,
+    AgendaItemForm, MinuteItemForm, GroupInviteForm, MembershipPeriodFormSet,
+)
 
 User = get_user_model()
 
@@ -196,7 +200,18 @@ class GroupDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             or group.can_user_manage_group(user)
         )
         context['can_manage_roles'] = user.is_superuser
-        context['members'] = self.object.members.select_related('user').filter(is_active=True).order_by('user__first_name', 'user__last_name', 'user__username')
+        context['members'] = (
+            self.object.members.select_related('user')
+            .prefetch_related('roles', 'periods')
+            .annotate(
+                active_sort=Case(
+                    When(is_active=True, then=Value(0)),
+                    default=Value(1),
+                    output_field=IntegerField(),
+                )
+            )
+            .order_by('active_sort', 'user__first_name', 'user__last_name', 'user__username')
+        )
         context['active_members'] = context['members'].filter(is_active=True)
         
         # Add meetings data (paginated, 10 per page)
@@ -482,6 +497,13 @@ class GroupMemberCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView)
             initial['group'] = group_id
         return initial
 
+    def get_period_formset(self):
+        if self.request.method == 'POST':
+            return MembershipPeriodFormSet(self.request.POST)
+        return MembershipPeriodFormSet(
+            initial=[{'start_date': timezone.localdate()}],
+        )
+
     def get_context_data(self, **kwargs):
         """Add context data for the template"""
         context = super().get_context_data(**kwargs)
@@ -492,6 +514,7 @@ class GroupMemberCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView)
                 context['selected_group'] = Group.objects.get(pk=group_id)
             except Group.DoesNotExist:
                 pass
+        context['period_formset'] = kwargs.get('period_formset', self.get_period_formset())
         return context
 
     def get_success_url(self):
@@ -500,9 +523,29 @@ class GroupMemberCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView)
             return reverse('group:group-detail', kwargs={'pk': self.object.group.pk})
         return reverse('group:group-list')
 
-    def form_valid(self, form):
-        messages.success(self.request, f"Member '{form.instance.user.username}' added to group '{form.instance.group.name}' successfully.")
-        return super().form_valid(form)
+    def post(self, request, *args, **kwargs):
+        form = self.get_form()
+        period_formset = None
+        if form.is_valid():
+            with transaction.atomic():
+                self.object = form.save()
+                period_formset = MembershipPeriodFormSet(request.POST, instance=self.object)
+                if period_formset.is_valid():
+                    period_formset.save()
+                    self.object.sync_is_active()
+                    messages.success(
+                        request,
+                        f"Member '{form.instance.user.username}' added to group '{form.instance.group.name}' successfully.",
+                    )
+                    return redirect(self.get_success_url())
+        if period_formset is None:
+            period_formset = MembershipPeriodFormSet(
+                request.POST,
+                instance=getattr(self, 'object', None),
+            )
+        return self.render_to_response(
+            self.get_context_data(form=form, period_formset=period_formset)
+        )
 
 class GroupMemberUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model = GroupMember
@@ -517,15 +560,36 @@ class GroupMemberUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView)
         member = self.get_object()
         return member.group.can_user_manage_group(self.request.user)
 
+    def get_period_formset(self):
+        if self.request.method == 'POST':
+            return MembershipPeriodFormSet(self.request.POST, instance=self.object)
+        return MembershipPeriodFormSet(instance=self.object)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['period_formset'] = kwargs.get('period_formset', self.get_period_formset())
+        return context
+
     def get_success_url(self):
         """Redirect to the group detail page after successful update"""
         if hasattr(self.object, 'group') and self.object.group:
             return reverse('group:group-detail', kwargs={'pk': self.object.group.pk})
         return reverse('group:group-list')
 
-    def form_valid(self, form):
-        messages.success(self.request, f"Membership updated successfully.")
-        return super().form_valid(form)
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        form = self.get_form()
+        period_formset = MembershipPeriodFormSet(request.POST, instance=self.object)
+        if form.is_valid() and period_formset.is_valid():
+            with transaction.atomic():
+                self.object = form.save()
+                period_formset.save()
+                self.object.sync_is_active()
+            messages.success(request, "Membership updated successfully.")
+            return redirect(self.get_success_url())
+        return self.render_to_response(
+            self.get_context_data(form=form, period_formset=period_formset)
+        )
 
 class GroupMemberDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
     model = GroupMember
