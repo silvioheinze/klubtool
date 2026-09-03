@@ -1,9 +1,10 @@
 from django import forms
+from django.forms import inlineformset_factory, BaseInlineFormSet
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from .models import (
     District, Council, Committee, CommitteeMeeting, CommitteeMeetingAttachment,
-    CommitteeMember, CommitteeParticipationSubstitute, Session, Term, Party,
+    CommitteeMember, CommitteeMembershipPeriod, CommitteeParticipationSubstitute, Session, Term, Party,
     TermSeatDistribution, SessionAttachment, DistrictEvent,
 )
 
@@ -437,6 +438,54 @@ class CommitteeMemberForm(forms.ModelForm):
         else:
             # If no committee specified, show all active users
             self.fields['user'].queryset = User.objects.filter(is_active=True).order_by('first_name', 'last_name')
+
+
+class CommitteeMembershipPeriodForm(forms.ModelForm):
+    """Form for a single committee membership period."""
+
+    class Meta:
+        model = CommitteeMembershipPeriod
+        fields = ['start_date', 'end_date']
+        widgets = {
+            'start_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'end_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+        }
+        labels = {
+            'start_date': _('Start date'),
+            'end_date': _('End date'),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['end_date'].required = False
+        self.fields['end_date'].help_text = _('Leave empty if the member is currently active.')
+
+
+class BaseCommitteeMembershipPeriodFormSet(BaseInlineFormSet):
+    def clean(self):
+        super().clean()
+        if any(self.errors):
+            return
+        open_count = 0
+        for form in self.forms:
+            if not form.cleaned_data or form.cleaned_data.get('DELETE'):
+                continue
+            if form.cleaned_data.get('end_date') is None:
+                open_count += 1
+        if open_count > 1:
+            raise forms.ValidationError(_("Only one active membership period is allowed."))
+
+
+CommitteeMembershipPeriodFormSet = inlineformset_factory(
+    CommitteeMember,
+    CommitteeMembershipPeriod,
+    form=CommitteeMembershipPeriodForm,
+    formset=BaseCommitteeMembershipPeriodFormSet,
+    extra=1,
+    min_num=1,
+    validate_min=True,
+    can_delete=True,
+)
 
 
 class CommitteeMeetingForm(forms.ModelForm):

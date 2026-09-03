@@ -1,8 +1,14 @@
 from django.contrib import admin
 from .models import (
-    District, Council, Committee, CommitteeMember, Session, Term, Party,
+    District, Council, Committee, CommitteeMember, CommitteeMembershipPeriod, Session, Term, Party,
     TermSeatDistribution, SessionPresence, DistrictEvent, DistrictEventParticipation,
 )
+
+
+class CommitteeMembershipPeriodInline(admin.TabularInline):
+    model = CommitteeMembershipPeriod
+    extra = 1
+    fields = ['start_date', 'end_date']
 
 
 @admin.register(District)
@@ -148,6 +154,7 @@ class CommitteeMemberAdmin(admin.ModelAdmin):
     search_fields = ['user__username', 'user__first_name', 'user__last_name', 'committee__name']
     readonly_fields = ['joined_date', 'created_at', 'updated_at']
     ordering = ['-joined_date']
+    inlines = [CommitteeMembershipPeriodInline]
     
     fieldsets = (
         ('Membership Information', {
