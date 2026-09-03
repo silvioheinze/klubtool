@@ -46,36 +46,6 @@ Copy the example environment file and configure it:
 cp env.example .env
 ```
 
-Edit `.env` file with your configuration:
-
-```env
-# Database Configuration
-POSTGRES_DB=klubtool
-POSTGRES_USER=klubtooluser
-POSTGRES_PASSWORD=klubtoolpassword
-POSTGRES_HOST=db
-POSTGRES_PORT=5432
-
-# Django Configuration
-DJANGO_SECRET_KEY=your-secret-key-here-change-this-in-production
-DEBUG=False
-
-# ALLOWED_HOSTS: Comma-separated list of allowed host/domain names
-# For development, includes localhost, 127.0.0.1, and testserver (for Django test client)
-# For production, add your domain: ALLOWED_HOSTS=your-domain.com,www.your-domain.com
-ALLOWED_HOSTS=localhost,127.0.0.1,testserver
-
-# CSRF_TRUSTED_ORIGINS: Comma-separated list of trusted origins for CSRF protection
-# For production with HTTPS: CSRF_TRUSTED_ORIGINS=https://your-domain.com
-CSRF_TRUSTED_ORIGINS=http://localhost:8000,http://127.0.0.1:8000
-
-# Time Zone
-TIME_ZONE=Europe/Vienna
-
-# API Configuration
-API_URL=http://localhost:8000/api/
-```
-
 #### Generating a Django Secret Key
 
 To generate a secure Django secret key:
@@ -111,12 +81,6 @@ docker compose exec app python manage.py collectstatic --noinput
 ```bash
 docker compose exec app python manage.py createsuperuser
 ```
-
-### 6. Access the Application
-
-- **Main Application**: http://localhost
-- **Admin Interface**: http://localhost/admin/
-- **User Management**: http://localhost/user/
 
 ## 🏗️ Project Structure
 
@@ -197,30 +161,6 @@ klubtool/
 
 ## 🔧 Configuration
 
-### Django Settings
-
-The main Django settings are in `app/main/settings.py`. Key configurations include:
-
-- **Database**: PostgreSQL with environment variable configuration
-- **Static Files**: Configured for production with Nginx
-- **Authentication**: django-allauth integration
-- **Audit Logging**: django-auditlog for comprehensive logging
-- **Internationalization**: Multi-language support
-
-### Docker Configuration
-
-- **Django App**: Python 3.13 with all dependencies
-- **PostgreSQL**: Database with health checks
-- **Nginx**: Reverse proxy with static file serving
-
-## 🗄️ Database
-
-The application uses PostgreSQL with the following features:
-
-- **Custom User Model**: Extended user model with audit logging
-- **Audit Trail**: All user actions are logged
-- **Migrations**: Database schema versioning
-
 ### Database Commands
 
 ```bash
@@ -276,131 +216,6 @@ docker compose exec app python manage.py compilemessages
 
 **Note:** After editing `.po` files, you must run `compilemessages` for the changes to take effect.
 
-## 👥 User Management
-
-### Custom User Model
-
-The application uses a custom user model (`CustomUser`) that extends Django's `AbstractUser` with:
-
-- Email-based authentication
-- Audit logging integration
-- Custom admin interface
-
-### User Features
-
-- **Registration**: User signup with email verification
-- **Authentication**: Login/logout functionality
-- **Profile Management**: User settings and profile editing
-- **Admin Interface**: Superuser management of all users
-
-## 🔒 Security
-
-### Authentication
-
-- **django-allauth**: Comprehensive authentication system
-- **Email Verification**: Required email verification for new accounts
-- **Rate Limiting**: Login attempt rate limiting
-- **CSRF Protection**: Built-in CSRF protection
-
-### Audit Logging
-
-- **django-auditlog**: Tracks all user actions
-- **Comprehensive Logging**: User creation, modification, deletion
-- **Admin Interface**: View audit logs in Django admin
-
-## 🎨 Frontend
-
-### Design System
-
-- **Bootstrap 5**: Modern, responsive design framework
-- **Bootstrap Icons**: Comprehensive icon library
-- **Custom CSS**: Application-specific styling
-
-### Templates
-
-- **Base Template**: Consistent layout across all pages
-- **Responsive Design**: Mobile-first approach
-- **Internationalization**: Multi-language support ready
-
-## 🎨 Color Palette
-
-The application uses a custom color palette that overrides Bootstrap's default colors throughout the interface.
-
-### Primary Colors
-
-| Color | Hex Code | Usage | Bootstrap Class |
-|-------|----------|-------|-----------------|
-| **Dark Green** | `#5e833c` | Primary actions, main branding, focus states | `.btn-primary`, `.text-primary`, `.bg-primary` |
-| **Light Green** | `#7da130` | Success states, positive actions, navbar background | `.btn-success`, `.text-success`, `.bg-success` |
-| **Yellow** | `#f7f157` | Warnings, attention-grabbing elements | `.btn-warning`, `.text-warning`, `.bg-warning` |
-| **Pink/Magenta** | `#ce2c77` | Errors, destructive actions, danger states | `.btn-danger`, `.text-danger`, `.bg-danger` |
-
-### Color Implementation
-
-The custom color palette is implemented through:
-
-- **CSS Custom Properties**: Defined in `:root` selector for consistent theming
-- **Bootstrap Overrides**: All Bootstrap color classes are overridden with custom values
-- **Component Styling**: Buttons, alerts, badges, forms, and navigation use the custom palette
-- **Accessibility**: Proper contrast ratios maintained for readability
-
-### CSS Files
-
-- **`custom-colors.css`**: Main color override file
-- **`base.css`**: Additional styling and color demo classes
-- **Loading Order**: Bootstrap → Custom Colors → Base CSS
-
-### Testing
-
-The color palette is thoroughly tested with 23 comprehensive test cases covering:
-
-- ✅ File existence and structure
-- ✅ Color value validation
-- ✅ Bootstrap component overrides
-- ✅ Template integration
-- ✅ CSS variable definitions
-- ✅ RGBA transparency effects
-- ✅ Important declarations for proper override
-
-### Usage Examples
-
-```html
-<!-- Primary button with custom dark green -->
-<button class="btn btn-primary">Primary Action</button>
-
-<!-- Success alert with custom light green -->
-<div class="alert alert-success">Success message</div>
-
-<!-- Warning badge with custom yellow -->
-<span class="badge bg-warning">Warning</span>
-
-<!-- Danger text with custom pink -->
-<p class="text-danger">Error message</p>
-```
-
-## 🚀 Deployment
-
-### Production Deployment
-
-1. **Environment Variables**: Update `.env` with production values
-2. **Security**: Change `DJANGO_SECRET_KEY` and disable `DEBUG`
-3. **Database**: Configure production PostgreSQL instance
-4. **Static Files**: Ensure static files are collected
-5. **SSL**: Configure SSL certificates for HTTPS
-
-### Environment Variables
-
-```env
-# Production Settings
-DEBUG=False
-DJANGO_SECRET_KEY=your-production-secret-key
-ALLOWED_HOSTS=your-domain.com,www.your-domain.com
-CSRF_TRUSTED_ORIGINS=https://your-domain.com,https://www.your-domain.com
-
-# Database (if using external database)
-POSTGRES_HOST=your-database-host
-POSTGRES_PASSWORD=your-secure-password
-```
 
 ## MCP (district events)
 
