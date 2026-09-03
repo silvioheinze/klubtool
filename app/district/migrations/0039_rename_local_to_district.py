@@ -171,6 +171,19 @@ class Migration(migrations.Migration):
             old_name='LocalEventParticipation',
             new_name='DistrictEventParticipation',
         ),
+        # Existing databases still have local_* table names. Rename those before
+        # Django looks up district_council / district_party (RenameField).
+        migrations.RunPython(rename_local_tables, reverse_rename_local_tables),
+        # Clear explicit local_* db_table options so later operations use district_*.
+        # Tables were already renamed in rename_local_tables.
+        migrations.SeparateDatabaseAndState(
+            state_operations=[
+                migrations.AlterModelTable(name='district', table=None),
+                migrations.AlterModelTable(name='districtevent', table=None),
+                migrations.AlterModelTable(name='districteventparticipation', table=None),
+            ],
+            database_operations=[],
+        ),
         migrations.RenameField(
             model_name='council',
             old_name='local',
@@ -186,7 +199,6 @@ class Migration(migrations.Migration):
             old_name='local',
             new_name='district',
         ),
-        migrations.RunPython(rename_local_tables, reverse_rename_local_tables),
         migrations.AlterField(
             model_name='party',
             name='district',

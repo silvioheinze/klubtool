@@ -3116,3 +3116,64 @@ class DistrictEventTests(TestCase):
         response = self.client.get(reverse('personal-calendar-export-ics'))
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'District Meetup', response.content)
+
+
+class RenameLocalToDistrictMigrationTests(TestCase):
+    """Guard the local -> district table rename order used on existing databases."""
+
+    def test_tables_are_renamed_before_council_field_rename(self):
+        import importlib
+        from django.db.migrations.operations.fields import RenameField
+        from django.db.migrations.operations.special import RunPython
+
+        migration_module = importlib.import_module(
+            'district.migrations.0039_rename_local_to_district'
+        )
+        ops = migration_module.Migration.operations
+        rename_tables_idx = next(
+            i for i, op in enumerate(ops)
+            if isinstance(op, RunPython) and op.code.__name__ == 'rename_local_tables'
+        )
+        council_field_idx = next(
+            i for i, op in enumerate(ops)
+            if isinstance(op, RenameField) and op.model_name == 'council'
+        )
+        self.assertLess(
+            rename_tables_idx,
+            council_field_idx,
+            'local_* tables must be renamed before RenameField on council (district_council)',
+        )
+
+    def test_rename_local_tables_restores_district_council(self):
+        """Existing DBs have local_council; the helper must rename it before field alters."""
+        import importlib
+        from django.db import connection
+
+        migration_module = importlib.import_module(
+            'district.migrations.0039_rename_local_to_district'
+        )
+
+        with connection.cursor() as cursor:
+            cursor.execute('ALTER TABLE district_council RENAME TO local_council')
+
+        class _SchemaEditor:
+            pass
+
+        schema_editor = _SchemaEditor()
+        schema_editor.connection = connection
+        migration_module.rename_local_tables(None, schema_editor)
+
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT EXISTS (SELECT 1 FROM information_schema.tables "
+                "WHERE table_schema = 'public' AND table_name = %s)",
+                ['district_council'],
+            )
+            self.assertTrue(cursor.fetchone()[0])
+            cursor.execute(
+                "SELECT EXISTS (SELECT 1 FROM information_schema.tables "
+                "WHERE table_schema = 'public' AND table_name = %s)",
+                ['local_council'],
+            )
+            self.assertFalse(cursor.fetchone()[0])
+
