@@ -1,30 +1,32 @@
-@import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:opsz,wght@6..12,400;6..12,700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 * {
-    font-family: 'Nunito Sans', sans-serif;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
 h1, .h1 {
     font-size: 1.75rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--kt-text, #1e293b);
+}
+
+h2, .h2, h3, .h3, h4, .h4, h5, .h5 {
+    letter-spacing: -0.01em;
+    color: var(--kt-text, #1e293b);
 }
 
 body {
     display: flex;
     flex-direction: column;
+    background-color: var(--kt-canvas, #f4f3ef);
+    color: var(--kt-text, #1e293b);
+    -webkit-font-smoothing: antialiased;
 }
 
-.form-white.input-group>.form-control:focus {
+.form-white.input-group > .form-control:focus {
     border-color: #fff;
     box-shadow: inset 0 0 0 1px #fff;
-}
-      
-.navbar-dark .navbar-nav .nav-link {
-    color: #fff;
-}
-      
-.navbar-dark .navbar-nav .nav-link:hover,
-.navbar-dark .navbar-nav .nav-link:focus {
-    color: rgba(255, 255, 255, 0.75);
 }
 
 html,
@@ -36,9 +38,8 @@ body {
 
 .content-wrapper {
     flex: 1;
-    padding-top: 56px; /* Höhe der Navbar */
+    padding-top: 56px;
 }
-
 
 .hiddenlink {
     text-decoration: none;
@@ -63,63 +64,16 @@ html {
     padding-top: 15vh;
 }
 
-.footer a:hover {
-    text-decoration: underline;
-    color: #aaaaaa; /* Lighter grey for hover to maintain contrast */
-}
-
-/* Color Palette Demo Classes */
+/* Color palette demo blocks */
 .color-demo {
     padding: 20px;
     margin: 10px 0;
-    border-radius: 8px;
+    border-radius: var(--kt-radius-sm, 0.5rem);
     text-align: center;
-    font-weight: bold;
+    font-weight: 600;
 }
 
-.color-demo-primary {
-    background-color: #5e833c;
-    color: white;
-}
-
-/* Use set primary color for outline primary button (Bootstrap default is blue) */
-.btn-outline-primary {
-    color: #5e833c;
-    border-color: #5e833c;
-    background-color: transparent;
-}
-.btn-outline-primary:hover {
-    color: #fff;
-    background-color: #5e833c;
-    border-color: #5e833c;
-}
-.btn-outline-primary:focus,
-.btn-outline-primary.focus {
-    box-shadow: 0 0 0 0.2rem rgba(94, 131, 60, 0.25);
-}
-.btn-outline-primary:active,
-.btn-outline-primary.active {
-    color: #fff;
-    background-color: #5e833c;
-    border-color: #5e833c;
-}
-
-.color-demo-success {
-    background-color: #7da130;
-    color: white;
-}
-
-.color-demo-warning {
-    background-color: #f7f157;
-    color: black;
-}
-
-.color-demo-danger {
-    background-color: #ce2c77;
-    color: white;
-}
-
-/* Monthly calendar (home page) – fixed layout, events on hover only */
+/* Monthly calendar */
 .calendar-month-table {
     table-layout: fixed;
     width: 100%;
@@ -132,23 +86,17 @@ html {
     overflow: visible;
 }
 
-/* Today: success color – explicit fallback; !important overrides Bootstrap .table */
 table.calendar-month-table td.calendar-day.calendar-day-today {
-    background-color: rgba(125, 161, 48, 0.25) !important;
-    background-color: rgba(var(--bs-success-rgb), 0.2) !important;
+    background-color: rgba(var(--bs-success-rgb), 0.12) !important;
 }
 
-/* Days with events: primary color */
 table.calendar-month-table td.calendar-day.calendar-day-has-events {
-    background-color: rgba(94, 131, 60, 0.22) !important;
-    background-color: rgba(var(--bs-primary-rgb), 0.18) !important;
+    background-color: rgba(var(--bs-primary-rgb), 0.1) !important;
     cursor: pointer;
 }
 
-/* Today + events: stronger success */
 table.calendar-month-table td.calendar-day.calendar-day-today.calendar-day-has-events {
-    background-color: rgba(125, 161, 48, 0.35) !important;
-    background-color: rgba(var(--bs-success-rgb), 0.28) !important;
+    background-color: rgba(var(--bs-success-rgb), 0.18) !important;
 }
 
 .calendar-day-num {
@@ -156,33 +104,33 @@ table.calendar-month-table td.calendar-day.calendar-day-today.calendar-day-has-e
     min-width: 1.5em;
 }
 
-#calendar-card-body {
+#calendar-card-body,
+#group-calendar-card-body {
     min-height: 16rem;
 }
 
 .calendar-loading-overlay {
     position: absolute;
     inset: 0;
-    background: rgba(255, 255, 255, 0.8);
-    border-radius: var(--bs-border-radius, 0.25rem);
+    background: rgba(244, 243, 239, 0.85);
+    border-radius: var(--kt-radius, 0.75rem);
 }
 
-/* Events popup on hover */
 .calendar-events-popup {
     position: fixed;
     z-index: 1050;
     max-width: 320px;
     padding: 0.75rem 1rem;
-    background: #fff;
-    border: 1px solid rgba(0, 0, 0, 0.1);
-    border-radius: var(--bs-border-radius, 0.25rem);
-    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    background: var(--kt-surface, #fff);
+    border: 1px solid var(--kt-border, rgba(15, 23, 42, 0.08));
+    border-radius: var(--kt-radius-sm, 0.5rem);
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.1);
     pointer-events: auto;
 }
 
 .calendar-popup-event {
     padding: 0.35rem 0;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    border-bottom: 1px solid var(--kt-border, rgba(15, 23, 42, 0.08));
     font-size: 0.875rem;
 }
 
@@ -192,4 +140,9 @@ table.calendar-month-table td.calendar-day.calendar-day-today.calendar-day-has-e
 
 .calendar-popup-event .badge {
     font-size: 0.65em;
+}
+
+/* Page headers on detail/list views */
+.page-header-bar {
+    margin-bottom: 1.25rem;
 }
