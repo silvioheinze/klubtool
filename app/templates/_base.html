@@ -23,7 +23,7 @@
 </head>    
 <body>
     <!-- Navigation Bar -->
-    <nav class="navbar navbar-expand-md navbar-light fixed-top bg-light">
+    <nav class="navbar navbar-expand-md navbar-light fixed-top">
         <div class="container-fluid">
             <a class="navbar-brand" href="{% url 'home' %}">
                 {% trans "Klubtool" %}
@@ -154,7 +154,7 @@
     </nav>
 
     <!-- Main Content -->
-    <div class="content-wrapper" style="padding-top: 50px;">  {# Added top padding to avoid fixed navbar overlap #}
+    <div class="content-wrapper">
         {% block map %}{% endblock map %}
         <div class="container mt-4">
             {% block content %}
@@ -163,17 +163,17 @@
     </div>
 
     <!-- Footer -->
-    <footer class="footer bg-dark text-white py-3 mt-3">
+    <footer class="footer py-3 mt-3">
         <div class="container">
             <nav aria-label="Footer navigation">
                 <div class="row align-items-center">
                     <div class="col-12 col-md-6">
                         <ul class="list-unstyled list-inline mb-0">
                             <li class="list-inline-item">
-                                <a href="" class="text-white">{% trans "Privacy" %}</a>
+                                <a href="">{% trans "Privacy" %}</a>
                             </li>
                             <li class="list-inline-item">
-                                <a href="" class="text-white">{% trans "About Us" %}</a>
+                                <a href="">{% trans "About Us" %}</a>
                             </li>
                         </ul>
                     </div>

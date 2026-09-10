@@ -46,12 +46,12 @@ class CustomColorsTests(TestCase):
         self.assertIn('#7da130', css_content, "CSS should contain success color #7da130")
     
     def test_custom_colors_css_contains_warning_color(self):
-        """Test that custom-colors.css contains the warning color #f7f157"""
+        """Test that custom-colors.css contains the softer warning accent"""
         css_path = os.path.join('static', 'css', 'custom-colors.css')
         with open(css_path, 'r') as f:
             css_content = f.read()
         
-        self.assertIn('#f7f157', css_content, "CSS should contain warning color #f7f157")
+        self.assertIn('#d4a017', css_content, "CSS should contain warning color #d4a017")
     
     def test_custom_colors_css_contains_danger_color(self):
         """Test that custom-colors.css contains the danger color #ce2c77"""
@@ -62,14 +62,14 @@ class CustomColorsTests(TestCase):
         self.assertIn('#ce2c77', css_content, "CSS should contain danger color #ce2c77")
     
     def test_custom_colors_css_contains_navbar_styling(self):
-        """Test that custom-colors.css contains navbar styling with #7da130"""
+        """Test that custom-colors.css uses light navbar chrome"""
         css_path = os.path.join('static', 'css', 'custom-colors.css')
         with open(css_path, 'r') as f:
             css_content = f.read()
         
-        # Check for navbar background color
         self.assertIn('.navbar {', css_content, "CSS should contain navbar styling")
-        self.assertIn('background-color: #7da130', css_content, "CSS should contain navbar background color #7da130")
+        self.assertIn('var(--kt-surface)', css_content, "Navbar should use light surface token")
+        self.assertNotIn('background-color: #7da130', css_content, "Navbar should not use solid green bar")
     
     def test_custom_colors_css_contains_css_variables(self):
         """Test that custom-colors.css contains CSS custom properties"""
@@ -174,20 +174,20 @@ class CustomColorsTests(TestCase):
         with open(css_path, 'r') as f:
             css_content = f.read()
         
-        # Check for form control overrides
-        self.assertIn('.form-control:focus {', css_content, "CSS should contain .form-control:focus styling")
-        self.assertIn('.form-select:focus {', css_content, "CSS should contain .form-select:focus styling")
+        # Check for form control focus overrides (may share a rule block)
+        self.assertIn('.form-control:focus', css_content, "CSS should contain .form-control:focus styling")
+        self.assertIn('.form-select:focus', css_content, "CSS should contain .form-select:focus styling")
     
     def test_custom_colors_css_contains_navbar_text_colors(self):
-        """Test that custom-colors.css contains navbar text color overrides"""
+        """Test that custom-colors.css contains light navbar text colors"""
         css_path = os.path.join('static', 'css', 'custom-colors.css')
         with open(css_path, 'r') as f:
             css_content = f.read()
         
-        # Check for navbar text color overrides
         self.assertIn('.navbar-brand {', css_content, "CSS should contain .navbar-brand styling")
         self.assertIn('.navbar-nav .nav-link {', css_content, "CSS should contain .navbar-nav .nav-link styling")
-        self.assertIn('color: white', css_content, "CSS should contain white text color for navbar")
+        self.assertIn('var(--kt-text)', css_content, "CSS should use dark text token for navbar brand")
+        self.assertIn('var(--kt-muted)', css_content, "CSS should use muted text token for nav links")
     
     def test_custom_colors_css_contains_dropdown_styling(self):
         """Test that custom-colors.css contains dropdown menu styling"""
@@ -235,7 +235,7 @@ class CustomColorsTests(TestCase):
         with open(css_path, 'r') as f:
             css_content = f.read()
         
-        expected_colors = ['#5e833c', '#7da130', '#f7f157', '#ce2c77']
+        expected_colors = ['#5e833c', '#7da130', '#d4a017', '#ce2c77', '#f4f3ef']
         
         for color in expected_colors:
             with self.subTest(color=color):
@@ -253,24 +253,21 @@ class CustomColorsTests(TestCase):
         self.assertIn('-rgb:', css_content, "CSS should contain RGB variable definitions")
     
     def test_custom_colors_css_contains_link_colors(self):
-        """Test that custom-colors.css contains link color overrides"""
+        """Test that custom-colors.css defines Bootstrap link tokens"""
         css_path = os.path.join('static', 'css', 'custom-colors.css')
         with open(css_path, 'r') as f:
             css_content = f.read()
         
-        # Check for link color overrides (current CSS uses a.text-primary:hover etc.)
-        self.assertIn('a.text-primary', css_content, "CSS should contain link styling")
-        self.assertIn('color:', css_content, "CSS should contain color definitions")
-        self.assertIn('a:', css_content, "CSS should contain anchor pseudo-classes")
+        self.assertIn('--bs-link-color:', css_content, "CSS should define link color token")
+        self.assertIn('--bs-link-hover-color:', css_content, "CSS should define link hover token")
+        self.assertIn('.footer a:hover', css_content, "CSS should style footer links")
     
     def test_custom_colors_css_contains_link_utility_classes(self):
-        """Test that custom-colors.css contains link utility class overrides"""
+        """Test that custom-colors.css contains text utility class overrides"""
         css_path = os.path.join('static', 'css', 'custom-colors.css')
         with open(css_path, 'r') as f:
             css_content = f.read()
         
-        # Check for link-related styling (current CSS uses a.text-primary, .text-primary, etc.)
-        self.assertIn('a.text-primary', css_content, "CSS should contain link utility styling")
         self.assertIn('.text-primary', css_content, "CSS should contain .text-primary styling")
         self.assertIn('var(--bs-primary)', css_content, "CSS should use primary variable")
     
@@ -280,9 +277,8 @@ class CustomColorsTests(TestCase):
         with open(css_path, 'r') as f:
             css_content = f.read()
         
-        # Check for navbar styling (current CSS uses .navbar-nav .nav-link)
         self.assertIn('.navbar', css_content, "CSS should contain navbar styling")
-        self.assertIn('color: white', css_content, "CSS should contain white color for navbar")
+        self.assertIn('.navbar-nav .nav-link', css_content, "CSS should style navbar links")
         self.assertIn('.navbar .dropdown-item', css_content, "CSS should contain dropdown item styling")
     
     def test_custom_colors_css_contains_button_text_colors(self):
@@ -291,8 +287,8 @@ class CustomColorsTests(TestCase):
         with open(css_path, 'r') as f:
             css_content = f.read()
         
-        # Check for button text color overrides
-        self.assertIn('color: white !important', css_content, "CSS should contain white text color for buttons")
+        # Check for button text color overrides on filled buttons
+        self.assertIn('color: #fff !important', css_content, "CSS should contain light text on primary buttons")
         self.assertIn('.btn-primary {', css_content, "CSS should contain .btn-primary styling")
         self.assertIn('.btn-success {', css_content, "CSS should contain .btn-success styling")
     
@@ -302,13 +298,89 @@ class CustomColorsTests(TestCase):
         with open(css_path, 'r') as f:
             css_content = f.read()
         
-        # Check for primary color and footer/dark section styling
+        # Check for primary color and light footer styling
         self.assertIn('--bs-primary:', css_content, "CSS should define primary color")
-        self.assertTrue(
-            '.footer' in css_content or 'footer' in css_content or 'bg-dark' in css_content,
-            "CSS should contain footer or dark section styling"
-        )
+        self.assertIn('.footer', css_content, "CSS should contain footer styling")
+        self.assertIn('var(--kt-surface)', css_content, "Footer should use light surface token")
         self.assertIn('var(--bs-primary)', css_content, "CSS should use primary variable")
+
+    def test_custom_colors_css_contains_theme_surface_tokens(self):
+        """Test that custom-colors.css defines melytics-like surface tokens"""
+        css_path = os.path.join('static', 'css', 'custom-colors.css')
+        with open(css_path, 'r') as f:
+            css_content = f.read()
+
+        self.assertIn('--kt-canvas', css_content)
+        self.assertIn('--kt-surface', css_content)
+        self.assertIn('--kt-border', css_content)
+        self.assertNotIn('.bg-light {', css_content, "Should not hijack .bg-light with green")
+
+    def test_base_css_uses_inter_font(self):
+        """Test that base.css loads Inter instead of Nunito Sans"""
+        css_path = os.path.join('static', 'css', 'base.css')
+        with open(css_path, 'r') as f:
+            css_content = f.read()
+
+        self.assertIn('Inter', css_content, "base.css should import Inter font")
+        self.assertNotIn('Nunito Sans', css_content, "base.css should not use Nunito Sans")
+
+    def test_base_template_uses_light_navbar(self):
+        """Test that _base.html uses navbar-light without green bg-light"""
+        template_path = os.path.join('templates', '_base.html')
+        with open(template_path, 'r') as f:
+            template_content = f.read()
+
+        self.assertIn('navbar-light', template_content)
+        self.assertNotIn('navbar bg-light', template_content)
+        self.assertNotIn('footer bg-dark', template_content)
+        self.assertIn('class="footer', template_content)
+
+
+class ThemeLayoutTests(TestCase):
+    """Integration tests for melytics-like layout chrome on key pages."""
+
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_superuser(
+            username='themeuser',
+            email='theme@example.com',
+            password='testpass123',
+            language='de',
+        )
+        self.client.login(username='themeuser', password='testpass123')
+
+    def _assert_theme_chrome(self, response):
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'navbar-light')
+        self.assertContains(response, 'custom-colors.css')
+        self.assertContains(response, 'base.css')
+        self.assertNotContains(response, 'navbar bg-light')
+        self.assertNotContains(response, 'footer bg-dark')
+        self.assertContains(response, 'navbar-toggler')
+        self.assertContains(response, 'class="footer')
+
+    def test_home_page_theme_chrome(self):
+        self._assert_theme_chrome(self.client.get(reverse('home')))
+
+    def test_settings_page_theme_chrome(self):
+        self._assert_theme_chrome(self.client.get(reverse('user-settings')))
+
+    def test_group_detail_and_member_form_theme_chrome(self):
+        from district.models import District, Party
+        from group.models import Group
+
+        district = District.objects.create(name='Theme District', code='TD')
+        party = Party.objects.create(name='Theme Party', district=district)
+        group = Group.objects.create(name='Theme Group', party=party)
+
+        detail = self.client.get(reverse('group:group-detail', kwargs={'pk': group.pk}))
+        self._assert_theme_chrome(detail)
+        self.assertContains(detail, 'card')
+
+        form_url = reverse('group:member-create') + f'?group={group.pk}'
+        form_response = self.client.get(form_url)
+        self._assert_theme_chrome(form_response)
+        self.assertContains(form_response, 'form-control')
 
 
 class EmailSettingsTests(TestCase):
