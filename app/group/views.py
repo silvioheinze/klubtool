@@ -1669,7 +1669,7 @@ class GroupMeetingMinutesExportPDFView(LoginRequiredMixin, UserPassesTestMixin, 
         response = HttpResponse(pdf, content_type='application/pdf')
         safe_title = ''.join(c if c.isalnum() or c in ' -_' else '_' for c in self.object.title)
         date_str = self.object.scheduled_date.strftime('%Y-%m-%d') if self.object.scheduled_date else ''
-        filename = f"minutes_{safe_title}_{date_str}.pdf".replace(' ', '_')
+        filename = f"Protokoll_{safe_title}_{date_str}.pdf".replace(' ', '_')
         response['Content-Disposition'] = f'attachment; filename="{filename}"'
         return response
 

@@ -1073,6 +1073,9 @@ class MotionStatusForm(forms.ModelForm):
             self.fields['session'].queryset = Session.objects.filter(
                 council=self.motion.session.council
             ).order_by('-scheduled_date')
+
+        if not self.is_bound and self.motion and self.motion.session:
+            self.fields['session'].initial = self.motion.session
     
     def clean(self):
         cleaned_data = super().clean()
