@@ -1421,6 +1421,32 @@ class SessionViewTests(TestCase):
         response = self.client.get(reverse('district:session-detail', kwargs={'pk': self.session.pk}))
         self.assertContains(response, self.session.title)
         self.assertContains(response, self.session.get_session_type_display())
+
+    def test_session_detail_shows_compact_participants(self):
+        """Session participants card shows compact view with Edit toggle."""
+        from group.models import Group, GroupMember, MembershipPeriod
+        from user.models import Role
+
+        self.term.is_active = True
+        self.term.save(update_fields=['is_active'])
+        party = Party.objects.create(name='Session Party', district=self.district, is_active=True)
+        TermSeatDistribution.objects.create(term=self.term, party=party, seats=5)
+        group = Group.objects.create(name='Session Group', party=party)
+        participant = User.objects.create_user(
+            username='participant',
+            email='participant@example.com',
+            password='pass123',
+        )
+        gm = GroupMember.objects.create(user=participant, group=group, is_active=True)
+        gm.roles.add(Role.objects.get_or_create(name='Member', defaults={'is_active': True})[0])
+        MembershipPeriod.objects.create(member=gm, start_date=timezone.now().date(), end_date=None)
+
+        self.client.login(username='admin', password='adminpass123')
+        response = self.client.get(reverse('district:session-detail', kwargs={'pk': self.session.pk}))
+        self.assertContains(response, 'sessionParticipantsCompactView')
+        self.assertContains(response, 'sessionParticipantsEditView')
+        self.assertContains(response, 'session-participants-card')
+        self.assertIn('participant', response.context['present_names'])
     
     def test_session_create_view_requires_superuser(self):
         """Test that SessionCreateView requires superuser"""

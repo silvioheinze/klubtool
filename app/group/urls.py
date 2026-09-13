@@ -9,7 +9,7 @@ from .views import (
     AgendaItemCreateAjaxView, AgendaItemUpdateAjaxView, AgendaItemUpdateOrderAjaxView,
     MinuteItemCreateAjaxView, MinuteItemUpdateAjaxView, MinuteItemDeleteView,
     set_group_admin, remove_group_admin, update_member_roles, send_meeting_invites, meeting_export_ics, group_meetings_export_ics,
-    invite_member, toggle_meeting_participation,
+    invite_member, toggle_meeting_participation, meeting_excuse_self,
     group_calendar_export_pdf, group_meetings_export_pdf,
 )
 
@@ -54,6 +54,7 @@ urlpatterns = [
     path('meetings/<int:pk>/export-agenda-pdf/', GroupMeetingAgendaExportPDFView.as_view(), name='meeting-export-agenda-pdf'),
     path('meetings/<int:pk>/export-minutes-pdf/', GroupMeetingMinutesExportPDFView.as_view(), name='meeting-export-minutes-pdf'),
     path('meetings/<int:meeting_pk>/participation/<int:member_pk>/toggle/', toggle_meeting_participation, name='meeting-participation-toggle'),
+    path('meetings/<int:meeting_pk>/excuse/', meeting_excuse_self, name='meeting-excuse-self'),
     
     # Agenda Item URLs
     path('meetings/<int:meeting_id>/agenda/create/', AgendaItemCreateView.as_view(), name='agenda-item-create'),

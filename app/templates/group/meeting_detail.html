@@ -280,46 +280,81 @@
             </div>
 
             <!-- Participation Section -->
-            <div class="card mt-3">
-                <div class="card-header">
+            <div class="card mt-3" id="participation-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="bi bi-people"></i> {% trans "Participation" %}</h5>
+                    {% if group_members %}
+                    <button type="button"
+                            class="btn btn-sm btn-outline-secondary participation-edit-toggle"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#participationEditView"
+                            aria-expanded="false"
+                            aria-controls="participationEditView">
+                        {% trans "Edit" %}
+                    </button>
+                    {% endif %}
                 </div>
                 <div class="card-body">
                     {% if group_members %}
-                        <ul class="list-group list-group-flush">
-                            {% for member in group_members %}
-                                <li class="list-group-item px-0">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <span>{{ member.user.get_full_name|default:member.user.username }}</span>
-                                        {% if can_toggle_participation %}
-                                        <div class="form-check form-switch">
-                                            <input 
-                                                class="form-check-input participation-toggle" 
-                                                type="checkbox" 
-                                                id="participation-{{ member.pk }}"
-                                                data-meeting-pk="{{ meeting.pk }}"
-                                                data-member-pk="{{ member.pk }}"
-                                                {% if participations %}{% if participations|get_item:member.pk %}checked{% endif %}{% endif %}
-                                            >
-                                            <label class="form-check-label" for="participation-{{ member.pk }}">
-                                                {% trans "Present" %}
-                                            </label>
+                        <div id="participationCompactView">
+                            <p class="mb-2">
+                                <span class="text-muted">{% trans "Present" %}:</span>
+                                <span id="participation-present-names">{% if present_names %}{{ present_names|join:", " }}{% else %}<span class="text-muted">—</span>{% endif %}</span>
+                            </p>
+                            <p class="mb-2">
+                                <span class="text-muted">{% trans "Excused" %}:</span>
+                                <span id="participation-excused-names">{% if excused_names %}{{ excused_names|join:", " }}{% else %}<span class="text-muted">—</span>{% endif %}</span>
+                            </p>
+                            {% if user_is_group_member %}
+                            <form method="post" action="{% url 'group:meeting-excuse-self' meeting.pk %}" id="meetingExcuseSelfForm" class="mt-2">
+                                {% csrf_token %}
+                                {% if user_has_excused %}
+                                <input type="hidden" name="clear" value="1">
+                                <button type="submit" class="btn btn-sm btn-outline-secondary" id="meetingExcuseSelfBtn">{% trans "Cancel excuse" %}</button>
+                                {% else %}
+                                <button type="submit" class="btn btn-sm btn-outline-secondary" id="meetingExcuseSelfBtn">{% trans "Excuse myself" %}</button>
+                                {% endif %}
+                            </form>
+                            {% endif %}
+                        </div>
+                        <div class="collapse" id="participationEditView">
+                            <ul class="list-group list-group-flush">
+                                {% for member in group_members %}
+                                    {% with p=participations|get_item:member.pk %}
+                                    <li class="list-group-item px-0">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span>{{ member.user.get_full_name|default:member.user.username }}</span>
+                                            {% if can_toggle_participation %}
+                                            <div class="form-check form-switch">
+                                                <input
+                                                    class="form-check-input participation-toggle"
+                                                    type="checkbox"
+                                                    id="participation-{{ member.pk }}"
+                                                    data-meeting-pk="{{ meeting.pk }}"
+                                                    data-member-pk="{{ member.pk }}"
+                                                    {% if p and p.is_present %}checked{% endif %}
+                                                >
+                                                <label class="form-check-label" for="participation-{{ member.pk }}">
+                                                    {% trans "Present" %}
+                                                </label>
+                                            </div>
+                                            {% else %}
+                                            <span class="badge {% if p and p.is_excused %}bg-warning text-dark{% elif p and p.is_present %}bg-success{% else %}bg-secondary{% endif %}">
+                                                {% if p and p.is_excused %}{% trans "Excused" %}{% elif p and p.is_present %}{% trans "Present" %}{% else %}{% trans "Absent" %}{% endif %}
+                                            </span>
+                                            {% endif %}
                                         </div>
-                                        {% else %}
-                                        <span class="badge {% if participations %}{% if participations|get_item:member.pk %}bg-success{% else %}bg-secondary{% endif %}{% else %}bg-secondary{% endif %}">
-                                            {% if participations %}{% if participations|get_item:member.pk %}{% trans "Present" %}{% else %}{% trans "Absent" %}{% endif %}{% else %}{% trans "Absent" %}{% endif %}
-                                        </span>
-                                        {% endif %}
-                                    </div>
-                                </li>
-                            {% endfor %}
-                        </ul>
-                        <div class="mt-3 pt-3 border-top">
-                            <small class="text-muted">
-                                <span id="participation-summary">
-                                    {% trans "Present" %}: <strong id="total-present-count">{{ total_present|default:0 }}</strong> / <strong id="total-members-count">{{ group_members|length }}</strong>
-                                </span>
-                            </small>
+                                    </li>
+                                    {% endwith %}
+                                {% endfor %}
+                            </ul>
+                            <div class="mt-3 pt-3 border-top">
+                                <small class="text-muted">
+                                    <span id="participation-summary">
+                                        {% trans "Present" %}: <strong id="total-present-count">{{ total_present|default:0 }}</strong> / <strong id="total-members-count">{{ group_members|length }}</strong>
+                                    </span>
+                                </small>
+                            </div>
                         </div>
                     {% else %}
                         <p class="text-muted mb-0">{% trans "No group members." %}</p>
@@ -786,18 +821,28 @@ function deleteMinuteItem(itemId) {
     }
 }
 
-// Participation toggle functionality
+// Participation toggle and self-excuse
 document.addEventListener('DOMContentLoaded', function() {
+    function updateParticipationCompactNames(presentNames, excusedNames) {
+        const presentEl = document.getElementById('participation-present-names');
+        const excusedEl = document.getElementById('participation-excused-names');
+        const dash = '<span class="text-muted">—</span>';
+        if (presentEl) {
+            presentEl.innerHTML = presentNames && presentNames.length ? presentNames.join(', ') : dash;
+        }
+        if (excusedEl) {
+            excusedEl.innerHTML = excusedNames && excusedNames.length ? excusedNames.join(', ') : dash;
+        }
+    }
+
     const participationToggles = document.querySelectorAll('.participation-toggle');
     participationToggles.forEach(toggle => {
         toggle.addEventListener('change', function() {
             const meetingPk = this.getAttribute('data-meeting-pk');
             const memberPk = this.getAttribute('data-member-pk');
             const checkbox = this;
-            
-            // Disable checkbox during request
             checkbox.disabled = true;
-            
+
             const url = `/group/meetings/${meetingPk}/participation/${memberPk}/toggle/`;
             fetch(url, {
                 method: 'POST',
@@ -809,29 +854,71 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    // Update total present count
                     const totalPresentElement = document.getElementById('total-present-count');
                     if (totalPresentElement) {
                         totalPresentElement.textContent = data.total_present;
                     }
+                    updateParticipationCompactNames(data.present_names, data.excused_names);
                 } else {
-                    // Revert checkbox state on error
                     checkbox.checked = !checkbox.checked;
                     alert('Error updating participation: ' + (data.error || 'Unknown error'));
                 }
             })
             .catch(error => {
-                // Revert checkbox state on error
                 checkbox.checked = !checkbox.checked;
                 console.error('Error:', error);
                 alert('Error updating participation. Please try again.');
             })
             .finally(() => {
-                // Re-enable checkbox
                 checkbox.disabled = false;
             });
         });
     });
+
+    const excuseForm = document.getElementById('meetingExcuseSelfForm');
+    if (excuseForm) {
+        excuseForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('meetingExcuseSelfBtn');
+            if (btn) btn.disabled = true;
+            fetch(excuseForm.action, {
+                method: 'POST',
+                body: new FormData(excuseForm),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    updateParticipationCompactNames(data.present_names, data.excused_names);
+                    if (btn) {
+                        if (data.is_excused) {
+                            btn.textContent = '{% trans "Cancel excuse" %}';
+                            let clearInput = excuseForm.querySelector('input[name="clear"]');
+                            if (!clearInput) {
+                                clearInput = document.createElement('input');
+                                clearInput.type = 'hidden';
+                                clearInput.name = 'clear';
+                                clearInput.value = '1';
+                                excuseForm.appendChild(clearInput);
+                            }
+                        } else {
+                            btn.textContent = '{% trans "Excuse myself" %}';
+                            const clearInput = excuseForm.querySelector('input[name="clear"]');
+                            if (clearInput) clearInput.remove();
+                        }
+                    }
+                } else {
+                    alert('Error: ' + (data.error || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error updating excuse. Please try again.');
+            })
+            .finally(() => {
+                if (btn) btn.disabled = false;
+            });
+        });
+    }
 });
 </script>
 

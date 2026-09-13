@@ -818,14 +818,36 @@ class GroupMeetingDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView
         context['group_members'] = members
         
         # Get participation records for this meeting
-        participations = {
-            p.member_id: p.is_present
+        participation_by_member = {
+            p.member_id: p
             for p in GroupMeetingParticipation.objects.filter(meeting=self.object).select_related('member')
         }
-        context['participations'] = participations
-        # Count present members
-        context['total_present'] = sum(1 for is_present in participations.values() if is_present)
-        
+        context['participations'] = {
+            member_id: {'is_present': p.is_present, 'is_excused': p.is_excused}
+            for member_id, p in participation_by_member.items()
+        }
+        context['total_present'] = sum(
+            1 for p in participation_by_member.values() if p.is_present and not p.is_excused
+        )
+
+        def _member_display_name(member):
+            return member.user.get_full_name() or member.user.username
+
+        present_names = []
+        excused_names = []
+        for member in members:
+            p = participation_by_member.get(member.pk)
+            if p and p.is_excused:
+                excused_names.append(_member_display_name(member))
+            elif p and p.is_present:
+                present_names.append(_member_display_name(member))
+        context['present_names'] = present_names
+        context['excused_names'] = excused_names
+        context['user_is_group_member'] = is_member
+        user_member = members.filter(user=user).first()
+        user_participation = participation_by_member.get(user_member.pk) if user_member else None
+        context['user_has_excused'] = bool(user_participation and user_participation.is_excused)
+
         return context
 
 
@@ -852,22 +874,98 @@ def toggle_meeting_participation(request, meeting_pk, member_pk):
             defaults={'is_present': True}
         )
         
-        # Toggle presence
+        # Toggle presence; marking present clears excused status
         participation.is_present = not participation.is_present
-        participation.save(update_fields=['is_present'])
-        
-        # Count total present
-        total_present = GroupMeetingParticipation.objects.filter(meeting=meeting, is_present=True).count()
+        if participation.is_present:
+            participation.is_excused = False
+        participation.save(update_fields=['is_present', 'is_excused'])
+
+        # Count total present (excluding excused)
+        total_present = GroupMeetingParticipation.objects.filter(
+            meeting=meeting, is_present=True, is_excused=False
+        ).count()
         total_members = meeting.group.members.filter(is_active=True).count()
-        
+
+        def _display_name(m):
+            return m.user.get_full_name() or m.user.username
+
+        members = meeting.group.members.filter(is_active=True).select_related('user')
+        participation_by_member = {
+            p.member_id: p
+            for p in GroupMeetingParticipation.objects.filter(meeting=meeting)
+        }
+        present_names = []
+        excused_names = []
+        for m in members:
+            p = participation_by_member.get(m.pk)
+            if p and p.is_excused:
+                excused_names.append(_display_name(m))
+            elif p and p.is_present:
+                present_names.append(_display_name(m))
+
         return JsonResponse({
             'success': True,
             'is_present': participation.is_present,
+            'is_excused': participation.is_excused,
             'total_present': total_present,
-            'total_members': total_members
+            'total_members': total_members,
+            'present_names': present_names,
+            'excused_names': excused_names,
         })
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+@require_http_methods(["POST"])
+def meeting_excuse_self(request, meeting_pk):
+    """Allow an active group member to excuse themselves from a meeting or cancel."""
+    meeting = get_object_or_404(GroupMeeting, pk=meeting_pk)
+    member = GroupMember.objects.filter(
+        user=request.user,
+        group=meeting.group,
+        is_active=True,
+    ).first()
+    if not member:
+        return JsonResponse({'error': 'Permission denied'}, status=403)
+
+    clear = request.POST.get('clear') == '1'
+    participation, _created = GroupMeetingParticipation.objects.get_or_create(
+        meeting=meeting,
+        member=member,
+        defaults={'is_present': True, 'is_excused': False},
+    )
+    if clear:
+        participation.is_present = True
+        participation.is_excused = False
+    else:
+        participation.is_present = False
+        participation.is_excused = True
+    participation.save(update_fields=['is_present', 'is_excused'])
+
+    def _display_name(m):
+        return m.user.get_full_name() or m.user.username
+
+    members = meeting.group.members.filter(is_active=True).select_related('user')
+    participation_by_member = {
+        p.member_id: p
+        for p in GroupMeetingParticipation.objects.filter(meeting=meeting)
+    }
+    present_names = []
+    excused_names = []
+    for m in members:
+        p = participation_by_member.get(m.pk)
+        if p and p.is_excused:
+            excused_names.append(_display_name(m))
+        elif p and p.is_present:
+            present_names.append(_display_name(m))
+
+    return JsonResponse({
+        'success': True,
+        'is_excused': participation.is_excused,
+        'present_names': present_names,
+        'excused_names': excused_names,
+    })
 
 
 @login_required
@@ -1530,7 +1628,7 @@ class GroupMeetingMinutesExportPDFView(LoginRequiredMixin, UserPassesTestMixin, 
         context['minute_items'] = self.object.minute_items.filter(is_active=True).order_by('order')
         # Only include members marked as present (attending)
         present_member_ids = GroupMeetingParticipation.objects.filter(
-            meeting=self.object, is_present=True
+            meeting=self.object, is_present=True, is_excused=False
         ).values_list('member_id', flat=True)
         context['attendees'] = self.object.group.members.filter(
             pk__in=present_member_ids, is_active=True

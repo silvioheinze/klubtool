@@ -304,6 +304,14 @@ class CustomColorsTests(TestCase):
         self.assertIn('var(--kt-surface)', css_content, "Footer should use light surface token")
         self.assertIn('var(--bs-primary)', css_content, "CSS should use primary variable")
 
+    def test_card_list_group_items_are_transparent(self):
+        """Test that list items inside cards match card body background."""
+        css_path = os.path.join('static', 'css', 'custom-colors.css')
+        with open(css_path, 'r') as f:
+            css_content = f.read()
+        self.assertIn('.card .list-group-item', css_content)
+        self.assertIn('background-color: transparent', css_content)
+
     def test_custom_colors_css_contains_theme_surface_tokens(self):
         """Test that custom-colors.css defines melytics-like surface tokens"""
         css_path = os.path.join('static', 'css', 'custom-colors.css')
