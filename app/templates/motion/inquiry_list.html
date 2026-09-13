@@ -145,32 +145,21 @@
                 <div class="card-body">
                     {% if inquiries %}
                         <div class="table-responsive">
-                            <table class="table table-striped table-hover">
+                            <table class="table table-hover">
                                 <thead>
                                     <tr>
                                         <th>{% trans "Title" %}</th>
-                                        <th>{% trans "Parties" %}</th>
                                         <th>{% trans "Status" %}</th>
+                                        <th>{% trans "Parties" %}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {% for inquiry in inquiries %}
                                         <tr>
                                             <td>
-                                                <strong>
-                                                    <a href="{% url 'inquiry:inquiry-detail' inquiry.pk %}">
-                                                        {{ inquiry.title }}
-                                                    </a>
-                                                </strong>
-                                            </td>
-                                            <td>
-                                                {% if inquiry.parties.exists %}
-                                                    {% for party in inquiry.parties.all %}
-                                                        <span class="badge me-1" style="background-color: {{ party.color }}; color: white;">{{ party.short_name|default:party.name }}</span>
-                                                    {% endfor %}
-                                                {% else %}
-                                                    <span class="text-muted">-</span>
-                                                {% endif %}
+                                                <a href="{% url 'inquiry:inquiry-detail' inquiry.pk %}">
+                                                    {{ inquiry.title }}
+                                                </a>
                                             </td>
                                             <td>
                                                 {% if inquiry.status == 'draft' %}
@@ -189,6 +178,17 @@
                                                     <span class="badge bg-warning">{% trans "Withdrawn" %}</span>
                                                 {% elif inquiry.status == 'not_admitted' %}
                                                     <span class="badge bg-dark">{% trans "Nicht zugelassen" %}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if inquiry.parties.exists %}
+                                                    {% for party in inquiry.parties.all %}
+                                                        <span class="badge" style="background-color: {{ party.color }}; color: white; margin-right: 2px;">
+                                                            {{ party.short_name|default:party.name }}
+                                                        </span>
+                                                    {% endfor %}
+                                                {% else %}
+                                                    <span class="text-muted">-</span>
                                                 {% endif %}
                                             </td>
                                         </tr>

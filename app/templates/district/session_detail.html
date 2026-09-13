@@ -316,59 +316,10 @@
                     {% endif %}
                 </div>
             </div>
-            
-            <!-- Session Attachments -->
-            <div class="card mt-3">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">
-                        <i class="bi bi-paperclip"></i> {% trans "Session Attachments" %}
-                    </h5>
-                    {% if can_attach_session %}
-                    <a href="{% url 'district:session-attach' session.pk %}" class="btn btn-sm btn-primary">
-                        <i class="bi bi-upload"></i> {% trans "Upload File" %}
-                    </a>
-                    {% endif %}
-                </div>
-                <div class="card-body">
-                    {% if session.attachments.all %}
-                        <div class="row g-2">
-                            {% for attachment in session.attachments.all %}
-                                <div class="col-md-6 col-lg-4 min-w-0">
-                                    <div class="card h-100 border overflow-hidden">
-                                        <div class="card-body position-relative p-2{% if attachment.pk in session_attachment_delete_ids %} pe-4{% endif %} overflow-hidden">
-                                            {% if attachment.pk in session_attachment_delete_ids %}
-                                            <form method="post" action="{% url 'district:session-attachment-delete' session.pk attachment.pk %}" class="position-absolute top-0 end-0 mt-1 me-1" onsubmit="return confirm('{% trans "Remove this attachment?" %}');">
-                                                {% csrf_token %}
-                                                <button type="submit" class="btn-close btn-close-sm" aria-label="{% trans 'Remove attachment' %}" title="{% trans 'Remove' %}"></button>
-                                            </form>
-                                            {% endif %}
-                                            <div class="d-flex align-items-start gap-2 min-w-0">
-                                                <i class="bi bi-file-earmark flex-shrink-0 mt-1 text-muted"></i>
-                                                <div class="min-w-0 flex-grow-1 overflow-hidden">
-                                                    <a href="{{ attachment.file.url }}" class="fw-semibold text-truncate d-block w-100 text-decoration-none" target="_blank" rel="noopener" title="{{ attachment.filename }}">{{ attachment.filename }}</a>
-                                                    <small class="text-muted d-block">{{ attachment.get_file_type_display }}</small>
-                                                    {% if attachment.description %}
-                                                        <p class="mb-0 small text-body-secondary mt-1">{{ attachment.description }}</p>
-                                                    {% endif %}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            {% endfor %}
-                        </div>
-                    {% else %}
-                        <div class="text-center py-4">
-                            <i class="bi bi-paperclip text-muted" style="font-size: 3rem;"></i>
-                            <p class="text-muted mt-2">{% trans "No attachments uploaded for this session yet." %}</p>
-                        </div>
-                    {% endif %}
-                </div>
-            </div>
         </div>
 
-        {% if user_group_admin_groups or user.is_superuser or can_see_export_and_participants %}
         <div class="col-lg-4">
+        {% if user_group_admin_groups or user.is_superuser or can_see_export_and_participants %}
             <!-- Exports -->
             <div class="card">
                 <div class="card-header">
@@ -531,7 +482,51 @@
             });
             </script>
             {% endif %}
-            
+        {% endif %}
+
+            <!-- Session Attachments -->
+            <div class="card{% if user_group_admin_groups or user.is_superuser or can_see_export_and_participants %} mt-3{% endif %}">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-paperclip"></i> {% trans "Session Attachments" %}
+                    </h5>
+                    {% if can_attach_session %}
+                    <a href="{% url 'district:session-attach' session.pk %}" class="btn btn-sm btn-primary">
+                        <i class="bi bi-upload"></i> {% trans "Upload File" %}
+                    </a>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    {% if session.attachments.all %}
+                        <ul class="list-group list-group-flush">
+                            {% for attachment in session.attachments.all %}
+                                <li class="list-group-item px-0">
+                                    <div class="d-flex align-items-start gap-2 min-w-0">
+                                        <i class="bi bi-file-earmark flex-shrink-0 mt-1 text-muted"></i>
+                                        <div class="min-w-0 flex-grow-1 overflow-hidden">
+                                            <a href="{{ attachment.file.url }}" class="text-truncate d-block w-100 text-decoration-none" target="_blank" rel="noopener" title="{{ attachment.filename }}">{{ attachment.filename }}</a>
+                                            <small class="text-muted d-block">{{ attachment.get_file_type_display }}</small>
+                                            {% if attachment.description %}
+                                                <p class="mb-0 small text-body-secondary mt-1">{{ attachment.description }}</p>
+                                            {% endif %}
+                                        </div>
+                                        {% if attachment.pk in session_attachment_delete_ids %}
+                                        <form method="post" action="{% url 'district:session-attachment-delete' session.pk attachment.pk %}" class="flex-shrink-0" onsubmit="return confirm('{% trans "Remove this attachment?" %}');">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn-close btn-close-sm" aria-label="{% trans 'Remove attachment' %}" title="{% trans 'Remove' %}"></button>
+                                        </form>
+                                        {% endif %}
+                                    </div>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="text-muted mb-0 small">{% trans "No attachments uploaded for this session yet." %}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+        {% if user_group_admin_groups or user.is_superuser or can_see_export_and_participants %}
             <!-- Presence Tracker (only on day of session) -->
             {% now "Y-m-d" as today %}
             {% if presence_data and session.scheduled_date|date:"Y-m-d" == today %}
@@ -584,8 +579,8 @@
                 </div>
             </div>
             {% endif %}
-        </div>
         {% endif %}
+        </div>
     </div>
 </div>
 
