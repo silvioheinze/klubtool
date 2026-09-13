@@ -124,6 +124,23 @@ class MotionFormTests(TestCase):
         # Should have a default value set
         self.assertIsNotNone(form.fields['group'].initial)
 
+    def test_motion_form_create_excludes_interventions_field(self):
+        """Test that MotionForm excludes interventions when creating a new motion"""
+        form = MotionForm(user=self.user)
+        self.assertNotIn('interventions', form.fields)
+
+    def test_motion_form_edit_includes_interventions_field(self):
+        """Test that MotionForm includes interventions when editing an existing motion"""
+        motion = Motion.objects.create(
+            title='Test Motion',
+            text='Test motion text',
+            session=self.session,
+            group=self.group,
+            submitted_by=self.user,
+        )
+        form = MotionForm(instance=motion, user=self.user)
+        self.assertIn('interventions', form.fields)
+
 
 class MotionVoteFormTests(TestCase):
     """Test cases for MotionVoteForm"""
@@ -939,6 +956,27 @@ class MotionCreateViewTests(TestCase):
 
         response = self.client.get(f"{reverse('motion:motion-create')}?session={self.session.pk}")
         self.assertEqual(response.status_code, 200)
+
+    def test_motion_create_form_excludes_wortmeldung(self):
+        """Test that motion create form does not show Wortmeldung field"""
+        self.client.login(username='admin', password='adminpass123')
+        response = self.client.get(reverse('motion:motion-create'))
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, 'Wortmeldung')
+
+    def test_motion_edit_form_includes_wortmeldung(self):
+        """Test that motion edit form shows Wortmeldung field"""
+        motion = Motion.objects.create(
+            title='Test Motion',
+            text='Test motion text',
+            session=self.session,
+            group=self.group,
+            submitted_by=self.superuser,
+        )
+        self.client.login(username='admin', password='adminpass123')
+        response = self.client.get(reverse('motion:motion-edit', kwargs={'pk': motion.pk}))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Wortmeldung')
 
 
 class MotionInquiryStatusPermissionTests(TestCase):

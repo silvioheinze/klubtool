@@ -238,8 +238,13 @@
   border-color: var(--kt-border);
 }
 
-.card .list-group,
-.card .list-group-item {
+.card .list-group {
+  --bs-list-group-bg: transparent;
+  background-color: transparent;
+}
+
+.card .list-group-item,
+.card .list-group-item-action {
   background-color: transparent;
 }
 

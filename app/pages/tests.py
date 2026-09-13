@@ -155,7 +155,7 @@ class HomepageTests(TestCase):
         url = reverse("home")
         response = self.client.get(url)
         
-        # Homepage shows Quick Access and/or Personal calendar when authenticated
+        # Homepage shows entity cards and/or Personal calendar when authenticated
         self.assertEqual(response.status_code, 200)
         response_text = response.content.decode()
         self.assertTrue(
@@ -163,9 +163,16 @@ class HomepageTests(TestCase):
             "Homepage should show welcome message"
         )
         self.assertTrue(
-            any(s in response_text for s in ('Quick Access', 'Personal calendar', 'Schnellzugriff', 'Kalender')),
-            "Homepage should show Quick Access or Personal calendar"
+            any(s in response_text for s in (
+                'Personal calendar', 'Persönlicher Kalender',
+                'Your Districts', 'Dein Bezirk',
+                'Your Councils', 'Deine Bezirksvertretung',
+                'Your Groups', 'Dein Klub',
+            )),
+            "Homepage should show entity cards or Personal calendar"
         )
+        self.assertNotIn('Quick Access', response_text)
+        self.assertNotIn('Schnellzugriff', response_text)
     
     def test_homepage_motion_statistics_context(self):
         """Test that motion statistics are included in context"""

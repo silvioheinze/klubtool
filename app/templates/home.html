@@ -111,91 +111,98 @@
                 </div>
             {% endif %}
             
-            <!-- Quick Access to Connected Districts, Councils, and Groups -->
+            <!-- Districts, Councils, and Groups -->
             {% if districts_from_memberships or councils_from_memberships or user_all_groups %}
                 <div class="row mt-4">
-                    <div class="col-12">
-                        <div class="card">
-                            <div class="card-header">
-                                <h5 class="mb-0"><i class="bi bi-link-45deg"></i> {% trans "Quick Access" %}</h5>
-                            </div>
-                            <div class="card-body">
-                                <div class="row">
-                                    {% if districts_from_memberships %}
-                                        <div class="col-md-4">
-                                            <h6><i class="bi bi-geo-alt"></i> {% trans "Your Districts" %}</h6>
-                                            <div class="list-group">
-                                                {% for district in districts_from_memberships %}
-                                                    <a href="{% url 'district:district-detail' district.pk %}" class="list-group-item list-group-item-action">
-                                                        <div class="d-flex w-100 justify-content-between">
-                                                            <h6 class="mb-1">{{ district.name }}</h6>
-                                                            <small class="text-muted">{{ district.code }}</small>
-                                                        </div>
-                                                        <small class="text-muted">
-                                                            {% if district.is_active %}
-                                                                <span class="badge bg-success">{% trans "Active" %}</span>
-                                                            {% else %}
-                                                                <span class="badge bg-danger">{% trans "Inactive" %}</span>
-                                                            {% endif %}
-                                                        </small>
-                                                    </a>
-                                                {% endfor %}
-                                            </div>
-                                        </div>
-                                    {% endif %}
-                                    
-                                    {% if councils_from_memberships %}
-                                        <div class="col-md-4">
-                                            <h6><i class="bi bi-building"></i> {% trans "Your Councils" %}</h6>
-                                            <div class="list-group">
-                                                {% for council in councils_from_memberships %}
-                                                    <a href="{% url 'district:council-detail' council.pk %}" class="list-group-item list-group-item-action">
-                                                        <div class="d-flex w-100 justify-content-between">
-                                                            <h6 class="mb-1">{{ council.name }}</h6>
-                                                            <small class="text-muted">{{ council.district.name }}</small>
-                                                        </div>
-                                                        <small class="text-muted">
-                                                            {% if council.is_active %}
-                                                                <span class="badge bg-success">{% trans "Active" %}</span>
-                                                            {% else %}
-                                                                <span class="badge bg-danger">{% trans "Inactive" %}</span>
-                                                            {% endif %}
-                                                        </small>
-                                                    </a>
-                                                {% endfor %}
-                                            </div>
-                                        </div>
-                                    {% endif %}
-                                    
-                                    {% if user_all_groups %}
-                                        <div class="col-md-4">
-                                            <h6><i class="bi bi-people"></i> {% trans "Your Groups" %}</h6>
-                                            <div class="list-group">
-                                                {% for membership in user_all_groups %}
-                                                    <a href="{% url 'group:group-detail' membership.group.pk %}" class="list-group-item list-group-item-action">
-                                                        <div class="d-flex w-100 justify-content-between">
-                                                            <h6 class="mb-1">{{ membership.group.name }}</h6>
-                                                            {% if membership.group.party %}
-                                                                <small class="text-muted">{{ membership.group.party.name }}</small>
-                                                            {% endif %}
-                                                        </div>
-                                                        <small class="text-muted">
-                                                            {% if membership.group.is_active %}
-                                                                <span class="badge bg-success">{% trans "Active" %}</span>
-                                                            {% else %}
-                                                                <span class="badge bg-danger">{% trans "Inactive" %}</span>
-                                                            {% endif %}
-                                                        </small>
-                                                    </a>
-                                                {% endfor %}
-                                            </div>
-                                        </div>
-                                    {% endif %}
+                    {% if districts_from_memberships %}
+                        <div class="col-md-4 mb-4 mb-md-0">
+                            <div class="card h-100">
+                                <div class="card-header">
+                                    <h5 class="mb-0"><i class="bi bi-geo-alt"></i> {% trans "Your Districts" %}</h5>
+                                </div>
+                                <div class="card-body p-0">
+                                    <div class="list-group list-group-flush">
+                                        {% for district in districts_from_memberships %}
+                                            <a href="{% url 'district:district-detail' district.pk %}" class="list-group-item list-group-item-action">
+                                                <div class="d-flex w-100 justify-content-between">
+                                                    <h6 class="mb-1">{{ district.name }}</h6>
+                                                    <small class="text-muted">{{ district.code }}</small>
+                                                </div>
+                                                <small class="text-muted">
+                                                    {% if district.is_active %}
+                                                        <span class="badge bg-success">{% trans "Active" %}</span>
+                                                    {% else %}
+                                                        <span class="badge bg-danger">{% trans "Inactive" %}</span>
+                                                    {% endif %}
+                                                </small>
+                                            </a>
+                                        {% endfor %}
+                                    </div>
                                 </div>
                             </div>
                         </div>
+                    {% endif %}
+
+                    {% if councils_from_memberships %}
+                        <div class="col-md-4 mb-4 mb-md-0">
+                            <div class="card h-100">
+                                <div class="card-header">
+                                    <h5 class="mb-0"><i class="bi bi-building"></i> {% trans "Your Councils" %}</h5>
+                                </div>
+                                <div class="card-body p-0">
+                                    <div class="list-group list-group-flush">
+                                        {% for council in councils_from_memberships %}
+                                            <a href="{% url 'district:council-detail' council.pk %}" class="list-group-item list-group-item-action">
+                                                <div class="d-flex w-100 justify-content-between">
+                                                    <h6 class="mb-1">{{ council.name }}</h6>
+                                                    <small class="text-muted">{{ council.district.name }}</small>
+                                                </div>
+                                                <small class="text-muted">
+                                                    {% if council.is_active %}
+                                                        <span class="badge bg-success">{% trans "Active" %}</span>
+                                                    {% else %}
+                                                        <span class="badge bg-danger">{% trans "Inactive" %}</span>
+                                                    {% endif %}
+                                                </small>
+                                            </a>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    {% if user_all_groups %}
+                        <div class="col-md-4 mb-4 mb-md-0">
+                            <div class="card h-100">
+                                <div class="card-header">
+                                    <h5 class="mb-0"><i class="bi bi-people"></i> {% trans "Your Groups" %}</h5>
+                                </div>
+                                <div class="card-body p-0">
+                                    <div class="list-group list-group-flush">
+                                        {% for membership in user_all_groups %}
+                                            <a href="{% url 'group:group-detail' membership.group.pk %}" class="list-group-item list-group-item-action">
+                                                <div class="d-flex w-100 justify-content-between">
+                                                    <h6 class="mb-1">{{ membership.group.name }}</h6>
+                                                    {% if membership.group.party %}
+                                                        <small class="text-muted">{{ membership.group.party.name }}</small>
+                                                    {% endif %}
+                                                </div>
+                                                <small class="text-muted">
+                                                    {% if membership.group.is_active %}
+                                                        <span class="badge bg-success">{% trans "Active" %}</span>
+                                                    {% else %}
+                                                        <span class="badge bg-danger">{% trans "Inactive" %}</span>
+                                                    {% endif %}
+                                                </small>
+                                            </a>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
                 </div>
-            </div>
             {% endif %}
             
             <!-- Personal Calendar and Monthly Calendar -->

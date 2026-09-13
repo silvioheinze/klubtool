@@ -315,8 +315,8 @@
                                                         <span class="badge bg-info me-1">
                                                             <i class="bi bi-star-half"></i> {% trans "Deputy Leader" %}
                                                         </span>
-                                                    {% elif role.name == 'Group member' %}
-                                                        <span class="badge bg-secondary me-1">{% trans "Group member" %}</span>
+                                                    {% elif role.name == 'Mitarbeiterin' %}
+                                                        <span class="badge bg-secondary me-1">{% trans "Mitarbeiterin" %}</span>
                                                     {% elif role.name == 'Party member' %}
                                                         <span class="badge bg-secondary me-1">{% trans "Party member" %}</span>
                                                     {% else %}
@@ -418,8 +418,8 @@
                                                 <span class="badge bg-info">
                                                     <i class="bi bi-star-half"></i> {% trans "Deputy Leader" %}
                                                 </span>
-                                            {% elif role.name == 'Group member' %}
-                                                <span class="badge bg-secondary">{% trans "Group member" %}</span>
+                                            {% elif role.name == 'Mitarbeiterin' %}
+                                                <span class="badge bg-secondary">{% trans "Mitarbeiterin" %}</span>
                                             {% elif role.name == 'Party member' %}
                                                 <span class="badge bg-secondary">{% trans "Party member" %}</span>
                                             {% else %}
@@ -472,8 +472,8 @@ function openRoleManagement(memberId, memberName, currentRoles) {
                 return '<span class="badge bg-primary me-1"><i class="bi bi-star"></i> Leader</span>';
             } else if (role.includes('Party member')) {
                 return '<span class="badge bg-secondary me-1">Party member</span>';
-            } else if (role.includes('Group member')) {
-                return '<span class="badge bg-secondary me-1">Group member</span>';
+            } else if (role.includes('Mitarbeiterin')) {
+                return '<span class="badge bg-secondary me-1">Mitarbeiterin</span>';
             } else {
                 return '<span class="badge bg-secondary me-1">' + role + '</span>';
             }

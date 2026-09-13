@@ -1520,11 +1520,41 @@ msgstr ""
 "Das kann man nicht rückgängig machen. Alle Daten des Ausschusses werden "
 "endgültig gelöscht."
 
-#: templates/district/committee_confirm_delete.html:36
-#: templates/district/committee_detail.html:33
 #: templates/district/committee_form.html:53
 msgid "Committee Information"
 msgstr "Ausschussinformation"
+
+#: templates/district/committee_confirm_delete.html:36
+#: templates/district/committee_detail.html:33
+msgctxt "Ausschuss"
+msgid "Committee Information"
+msgstr "Ausschussinformation"
+
+#: templates/district/committee_confirm_delete.html:36
+#: templates/district/committee_detail.html:33
+msgctxt "Kommission"
+msgid "Committee Information"
+msgstr "Kommissionsinformation"
+
+#: templates/district/committee_detail.html:91
+msgctxt "Ausschuss"
+msgid "Committee Meetings"
+msgstr "Ausschusssitzungen"
+
+#: templates/district/committee_detail.html:91
+msgctxt "Kommission"
+msgid "Committee Meetings"
+msgstr "Kommissionssitzungen"
+
+#: templates/district/committee_detail.html:248
+msgctxt "Ausschuss"
+msgid "Committee Members"
+msgstr "Ausschussmitglieder"
+
+#: templates/district/committee_detail.html:248
+msgctxt "Kommission"
+msgid "Committee Members"
+msgstr "Kommissionsmitglieder"
 
 #: templates/district/committee_confirm_delete.html:39
 #: templates/district/committee_detail.html:40
@@ -1836,13 +1866,6 @@ msgstr "Bearbeiten"
 msgid "Back"
 msgstr "Zurück"
 
-#: templates/district/committee_detail.html:91
-#, fuzzy
-#| msgctxt "Ausschuss"
-#| msgid "Committee Meetings"
-msgid "Committee Meetings"
-msgstr "Ausschusssitzungen"
-
 #: templates/district/committee_detail.html:96
 #: templates/district/committee_detail.html:256
 #: templates/district/council_detail.html:137
@@ -1998,13 +2021,6 @@ msgstr "Alle Anträge anzeigen"
 #: templates/district/committee_detail.html:236
 msgid "No Motions found"
 msgstr "Keine Anträge gefunden"
-
-#: templates/district/committee_detail.html:248
-#, fuzzy
-#| msgctxt "Ausschuss"
-#| msgid "Committee Members"
-msgid "Committee Members"
-msgstr "Ausschussmitglieder"
 
 #: templates/district/committee_detail.html:252
 #: templates/district/committee_membership_history.html:4
@@ -4543,6 +4559,15 @@ msgstr "Klubobmensch Stellvertretung"
 msgid "Group member"
 msgstr "Gruppenmitglied"
 
+#: templates/group/group_detail.html templates/group/member_detail.html
+#: templates/group/member_form.html templates/user/list.html
+msgid "Mitarbeiterin"
+msgstr "Mitarbeiterin"
+
+#: templates/group/member_form.html
+msgid "Staff member of the group with basic participation rights"
+msgstr "Mitarbeiterin der Gruppe mit grundlegenden Beteiligungsrechten"
+
 #: templates/group/group_detail.html:321 templates/group/group_detail.html:424
 #: templates/group/member_detail.html:87 templates/group/member_form.html:290
 #: templates/user/list.html:91
@@ -6918,26 +6943,6 @@ msgstr "Deine E-Mail-Adresse wurde bestätigt."
 
 #~ msgid "All Statuses"
 #~ msgstr "Alle Status"
-
-#~ msgctxt "Ausschuss"
-#~ msgid "Committee Information"
-#~ msgstr "Ausschussinformation"
-
-#~ msgctxt "Kommission"
-#~ msgid "Committee Information"
-#~ msgstr "Kommissionsinformation"
-
-#~ msgctxt "Kommission"
-#~ msgid "Committee Members"
-#~ msgstr "Kommissionsmitglieder"
-
-#~ msgctxt "Kommission"
-#~ msgid "Committee Meetings"
-#~ msgstr "Kommissionssitzungen"
-
-#~ msgctxt "Kommission"
-#~ msgid "Committee Motions"
-#~ msgstr "Kommissionsanträge"
 
 #~ msgid "No attachments uploaded yet."
 #~ msgstr "Keine Anhänge hochgeladen."
