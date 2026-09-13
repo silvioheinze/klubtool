@@ -238,6 +238,18 @@
   border-color: var(--kt-border);
 }
 
+.dashboard-membership-card .card-body,
+.dashboard-membership-card .list-group,
+.dashboard-membership-card .list-group-item {
+  background-color: var(--kt-surface);
+}
+
+.dashboard-membership-card .list-group-item-action:hover,
+.dashboard-membership-card .list-group-item-action:focus {
+  background-color: rgba(var(--bs-primary-rgb), 0.06);
+  color: var(--kt-text);
+}
+
 .list-group-item-primary {
   background-color: rgba(var(--bs-primary-rgb), 0.06);
   color: var(--bs-primary);

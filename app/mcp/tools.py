@@ -3,6 +3,7 @@
 import json
 from datetime import datetime
 
+from django.db.models import Q
 from django.http import QueryDict
 from django.utils import timezone
 
@@ -102,6 +103,39 @@ def list_tools():
                     'event_id': {'type': 'integer'},
                 },
                 'required': ['event_id'],
+            },
+        },
+        {
+            'name': 'list_motions',
+            'description': 'Search and list motions (Anträge) with optional filters. Same access as the web list.',
+            'inputSchema': {
+                'type': 'object',
+                'properties': {
+                    'search': {'type': 'string', 'description': 'Search title, text, rationale, or group name'},
+                    'status': {'type': 'string', 'description': 'Motion status filter'},
+                    'session_id': {'type': 'integer'},
+                    'party_id': {'type': 'integer'},
+                    'motion_type': {'type': 'string', 'enum': ['general', 'resolution']},
+                    'tags': {'type': 'array', 'items': {'type': 'string'}, 'description': 'Tag names'},
+                    'limit': {'type': 'integer', 'description': 'Max results (default 20, max 50)'},
+                    'offset': {'type': 'integer', 'description': 'Pagination offset (default 0)'},
+                },
+            },
+        },
+        {
+            'name': 'list_inquiries',
+            'description': 'Search and list inquiries (Anfragen) with optional filters. Same access as the web list.',
+            'inputSchema': {
+                'type': 'object',
+                'properties': {
+                    'search': {'type': 'string', 'description': 'Search title, text, or group name'},
+                    'status': {'type': 'string', 'description': 'Inquiry status filter'},
+                    'session_id': {'type': 'integer'},
+                    'party_id': {'type': 'integer'},
+                    'tags': {'type': 'array', 'items': {'type': 'string'}, 'description': 'Tag names'},
+                    'limit': {'type': 'integer', 'description': 'Max results (default 20, max 50)'},
+                    'offset': {'type': 'integer', 'description': 'Pagination offset (default 0)'},
+                },
             },
         },
         {
@@ -324,6 +358,137 @@ def _user_can_create_motion_or_inquiry(user):
         return True
     group_ids = _get_user_accessible_group_ids(user)
     return group_ids is not None and len(group_ids) > 0
+
+
+def _user_can_list_motions_or_inquiries(user):
+    """Same access as MotionListView / InquiryListView."""
+    if user.is_superuser or user.has_role_permission('motion.view'):
+        return True
+    group_ids = _get_user_accessible_group_ids(user)
+    return group_ids is not None and len(group_ids) > 0
+
+
+def _require_list_motions_or_inquiries(user):
+    if not _user_can_list_motions_or_inquiries(user):
+        raise McpToolError('You do not have permission to list motions or inquiries.')
+
+
+def _parse_pagination(arguments):
+    try:
+        limit = int(arguments.get('limit', 20))
+    except (TypeError, ValueError) as exc:
+        raise McpToolError('Invalid limit.') from exc
+    try:
+        offset = int(arguments.get('offset', 0))
+    except (TypeError, ValueError) as exc:
+        raise McpToolError('Invalid offset.') from exc
+    if limit < 1:
+        raise McpToolError('limit must be at least 1.')
+    if limit > 50:
+        raise McpToolError('limit must not exceed 50.')
+    if offset < 0:
+        raise McpToolError('offset must not be negative.')
+    return limit, offset
+
+
+def _validate_choice(value, choices, field_name):
+    if value is None or value == '':
+        return None
+    valid = {choice for choice, _label in choices}
+    if value not in valid:
+        raise McpToolError(f'Invalid {field_name}: {value!r}.')
+    return value
+
+
+def _apply_tag_name_filter(queryset, tags):
+    if not tags:
+        return queryset
+    if isinstance(tags, str):
+        tag_names = [name.strip() for name in tags.split(',') if name.strip()]
+    else:
+        tag_names = [str(name).strip() for name in tags if str(name).strip()]
+    if not tag_names:
+        return queryset
+    for tag_name in tag_names:
+        queryset = queryset.filter(tags__name__iexact=tag_name)
+    return queryset.distinct()
+
+
+def _motion_base_queryset(user):
+    base = Motion.objects.all().select_related(
+        'session', 'group', 'committee', 'submitted_by',
+    ).prefetch_related('parties', 'interventions', 'tags').order_by('-submitted_date')
+    if user.is_superuser or user.has_role_permission('motion.view'):
+        return base
+    group_ids = _get_user_accessible_group_ids(user)
+    return base.filter(group__pk__in=group_ids) if group_ids else base.none()
+
+
+def _inquiry_base_queryset(user):
+    base = Inquiry.objects.filter(is_active=True).select_related(
+        'session', 'group', 'submitted_by',
+    ).prefetch_related('parties', 'interventions', 'tags').order_by('-submitted_date')
+    if user.is_superuser or user.has_role_permission('motion.view'):
+        return base
+    group_ids = _get_user_accessible_group_ids(user)
+    return base.filter(group__pk__in=group_ids) if group_ids else base.none()
+
+
+def _filter_motions_queryset(queryset, arguments):
+    search = arguments.get('search')
+    if search:
+        queryset = queryset.filter(
+            Q(title__icontains=search)
+            | Q(text__icontains=search)
+            | Q(rationale__icontains=search)
+            | Q(group__name__icontains=search)
+        )
+    status = _validate_choice(arguments.get('status'), Motion.STATUS_CHOICES, 'status')
+    if status:
+        queryset = queryset.filter(status=status)
+    motion_type = _validate_choice(
+        arguments.get('motion_type'),
+        Motion.MOTION_TYPE_CHOICES,
+        'motion_type',
+    )
+    if motion_type:
+        queryset = queryset.filter(motion_type=motion_type)
+    if arguments.get('session_id') is not None:
+        queryset = queryset.filter(session_id=arguments['session_id'])
+    if arguments.get('party_id') is not None:
+        queryset = queryset.filter(parties=arguments['party_id'])
+    queryset = _apply_tag_name_filter(queryset, arguments.get('tags'))
+    return queryset
+
+
+def _filter_inquiries_queryset(queryset, arguments):
+    search = arguments.get('search')
+    if search:
+        queryset = queryset.filter(
+            Q(title__icontains=search)
+            | Q(text__icontains=search)
+            | Q(group__name__icontains=search)
+        )
+    status = _validate_choice(arguments.get('status'), Inquiry.STATUS_CHOICES, 'status')
+    if status:
+        queryset = queryset.filter(status=status)
+    if arguments.get('session_id') is not None:
+        queryset = queryset.filter(session_id=arguments['session_id'])
+    if arguments.get('party_id') is not None:
+        queryset = queryset.filter(parties=arguments['party_id'])
+    queryset = _apply_tag_name_filter(queryset, arguments.get('tags'))
+    return queryset
+
+
+def _paginated_list(queryset, *, limit, offset, serialize_fn, request, result_key):
+    count = queryset.count()
+    page = queryset[offset:offset + limit]
+    return {
+        'count': count,
+        'offset': offset,
+        'limit': limit,
+        result_key: [serialize_fn(obj, request) for obj in page],
+    }
 
 
 def _user_can_view_motion(user, motion_pk):
@@ -594,11 +759,37 @@ def call_tool(name, arguments, user, request=None):
         event.delete()
         return {'deleted': True, 'event': payload}
 
+    if name == 'list_motions':
+        _require_list_motions_or_inquiries(user)
+        limit, offset = _parse_pagination(arguments)
+        queryset = _filter_motions_queryset(_motion_base_queryset(user), arguments)
+        return _paginated_list(
+            queryset,
+            limit=limit,
+            offset=offset,
+            serialize_fn=_serialize_motion,
+            request=request,
+            result_key='motions',
+        )
+
     if name == 'get_motion':
         motion = _get_motion_or_error(arguments['motion_id'])
         if not _user_can_view_motion(user, motion.pk):
             raise McpToolError('You do not have permission to view this motion.')
         return {'motion': _serialize_motion(motion, request)}
+
+    if name == 'list_inquiries':
+        _require_list_motions_or_inquiries(user)
+        limit, offset = _parse_pagination(arguments)
+        queryset = _filter_inquiries_queryset(_inquiry_base_queryset(user), arguments)
+        return _paginated_list(
+            queryset,
+            limit=limit,
+            offset=offset,
+            serialize_fn=_serialize_inquiry,
+            request=request,
+            result_key='inquiries',
+        )
 
     if name == 'create_motion':
         if not _user_can_create_motion_or_inquiry(user):

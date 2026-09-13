@@ -314,6 +314,19 @@ class CustomColorsTests(TestCase):
         self.assertIn('.card .list-group-item', css_content)
         self.assertIn('background-color: transparent', css_content)
 
+    def test_dashboard_membership_card_uses_surface_background(self):
+        """Dashboard district/council/group cards use surface color in body and list items."""
+        css_path = os.path.join('static', 'css', 'custom-colors.css')
+        with open(css_path, 'r') as f:
+            css_content = f.read()
+        self.assertIn('.dashboard-membership-card .card-body', css_content)
+        self.assertIn('background-color: var(--kt-surface)', css_content)
+
+        template_path = os.path.join('templates', 'home.html')
+        with open(template_path, 'r') as f:
+            template_content = f.read()
+        self.assertIn('dashboard-membership-card', template_content)
+
     def test_custom_colors_css_contains_theme_surface_tokens(self):
         """Test that custom-colors.css defines melytics-like surface tokens"""
         css_path = os.path.join('static', 'css', 'custom-colors.css')

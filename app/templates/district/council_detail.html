@@ -167,13 +167,13 @@
                 </div>
                 <div class="card-body">
                     {% if committees %}
-                        <ul class="list-group list-group-flush">
+                        <div class="d-grid gap-2">
                             {% for committee in committees %}
-                                <li class="list-group-item px-0 d-flex align-items-center">
-                                    <a href="{% url 'district:committee-detail' committee.pk %}" class="text-break">{{ committee.name }}</a>
-                                </li>
+                                <a href="{% url 'district:committee-detail' committee.pk %}" class="btn btn-outline-primary text-start text-break">
+                                    {{ committee.name }}
+                                </a>
                             {% endfor %}
-                        </ul>
+                        </div>
                     {% else %}
                         <div class="text-center py-4">
                             <i class="bi bi-people fs-1 text-muted"></i>

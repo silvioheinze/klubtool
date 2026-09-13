@@ -302,6 +302,8 @@ class McpMotionInquiryTests(TestCase):
         response = self._rpc('tools/list', token=self.member_token)
         names = [tool['name'] for tool in response.json()['result']['tools']]
         for tool_name in (
+            'list_motions',
+            'list_inquiries',
             'create_motion',
             'update_motion',
             'get_motion',
@@ -465,6 +467,104 @@ class McpMotionInquiryTests(TestCase):
         )
         self.assertTrue(is_error)
         self.assertFalse(Inquiry.objects.filter(title='Bad District Inquiry').exists())
+
+    def test_list_motions_and_inquiries_respects_group_access(self):
+        own_motion = Motion.objects.create(
+            title='Own Group Motion',
+            text='Visible',
+            session=self.session,
+            group=self.group,
+            submitted_by=self.member,
+            status='draft',
+        )
+        other_motion = Motion.objects.create(
+            title='Other Group Motion',
+            text='Hidden',
+            session=self.other_session,
+            group=self.other_group,
+            submitted_by=self.member,
+            status='draft',
+        )
+        own_inquiry = Inquiry.objects.create(
+            title='Own Group Inquiry',
+            text='Visible inquiry',
+            session=self.session,
+            group=self.group,
+            submitted_by=self.member,
+            status='draft',
+        )
+        Inquiry.objects.create(
+            title='Other Group Inquiry',
+            text='Hidden inquiry',
+            session=self.other_session,
+            group=self.other_group,
+            submitted_by=self.member,
+            status='draft',
+        )
+
+        motions, is_error = self._tool_call('list_motions', {}, self.member_token)
+        self.assertFalse(is_error)
+        motion_ids = {item['id'] for item in motions['motions']}
+        self.assertIn(own_motion.pk, motion_ids)
+        self.assertNotIn(other_motion.pk, motion_ids)
+
+        inquiries, is_error = self._tool_call('list_inquiries', {}, self.member_token)
+        self.assertFalse(is_error)
+        inquiry_ids = {item['id'] for item in inquiries['inquiries']}
+        self.assertIn(own_inquiry.pk, inquiry_ids)
+        self.assertEqual(inquiries['count'], 1)
+
+    def test_outsider_cannot_list_motions_or_inquiries(self):
+        Motion.objects.create(
+            title='Any Motion',
+            session=self.session,
+            group=self.group,
+            submitted_by=self.member,
+            status='draft',
+        )
+        data, is_error = self._tool_call('list_motions', {}, self.outsider_token)
+        self.assertTrue(is_error)
+        self.assertIn('permission', data['error'].lower())
+
+        data, is_error = self._tool_call('list_inquiries', {}, self.outsider_token)
+        self.assertTrue(is_error)
+        self.assertIn('permission', data['error'].lower())
+
+    def test_list_motions_search_and_session_filter(self):
+        Motion.objects.create(
+            title='Housing Budget Motion',
+            text='Details',
+            session=self.session,
+            group=self.group,
+            submitted_by=self.member,
+            status='draft',
+        )
+        Motion.objects.create(
+            title='Unrelated Motion',
+            text='Other',
+            session=self.other_session,
+            group=self.group,
+            submitted_by=self.member,
+            status='draft',
+        )
+
+        data, is_error = self._tool_call(
+            'list_motions',
+            {'search': 'Housing'},
+            self.member_token,
+        )
+        self.assertFalse(is_error)
+        self.assertEqual(data['count'], 1)
+        self.assertEqual(data['motions'][0]['title'], 'Housing Budget Motion')
+
+        data, is_error = self._tool_call(
+            'list_motions',
+            {'session_id': self.session.pk},
+            self.member_token,
+        )
+        self.assertFalse(is_error)
+        self.assertEqual(data['count'], 1)
+        self.assertEqual(data['motions'][0]['session_id'], self.session.pk)
 
 
 class McpTokenSettingsTests(TestCase):

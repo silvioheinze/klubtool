@@ -304,9 +304,11 @@ For local development the app still listens on HTTP; Settings always shows `http
 | `create_district_event` | Create event (district managers only) |
 | `update_district_event` | Update event (managers only) |
 | `delete_district_event` | Delete event (managers only) |
+| `list_motions` | Search/list motions with optional filters (view access) |
 | `get_motion` | Single motion by id (view access) |
 | `create_motion` | Create motion as draft (group members / `motion.create`) |
 | `update_motion` | Update motion; omitted fields unchanged; status not editable |
+| `list_inquiries` | Search/list inquiries with optional filters (view access) |
 | `get_inquiry` | Single inquiry by id (view access) |
 | `create_inquiry` | Create inquiry as draft (group members / `motion.create`) |
 | `update_inquiry` | Update inquiry; omitted fields unchanged; status not editable |
@@ -320,6 +322,21 @@ Example `create_district_event` arguments:
   "scheduled_date": "2026-09-15T18:00:00+02:00",
   "description": "Optional details",
   "external_link": "https://example.com"
+}
+```
+
+Example `list_motions` arguments:
+
+```json
+{
+  "search": "Wohnbau",
+  "status": "draft",
+  "session_id": 42,
+  "party_id": 1,
+  "motion_type": "general",
+  "tags": ["housing"],
+  "limit": 20,
+  "offset": 0
 }
 ```
 
