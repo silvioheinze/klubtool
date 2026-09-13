@@ -312,6 +312,11 @@ For local development the app still listens on HTTP; Settings always shows `http
 | `get_inquiry` | Single inquiry by id (view access) |
 | `create_inquiry` | Create inquiry as draft (group members / `motion.create`) |
 | `update_inquiry` | Update inquiry; omitted fields unchanged; status not editable |
+| `upload_session_attachment` | Upload file to session (superuser only; max 50 MB) |
+| `upload_motion_attachment` | Upload file to motion (superuser, `motion.attach`, or group member) |
+| `upload_inquiry_attachment` | Upload file to inquiry (same permissions as motion attachments) |
+
+`get_motion` and `get_inquiry` include an `attachments` array (`id`, `filename`, `file_type`, `url`).
 
 Example `create_district_event` arguments:
 
@@ -356,6 +361,20 @@ Example `create_motion` arguments:
 ```
 
 `group_id` is optional when the user belongs to a group (defaults to the first accessible group). On create, motions are always saved as `draft` and do not accept `intervention_ids` (Wortmeldung); use `update_motion` with `intervention_ids` to set speakers after creation.
+
+Example `upload_motion_attachment` arguments (file content as base64; optional `data:` URL prefix is stripped):
+
+```json
+{
+  "motion_id": 42,
+  "filename": "agenda.pdf",
+  "content_base64": "JVBERi0xLjQK...",
+  "file_type": "document",
+  "description": "Supporting document"
+}
+```
+
+Allowed extensions: `.pdf`, `.doc`, `.docx`, `.txt`, `.jpg`, `.jpeg`, `.png`, `.gif`, `.xls`, `.xlsx`, `.ppt`, `.pptx`. Motion and inquiry uploads are limited to 10 MB; session uploads to 50 MB.
 
 ## 🛠️ Development
 

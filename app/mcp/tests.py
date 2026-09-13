@@ -1,5 +1,6 @@
 """Tests for the district events MCP server."""
 
+import base64
 import json
 from datetime import timedelta
 
@@ -8,9 +9,9 @@ from django.test import Client, TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from district.models import Council, District, DistrictEvent, Party, Session, Term
+from district.models import Council, District, DistrictEvent, Party, Session, SessionAttachment, Term
 from group.models import Group, GroupMember
-from motion.models import Inquiry, Motion
+from motion.models import Inquiry, InquiryAttachment, Motion, MotionAttachment
 from user.models import McpToken, Role
 
 User = get_user_model()
@@ -310,6 +311,9 @@ class McpMotionInquiryTests(TestCase):
             'create_inquiry',
             'update_inquiry',
             'get_inquiry',
+            'upload_session_attachment',
+            'upload_motion_attachment',
+            'upload_inquiry_attachment',
         ):
             self.assertIn(tool_name, names)
 
@@ -565,6 +569,218 @@ class McpMotionInquiryTests(TestCase):
         self.assertFalse(is_error)
         self.assertEqual(data['count'], 1)
         self.assertEqual(data['motions'][0]['session_id'], self.session.pk)
+
+
+class McpAttachmentTests(TestCase):
+    """MCP JSON-RPC tools for session, motion, and inquiry attachments."""
+
+    PDF_BYTES = b'%PDF-1.4 test content'
+
+    def setUp(self):
+        self.client = Client()
+        self.member = User.objects.create_user(
+            username='attach_member',
+            email='attach_member@example.com',
+            password='memberpass123',
+        )
+        self.outsider = User.objects.create_user(
+            username='attach_outsider',
+            email='attach_outsider@example.com',
+            password='outsiderpass123',
+        )
+        self.superuser = User.objects.create_superuser(
+            username='attach_super',
+            email='attach_super@example.com',
+            password='superpass123',
+        )
+        self.district = District.objects.create(
+            name='Attachment MCP District',
+            code='AMD',
+            description='Test district',
+            is_active=True,
+        )
+        self.party = Party.objects.create(
+            name='Attachment MCP Party',
+            district=self.district,
+            is_active=True,
+        )
+        self.group = Group.objects.create(
+            name='Attachment MCP Group',
+            party=self.party,
+            is_active=True,
+        )
+        GroupMember.objects.create(user=self.member, group=self.group, is_active=True)
+        self.council, _ = Council.objects.get_or_create(
+            district=self.district,
+            defaults={'name': 'Attachment MCP Council', 'is_active': True},
+        )
+        self.term = Term.objects.create(
+            name='Attachment MCP Term',
+            start_date=timezone.now().date(),
+            end_date=(timezone.now() + timedelta(days=365)).date(),
+        )
+        self.session = Session.objects.create(
+            title='Attachment MCP Session',
+            council=self.council,
+            term=self.term,
+            scheduled_date=timezone.now() + timedelta(days=7),
+            is_active=True,
+        )
+        self.motion = Motion.objects.create(
+            title='Attachment Motion',
+            text='Body',
+            session=self.session,
+            group=self.group,
+            submitted_by=self.member,
+            status='draft',
+        )
+        self.inquiry = Inquiry.objects.create(
+            title='Attachment Inquiry',
+            text='Question',
+            session=self.session,
+            group=self.group,
+            submitted_by=self.member,
+            status='draft',
+        )
+        _, self.member_token = McpToken.create_token(self.member)
+        _, self.outsider_token = McpToken.create_token(self.outsider)
+        _, self.superuser_token = McpToken.create_token(self.superuser)
+        self.pdf_base64 = base64.b64encode(self.PDF_BYTES).decode('ascii')
+
+    def _rpc(self, method, params=None, token=None, request_id=1):
+        headers = {'HTTP_AUTHORIZATION': f'Bearer {token}'} if token else {}
+        payload = {
+            'jsonrpc': '2.0',
+            'id': request_id,
+            'method': method,
+            'params': params or {},
+        }
+        return self.client.post(
+            reverse('mcp'),
+            data=json.dumps(payload),
+            content_type='application/json',
+            **headers,
+        )
+
+    def _tool_call(self, name, arguments, token):
+        response = self._rpc(
+            'tools/call',
+            {'name': name, 'arguments': arguments},
+            token=token,
+        )
+        self.assertEqual(response.status_code, 200, response.content)
+        body = response.json()
+        self.assertNotIn('error', body)
+        result = body['result']
+        text = result['content'][0]['text']
+        return json.loads(text), result.get('isError', False)
+
+    def test_member_can_upload_motion_and_inquiry_attachments(self):
+        motion_data, motion_error = self._tool_call(
+            'upload_motion_attachment',
+            {
+                'motion_id': self.motion.pk,
+                'filename': 'motion-doc.pdf',
+                'content_base64': self.pdf_base64,
+            },
+            self.member_token,
+        )
+        self.assertFalse(motion_error)
+        self.assertEqual(motion_data['attachment']['filename'], 'motion-doc.pdf')
+        self.assertEqual(motion_data['attachment']['file_type'], 'document')
+        self.assertTrue(MotionAttachment.objects.filter(motion=self.motion).exists())
+
+        inquiry_data, inquiry_error = self._tool_call(
+            'upload_inquiry_attachment',
+            {
+                'inquiry_id': self.inquiry.pk,
+                'filename': 'inquiry-doc.pdf',
+                'content_base64': self.pdf_base64,
+            },
+            self.member_token,
+        )
+        self.assertFalse(inquiry_error)
+        self.assertEqual(inquiry_data['attachment']['filename'], 'inquiry-doc.pdf')
+        self.assertTrue(InquiryAttachment.objects.filter(inquiry=self.inquiry).exists())
+
+        fetched, is_error = self._tool_call(
+            'get_motion',
+            {'motion_id': self.motion.pk},
+            self.member_token,
+        )
+        self.assertFalse(is_error)
+        self.assertEqual(len(fetched['motion']['attachments']), 1)
+        self.assertEqual(fetched['motion']['attachments'][0]['filename'], 'motion-doc.pdf')
+
+    def test_outsider_cannot_upload_motion_or_inquiry_attachments(self):
+        data, is_error = self._tool_call(
+            'upload_motion_attachment',
+            {
+                'motion_id': self.motion.pk,
+                'filename': 'forbidden.pdf',
+                'content_base64': self.pdf_base64,
+            },
+            self.outsider_token,
+        )
+        self.assertTrue(is_error)
+        self.assertIn('permission', data['error'].lower())
+        self.assertFalse(MotionAttachment.objects.filter(motion=self.motion).exists())
+
+        data, is_error = self._tool_call(
+            'upload_inquiry_attachment',
+            {
+                'inquiry_id': self.inquiry.pk,
+                'filename': 'forbidden.pdf',
+                'content_base64': self.pdf_base64,
+            },
+            self.outsider_token,
+        )
+        self.assertTrue(is_error)
+        self.assertIn('permission', data['error'].lower())
+        self.assertFalse(InquiryAttachment.objects.filter(inquiry=self.inquiry).exists())
+
+    def test_superuser_can_upload_session_attachment_member_cannot(self):
+        data, is_error = self._tool_call(
+            'upload_session_attachment',
+            {
+                'session_id': self.session.pk,
+                'filename': 'agenda.pdf',
+                'content_base64': self.pdf_base64,
+                'file_type': 'agenda',
+            },
+            self.superuser_token,
+        )
+        self.assertFalse(is_error)
+        self.assertEqual(data['attachment']['filename'], 'agenda.pdf')
+        self.assertEqual(data['attachment']['file_type'], 'agenda')
+        self.assertTrue(SessionAttachment.objects.filter(session=self.session).exists())
+
+        denied, is_error = self._tool_call(
+            'upload_session_attachment',
+            {
+                'session_id': self.session.pk,
+                'filename': 'blocked.pdf',
+                'content_base64': self.pdf_base64,
+            },
+            self.member_token,
+        )
+        self.assertTrue(is_error)
+        self.assertIn('permission', denied['error'].lower())
+        self.assertEqual(SessionAttachment.objects.filter(session=self.session).count(), 1)
+
+    def test_invalid_file_extension_returns_form_error(self):
+        data, is_error = self._tool_call(
+            'upload_motion_attachment',
+            {
+                'motion_id': self.motion.pk,
+                'filename': 'virus.exe',
+                'content_base64': base64.b64encode(b'bad').decode('ascii'),
+            },
+            self.member_token,
+        )
+        self.assertTrue(is_error)
+        self.assertIn('file', data['error'])
+        self.assertFalse(MotionAttachment.objects.filter(motion=self.motion).exists())
 
 
 class McpTokenSettingsTests(TestCase):

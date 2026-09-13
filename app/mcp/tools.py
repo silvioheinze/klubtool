@@ -1,18 +1,21 @@
 """MCP tools for district events, motions, and inquiries."""
 
+import base64
+import binascii
 import json
 from datetime import datetime
 
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db.models import Q
 from django.http import QueryDict
 from django.utils import timezone
 
-from district.forms import DistrictEventForm
-from district.models import District, DistrictEvent
+from district.forms import DistrictEventForm, SessionAttachmentForm
+from district.models import District, DistrictEvent, Session, SessionAttachment
 from district.views import user_can_manage_district_events, user_is_district_member
 from group.models import Group
-from motion.forms import InquiryForm, MotionForm
-from motion.models import Inquiry, Motion
+from motion.forms import InquiryAttachmentForm, InquiryForm, MotionAttachmentForm, MotionForm
+from motion.models import Inquiry, InquiryAttachment, Motion, MotionAttachment
 from motion.views import (
     _get_user_accessible_group_ids,
     user_can_view_inquiry,
@@ -243,6 +246,63 @@ def list_tools():
                     'tags': {'type': 'array', 'items': {'type': 'string'}},
                 },
                 'required': ['inquiry_id'],
+            },
+        },
+        {
+            'name': 'upload_session_attachment',
+            'description': 'Upload a file attachment to a council session (superuser only).',
+            'inputSchema': {
+                'type': 'object',
+                'properties': {
+                    'session_id': {'type': 'integer'},
+                    'filename': {'type': 'string', 'description': 'Original filename including extension'},
+                    'content_base64': {'type': 'string', 'description': 'File content as base64 (optional data: URL prefix allowed)'},
+                    'file_type': {
+                        'type': 'string',
+                        'enum': ['agenda', 'budget', 'invitation', 'minutes', 'other'],
+                        'description': 'Defaults to other',
+                    },
+                    'description': {'type': 'string'},
+                },
+                'required': ['session_id', 'filename', 'content_base64'],
+            },
+        },
+        {
+            'name': 'upload_motion_attachment',
+            'description': 'Upload a file attachment to a motion (same permissions as web upload).',
+            'inputSchema': {
+                'type': 'object',
+                'properties': {
+                    'motion_id': {'type': 'integer'},
+                    'filename': {'type': 'string'},
+                    'content_base64': {'type': 'string'},
+                    'file_type': {
+                        'type': 'string',
+                        'enum': ['document', 'image', 'spreadsheet', 'presentation', 'other'],
+                        'description': 'Defaults to document',
+                    },
+                    'description': {'type': 'string'},
+                },
+                'required': ['motion_id', 'filename', 'content_base64'],
+            },
+        },
+        {
+            'name': 'upload_inquiry_attachment',
+            'description': 'Upload a file attachment to an inquiry (same permissions as web upload).',
+            'inputSchema': {
+                'type': 'object',
+                'properties': {
+                    'inquiry_id': {'type': 'integer'},
+                    'filename': {'type': 'string'},
+                    'content_base64': {'type': 'string'},
+                    'file_type': {
+                        'type': 'string',
+                        'enum': ['document', 'image', 'spreadsheet', 'presentation', 'other'],
+                        'description': 'Defaults to document',
+                    },
+                    'description': {'type': 'string'},
+                },
+                'required': ['inquiry_id', 'filename', 'content_base64'],
             },
         },
     ]
@@ -525,6 +585,150 @@ def _user_can_update_inquiry(user, inquiry):
     return group_ids is not None and inquiry.group_id in group_ids
 
 
+def _decode_base64_content(content_base64):
+    if not content_base64 or not isinstance(content_base64, str):
+        raise McpToolError('content_base64 is required.')
+    payload = content_base64.strip()
+    if ',' in payload and payload.lower().startswith('data:'):
+        payload = payload.split(',', 1)[1]
+    try:
+        return base64.b64decode(payload, validate=True)
+    except (binascii.Error, ValueError) as exc:
+        raise McpToolError('Invalid base64 content.') from exc
+
+
+def _build_uploaded_file(filename, content_bytes):
+    if not filename or not isinstance(filename, str):
+        raise McpToolError('filename is required.')
+    return SimpleUploadedFile(filename, content_bytes)
+
+
+def _serialize_attachment(attachment, request=None):
+    file_url = attachment.file.url
+    if request is not None:
+        file_url = request.build_absolute_uri(file_url)
+    return {
+        'id': attachment.pk,
+        'filename': attachment.filename,
+        'file_type': attachment.file_type,
+        'description': attachment.description or '',
+        'url': file_url,
+    }
+
+
+def _user_can_upload_session_attachment(user):
+    return user.is_superuser
+
+
+def _user_can_upload_motion_attachment(user, motion):
+    if user.is_superuser or user.has_role_permission('motion.attach'):
+        return True
+    if motion.group_id is None:
+        return False
+    group_ids = _get_user_accessible_group_ids(user)
+    return group_ids is not None and motion.group_id in group_ids
+
+
+def _user_can_upload_inquiry_attachment(user, inquiry):
+    if user.is_superuser or user.has_role_permission('motion.attach'):
+        return True
+    if inquiry.group_id is None:
+        return False
+    group_ids = _get_user_accessible_group_ids(user)
+    return group_ids is not None and inquiry.group_id in group_ids
+
+
+def _get_session_or_error(session_id):
+    try:
+        return Session.objects.get(pk=session_id)
+    except Session.DoesNotExist as exc:
+        raise McpToolError(f'Session {session_id} not found.') from exc
+
+
+def _validate_attachment_form(form):
+    if not form.is_valid():
+        raise McpToolError(json.dumps(form.errors, ensure_ascii=False))
+    return form
+
+
+def _upload_session_attachment(arguments, user):
+    session = _get_session_or_error(arguments['session_id'])
+    if not _user_can_upload_session_attachment(user):
+        raise McpToolError('You do not have permission to upload session attachments.')
+    file_type = _validate_choice(
+        arguments.get('file_type', 'other'),
+        SessionAttachment.ATTACHMENT_TYPE_CHOICES,
+        'file_type',
+    ) or 'other'
+    content_bytes = _decode_base64_content(arguments['content_base64'])
+    uploaded_file = _build_uploaded_file(arguments['filename'], content_bytes)
+    form = SessionAttachmentForm(
+        data={
+            'file_type': file_type,
+            'description': arguments.get('description', ''),
+        },
+        files={'file': uploaded_file},
+    )
+    form = _validate_attachment_form(form)
+    attachment = form.save(commit=False)
+    attachment.session = session
+    attachment.uploaded_by = user
+    attachment.save()
+    return attachment
+
+
+def _upload_motion_attachment(arguments, user):
+    motion = _get_motion_or_error(arguments['motion_id'])
+    if not _user_can_upload_motion_attachment(user, motion):
+        raise McpToolError('You do not have permission to upload motion attachments.')
+    file_type = _validate_choice(
+        arguments.get('file_type', 'document'),
+        MotionAttachment.ATTACHMENT_TYPE_CHOICES,
+        'file_type',
+    ) or 'document'
+    content_bytes = _decode_base64_content(arguments['content_base64'])
+    uploaded_file = _build_uploaded_file(arguments['filename'], content_bytes)
+    form = MotionAttachmentForm(
+        data={
+            'file_type': file_type,
+            'description': arguments.get('description', ''),
+        },
+        files={'file': uploaded_file},
+    )
+    form = _validate_attachment_form(form)
+    attachment = form.save(commit=False)
+    attachment.motion = motion
+    attachment.uploaded_by = user
+    attachment.save()
+    return attachment
+
+
+def _upload_inquiry_attachment(arguments, user):
+    inquiry = _get_inquiry_or_error(arguments['inquiry_id'])
+    if not _user_can_upload_inquiry_attachment(user, inquiry):
+        raise McpToolError('You do not have permission to upload inquiry attachments.')
+    file_type = _validate_choice(
+        arguments.get('file_type', 'document'),
+        InquiryAttachment.ATTACHMENT_TYPE_CHOICES,
+        'file_type',
+    ) or 'document'
+    content_bytes = _decode_base64_content(arguments['content_base64'])
+    uploaded_file = _build_uploaded_file(arguments['filename'], content_bytes)
+    form = InquiryAttachmentForm(
+        data={
+            'file_type': file_type,
+            'description': arguments.get('description', ''),
+        },
+        files={'file': uploaded_file},
+    )
+    form = _validate_attachment_form(form)
+    attachment = form.save(commit=False)
+    attachment.inquiry = inquiry
+    attachment.uploaded_by = user
+    attachment.save()
+    return attachment
+
+
 def _serialize_motion(motion, request=None):
     url = motion.get_absolute_url()
     if request is not None:
@@ -542,6 +746,10 @@ def _serialize_motion(motion, request=None):
         'party_ids': list(motion.parties.values_list('pk', flat=True)),
         'intervention_ids': list(motion.interventions.values_list('pk', flat=True)),
         'tags': list(motion.tags.values_list('name', flat=True)),
+        'attachments': [
+            _serialize_attachment(attachment, request)
+            for attachment in motion.attachments.all()
+        ],
         'url': url,
     }
 
@@ -561,6 +769,10 @@ def _serialize_inquiry(inquiry, request=None):
         'party_ids': list(inquiry.parties.values_list('pk', flat=True)),
         'intervention_ids': list(inquiry.interventions.values_list('pk', flat=True)),
         'tags': list(inquiry.tags.values_list('name', flat=True)),
+        'attachments': [
+            _serialize_attachment(attachment, request)
+            for attachment in inquiry.attachments.all()
+        ],
         'url': url,
     }
 
@@ -676,7 +888,9 @@ def _get_motion_or_error(motion_id):
     try:
         return Motion.objects.select_related(
             'session', 'group', 'committee',
-        ).prefetch_related('parties', 'interventions', 'tags').get(pk=motion_id)
+        ).prefetch_related(
+            'parties', 'interventions', 'tags', 'attachments',
+        ).get(pk=motion_id)
     except Motion.DoesNotExist as exc:
         raise McpToolError(f'Motion {motion_id} not found.') from exc
 
@@ -685,7 +899,9 @@ def _get_inquiry_or_error(inquiry_id):
     try:
         return Inquiry.objects.select_related(
             'session', 'group',
-        ).prefetch_related('parties', 'interventions', 'tags').get(pk=inquiry_id)
+        ).prefetch_related(
+            'parties', 'interventions', 'tags', 'attachments',
+        ).get(pk=inquiry_id)
     except Inquiry.DoesNotExist as exc:
         raise McpToolError(f'Inquiry {inquiry_id} not found.') from exc
 
@@ -836,6 +1052,18 @@ def call_tool(name, arguments, user, request=None):
         form = _validate_inquiry_form(arguments, user, instance=inquiry)
         inquiry = form.save()
         return {'inquiry': _serialize_inquiry(inquiry, request)}
+
+    if name == 'upload_session_attachment':
+        attachment = _upload_session_attachment(arguments, user)
+        return {'attachment': _serialize_attachment(attachment, request)}
+
+    if name == 'upload_motion_attachment':
+        attachment = _upload_motion_attachment(arguments, user)
+        return {'attachment': _serialize_attachment(attachment, request)}
+
+    if name == 'upload_inquiry_attachment':
+        attachment = _upload_inquiry_attachment(arguments, user)
+        return {'attachment': _serialize_attachment(attachment, request)}
 
     raise McpToolError(f'Unknown tool: {name}')
 
