@@ -5029,14 +5029,6 @@ msgstr "Klubobmann/-frau mit Entscheidungsbefugnis"
 msgid "Assistant to the group leader"
 msgstr "Stellvertretung des Klubobmanns/der Klubobfrau"
 
-#: templates/group/member_form.html:293
-msgid "Secretary"
-msgstr "Sekretär"
-
-#: templates/group/member_form.html:293
-msgid "Handles administrative tasks"
-msgstr "Erledigt administrative Aufgaben"
-
 #: templates/group/member_form.html:298
 msgid "A user can only be a member of a group once"
 msgstr "Ein Benutzer kann nur einmal Mitglied eines Klub sein"
@@ -6585,15 +6577,63 @@ msgstr "MCP-Zugang"
 
 #: templates/user/settings.html:135
 msgid ""
-"Connect Cursor or other MCP clients to manage district events. Create a "
-"personal bearer token and configure your client with the MCP URL and "
-"Authorization header."
+"Connect Claude, Cursor, or other MCP clients to manage district events, "
+"motions, and inquiries. Create a personal bearer token and configure your "
+"client with the MCP URL and Authorization header."
 msgstr ""
-"Verbinde Cursor oder andere MCP-Clients, um Bezirksveranstaltungen zu "
-"verwalten. Erstelle ein persönliches Bearer-Token und konfiguriere deinen "
-"Client mit der MCP-URL und dem Authorization-Header."
+"Verbinde Claude, Cursor oder andere MCP-Clients, um Bezirksveranstaltungen, "
+"Anträge und Anfragen zu verwalten. Erstelle ein persönliches Bearer-Token "
+"und konfiguriere deinen Client mit der MCP-URL und dem Authorization-Header."
+
+#: templates/user/settings.html:137
+msgid "Add in Claude"
+msgstr "In Claude hinzufügen"
 
 #: templates/user/settings.html:139
+msgid "Create a token below, then copy the MCP server URL and Bearer token."
+msgstr ""
+"Erstelle unten ein Token und kopiere dann die MCP-Server-URL und das Bearer-"
+"Token."
+
+#: templates/user/settings.html:140
+msgid ""
+"In Claude (claude.ai or the desktop app), go to Customize → Connectors → Add "
+"custom connector."
+msgstr ""
+"In Claude (claude.ai oder der Desktop-App) gehe zu Anpassen → Connectors → "
+"Benutzerdefinierten Connector hinzufügen."
+
+#: templates/user/settings.html:141
+msgid "Paste the MCP server URL."
+msgstr "Füge die MCP-Server-URL ein."
+
+#: templates/user/settings.html:142
+msgid ""
+"Under Request headers, add Authorization. Enter the value as Bearer followed "
+"by a space and your token (for example: Bearer abc123)."
+msgstr ""
+"Unter Request headers füge Authorization hinzu. Gib den Wert als Bearer, "
+"gefolgt von einem Leerzeichen und deinem Token ein (zum Beispiel: Bearer "
+"abc123)."
+
+#: templates/user/settings.html:143
+msgid ""
+"Click Add. In a chat, open the + menu → Connectors and enable klubtool."
+msgstr ""
+"Klicke auf Hinzufügen. Öffne in einem Chat das +-Menü → Connectors und "
+"aktiviere klubtool."
+
+#: templates/user/settings.html:146
+msgid ""
+"Claude Code: run claude mcp add --transport http klubtool YOUR_MCP_URL --"
+"header \"Authorization: Bearer YOUR_TOKEN\" (replace with the URL and token "
+"from this page)."
+msgstr ""
+"Claude Code: führe claude mcp add --transport http klubtool YOUR_MCP_URL --"
+"header \"Authorization: Bearer YOUR_TOKEN\" aus (ersetze URL und Token mit "
+"den Werten von dieser Seite)."
+
+#: templates/user/settings.html:150
 msgid "MCP server URL:"
 msgstr "MCP-Server-URL:"
 

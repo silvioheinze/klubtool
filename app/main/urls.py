@@ -40,6 +40,7 @@ def redirect_local_to_district(request, path=''):
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('mcp', mcp_endpoint),
     path('mcp/', mcp_endpoint, name='mcp'),
     path('i18n/', include('django.conf.urls.i18n')),
     path('', include('pages.urls')),

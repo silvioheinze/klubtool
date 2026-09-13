@@ -347,7 +347,7 @@
 
 /* Footer */
 .footer {
-  background-color: var(--kt-surface) !important;
+  background-color: #f4f3ef !important;
   border-top: 1px solid var(--kt-border);
   color: var(--kt-muted) !important;
 }
