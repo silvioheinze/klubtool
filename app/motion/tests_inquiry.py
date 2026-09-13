@@ -313,6 +313,55 @@ class InquiryDetailViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Wortmeldung')
 
+    def test_inquiry_detail_shows_wortmeldung_autocomplete_for_editor(self):
+        """Test that inquiry detail shows Wortmeldung editor with search for editors"""
+        self.client.login(username='admin', password='adminpass123')
+        response = self.client.get(reverse('inquiry:inquiry-detail', kwargs={'pk': self.inquiry.pk}))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'wortmeldung-search')
+        self.assertContains(response, 'Keine Wortmeldung.')
+
+    def test_inquiry_intervention_add_and_delete(self):
+        """Test inquiry Wortmeldung AJAX add and delete"""
+        from group.models import GroupMember
+        member_user = User.objects.create_user(
+            username='inquiry_member',
+            email='inquiry_member@example.com',
+            password='testpass123',
+        )
+        GroupMember.objects.create(user=member_user, group=self.group, is_active=True)
+        self.client.login(username='admin', password='adminpass123')
+
+        add_response = self.client.post(
+            reverse('inquiry:inquiry-intervention-add', kwargs={'pk': self.inquiry.pk}),
+            {'user_id': member_user.pk},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+        self.assertEqual(add_response.status_code, 200)
+        self.assertTrue(self.inquiry.interventions.filter(pk=member_user.pk).exists())
+
+        delete_response = self.client.post(
+            reverse('inquiry:inquiry-intervention-delete', kwargs={'pk': self.inquiry.pk}),
+            {'user_id': member_user.pk},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+        self.assertEqual(delete_response.status_code, 200)
+        self.assertFalse(self.inquiry.interventions.filter(pk=member_user.pk).exists())
+
+    def test_inquiry_intervention_add_forbidden_for_outsider(self):
+        """Outsiders cannot modify inquiry Wortmeldung"""
+        outsider = User.objects.create_user(
+            username='inquiry_outsider',
+            password='testpass123',
+        )
+        self.client.login(username='inquiry_outsider', password='testpass123')
+        response = self.client.post(
+            reverse('inquiry:inquiry-intervention-add', kwargs={'pk': self.inquiry.pk}),
+            {'user_id': self.superuser.pk},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+        self.assertEqual(response.status_code, 403)
+
     def test_inquiry_detail_includes_export_pdf_link(self):
         """Export PDF URL appears in sidebar (Files card)."""
         self.client.login(username='admin', password='adminpass123')

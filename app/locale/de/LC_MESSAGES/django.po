@@ -5250,6 +5250,14 @@ msgstr "Einbringende Partei(en)"
 msgid "Wortmeldung"
 msgstr "Wortmeldung"
 
+#: templates/motion/_wortmeldung_editor.html
+msgid "No interventions recorded."
+msgstr "Keine Wortmeldung."
+
+#: templates/motion/_wortmeldung_editor.html
+msgid "Search group members..."
+msgstr "Klubmitglied suchen…"
+
 #: templates/motion/inquiry_detail.html:179
 #: templates/motion/motion_detail.html:382
 msgid "Files"

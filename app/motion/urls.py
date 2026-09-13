@@ -24,5 +24,7 @@ urlpatterns = [
     path('<int:motion_pk>/status/<int:status_pk>/delete/', views.motion_status_delete_view, name='motion-status-delete'),
     path('<int:pk>/group-decision/', views.motion_group_decision_view, name='motion-group-decision'),
     path('<int:motion_pk>/group-decision/<int:decision_pk>/delete/', views.motion_group_decision_delete_view, name='motion-group-decision-delete'),
+    path('<int:pk>/intervention/add/', views.motion_intervention_add_view, name='motion-intervention-add'),
+    path('<int:pk>/intervention/delete/', views.motion_intervention_delete_view, name='motion-intervention-delete'),
     path('<int:pk>/export-pdf/', views.MotionExportPDFView.as_view(), name='motion-export-pdf'),
 ]
