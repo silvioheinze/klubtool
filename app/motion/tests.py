@@ -763,6 +763,70 @@ class MotionGroupDecisionFormTests(TestCase):
         )
 
 
+class MotionListViewTests(TestCase):
+    """Test cases for MotionListView status display."""
+
+    def setUp(self):
+        self.client = Client()
+        self.superuser = User.objects.create_superuser(
+            username='admin',
+            email='admin@example.com',
+            password='adminpass123',
+        )
+        self.district = District.objects.create(
+            name='List Local',
+            code='LL',
+            description='Test local',
+            is_active=True,
+        )
+        self.council, _ = Council.objects.get_or_create(
+            district=self.district,
+            defaults={'name': 'List Council', 'is_active': True},
+        )
+        self.party = Party.objects.create(
+            name='List Party',
+            district=self.district,
+            is_active=True,
+        )
+        self.group = Group.objects.create(
+            name='List Group',
+            party=self.party,
+            is_active=True,
+        )
+        self.session = Session.objects.create(
+            title='List Session',
+            council=self.council,
+            scheduled_date=timezone.now() + timedelta(days=7),
+            is_active=True,
+        )
+
+    def test_motion_list_shows_refer_to_committee_status(self):
+        """Motion list displays refer_to_committee status badge."""
+        Motion.objects.create(
+            title='Referred Motion',
+            text='Motion text',
+            session=self.session,
+            group=self.group,
+            submitted_by=self.superuser,
+            status='refer_to_committee',
+        )
+        self.client.login(username='admin', password='adminpass123')
+        response = self.client.get(reverse('motion:motion-list'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Referred Motion')
+        self.assertTrue(
+            'An Ausschuss verweisen' in response.text or 'Refer to Committee' in response.text
+        )
+
+    def test_motion_list_filter_labels_german(self):
+        """Motion list filter placeholders and empty labels are translated."""
+        self.client.login(username='admin', password='adminpass123')
+        response = self.client.get(reverse('motion:motion-list'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Alle Sitzungen')
+        self.assertContains(response, 'Suche nach Titel, Text, Begründung oder Klub')
+
+
 class MotionCreateViewTests(TestCase):
     """Test cases for MotionCreateView"""
     

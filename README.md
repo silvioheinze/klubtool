@@ -217,9 +217,9 @@ docker compose exec app python manage.py compilemessages
 **Note:** After editing `.po` files, you must run `compilemessages` for the changes to take effect.
 
 
-## MCP (district events)
+## MCP (district events, motions, inquiries)
 
-Klubtool exposes an MCP server at `/mcp/` so tools like Claude can list and manage **district events** with the same permissions as the web UI.
+Klubtool exposes an MCP server at `/mcp/` so tools like Claude can list and manage **district events**, **motions (Anträge)**, and **inquiries (Anfragen)** with the same permissions as the web UI.
 
 ### 1. Create a token
 
@@ -257,6 +257,12 @@ For local development use `http://localhost/mcp/` (via nginx) or `http://localho
 | `create_district_event` | Create event (district managers only) |
 | `update_district_event` | Update event (managers only) |
 | `delete_district_event` | Delete event (managers only) |
+| `get_motion` | Single motion by id (view access) |
+| `create_motion` | Create motion as draft (group members / `motion.create`) |
+| `update_motion` | Update motion; omitted fields unchanged; status not editable |
+| `get_inquiry` | Single inquiry by id (view access) |
+| `create_inquiry` | Create inquiry as draft (group members / `motion.create`) |
+| `update_inquiry` | Update inquiry; omitted fields unchanged; status not editable |
 
 Example `create_district_event` arguments:
 
@@ -269,6 +275,23 @@ Example `create_district_event` arguments:
   "external_link": "https://example.com"
 }
 ```
+
+Example `create_motion` arguments:
+
+```json
+{
+  "title": "Motion title",
+  "session_id": 42,
+  "group_id": 3,
+  "text": "Motion text",
+  "rationale": "Why this motion",
+  "motion_type": "general",
+  "party_ids": [1],
+  "tags": ["housing", "budget"]
+}
+```
+
+`group_id` is optional when the user belongs to a group (defaults to the first accessible group). On create, motions are always saved as `draft` and do not accept `intervention_ids` (Wortmeldung); use `update_motion` with `intervention_ids` to set speakers after creation.
 
 ## 🛠️ Development
 

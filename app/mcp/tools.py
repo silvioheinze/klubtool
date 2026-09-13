@@ -1,15 +1,21 @@
-"""MCP tools for district event management."""
+"""MCP tools for district events, motions, and inquiries."""
 
 import json
 from datetime import datetime
 
-from django.core.exceptions import ValidationError
-from django.urls import reverse
+from django.http import QueryDict
 from django.utils import timezone
 
 from district.forms import DistrictEventForm
 from district.models import District, DistrictEvent
 from district.views import user_can_manage_district_events, user_is_district_member
+from group.models import Group
+from motion.forms import InquiryForm, MotionForm
+from motion.models import Inquiry, Motion
+from motion.views import (
+    _get_user_accessible_group_ids,
+    user_can_view_inquiry,
+)
 
 
 class McpToolError(Exception):
@@ -98,6 +104,113 @@ def list_tools():
                 'required': ['event_id'],
             },
         },
+        {
+            'name': 'get_motion',
+            'description': 'Get one motion by id (same view access as the web UI).',
+            'inputSchema': {
+                'type': 'object',
+                'properties': {
+                    'motion_id': {'type': 'integer', 'description': 'Motion primary key'},
+                },
+                'required': ['motion_id'],
+            },
+        },
+        {
+            'name': 'create_motion',
+            'description': 'Create a motion (draft). Same permissions as the web create form.',
+            'inputSchema': {
+                'type': 'object',
+                'properties': {
+                    'title': {'type': 'string'},
+                    'session_id': {'type': 'integer'},
+                    'group_id': {'type': 'integer', 'description': 'Optional; defaults to first accessible group'},
+                    'text': {'type': 'string'},
+                    'rationale': {'type': 'string'},
+                    'motion_type': {'type': 'string', 'enum': ['general', 'resolution']},
+                    'committee_id': {'type': 'integer'},
+                    'party_ids': {'type': 'array', 'items': {'type': 'integer'}},
+                    'tags': {
+                        'type': 'array',
+                        'items': {'type': 'string'},
+                        'description': 'Tag names (or pass a comma-separated string)',
+                    },
+                },
+                'required': ['title', 'session_id'],
+            },
+        },
+        {
+            'name': 'update_motion',
+            'description': 'Update a motion. Omitted fields stay unchanged; status cannot be changed.',
+            'inputSchema': {
+                'type': 'object',
+                'properties': {
+                    'motion_id': {'type': 'integer'},
+                    'title': {'type': 'string'},
+                    'session_id': {'type': 'integer'},
+                    'group_id': {'type': 'integer'},
+                    'text': {'type': 'string'},
+                    'rationale': {'type': 'string'},
+                    'motion_type': {'type': 'string', 'enum': ['general', 'resolution']},
+                    'committee_id': {'type': 'integer'},
+                    'party_ids': {'type': 'array', 'items': {'type': 'integer'}},
+                    'intervention_ids': {
+                        'type': 'array',
+                        'items': {'type': 'integer'},
+                        'description': 'User PKs of group members (Wortmeldung)',
+                    },
+                    'tags': {'type': 'array', 'items': {'type': 'string'}},
+                },
+                'required': ['motion_id'],
+            },
+        },
+        {
+            'name': 'get_inquiry',
+            'description': 'Get one inquiry by id (same view access as the web UI).',
+            'inputSchema': {
+                'type': 'object',
+                'properties': {
+                    'inquiry_id': {'type': 'integer', 'description': 'Inquiry primary key'},
+                },
+                'required': ['inquiry_id'],
+            },
+        },
+        {
+            'name': 'create_inquiry',
+            'description': 'Create an inquiry (draft). Same permissions as the web create form.',
+            'inputSchema': {
+                'type': 'object',
+                'properties': {
+                    'title': {'type': 'string'},
+                    'session_id': {'type': 'integer'},
+                    'group_id': {'type': 'integer', 'description': 'Optional; defaults to first accessible group'},
+                    'text': {'type': 'string'},
+                    'answer': {'type': 'string'},
+                    'party_ids': {'type': 'array', 'items': {'type': 'integer'}},
+                    'intervention_ids': {'type': 'array', 'items': {'type': 'integer'}},
+                    'tags': {'type': 'array', 'items': {'type': 'string'}},
+                },
+                'required': ['title', 'session_id'],
+            },
+        },
+        {
+            'name': 'update_inquiry',
+            'description': 'Update an inquiry. Omitted fields stay unchanged; status cannot be changed.',
+            'inputSchema': {
+                'type': 'object',
+                'properties': {
+                    'inquiry_id': {'type': 'integer'},
+                    'title': {'type': 'string'},
+                    'session_id': {'type': 'integer'},
+                    'group_id': {'type': 'integer'},
+                    'text': {'type': 'string'},
+                    'answer': {'type': 'string'},
+                    'party_ids': {'type': 'array', 'items': {'type': 'integer'}},
+                    'intervention_ids': {'type': 'array', 'items': {'type': 'integer'}},
+                    'tags': {'type': 'array', 'items': {'type': 'string'}},
+                },
+                'required': ['inquiry_id'],
+            },
+        },
     ]
 
 
@@ -163,6 +276,253 @@ def _validate_event_fields(data, *, district, instance=None):
     if not form.is_valid():
         raise McpToolError(json.dumps(form.errors, ensure_ascii=False))
     return form
+
+
+def _tags_to_string(tags):
+    """Convert tags argument (list or comma string) to form field value."""
+    if tags is None:
+        return ''
+    if isinstance(tags, list):
+        return ', '.join(str(tag).strip() for tag in tags if str(tag).strip())
+    return str(tags)
+
+
+def _default_group_for_user(user):
+    """First accessible active group for the user (all groups for superuser)."""
+    group_ids = _get_user_accessible_group_ids(user)
+    if group_ids is None:
+        return Group.objects.filter(is_active=True).order_by('name').first()
+    if group_ids:
+        return Group.objects.filter(pk__in=group_ids, is_active=True).order_by('name').first()
+    return None
+
+
+def _ensure_group_accessible(user, group_id):
+    """Raise if the user may not use this group."""
+    group_ids = _get_user_accessible_group_ids(user)
+    if group_ids is not None and group_id not in group_ids:
+        raise McpToolError('You do not have access to this group.')
+
+
+def _resolve_group_id(user, group_id):
+    """Return group PK, using default when omitted; validate access."""
+    if group_id is None:
+        default_group = _default_group_for_user(user)
+        if default_group is None:
+            raise McpToolError('group_id is required when you have no accessible group.')
+        return default_group.pk
+    try:
+        group_id = int(group_id)
+    except (TypeError, ValueError) as exc:
+        raise McpToolError('Invalid group_id.') from exc
+    _ensure_group_accessible(user, group_id)
+    return group_id
+
+
+def _user_can_create_motion_or_inquiry(user):
+    if user.is_superuser or user.has_role_permission('motion.create'):
+        return True
+    group_ids = _get_user_accessible_group_ids(user)
+    return group_ids is not None and len(group_ids) > 0
+
+
+def _user_can_view_motion(user, motion_pk):
+    if user.is_superuser or user.has_role_permission('motion.view'):
+        return True
+    if motion_pk is None:
+        return False
+    try:
+        motion_pk = int(motion_pk)
+    except (TypeError, ValueError):
+        return False
+    group_id = Motion.objects.filter(pk=motion_pk).values_list('group_id', flat=True).first()
+    if group_id is None:
+        return False
+    group_ids = _get_user_accessible_group_ids(user)
+    return group_ids is not None and group_id in group_ids
+
+
+def _user_can_update_motion(user, motion):
+    if user.is_superuser or user.has_role_permission('motion.edit'):
+        return True
+    if motion.group_id is None:
+        return False
+    group_ids = _get_user_accessible_group_ids(user)
+    return group_ids is not None and motion.group_id in group_ids
+
+
+def _user_can_update_inquiry(user, inquiry):
+    if user.is_superuser or user.has_role_permission('motion.edit'):
+        return True
+    if inquiry.group_id is None:
+        return False
+    group_ids = _get_user_accessible_group_ids(user)
+    return group_ids is not None and inquiry.group_id in group_ids
+
+
+def _serialize_motion(motion, request=None):
+    url = motion.get_absolute_url()
+    if request is not None:
+        url = request.build_absolute_uri(url)
+    return {
+        'id': motion.pk,
+        'title': motion.title,
+        'text': motion.text,
+        'rationale': motion.rationale,
+        'motion_type': motion.motion_type,
+        'status': motion.status,
+        'session_id': motion.session_id,
+        'group_id': motion.group_id,
+        'committee_id': motion.committee_id,
+        'party_ids': list(motion.parties.values_list('pk', flat=True)),
+        'intervention_ids': list(motion.interventions.values_list('pk', flat=True)),
+        'tags': list(motion.tags.values_list('name', flat=True)),
+        'url': url,
+    }
+
+
+def _serialize_inquiry(inquiry, request=None):
+    url = inquiry.get_absolute_url()
+    if request is not None:
+        url = request.build_absolute_uri(url)
+    return {
+        'id': inquiry.pk,
+        'title': inquiry.title,
+        'text': inquiry.text,
+        'answer': inquiry.answer,
+        'status': inquiry.status,
+        'session_id': inquiry.session_id,
+        'group_id': inquiry.group_id,
+        'party_ids': list(inquiry.parties.values_list('pk', flat=True)),
+        'intervention_ids': list(inquiry.interventions.values_list('pk', flat=True)),
+        'tags': list(inquiry.tags.values_list('name', flat=True)),
+        'url': url,
+    }
+
+
+def _build_motion_form_data(arguments, *, instance=None):
+    data = QueryDict(mutable=True)
+    if instance:
+        data['title'] = arguments.get('title', instance.title)
+        data['text'] = arguments.get('text', instance.text or '')
+        data['rationale'] = arguments.get('rationale', instance.rationale or '')
+        data['motion_type'] = arguments.get('motion_type', instance.motion_type)
+        data['status'] = instance.status
+        data['session'] = str(arguments.get('session_id', instance.session_id))
+        data['group'] = str(arguments.get('group_id', instance.group_id))
+        if 'committee_id' in arguments:
+            committee_id = arguments['committee_id']
+            data['committee'] = str(committee_id) if committee_id else ''
+        else:
+            data['committee'] = str(instance.committee_id) if instance.committee_id else ''
+        if 'party_ids' in arguments:
+            data.setlist('parties', [str(x) for x in arguments['party_ids']])
+        else:
+            data.setlist('parties', [str(p) for p in instance.parties.values_list('pk', flat=True)])
+        if 'intervention_ids' in arguments:
+            data.setlist('interventions', [str(x) for x in arguments['intervention_ids']])
+        else:
+            data.setlist(
+                'interventions',
+                [str(u) for u in instance.interventions.values_list('pk', flat=True)],
+            )
+        if 'tags' in arguments:
+            data['tags'] = _tags_to_string(arguments['tags'])
+        else:
+            data['tags'] = ', '.join(instance.tags.values_list('name', flat=True))
+    else:
+        data['title'] = arguments.get('title', '')
+        data['text'] = arguments.get('text', '')
+        data['rationale'] = arguments.get('rationale', '')
+        data['motion_type'] = arguments.get('motion_type', 'general')
+        data['status'] = 'draft'
+        data['session'] = str(arguments['session_id'])
+        data['group'] = str(arguments['group_id'])
+        committee_id = arguments.get('committee_id')
+        data['committee'] = str(committee_id) if committee_id else ''
+        if 'party_ids' in arguments:
+            data.setlist('parties', [str(x) for x in arguments['party_ids']])
+        if 'tags' in arguments:
+            data['tags'] = _tags_to_string(arguments['tags'])
+        else:
+            data['tags'] = ''
+    return data
+
+
+def _build_inquiry_form_data(arguments, *, instance=None):
+    data = QueryDict(mutable=True)
+    if instance:
+        data['title'] = arguments.get('title', instance.title)
+        data['text'] = arguments.get('text', instance.text or '')
+        data['answer'] = arguments.get('answer', instance.answer or '')
+        data['status'] = instance.status
+        data['session'] = str(arguments.get('session_id', instance.session_id))
+        data['group'] = str(arguments.get('group_id', instance.group_id))
+        if 'party_ids' in arguments:
+            data.setlist('parties', [str(x) for x in arguments['party_ids']])
+        else:
+            data.setlist('parties', [str(p) for p in instance.parties.values_list('pk', flat=True)])
+        if 'intervention_ids' in arguments:
+            data.setlist('interventions', [str(x) for x in arguments['intervention_ids']])
+        else:
+            data.setlist(
+                'interventions',
+                [str(u) for u in instance.interventions.values_list('pk', flat=True)],
+            )
+        if 'tags' in arguments:
+            data['tags'] = _tags_to_string(arguments['tags'])
+        else:
+            data['tags'] = ', '.join(instance.tags.values_list('name', flat=True))
+    else:
+        data['title'] = arguments.get('title', '')
+        data['text'] = arguments.get('text', '')
+        data['answer'] = arguments.get('answer', '')
+        data['status'] = 'draft'
+        data['session'] = str(arguments['session_id'])
+        data['group'] = str(arguments['group_id'])
+        if 'party_ids' in arguments:
+            data.setlist('parties', [str(x) for x in arguments['party_ids']])
+        if 'intervention_ids' in arguments:
+            data.setlist('interventions', [str(x) for x in arguments['intervention_ids']])
+        if 'tags' in arguments:
+            data['tags'] = _tags_to_string(arguments['tags'])
+        else:
+            data['tags'] = ''
+    return data
+
+
+def _validate_motion_form(arguments, user, *, instance=None):
+    form_data = _build_motion_form_data(arguments, instance=instance)
+    form = MotionForm(data=form_data, instance=instance, user=user)
+    if not form.is_valid():
+        raise McpToolError(json.dumps(form.errors, ensure_ascii=False))
+    return form
+
+
+def _validate_inquiry_form(arguments, user, *, instance=None):
+    form_data = _build_inquiry_form_data(arguments, instance=instance)
+    form = InquiryForm(data=form_data, instance=instance, user=user)
+    if not form.is_valid():
+        raise McpToolError(json.dumps(form.errors, ensure_ascii=False))
+    return form
+
+
+def _get_motion_or_error(motion_id):
+    try:
+        return Motion.objects.select_related(
+            'session', 'group', 'committee',
+        ).prefetch_related('parties', 'interventions', 'tags').get(pk=motion_id)
+    except Motion.DoesNotExist as exc:
+        raise McpToolError(f'Motion {motion_id} not found.') from exc
+
+
+def _get_inquiry_or_error(inquiry_id):
+    try:
+        return Inquiry.objects.select_related(
+            'session', 'group',
+        ).prefetch_related('parties', 'interventions', 'tags').get(pk=inquiry_id)
+    except Inquiry.DoesNotExist as exc:
+        raise McpToolError(f'Inquiry {inquiry_id} not found.') from exc
 
 
 def call_tool(name, arguments, user, request=None):
@@ -233,6 +593,58 @@ def call_tool(name, arguments, user, request=None):
         payload = _serialize_event(event, request)
         event.delete()
         return {'deleted': True, 'event': payload}
+
+    if name == 'get_motion':
+        motion = _get_motion_or_error(arguments['motion_id'])
+        if not _user_can_view_motion(user, motion.pk):
+            raise McpToolError('You do not have permission to view this motion.')
+        return {'motion': _serialize_motion(motion, request)}
+
+    if name == 'create_motion':
+        if not _user_can_create_motion_or_inquiry(user):
+            raise McpToolError('You do not have permission to create motions.')
+        if 'session_id' not in arguments:
+            raise McpToolError('session_id is required.')
+        form_args = dict(arguments)
+        form_args['group_id'] = _resolve_group_id(user, arguments.get('group_id'))
+        form = _validate_motion_form(form_args, user)
+        form.instance.submitted_by = user
+        motion = form.save()
+        return {'motion': _serialize_motion(motion, request)}
+
+    if name == 'update_motion':
+        motion = _get_motion_or_error(arguments['motion_id'])
+        if not _user_can_update_motion(user, motion):
+            raise McpToolError('You do not have permission to update this motion.')
+        form = _validate_motion_form(arguments, user, instance=motion)
+        motion = form.save()
+        return {'motion': _serialize_motion(motion, request)}
+
+    if name == 'get_inquiry':
+        inquiry = _get_inquiry_or_error(arguments['inquiry_id'])
+        if not user_can_view_inquiry(user, inquiry.pk):
+            raise McpToolError('You do not have permission to view this inquiry.')
+        return {'inquiry': _serialize_inquiry(inquiry, request)}
+
+    if name == 'create_inquiry':
+        if not _user_can_create_motion_or_inquiry(user):
+            raise McpToolError('You do not have permission to create inquiries.')
+        if 'session_id' not in arguments:
+            raise McpToolError('session_id is required.')
+        form_args = dict(arguments)
+        form_args['group_id'] = _resolve_group_id(user, arguments.get('group_id'))
+        form = _validate_inquiry_form(form_args, user)
+        form.instance.submitted_by = user
+        inquiry = form.save()
+        return {'inquiry': _serialize_inquiry(inquiry, request)}
+
+    if name == 'update_inquiry':
+        inquiry = _get_inquiry_or_error(arguments['inquiry_id'])
+        if not _user_can_update_inquiry(user, inquiry):
+            raise McpToolError('You do not have permission to update this inquiry.')
+        form = _validate_inquiry_form(arguments, user, instance=inquiry)
+        inquiry = form.save()
+        return {'inquiry': _serialize_inquiry(inquiry, request)}
 
     raise McpToolError(f'Unknown tool: {name}')
 

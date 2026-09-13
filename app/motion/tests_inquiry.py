@@ -222,6 +222,14 @@ class InquiryListViewTests(TestCase):
         self.assertContains(response, 'Test Inquiry')
         self.assertNotContains(response, 'Inquiry in Session 2')
 
+    def test_inquiry_list_filter_labels_german(self):
+        """Inquiry list filter placeholders and empty labels are translated."""
+        self.client.login(username='admin', password='adminpass123')
+        response = self.client.get(reverse('inquiry:inquiry-list'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Alle Sitzungen')
+        self.assertContains(response, 'Suche nach Titel, Text oder Klub')
+
 
 class InquiryDetailViewTests(TestCase):
     """Test cases for InquiryDetailView"""
