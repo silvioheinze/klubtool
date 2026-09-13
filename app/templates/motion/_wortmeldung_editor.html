@@ -1,0 +1,201 @@
+{% load i18n %}
+<hr>
+<div class="wortmeldung-editor"
+     id="wortmeldung-editor"
+     data-add-url="{{ intervention_add_url }}"
+     data-delete-url="{{ intervention_delete_url }}"
+     data-can-edit="{% if can_edit_interventions %}true{% else %}false{% endif %}">
+    <h6><i class="bi bi-megaphone"></i> {% trans "Wortmeldung" %}</h6>
+    <div class="wortmeldung-badges row mb-2" id="wortmeldung-badges">
+        {% for user in interventions %}
+            <div class="col-md-6 col-lg-4 mb-2 wortmeldung-badge-item" data-user-id="{{ user.pk }}">
+                <span class="badge bg-info me-1">{{ user.get_full_name|default:user.username }}</span>
+                {% if can_edit_interventions %}
+                    <button type="button"
+                            class="btn btn-sm btn-outline-danger py-0 px-1 wortmeldung-remove-btn"
+                            data-user-id="{{ user.pk }}"
+                            title="{% trans 'Remove' %}">
+                        <i class="bi bi-x"></i>
+                    </button>
+                {% endif %}
+            </div>
+        {% endfor %}
+    </div>
+    <p class="text-muted mb-2 wortmeldung-empty{% if interventions %} d-none{% endif %}" id="wortmeldung-empty">
+        {% trans "No interventions recorded." %}
+    </p>
+    {% if can_edit_interventions %}
+        <div class="d-none">{% csrf_token %}</div>
+        <div class="position-relative">
+            <input type="text"
+                   class="form-control form-control-sm"
+                   id="wortmeldung-search"
+                   autocomplete="off"
+                   placeholder="{% trans 'Search group members...' %}">
+            <ul class="list-group position-absolute w-100 shadow-sm d-none z-3"
+                id="wortmeldung-suggestions"
+                style="max-height: 200px; overflow-y: auto;"></ul>
+        </div>
+    {% endif %}
+</div>
+{{ intervention_candidates|json_script:"intervention-candidates-data" }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var editor = document.getElementById('wortmeldung-editor');
+    if (!editor) return;
+
+    var csrfEl = document.querySelector('[name=csrfmiddlewaretoken]');
+    if (!csrfEl) return;
+
+    var addUrl = editor.dataset.addUrl;
+    var deleteUrl = editor.dataset.deleteUrl;
+    var canEdit = editor.dataset.canEdit === 'true';
+    var csrfToken = csrfEl.value;
+    var badgesContainer = document.getElementById('wortmeldung-badges');
+    var emptyState = document.getElementById('wortmeldung-empty');
+    var searchInput = document.getElementById('wortmeldung-search');
+    var suggestionsEl = document.getElementById('wortmeldung-suggestions');
+    var candidatesEl = document.getElementById('intervention-candidates-data');
+    var candidates = candidatesEl ? JSON.parse(candidatesEl.textContent) : [];
+
+    function getCsrfHeaders() {
+        return {
+            'X-CSRFToken': csrfToken,
+            'X-Requested-With': 'XMLHttpRequest',
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Accept': 'application/json'
+        };
+    }
+
+    function getSelectedIds() {
+        var ids = [];
+        badgesContainer.querySelectorAll('.wortmeldung-badge-item').forEach(function(item) {
+            ids.push(parseInt(item.dataset.userId, 10));
+        });
+        return ids;
+    }
+
+    function updateEmptyState() {
+        if (!emptyState) return;
+        var hasBadges = badgesContainer.querySelectorAll('.wortmeldung-badge-item').length > 0;
+        emptyState.classList.toggle('d-none', hasBadges);
+    }
+
+    function renderBadges(interventions) {
+        badgesContainer.innerHTML = '';
+        interventions.forEach(function(item) {
+            var col = document.createElement('div');
+            col.className = 'col-md-6 col-lg-4 mb-2 wortmeldung-badge-item';
+            col.dataset.userId = item.id;
+
+            var badge = document.createElement('span');
+            badge.className = 'badge bg-info me-1';
+            badge.textContent = item.name;
+            col.appendChild(badge);
+
+            if (canEdit) {
+                var btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'btn btn-sm btn-outline-danger py-0 px-1 wortmeldung-remove-btn';
+                btn.dataset.userId = item.id;
+                btn.title = '{% trans "Remove" %}';
+                btn.innerHTML = '<i class="bi bi-x"></i>';
+                btn.addEventListener('click', function() {
+                    removeIntervention(item.id);
+                });
+                col.appendChild(btn);
+            }
+
+            badgesContainer.appendChild(col);
+        });
+        updateEmptyState();
+    }
+
+    function postIntervention(url, userId) {
+        return fetch(url, {
+            method: 'POST',
+            headers: getCsrfHeaders(),
+            body: 'csrfmiddlewaretoken=' + encodeURIComponent(csrfToken) +
+                  '&user_id=' + encodeURIComponent(userId)
+        }).then(function(r) {
+            return r.json().then(function(data) {
+                if (!r.ok) throw new Error(data.error || 'Request failed');
+                return data;
+            });
+        });
+    }
+
+    function addIntervention(userId) {
+        postIntervention(addUrl, userId).then(function(data) {
+            renderBadges(data.interventions);
+            if (searchInput) {
+                searchInput.value = '';
+                hideSuggestions();
+            }
+        }).catch(function() {});
+    }
+
+    function removeIntervention(userId) {
+        postIntervention(deleteUrl, userId).then(function(data) {
+            renderBadges(data.interventions);
+        }).catch(function() {});
+    }
+
+    badgesContainer.querySelectorAll('.wortmeldung-remove-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            removeIntervention(btn.dataset.userId);
+        });
+    });
+
+    function hideSuggestions() {
+        if (suggestionsEl) {
+            suggestionsEl.classList.add('d-none');
+            suggestionsEl.innerHTML = '';
+        }
+    }
+
+    function showSuggestions(matches) {
+        if (!suggestionsEl) return;
+        suggestionsEl.innerHTML = '';
+        if (!matches.length) {
+            suggestionsEl.classList.add('d-none');
+            return;
+        }
+        matches.slice(0, 8).forEach(function(item) {
+            var li = document.createElement('li');
+            li.className = 'list-group-item list-group-item-action';
+            li.textContent = item.name;
+            li.addEventListener('mousedown', function(e) {
+                e.preventDefault();
+                addIntervention(item.id);
+            });
+            suggestionsEl.appendChild(li);
+        });
+        suggestionsEl.classList.remove('d-none');
+    }
+
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            var query = searchInput.value.trim().toLowerCase();
+            if (query.length < 1) {
+                hideSuggestions();
+                return;
+            }
+            var selected = getSelectedIds();
+            var matches = candidates.filter(function(item) {
+                if (selected.indexOf(item.id) !== -1) return false;
+                return item.name.toLowerCase().indexOf(query) !== -1;
+            });
+            showSuggestions(matches);
+        });
+
+        searchInput.addEventListener('blur', function() {
+            setTimeout(hideSuggestions, 150);
+        });
+
+        searchInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') hideSuggestions();
+        });
+    }
+});
+</script>

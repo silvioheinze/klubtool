@@ -107,6 +107,58 @@ def user_can_delete_inquiry_attachment(user, attachment):
     return is_leader_or_deputy_leader_of_group(user, attachment.inquiry.group)
 
 
+def _get_group_member_users(group):
+    """Active users who are members of the given group."""
+    if not group:
+        return CustomUser.objects.none()
+    return CustomUser.objects.filter(
+        group_memberships__group=group,
+        group_memberships__is_active=True,
+    ).distinct().order_by('last_name', 'first_name', 'username')
+
+
+def _serialize_user_for_intervention(user):
+    return {
+        'id': user.pk,
+        'name': user.get_full_name() or user.username,
+    }
+
+
+def _get_intervention_candidates(group):
+    """Serialize group members for Wortmeldung autocomplete."""
+    return [_serialize_user_for_intervention(u) for u in _get_group_member_users(group)]
+
+
+def _interventions_response(m2m_manager):
+    """JSON payload for current Wortmeldung list."""
+    interventions = [
+        _serialize_user_for_intervention(u)
+        for u in m2m_manager.all().order_by('last_name', 'first_name', 'username')
+    ]
+    return JsonResponse({'success': True, 'interventions': interventions})
+
+
+def user_can_edit_interventions(user, group):
+    """Same rules as motion/inquiry edit: superuser, motion.edit, or active group member."""
+    if not group:
+        return False
+    if user.is_superuser or user.has_role_permission('motion.edit'):
+        return True
+    group_ids = _get_user_accessible_group_ids(user)
+    return group_ids is not None and group.pk in group_ids
+
+
+def _parse_intervention_user_id(request):
+    """Extract user_id from POST body."""
+    user_id = request.POST.get('user_id')
+    if not user_id:
+        return None
+    try:
+        return int(user_id)
+    except (TypeError, ValueError):
+        return None
+
+
 def _save_motion_status_answer_files(status_entry, files):
     """Persist uploaded PDF answer files for a motion status entry."""
     import os
@@ -467,6 +519,15 @@ class MotionDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['status_history'] = motion.status_history.prefetch_related(
             'votes', 'votes__party', 'answer_files',
         ).all()
+
+        context['can_edit_interventions'] = user_can_edit_interventions(user, motion.group)
+        context['intervention_candidates'] = _get_intervention_candidates(motion.group)
+        context['intervention_add_url'] = reverse(
+            'motion:motion-intervention-add', kwargs={'pk': motion.pk}
+        )
+        context['intervention_delete_url'] = reverse(
+            'motion:motion-intervention-delete', kwargs={'pk': motion.pk}
+        )
         
         return context
 
@@ -1196,6 +1257,88 @@ def motion_group_decision_view(request, pk):
 
 
 @login_required
+@require_POST
+def motion_intervention_add_view(request, pk):
+    """Add a Wortmeldung (intervention) user to a motion via AJAX."""
+    motion = get_object_or_404(Motion, pk=pk)
+    if not user_can_edit_interventions(request.user, motion.group):
+        return JsonResponse({'success': False, 'error': _('Permission denied.')}, status=403)
+
+    user_id = _parse_intervention_user_id(request)
+    if user_id is None:
+        return JsonResponse({'success': False, 'error': _('Invalid user.')}, status=400)
+
+    group_member_users = _get_group_member_users(motion.group)
+    try:
+        target_user = group_member_users.get(pk=user_id)
+    except CustomUser.DoesNotExist:
+        return JsonResponse({'success': False, 'error': _('User is not a member of this group.')}, status=400)
+
+    if motion.interventions.filter(pk=target_user.pk).exists():
+        return JsonResponse({'success': False, 'error': _('User is already listed.')}, status=400)
+
+    motion.interventions.add(target_user)
+    return _interventions_response(motion.interventions)
+
+
+@login_required
+@require_POST
+def motion_intervention_delete_view(request, pk):
+    """Remove a Wortmeldung (intervention) user from a motion via AJAX."""
+    motion = get_object_or_404(Motion, pk=pk)
+    if not user_can_edit_interventions(request.user, motion.group):
+        return JsonResponse({'success': False, 'error': _('Permission denied.')}, status=403)
+
+    user_id = _parse_intervention_user_id(request)
+    if user_id is None:
+        return JsonResponse({'success': False, 'error': _('Invalid user.')}, status=400)
+
+    motion.interventions.remove(user_id)
+    return _interventions_response(motion.interventions)
+
+
+@login_required
+@require_POST
+def inquiry_intervention_add_view(request, pk):
+    """Add a Wortmeldung (intervention) user to an inquiry via AJAX."""
+    inquiry = get_object_or_404(Inquiry, pk=pk)
+    if not user_can_edit_interventions(request.user, inquiry.group):
+        return JsonResponse({'success': False, 'error': _('Permission denied.')}, status=403)
+
+    user_id = _parse_intervention_user_id(request)
+    if user_id is None:
+        return JsonResponse({'success': False, 'error': _('Invalid user.')}, status=400)
+
+    group_member_users = _get_group_member_users(inquiry.group)
+    try:
+        target_user = group_member_users.get(pk=user_id)
+    except CustomUser.DoesNotExist:
+        return JsonResponse({'success': False, 'error': _('User is not a member of this group.')}, status=400)
+
+    if inquiry.interventions.filter(pk=target_user.pk).exists():
+        return JsonResponse({'success': False, 'error': _('User is already listed.')}, status=400)
+
+    inquiry.interventions.add(target_user)
+    return _interventions_response(inquiry.interventions)
+
+
+@login_required
+@require_POST
+def inquiry_intervention_delete_view(request, pk):
+    """Remove a Wortmeldung (intervention) user from an inquiry via AJAX."""
+    inquiry = get_object_or_404(Inquiry, pk=pk)
+    if not user_can_edit_interventions(request.user, inquiry.group):
+        return JsonResponse({'success': False, 'error': _('Permission denied.')}, status=403)
+
+    user_id = _parse_intervention_user_id(request)
+    if user_id is None:
+        return JsonResponse({'success': False, 'error': _('Invalid user.')}, status=400)
+
+    inquiry.interventions.remove(user_id)
+    return _interventions_response(inquiry.interventions)
+
+
+@login_required
 def motion_group_decision_delete_view(request, motion_pk, decision_pk):
     """View for deleting a motion group decision entry (superuser, leader, or deputy leader only)"""
     motion = get_object_or_404(Motion, pk=motion_pk)
@@ -1911,6 +2054,15 @@ class InquiryDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
 
         # Get status history
         context['status_history'] = inquiry.status_history.prefetch_related('answer_files').all()
+
+        context['can_edit_interventions'] = user_can_edit_interventions(user, inquiry.group)
+        context['intervention_candidates'] = _get_intervention_candidates(inquiry.group)
+        context['intervention_add_url'] = reverse(
+            'inquiry:inquiry-intervention-add', kwargs={'pk': inquiry.pk}
+        )
+        context['intervention_delete_url'] = reverse(
+            'inquiry:inquiry-intervention-delete', kwargs={'pk': inquiry.pk}
+        )
         
         return context
 

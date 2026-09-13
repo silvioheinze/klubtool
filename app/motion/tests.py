@@ -979,6 +979,133 @@ class MotionCreateViewTests(TestCase):
         self.assertContains(response, 'Wortmeldung')
 
 
+class MotionInterventionViewTests(TestCase):
+    """Tests for Wortmeldung AJAX endpoints on motion detail."""
+
+    def setUp(self):
+        self.client = Client()
+        self.superuser = User.objects.create_superuser(
+            username='admin',
+            email='admin@example.com',
+            password='adminpass123',
+        )
+        self.outsider = User.objects.create_user(
+            username='outsider',
+            email='outsider@example.com',
+            password='testpass123',
+        )
+        self.member_user = User.objects.create_user(
+            username='member',
+            email='member@example.com',
+            password='testpass123',
+        )
+        self.district = District.objects.create(
+            name='Intervention Local',
+            code='IL',
+            description='Test local',
+            is_active=True,
+        )
+        self.council, _ = Council.objects.get_or_create(
+            district=self.district,
+            defaults={'name': 'Intervention Council', 'is_active': True},
+        )
+        self.party = Party.objects.create(
+            name='Intervention Party',
+            district=self.district,
+            is_active=True,
+        )
+        self.group = Group.objects.create(
+            name='Intervention Group',
+            party=self.party,
+            is_active=True,
+        )
+        self.session = Session.objects.create(
+            title='Intervention Session',
+            council=self.council,
+            scheduled_date=timezone.now() + timedelta(days=7),
+            is_active=True,
+        )
+        from group.models import GroupMember
+        GroupMember.objects.create(user=self.member_user, group=self.group, is_active=True)
+        self.motion = Motion.objects.create(
+            title='Intervention Motion',
+            text='Motion text',
+            session=self.session,
+            group=self.group,
+            submitted_by=self.superuser,
+        )
+
+    def test_motion_detail_shows_wortmeldung_section_and_autocomplete_for_editor(self):
+        self.client.login(username='admin', password='adminpass123')
+        response = self.client.get(reverse('motion:motion-detail', kwargs={'pk': self.motion.pk}))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Wortmeldung')
+        self.assertContains(response, 'Keine Wortmeldung.')
+        self.assertContains(response, 'wortmeldung-search')
+        self.assertContains(response, 'Klubmitglied suchen')
+
+    def test_motion_detail_hides_autocomplete_for_outsider(self):
+        self.client.login(username='outsider', password='testpass123')
+        response = self.client.get(reverse('motion:motion-detail', kwargs={'pk': self.motion.pk}))
+        self.assertEqual(response.status_code, 403)
+
+    def test_motion_intervention_add_valid_member(self):
+        self.client.login(username='admin', password='adminpass123')
+        response = self.client.post(
+            reverse('motion:motion-intervention-add', kwargs={'pk': self.motion.pk}),
+            {'user_id': self.member_user.pk},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data['success'])
+        self.assertEqual(len(data['interventions']), 1)
+        self.assertEqual(data['interventions'][0]['id'], self.member_user.pk)
+        self.assertTrue(self.motion.interventions.filter(pk=self.member_user.pk).exists())
+
+    def test_motion_intervention_add_outsider_returns_400(self):
+        self.client.login(username='admin', password='adminpass123')
+        response = self.client.post(
+            reverse('motion:motion-intervention-add', kwargs={'pk': self.motion.pk}),
+            {'user_id': self.outsider.pk},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_motion_intervention_add_duplicate_returns_400(self):
+        self.motion.interventions.add(self.member_user)
+        self.client.login(username='admin', password='adminpass123')
+        response = self.client.post(
+            reverse('motion:motion-intervention-add', kwargs={'pk': self.motion.pk}),
+            {'user_id': self.member_user.pk},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_motion_intervention_delete(self):
+        self.motion.interventions.add(self.member_user)
+        self.client.login(username='admin', password='adminpass123')
+        response = self.client.post(
+            reverse('motion:motion-intervention-delete', kwargs={'pk': self.motion.pk}),
+            {'user_id': self.member_user.pk},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data['success'])
+        self.assertEqual(data['interventions'], [])
+        self.assertFalse(self.motion.interventions.filter(pk=self.member_user.pk).exists())
+
+    def test_motion_intervention_add_forbidden_for_outsider(self):
+        self.client.login(username='outsider', password='testpass123')
+        response = self.client.post(
+            reverse('motion:motion-intervention-add', kwargs={'pk': self.motion.pk}),
+            {'user_id': self.member_user.pk},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+        self.assertEqual(response.status_code, 403)
+
+
 class MotionInquiryStatusPermissionTests(TestCase):
     """Tests for motion and inquiry status-change permissions for group managers."""
 
