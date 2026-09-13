@@ -25,63 +25,7 @@
         </div>
     </div>
 
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    {% with committee_type_label=committee.get_committee_type_display %}
-                    <h5 class="mb-0">{% trans "Committee Information" context committee_type_label %}</h5>
-                    {% endwith %}
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <dl class="row">
-                                <dt class="col-sm-4">{% trans "Name" %}</dt>
-                                <dd class="col-sm-8">{{ committee.name }}</dd>
-                                
-                                <dt class="col-sm-4">{% trans "Type" %}</dt>
-                                <dd class="col-sm-8">
-                                    <span class="badge bg-secondary">{{ committee.get_committee_type_display }}</span>
-                                </dd>
-                            </dl>
-                        </div>
-                        <div class="col-md-6">
-                            <dl class="row">
-                                <dt class="col-sm-4">{% trans "Chairperson" %}</dt>
-                                <dd class="col-sm-8">
-                                    {% if committee.chairperson_name %}
-                                        {{ committee.chairperson_name }}
-                                    {% else %}
-                                        <span class="text-muted">{% trans "Not assigned" %}</span>
-                                    {% endif %}
-                                </dd>
-                                
-                                <dt class="col-sm-4">{% trans "Vice Chairperson" %}</dt>
-                                <dd class="col-sm-8">
-                                    {% if committee.vice_chairperson_name %}
-                                        {{ committee.vice_chairperson_name }}
-                                    {% else %}
-                                        <span class="text-muted">{% trans "Not assigned" %}</span>
-                                    {% endif %}
-                                </dd>
-                            </dl>
-                        </div>
-                    </div>
-                    
-                    {% if committee.description %}
-                        <hr>
-                        <h6>{% trans "Description" %}</h6>
-                        <p>{{ committee.description|linebreaks }}</p>
-                    {% endif %}
-                    
-
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Main column: meetings + motions | Sidebar: members -->
+    <!-- Main column: meetings + motions | Sidebar: info + members -->
     <div class="row mt-4 g-3">
         <div class="col-12 col-lg-8">
             <!-- Committee Meetings -->
@@ -101,7 +45,7 @@
                 <div class="card-body">
                     {% if meetings %}
                         <div class="table-responsive">
-                            <table class="table table-striped table-hover">
+                            <table class="table table-hover">
                                 <thead>
                                     <tr>
                                         <th>{% trans "Title" %}</th>
@@ -115,11 +59,9 @@
                                     {% for meeting in meetings %}
                                         <tr>
                                             <td>
-                                                <strong>
-                                                    <a href="{% url 'district:committee-meeting-detail' meeting.pk %}">
-                                                        {{ meeting.title }}
-                                                    </a>
-                                                </strong>
+                                                <a href="{% url 'district:committee-meeting-detail' meeting.pk %}">
+                                                    {{ meeting.title }}
+                                                </a>
                                             </td>
                                             <td>
                                                 {{ meeting.scheduled_date|date:"M d, Y H:i" }}
@@ -173,46 +115,62 @@
                 <div class="card-body">
                     {% if motions %}
                         <div class="table-responsive">
-                            <table class="table table-striped table-hover">
+                            <table class="table table-hover">
                                 <thead>
                                     <tr>
                                         <th>{% trans "Title" %}</th>
-                                        <th>{% trans "Type" %}</th>
-                                        <th>{% trans "Group" %}</th>
-                                        <th>{% trans "Submitted" %}</th>
-                                        <th>{% trans "Actions" %}</th>
+                                        <th>{% trans "Status" %}</th>
+                                        <th>{% trans "Party" %}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {% for motion in motions %}
                                         <tr>
                                             <td>
-                                                <strong>
-                                                    <a href="{% url 'motion:motion-detail' motion.pk %}">
-                                                        {{ motion.title }}
-                                                    </a>
-                                                </strong>
-                                            </td>
-                                            <td>
-                                                <span class="badge bg-secondary">{{ motion.get_motion_type_display }}</span>
-                                            </td>
-                                            <td>
-                                                <a href="{% url 'group:group-detail' motion.group.pk %}">
-                                                    {{ motion.group.name }}
+                                                <a href="{% url 'motion:motion-detail' motion.pk %}">
+                                                    {{ motion.title }}
                                                 </a>
+                                                {% if not motion.is_active %}
+                                                    <span class="badge bg-danger ms-1">{% trans "Inactive" %}</span>
+                                                {% endif %}
                                             </td>
                                             <td>
-                                                {{ motion.submitted_date|date:"M d, Y" }}
+                                                {% if motion.status == 'draft' %}
+                                                    <span class="badge bg-secondary">{% trans "Draft" %}</span>
+                                                {% elif motion.status == 'submitted' %}
+                                                    <span class="badge bg-primary">{% trans "Submitted" %}</span>
+                                                {% elif motion.status == 'tabled' %}
+                                                    <span class="badge bg-info">{% trans "Tabled" %}</span>
+                                                {% elif motion.status == 'refer_to_committee' %}
+                                                    <span class="badge bg-warning">{% trans "Refer to Committee" %}</span>
+                                                {% elif motion.status == 'refer_no_majority' %}
+                                                    <span class="badge bg-warning text-dark">{% trans "Refer to Committee (no majority)" %}</span>
+                                                {% elif motion.status == 'voted_in_committee' %}
+                                                    <span class="badge bg-warning">{% trans "Voted upon in Committee" %}</span>
+                                                {% elif motion.status == 'approved' %}
+                                                    <span class="badge bg-success">{% trans "Approved" %}</span>
+                                                {% elif motion.status == 'rejected' %}
+                                                    <span class="badge bg-danger">{% trans "Rejected" %}</span>
+                                                {% elif motion.status == 'withdrawn' %}
+                                                    <span class="badge bg-warning">{% trans "Withdrawn" %}</span>
+                                                {% elif motion.status == 'not_admitted' %}
+                                                    <span class="badge bg-dark">{% trans "Nicht zugelassen" %}</span>
+                                                {% elif motion.status == 'answered' %}
+                                                    <span class="badge bg-success">{% trans "Answered" %}</span>
+                                                {% elif motion.status == 'deleted' %}
+                                                    <span class="badge bg-secondary">{% trans "Deleted" %}</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">{{ motion.get_status_display }}</span>
+                                                {% endif %}
                                             </td>
                                             <td>
-                                                <div class="btn-group" role="group">
-                                                    <a href="{% url 'motion:motion-detail' motion.pk %}" class="btn btn-sm btn-outline-info" title="{% trans 'View Details' %}">
-                                                        <i class="bi bi-eye"></i>
-                                                    </a>
-                                                    <a href="{% url 'motion:motion-edit' motion.pk %}" class="btn btn-sm btn-outline-primary" title="{% trans 'Edit Motion' %}">
-                                                        <i class="bi bi-pencil"></i>
-                                                    </a>
-                                                </div>
+                                                {% if motion.group.party %}
+                                                    <span class="badge" style="background-color: {{ motion.group.party.color }}; color: white;">
+                                                        {{ motion.group.party.short_name|default:motion.group.party.name }}
+                                                    </span>
+                                                {% else %}
+                                                    <span class="text-muted">-</span>
+                                                {% endif %}
                                             </td>
                                         </tr>
                                     {% endfor %}
@@ -240,9 +198,52 @@
             </div>
         </div>
 
-        <!-- Sidebar: committee members (name + role only) -->
+        <!-- Sidebar: committee information + members -->
         <div class="col-12 col-lg-4">
-            <div class="card h-100">
+            <div class="card mb-3">
+                <div class="card-header">
+                    {% with committee_type_label=committee.get_committee_type_display %}
+                    <h5 class="mb-0">{% trans "Committee Information" context committee_type_label %}</h5>
+                    {% endwith %}
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4">{% trans "Name" %}</dt>
+                        <dd class="col-sm-8">{{ committee.name }}</dd>
+
+                        <dt class="col-sm-4">{% trans "Type" %}</dt>
+                        <dd class="col-sm-8">
+                            <span class="badge bg-secondary">{{ committee.get_committee_type_display }}</span>
+                        </dd>
+
+                        <dt class="col-sm-4">{% trans "Chairperson" %}</dt>
+                        <dd class="col-sm-8">
+                            {% if committee.chairperson_name %}
+                                {{ committee.chairperson_name }}
+                            {% else %}
+                                <span class="text-muted">{% trans "Not assigned" %}</span>
+                            {% endif %}
+                        </dd>
+
+                        <dt class="col-sm-4">{% trans "Vice Chairperson" %}</dt>
+                        <dd class="col-sm-8">
+                            {% if committee.vice_chairperson_name %}
+                                {{ committee.vice_chairperson_name }}
+                            {% else %}
+                                <span class="text-muted">{% trans "Not assigned" %}</span>
+                            {% endif %}
+                        </dd>
+                    </dl>
+
+                    {% if committee.description %}
+                        <hr>
+                        <h6>{% trans "Description" %}</h6>
+                        <p class="mb-0">{{ committee.description|linebreaks }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
                     {% with committee_type_label=committee.get_committee_type_display %}
                     <h5 class="mb-0"><i class="bi bi-person-lines-fill"></i> {% trans "Committee Members" context committee_type_label %}</h5>
@@ -261,7 +262,7 @@
                 <div class="card-body">
                     {% if members %}
                         <div class="table-responsive">
-                            <table class="table table-sm table-striped mb-0">
+                            <table class="table table-hover mb-0">
                                 <thead>
                                     <tr>
                                         <th>{% trans "Member" %}</th>
@@ -273,7 +274,7 @@
                                         <tr>
                                             <td class="text-break">
                                                 <div class="d-flex align-items-start justify-content-between gap-1">
-                                                    <span class="fw-semibold">{{ member.user.get_full_name|default:member.user.username }}</span>
+                                                    <span>{{ member.user.get_full_name|default:member.user.username }}</span>
                                                     {% if can_edit_committee_member %}
                                                     <a href="{% url 'district:committee-member-edit' member.pk %}" class="btn btn-link btn-sm text-muted p-0 flex-shrink-0" title="{% trans 'Edit Member' %}" aria-label="{% trans 'Edit Member' %}">
                                                         <i class="bi bi-pencil"></i>

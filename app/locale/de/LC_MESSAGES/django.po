@@ -1962,11 +1962,14 @@ msgid "Create First Meeting"
 msgstr "Erstelle erste Sitzung"
 
 #: templates/district/committee_detail.html:169
-#, fuzzy
-#| msgctxt "Ausschuss"
-#| msgid "Committee Motions"
+msgctxt "Ausschuss"
 msgid "Committee Motions"
-msgstr "Anträge des Ausschusses"
+msgstr "Ausschussanträge"
+
+#: templates/district/committee_detail.html:169
+msgctxt "Kommission"
+msgid "Committee Motions"
+msgstr "Kommissionsanträge"
 
 #: templates/district/committee_detail.html:181
 #: templates/group/email/meeting_invite.txt:9

@@ -2154,7 +2154,7 @@ class CommitteeDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         ).order_by('role_order', 'user__first_name', 'user__last_name')
         context['total_members'] = self.object.members.count()
         # Get motions assigned to this committee
-        context['motions'] = self.object.motions.filter(is_active=True).order_by('-submitted_date')[:5]
+        context['motions'] = self.object.motions.filter(is_active=True).select_related('group__party').order_by('-submitted_date')[:5]
         context['total_motions'] = self.object.motions.count()
         # Get committee meetings (replaces committee sessions)
         context['meetings'] = self.object.meetings.filter(is_active=True).order_by('-scheduled_date')
