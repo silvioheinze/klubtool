@@ -1274,6 +1274,20 @@ class CouncilViewTests(TestCase):
         response = self.client.get(reverse('district:council-detail', kwargs={'pk': self.council.pk}))
         self.assertContains(response, self.council.name)
 
+    def test_council_detail_committees_render_as_outline_buttons(self):
+        """Council committees are shown as full-width outline buttons."""
+        committee = Committee.objects.create(
+            name='Budget Committee Button Test',
+            council=self.council,
+            is_active=True,
+        )
+        self.client.login(username='admin', password='adminpass123')
+        response = self.client.get(reverse('district:council-detail', kwargs={'pk': self.council.pk}))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, committee.name)
+        self.assertContains(response, 'btn-outline-primary')
+        self.assertContains(response, f'href="{reverse("district:committee-detail", kwargs={"pk": committee.pk})}"')
+
     def test_council_detail_sessions_no_pagination_when_ten_or_fewer(self):
         """Council sessions list shows no pagination controls when at most 10 active sessions."""
         self.client.login(username='admin', password='adminpass123')
@@ -1293,6 +1307,8 @@ class CouncilViewTests(TestCase):
             )
         response = self.client.get(reverse('district:council-detail', kwargs={'pk': self.council.pk}))
         self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'table table-hover')
+        self.assertNotContains(response, 'table-striped')
         self.assertNotContains(response, 'council-sessions-pagination')
         for i in range(10):
             self.assertContains(response, f'Session Page Test {i}')
