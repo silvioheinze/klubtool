@@ -173,8 +173,7 @@ def mcp_token_create(request):
     """Create or reset MCP bearer token. Shows raw token once in settings."""
     from django.urls import reverse
     inst, raw_token = McpToken.create_token(request.user)
-    scheme = 'https' if request.is_secure() else 'http'
-    mcp_url = f"{scheme}://{request.get_host()}{reverse('mcp')}"
+    mcp_url = f"https://{request.get_host()}{reverse('mcp')}"
     request.session['mcp_token_raw'] = raw_token
     request.session['mcp_server_url'] = mcp_url
     messages.success(

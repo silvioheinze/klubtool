@@ -227,9 +227,30 @@ Klubtool exposes an MCP server at `/mcp/` so tools like Claude can list and mana
 2. Under **MCP Access**, click **Create MCP token** (or **Reset MCP token**).
 3. Copy the **MCP server URL** and **Bearer token** immediately — the raw token is shown only once.
 
-### 2. Configure Claude
+### 2. Add in Claude
 
-Add to your Claude Code MCP config (`.mcp.json` in the project, or `claude mcp add`):
+Use the **HTTPS** MCP server URL from Settings (for example `https://klub.neubauergruene.at/mcp/`) and the Bearer token.
+
+#### Claude (claude.ai and Claude Desktop)
+
+1. Open **Customize → Connectors → Add custom connector**.
+2. Paste the MCP server URL.
+3. Under **Request headers**, add `Authorization`.
+4. Set the value to `Bearer YOUR_TOKEN_HERE` (include the word `Bearer` and a space).
+5. Click **Add**. In a chat, open **+ → Connectors** and enable the connector.
+
+Team/Enterprise owners add the connector under **Organization settings → Connectors → Add → Custom** (choose **Web** if asked). Members then connect it under **Customize → Connectors**.
+
+If the Request headers field is not available, use Claude Code or the Desktop config below.
+
+#### Claude Code
+
+```bash
+claude mcp add --transport http klubtool https://klub.neubauergruene.at/mcp/ \
+  --header "Authorization: Bearer YOUR_TOKEN_HERE"
+```
+
+Or add `.mcp.json` in the project:
 
 ```json
 {
@@ -245,7 +266,33 @@ Add to your Claude Code MCP config (`.mcp.json` in the project, or `claude mcp a
 }
 ```
 
-For local development use `http://localhost/mcp/` (via nginx) or `http://localhost:8000/mcp/` if hitting Django directly.
+#### Claude Desktop config file
+
+If you configure MCP via `claude_desktop_config.json` instead of Connectors, bridge the remote HTTPS server with `mcp-remote`:
+
+```json
+{
+  "mcpServers": {
+    "klubtool": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-remote",
+        "https://klub.neubauergruene.at/mcp/",
+        "--header",
+        "Authorization:${AUTH_HEADER}"
+      ],
+      "env": {
+        "AUTH_HEADER": "Bearer YOUR_TOKEN_HERE"
+      }
+    }
+  }
+}
+```
+
+Restart Claude Desktop after saving. Config locations: macOS `~/Library/Application Support/Claude/claude_desktop_config.json`, Windows `%APPDATA%\Claude\claude_desktop_config.json`.
+
+For local development the app still listens on HTTP; Settings always shows `https://`. Use HTTPS in production, or `http://localhost/mcp/` (nginx) / `http://localhost:8000/mcp/` when talking to Django directly.
 
 ### 3. Available tools
 

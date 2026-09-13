@@ -132,7 +132,18 @@
     </div>
     <div class="card-body">
         <p class="text-muted mb-3">
-            {% trans "Connect Cursor or other MCP clients to manage district events. Create a personal bearer token and configure your client with the MCP URL and Authorization header." %}
+            {% trans "Connect Claude, Cursor, or other MCP clients to manage district events, motions, and inquiries. Create a personal bearer token and configure your client with the MCP URL and Authorization header." %}
+        </p>
+        <h6>{% trans "Add in Claude" %}</h6>
+        <ol class="text-muted small mb-3">
+            <li>{% trans "Create a token below, then copy the MCP server URL and Bearer token." %}</li>
+            <li>{% trans "In Claude (claude.ai or the desktop app), go to Customize → Connectors → Add custom connector." %}</li>
+            <li>{% trans "Paste the MCP server URL." %}</li>
+            <li>{% trans "Under Request headers, add Authorization. Enter the value as Bearer followed by a space and your token (for example: Bearer abc123)." %}</li>
+            <li>{% trans "Click Add. In a chat, open the + menu → Connectors and enable klubtool." %}</li>
+        </ol>
+        <p class="text-muted small mb-3">
+            {% trans "Claude Code: run claude mcp add --transport http klubtool YOUR_MCP_URL --header \"Authorization: Bearer YOUR_TOKEN\" (replace with the URL and token from this page)." %}
         </p>
         {% if new_mcp_token %}
         <div class="alert alert-success mb-3">

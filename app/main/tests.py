@@ -298,10 +298,10 @@ class CustomColorsTests(TestCase):
         with open(css_path, 'r') as f:
             css_content = f.read()
         
-        # Check for primary color and light footer styling
+        # Check for primary color and canvas footer styling
         self.assertIn('--bs-primary:', css_content, "CSS should define primary color")
         self.assertIn('.footer', css_content, "CSS should contain footer styling")
-        self.assertIn('var(--kt-surface)', css_content, "Footer should use light surface token")
+        self.assertIn('#f4f3ef', css_content, "Footer should use canvas background #f4f3ef")
         self.assertIn('var(--bs-primary)', css_content, "CSS should use primary variable")
 
     def test_card_list_group_items_are_transparent(self):

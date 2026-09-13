@@ -487,11 +487,44 @@ class McpTokenSettingsTests(TestCase):
         settings_response = self.client.get(reverse('user-settings'))
         self.assertContains(settings_response, 'Bearer')
 
+    def test_mcp_server_url_uses_https(self):
+        self.client.force_login(self.user)
+        self.client.get(reverse('mcp-token-create'))
+        mcp_url = self.client.session['mcp_server_url']
+        self.assertTrue(mcp_url.startswith('https://'))
+        self.assertIn('/mcp/', mcp_url)
+
+    def test_settings_page_documents_claude_setup(self):
+        self.user.language = 'en'
+        self.user.save()
+        self.client.force_login(self.user)
+        response = self.client.get(reverse('user-settings'))
+        self.assertContains(response, 'Add in Claude')
+        self.assertContains(response, 'Add custom connector')
+        self.assertContains(response, 'claude mcp add')
+
     def test_lookup_finds_active_token(self):
         _, raw = McpToken.create_token(self.user)
         found = McpToken.lookup(raw)
         self.assertIsNotNone(found)
         self.assertEqual(found.user, self.user)
+
+    def test_post_without_trailing_slash_accepts_jsonrpc(self):
+        _, raw = McpToken.create_token(self.user)
+        payload = {
+            'jsonrpc': '2.0',
+            'id': 1,
+            'method': 'ping',
+            'params': {},
+        }
+        response = self.client.post(
+            '/mcp',
+            data=json.dumps(payload),
+            content_type='application/json',
+            HTTP_AUTHORIZATION=f'Bearer {raw}',
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['result'], {})
 
     def test_inactive_user_token_rejected(self):
         _, raw = McpToken.create_token(self.user)
