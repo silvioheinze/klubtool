@@ -485,6 +485,7 @@ class GroupMeetingParticipation(models.Model):
         help_text="Group member"
     )
     is_present = models.BooleanField(default=True, help_text="Whether the member is present at the meeting")
+    is_excused = models.BooleanField(default=False, help_text="Whether the member is excused from the meeting")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -495,7 +496,12 @@ class GroupMeetingParticipation(models.Model):
         ordering = ['member__user__last_name', 'member__user__first_name']
 
     def __str__(self):
-        status = "Present" if self.is_present else "Absent"
+        if self.is_excused:
+            status = "Excused"
+        elif self.is_present:
+            status = "Present"
+        else:
+            status = "Absent"
         return f"{self.member.user.get_full_name() or self.member.user.username} - {self.meeting.title} ({status})"
 
 

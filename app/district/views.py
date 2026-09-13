@@ -1149,6 +1149,18 @@ class SessionDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         else:
             context['user_is_participant'] = any(gm.user_id == self.request.user.pk for gm in (participants or []))
 
+        excused_ids = set(context['excused_user_ids'])
+        present_names = []
+        excused_names = []
+        for gm in (participants or []):
+            name = gm.user.get_full_name() or gm.user.username
+            if gm.user_id in excused_ids:
+                excused_names.append(name)
+            else:
+                present_names.append(name)
+        context['present_names'] = present_names
+        context['excused_names'] = excused_names
+
         # Group IDs where current user is Leader, Deputy Leader, or Group Admin (for excusing participants)
         from group.models import GroupMember
         context['user_leader_group_ids'] = set(

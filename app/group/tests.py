@@ -12,7 +12,7 @@ from .forms import (
     GroupForm, GroupFilterForm, GroupMemberForm, GroupMemberFilterForm, GroupMeetingForm, AgendaItemForm,
     MembershipPeriodFormSet,
 )
-from .models import Group, GroupMember, MembershipPeriod, GroupMeeting, AgendaItem
+from .models import Group, GroupMember, MembershipPeriod, GroupMeeting, AgendaItem, GroupMeetingParticipation
 from district.models import District, Party
 from user.models import Role
 
@@ -1821,3 +1821,120 @@ class MembershipPeriodInviteTests(TestCase):
         recipients = {msg.to[0] for msg in mail.outbox}
         self.assertIn('active@example.com', recipients)
         self.assertNotIn('former@example.com', recipients)
+
+
+class MeetingParticipationCompactTests(TestCase):
+    """Compact Anwesend/Entschuldigt participation on group meeting detail."""
+
+    def setUp(self):
+        self.client = Client()
+        self.leader_role = Role.objects.get_or_create(name='Leader', defaults={'is_active': True})[0]
+        self.member_role = Role.objects.get_or_create(name='Member', defaults={'is_active': True})[0]
+        self.manager = User.objects.create_user(
+            username='manager',
+            email='manager@example.com',
+            password='pass123',
+        )
+        self.member_user = User.objects.create_user(
+            username='memberuser',
+            email='member@example.com',
+            password='pass123',
+        )
+        self.other_user = User.objects.create_user(
+            username='otheruser',
+            email='other@example.com',
+            password='pass123',
+        )
+        self.district = District.objects.create(name='Test Local', code='TL', description='Test')
+        self.party = Party.objects.create(name='Test Party', district=self.district)
+        self.group = Group.objects.create(name='Test Group', party=self.party)
+
+        manager_gm = GroupMember.objects.create(user=self.manager, group=self.group, is_active=True)
+        manager_gm.roles.add(self.leader_role)
+        MembershipPeriod.objects.create(member=manager_gm, start_date=timezone.localdate(), end_date=None)
+
+        self.member_gm = GroupMember.objects.create(user=self.member_user, group=self.group, is_active=True)
+        self.member_gm.roles.add(self.member_role)
+        MembershipPeriod.objects.create(member=self.member_gm, start_date=timezone.localdate(), end_date=None)
+
+        other_gm = GroupMember.objects.create(user=self.other_user, group=self.group, is_active=True)
+        other_gm.roles.add(self.member_role)
+        MembershipPeriod.objects.create(member=other_gm, start_date=timezone.localdate(), end_date=None)
+
+        self.meeting = GroupMeeting.objects.create(
+            group=self.group,
+            title='Participation Meeting',
+            scheduled_date=timezone.now() + timedelta(days=1),
+            status='scheduled',
+            created_by=self.manager,
+        )
+        GroupMeetingParticipation.objects.create(
+            meeting=self.meeting,
+            member=other_gm,
+            is_present=True,
+            is_excused=False,
+        )
+
+    def test_meeting_detail_shows_compact_participation(self):
+        self.client.login(username='memberuser', password='pass123')
+        url = reverse('group:meeting-detail', kwargs={'pk': self.meeting.pk})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'participationCompactView')
+        self.assertContains(response, 'participationEditView')
+        self.assertContains(response, 'meetingExcuseSelfForm')
+        self.assertIn('otheruser', response.context['present_names'])
+        self.assertEqual(response.context['excused_names'], [])
+
+    def test_member_can_excuse_self(self):
+        self.client.login(username='memberuser', password='pass123')
+        url = reverse('group:meeting-excuse-self', kwargs={'meeting_pk': self.meeting.pk})
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data['success'])
+        self.assertTrue(data['is_excused'])
+        self.assertIn('memberuser', data['excused_names'])
+        participation = GroupMeetingParticipation.objects.get(meeting=self.meeting, member=self.member_gm)
+        self.assertFalse(participation.is_present)
+        self.assertTrue(participation.is_excused)
+
+    def test_member_can_cancel_excuse(self):
+        GroupMeetingParticipation.objects.create(
+            meeting=self.meeting,
+            member=self.member_gm,
+            is_present=False,
+            is_excused=True,
+        )
+        self.client.login(username='memberuser', password='pass123')
+        url = reverse('group:meeting-excuse-self', kwargs={'meeting_pk': self.meeting.pk})
+        response = self.client.post(url, {'clear': '1'})
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data['success'])
+        self.assertFalse(data['is_excused'])
+        participation = GroupMeetingParticipation.objects.get(meeting=self.meeting, member=self.member_gm)
+        self.assertTrue(participation.is_present)
+        self.assertFalse(participation.is_excused)
+
+    def test_manager_toggle_clears_excused(self):
+        GroupMeetingParticipation.objects.create(
+            meeting=self.meeting,
+            member=self.member_gm,
+            is_present=False,
+            is_excused=True,
+        )
+        self.client.login(username='manager', password='pass123')
+        url = reverse(
+            'group:meeting-participation-toggle',
+            kwargs={'meeting_pk': self.meeting.pk, 'member_pk': self.member_gm.pk},
+        )
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data['success'])
+        self.assertTrue(data['is_present'])
+        self.assertFalse(data['is_excused'])
+        participation = GroupMeetingParticipation.objects.get(meeting=self.meeting, member=self.member_gm)
+        self.assertTrue(participation.is_present)
+        self.assertFalse(participation.is_excused)
