@@ -145,32 +145,16 @@ class MotionForm(forms.ModelForm):
             except Session.DoesNotExist:
                 pass
         
-        # Filter interventions to only show users from the motion's group
-        if self.instance and self.instance.pk and self.instance.group:
-            # Editing existing motion - filter by the motion's group
-            group = self.instance.group
+        # Wortmeldung is only available when editing an existing motion
+        if not (self.instance and self.instance.pk):
+            self.fields.pop('interventions', None)
+        elif self.instance.group:
             group_member_users = User.objects.filter(
-                group_memberships__group=group,
+                group_memberships__group=self.instance.group,
                 group_memberships__is_active=True
             ).distinct()
             self.fields['interventions'].queryset = group_member_users
-        elif 'group' in self.initial or 'group' in self.data:
-            # Creating new motion with group set
-            group_id = self.initial.get('group') or self.data.get('group')
-            if group_id:
-                try:
-                    group = Group.objects.get(pk=group_id)
-                    group_member_users = User.objects.filter(
-                        group_memberships__group=group,
-                        group_memberships__is_active=True
-                    ).distinct()
-                    self.fields['interventions'].queryset = group_member_users
-                except Group.DoesNotExist:
-                    self.fields['interventions'].queryset = User.objects.none()
-            else:
-                self.fields['interventions'].queryset = User.objects.none()
         else:
-            # No group set yet - show no users
             self.fields['interventions'].queryset = User.objects.none()
     
     def clean_tags(self):

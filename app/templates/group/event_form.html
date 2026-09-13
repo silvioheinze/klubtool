@@ -89,11 +89,7 @@
                             {% if form.group.errors %}<div class="invalid-feedback d-block">{% for error in form.group.errors %}{{ error }}{% endfor %}</div>{% endif %}
                         </div>
                         {% elif group %}
-                        <div class="mb-3">
-                            <label class="form-label">{% trans "Group" %}</label>
-                            <div class="form-control-plaintext"><strong>{{ group.name }}</strong></div>
-                            {{ form.group }}
-                        </div>
+                        {{ form.group }}
                         {% endif %}
 
                         <div class="mb-3">

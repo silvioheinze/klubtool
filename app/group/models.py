@@ -128,13 +128,13 @@ class GroupMember(models.Model):
         return ', '.join([role.name for role in self.roles.all()])
 
     def get_primary_role(self):
-        """Get the primary role (Group Admin > Leader > Deputy Leader > Member > Group member > Party member)"""
+        """Get the primary role (Group Admin > Leader > Deputy Leader > Member > Mitarbeiterin > Party member)"""
         role_priority = [
             'Group Admin',
             'Leader',
             'Deputy Leader',
             'Member',
-            'Group member',
+            'Mitarbeiterin',
             'Party member',
         ]
         for role_name in role_priority:

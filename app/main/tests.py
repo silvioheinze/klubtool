@@ -309,6 +309,8 @@ class CustomColorsTests(TestCase):
         css_path = os.path.join('static', 'css', 'custom-colors.css')
         with open(css_path, 'r') as f:
             css_content = f.read()
+        self.assertIn('.card .list-group {', css_content)
+        self.assertIn('--bs-list-group-bg: transparent', css_content)
         self.assertIn('.card .list-group-item', css_content)
         self.assertIn('background-color: transparent', css_content)
 
