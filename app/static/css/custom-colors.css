@@ -248,6 +248,10 @@
   background-color: transparent;
 }
 
+.dashboard-membership-card {
+  overflow: hidden;
+}
+
 .dashboard-membership-card .card-body,
 .dashboard-membership-card .list-group,
 .dashboard-membership-card .list-group-item {

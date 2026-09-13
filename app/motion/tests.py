@@ -472,6 +472,31 @@ class MotionStatusFormTests(TestCase):
             transform=lambda x: x
         )
 
+    def test_motion_status_form_prefills_session_from_motion(self):
+        """Unbound form pre-selects the motion's session for tabled status changes."""
+        form = MotionStatusForm(motion=self.motion, changed_by=self.user)
+        self.assertEqual(form.fields['session'].initial, self.motion.session)
+
+    def test_motion_status_form_does_not_override_session_on_post(self):
+        """Bound form keeps POST session value instead of resetting to motion.session."""
+        other_session = Session.objects.create(
+            title='Other Session',
+            council=self.council,
+            term=self.term,
+            scheduled_date=timezone.now() + timedelta(days=14),
+        )
+        form = MotionStatusForm(
+            data={
+                'status': 'tabled',
+                'session': other_session.pk,
+                'reason': 'Tabled for other session',
+            },
+            motion=self.motion,
+            changed_by=self.user,
+        )
+        self.assertTrue(form.is_valid())
+        self.assertEqual(form.cleaned_data['session'], other_session)
+
 
 class MotionCommentFormTests(TestCase):
     """Test cases for MotionCommentForm"""
