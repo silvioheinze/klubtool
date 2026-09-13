@@ -419,16 +419,16 @@ class MotionFilterForm(forms.Form):
         required=False,
         widget=forms.TextInput(attrs={
             'class': 'form-control',
-            'placeholder': 'Search by title, text, rationale, or group'
+            'placeholder': _('Search by title, text, rationale, or group'),
         })
     )
     motion_type = forms.ChoiceField(
-        choices=[('', 'All Types')] + Motion.MOTION_TYPE_CHOICES,
+        choices=[('', _('All Types'))] + Motion.MOTION_TYPE_CHOICES,
         required=False,
         widget=forms.Select(attrs={'class': 'form-select'})
     )
     status = forms.ChoiceField(
-        choices=[('', 'All Statuses')] + Motion.STATUS_CHOICES,
+        choices=[('', _('All Statuses'))] + Motion.STATUS_CHOICES,
         required=False,
         widget=forms.Select(attrs={'class': 'form-select'})
     )
@@ -436,14 +436,14 @@ class MotionFilterForm(forms.Form):
     session = forms.ModelChoiceField(
         queryset=Session.objects.filter(is_active=True),
         required=False,
-        empty_label="All Sessions",
+        empty_label=_('All Sessions'),
         widget=forms.Select(attrs={'class': 'form-select'})
     )
     
     party = forms.ModelChoiceField(
         queryset=Party.objects.filter(is_active=True),
         required=False,
-        empty_label="All Parties",
+        empty_label=_('All Parties'),
         widget=forms.Select(attrs={'class': 'form-select'})
     )
     
@@ -461,11 +461,11 @@ class InquiryFilterForm(forms.Form):
         required=False,
         widget=forms.TextInput(attrs={
             'class': 'form-control',
-            'placeholder': 'Search by title, text, or group'
+            'placeholder': _('Search by title, text, or group'),
         })
     )
     status = forms.ChoiceField(
-        choices=[('', 'All Statuses')] + Inquiry.STATUS_CHOICES,
+        choices=[('', _('All Statuses'))] + Inquiry.STATUS_CHOICES,
         required=False,
         widget=forms.Select(attrs={'class': 'form-select'})
     )
@@ -473,14 +473,14 @@ class InquiryFilterForm(forms.Form):
     session = forms.ModelChoiceField(
         queryset=Session.objects.filter(is_active=True),
         required=False,
-        empty_label="All Sessions",
+        empty_label=_('All Sessions'),
         widget=forms.Select(attrs={'class': 'form-select'})
     )
     
     party = forms.ModelChoiceField(
         queryset=Party.objects.filter(is_active=True),
         required=False,
-        empty_label="All Parties",
+        empty_label=_('All Parties'),
         widget=forms.Select(attrs={'class': 'form-select'})
     )
     

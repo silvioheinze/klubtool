@@ -8,8 +8,9 @@ from django.test import Client, TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from district.models import District, DistrictEvent, Party
+from district.models import Council, District, DistrictEvent, Party, Session, Term
 from group.models import Group, GroupMember
+from motion.models import Inquiry, Motion
 from user.models import McpToken, Role
 
 User = get_user_model()
@@ -189,6 +190,281 @@ class McpDistrictEventTests(TestCase):
         )
         self.assertTrue(is_error)
         self.assertTrue(DistrictEvent.objects.filter(pk=event.pk).exists())
+
+
+class McpMotionInquiryTests(TestCase):
+    """MCP JSON-RPC tools for motions and inquiries."""
+
+    def setUp(self):
+        self.client = Client()
+        self.member = User.objects.create_user(
+            username='motion_member',
+            email='motion_member@example.com',
+            password='memberpass123',
+        )
+        self.outsider = User.objects.create_user(
+            username='motion_outsider',
+            email='motion_outsider@example.com',
+            password='outsiderpass123',
+        )
+        self.district = District.objects.create(
+            name='Motion MCP District',
+            code='MMD',
+            description='Test district',
+            is_active=True,
+        )
+        self.other_district = District.objects.create(
+            name='Other District',
+            code='OTH',
+            description='Other district',
+            is_active=True,
+        )
+        self.party = Party.objects.create(
+            name='Motion MCP Party',
+            district=self.district,
+            is_active=True,
+        )
+        self.other_party = Party.objects.create(
+            name='Other Party',
+            district=self.other_district,
+            is_active=True,
+        )
+        self.group = Group.objects.create(
+            name='Motion MCP Group',
+            party=self.party,
+            is_active=True,
+        )
+        self.other_group = Group.objects.create(
+            name='Other Group',
+            party=self.other_party,
+            is_active=True,
+        )
+        GroupMember.objects.create(user=self.member, group=self.group, is_active=True)
+        self.council, _ = Council.objects.get_or_create(
+            district=self.district,
+            defaults={'name': 'Motion MCP Council', 'is_active': True},
+        )
+        self.other_council, _ = Council.objects.get_or_create(
+            district=self.other_district,
+            defaults={'name': 'Other Council', 'is_active': True},
+        )
+        self.term = Term.objects.create(
+            name='MCP Term',
+            start_date=timezone.now().date(),
+            end_date=(timezone.now() + timedelta(days=365)).date(),
+        )
+        self.session = Session.objects.create(
+            title='MCP Session',
+            council=self.council,
+            term=self.term,
+            scheduled_date=timezone.now() + timedelta(days=7),
+            is_active=True,
+        )
+        self.other_session = Session.objects.create(
+            title='Other Session',
+            council=self.other_council,
+            term=self.term,
+            scheduled_date=timezone.now() + timedelta(days=7),
+            is_active=True,
+        )
+        _, self.member_token = McpToken.create_token(self.member)
+        _, self.outsider_token = McpToken.create_token(self.outsider)
+
+    def _rpc(self, method, params=None, token=None, request_id=1):
+        headers = {'HTTP_AUTHORIZATION': f'Bearer {token}'} if token else {}
+        payload = {
+            'jsonrpc': '2.0',
+            'id': request_id,
+            'method': method,
+            'params': params or {},
+        }
+        return self.client.post(
+            reverse('mcp'),
+            data=json.dumps(payload),
+            content_type='application/json',
+            **headers,
+        )
+
+    def _tool_call(self, name, arguments, token):
+        response = self._rpc(
+            'tools/call',
+            {'name': name, 'arguments': arguments},
+            token=token,
+        )
+        self.assertEqual(response.status_code, 200, response.content)
+        body = response.json()
+        self.assertNotIn('error', body)
+        result = body['result']
+        text = result['content'][0]['text']
+        return json.loads(text), result.get('isError', False)
+
+    def test_tools_list_includes_motion_and_inquiry_tools(self):
+        response = self._rpc('tools/list', token=self.member_token)
+        names = [tool['name'] for tool in response.json()['result']['tools']]
+        for tool_name in (
+            'create_motion',
+            'update_motion',
+            'get_motion',
+            'create_inquiry',
+            'update_inquiry',
+            'get_inquiry',
+        ):
+            self.assertIn(tool_name, names)
+
+    def test_member_can_create_motion_and_inquiry(self):
+        motion_data, motion_error = self._tool_call(
+            'create_motion',
+            {
+                'title': 'MCP Motion',
+                'session_id': self.session.pk,
+                'text': 'Motion text',
+                'party_ids': [self.party.pk],
+            },
+            self.member_token,
+        )
+        self.assertFalse(motion_error)
+        motion = Motion.objects.get(pk=motion_data['motion']['id'])
+        self.assertEqual(motion.title, 'MCP Motion')
+        self.assertEqual(motion.status, 'draft')
+        self.assertEqual(motion.submitted_by, self.member)
+        self.assertEqual(motion.interventions.count(), 0)
+
+        inquiry_data, inquiry_error = self._tool_call(
+            'create_inquiry',
+            {
+                'title': 'MCP Inquiry',
+                'session_id': self.session.pk,
+                'text': 'Inquiry text',
+                'party_ids': [self.party.pk],
+            },
+            self.outsider_token,
+        )
+        self.assertTrue(inquiry_error)
+        self.assertIn('permission', inquiry_data['error'].lower())
+
+        inquiry_data, inquiry_error = self._tool_call(
+            'create_inquiry',
+            {
+                'title': 'MCP Inquiry',
+                'session_id': self.session.pk,
+                'text': 'Inquiry text',
+                'party_ids': [self.party.pk],
+            },
+            self.member_token,
+        )
+        self.assertFalse(inquiry_error)
+        inquiry = Inquiry.objects.get(pk=inquiry_data['inquiry']['id'])
+        self.assertEqual(inquiry.title, 'MCP Inquiry')
+        self.assertEqual(inquiry.submitted_by, self.member)
+
+    def test_outsider_cannot_create_motion(self):
+        data, is_error = self._tool_call(
+            'create_motion',
+            {
+                'title': 'Forbidden Motion',
+                'session_id': self.session.pk,
+            },
+            self.outsider_token,
+        )
+        self.assertTrue(is_error)
+        self.assertIn('permission', data['error'].lower())
+        self.assertFalse(Motion.objects.filter(title='Forbidden Motion').exists())
+
+    def test_member_can_update_own_group_motion_outsider_cannot(self):
+        motion = Motion.objects.create(
+            title='Existing Motion',
+            text='Body',
+            session=self.session,
+            group=self.group,
+            submitted_by=self.member,
+            status='draft',
+        )
+        motion.parties.add(self.party)
+
+        updated, is_error = self._tool_call(
+            'update_motion',
+            {
+                'motion_id': motion.pk,
+                'title': 'Updated Motion',
+                'intervention_ids': [self.member.pk],
+            },
+            self.member_token,
+        )
+        self.assertFalse(is_error)
+        motion.refresh_from_db()
+        self.assertEqual(motion.title, 'Updated Motion')
+        self.assertEqual(list(motion.interventions.values_list('pk', flat=True)), [self.member.pk])
+
+        denied, is_error = self._tool_call(
+            'update_motion',
+            {'motion_id': motion.pk, 'title': 'Hacked'},
+            self.outsider_token,
+        )
+        self.assertTrue(is_error)
+        self.assertIn('permission', denied['error'].lower())
+        motion.refresh_from_db()
+        self.assertEqual(motion.title, 'Updated Motion')
+
+    def test_member_can_get_and_update_inquiry_outsider_denied(self):
+        inquiry = Inquiry.objects.create(
+            title='Existing Inquiry',
+            text='Question',
+            session=self.session,
+            group=self.group,
+            submitted_by=self.member,
+            status='draft',
+        )
+        inquiry.parties.add(self.party)
+
+        fetched, is_error = self._tool_call(
+            'get_inquiry',
+            {'inquiry_id': inquiry.pk},
+            self.member_token,
+        )
+        self.assertFalse(is_error)
+        self.assertEqual(fetched['inquiry']['title'], 'Existing Inquiry')
+
+        updated, is_error = self._tool_call(
+            'update_inquiry',
+            {'inquiry_id': inquiry.pk, 'answer': 'Written answer'},
+            self.member_token,
+        )
+        self.assertFalse(is_error)
+        inquiry.refresh_from_db()
+        self.assertEqual(inquiry.answer, 'Written answer')
+
+        denied, is_error = self._tool_call(
+            'get_inquiry',
+            {'inquiry_id': inquiry.pk},
+            self.outsider_token,
+        )
+        self.assertTrue(is_error)
+        self.assertIn('permission', denied['error'].lower())
+
+    def test_invalid_session_group_district_returns_form_error(self):
+        data, is_error = self._tool_call(
+            'create_motion',
+            {
+                'title': 'Bad District Motion',
+                'session_id': self.other_session.pk,
+                'group_id': self.group.pk,
+            },
+            self.member_token,
+        )
+        self.assertTrue(is_error)
+        self.assertFalse(Motion.objects.filter(title='Bad District Motion').exists())
+
+        data, is_error = self._tool_call(
+            'create_inquiry',
+            {
+                'title': 'Bad District Inquiry',
+                'session_id': self.other_session.pk,
+                'group_id': self.group.pk,
+            },
+            self.member_token,
+        )
+        self.assertTrue(is_error)
+        self.assertFalse(Inquiry.objects.filter(title='Bad District Inquiry').exists())
 
 
 class McpTokenSettingsTests(TestCase):

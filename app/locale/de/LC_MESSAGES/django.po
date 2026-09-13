@@ -2218,6 +2218,22 @@ msgstr "Suche nach Name, Beschreibung, Vorsitzende..."
 msgid "All Types"
 msgstr "Alle Typen"
 
+#: motion/forms.py
+msgid "All Statuses"
+msgstr "Alle Status"
+
+#: motion/forms.py
+msgid "All Sessions"
+msgstr "Alle Sitzungen"
+
+#: motion/forms.py
+msgid "Search by title, text, rationale, or group"
+msgstr "Suche nach Titel, Text, Begründung oder Klub"
+
+#: motion/forms.py
+msgid "Search by title, text, or group"
+msgstr "Suche nach Titel, Text oder Klub"
+
 #: templates/district/committee_list.html:47
 msgid "All Councils"
 msgstr "Alle Bezirksvertretungen"
@@ -6949,9 +6965,6 @@ msgstr "Deine E-Mail-Adresse wurde bestätigt."
 #~ msgid "Sign up"
 #~ msgstr "Registrieren"
 
-#~ msgid "All Statuses"
-#~ msgstr "Alle Status"
-
 #~ msgid "No attachments uploaded yet."
 #~ msgstr "Keine Anhänge hochgeladen."
 
@@ -7076,9 +7089,6 @@ msgstr "Deine E-Mail-Adresse wurde bestätigt."
 #~ msgctxt "Kommission"
 #~ msgid "Add Committee Meeting"
 #~ msgstr "Kommissionssitzung hinzufügen"
-
-#~ msgid "All Sessions"
-#~ msgstr "Alle Sitzungen"
 
 #~ msgid "Sign Up"
 #~ msgstr "Registrieren"
