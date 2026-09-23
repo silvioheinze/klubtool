@@ -138,8 +138,7 @@ class GroupMemberFormTests(TestCase):
         form_data = {
             'user': self.user.pk,
             'group': self.group.pk,
-            'roles': [self.role.pk],
-            'is_active': True
+            'notes': '',
         }
         
         form = GroupMemberForm(data=form_data)
@@ -148,10 +147,9 @@ class GroupMemberFormTests(TestCase):
     def test_group_member_form_required_fields(self):
         """Test GroupMemberForm with missing required fields"""
         form_data = {
-            'user': '',  # Required field missing
+            'user': '',
             'group': self.group.pk,
-            'roles': [self.role.pk],
-            'is_active': True
+            'notes': '',
         }
         
         form = GroupMemberForm(data=form_data)
@@ -168,59 +166,21 @@ class GroupMemberFormTests(TestCase):
             transform=lambda x: x
         )
     
-    def test_group_member_form_role_filtering(self):
-        """Test that GroupMemberForm filters roles correctly"""
-        form = GroupMemberForm()
-        expected_roles = Role.objects.filter(is_active=True)
-        self.assertQuerySetEqual(
-            form.fields['roles'].queryset,
-            expected_roles,
-            transform=lambda x: x
-        )
-    
-    def test_group_member_form_multiple_roles(self):
-        """Test GroupMemberForm with multiple roles"""
-        role2 = Role.objects.create(
-            name='Test Role 2',
-            description='Test role 2 description',
-            is_active=True
-        )
-        
+    def test_group_member_form_additional_role_checkboxes(self):
+        """Test Mitarbeiterin and Group Admin checkboxes apply roles on save"""
         form_data = {
             'user': self.user.pk,
             'group': self.group.pk,
-            'roles': [self.role.pk, role2.pk],
-            'is_active': True
+            'is_mitarbeiterin': True,
+            'is_group_admin': True,
+            'notes': '',
         }
-        
         form = GroupMemberForm(data=form_data)
-        self.assertTrue(form.is_valid())
-    
-    def test_group_member_form_no_roles(self):
-        """Test GroupMemberForm with no roles assigned"""
-        form_data = {
-            'user': self.user.pk,
-            'group': self.group.pk,
-            'roles': [],  # No roles assigned
-            'is_active': True
-        }
-        
-        form = GroupMemberForm(data=form_data)
-        # Check if roles are required or optional (form errors not printed to avoid test log clutter)
-        # For now, just check that the form can be created
-        self.assertIsNotNone(form)
-    
-    def test_group_member_form_inactive_role_exclusion(self):
-        """Test that GroupMemberForm excludes inactive roles"""
-        # Create inactive role
-        inactive_role = Role.objects.create(
-            name='Inactive Role',
-            description='Inactive role description',
-            is_active=False
-        )
-        
-        form = GroupMemberForm()
-        self.assertNotIn(inactive_role, form.fields['roles'].queryset)
+        self.assertTrue(form.is_valid(), form.errors)
+        gm = form.save()
+        form.apply_additional_roles(gm)
+        self.assertTrue(gm.has_role('Mitarbeiterin'))
+        self.assertTrue(gm.has_role('Group Admin'))
     
     def test_group_member_form_inactive_group_exclusion(self):
         """Test that GroupMemberForm excludes inactive groups"""
@@ -495,41 +455,30 @@ class GroupMemberModelTests(TestCase):
         self.assertIn(group_member, self.group.members.all())
 
     def test_group_member_get_primary_role_priority(self):
-        """Test get_primary_role returns highest-priority role (Group Admin > Leader > Deputy Leader > Member > Mitarbeiterin > Party member)"""
+        """Test get_primary_role returns highest-priority role (Group Admin > Leader > Deputy Leader > Member > Mitarbeiterin)"""
         group_admin = Role.objects.get_or_create(name='Group Admin', defaults={'is_active': True})[0]
         leader = Role.objects.get_or_create(name='Leader', defaults={'is_active': True})[0]
         deputy_leader = Role.objects.get_or_create(name='Deputy Leader', defaults={'is_active': True})[0]
         member_role = Role.objects.get_or_create(name='Member', defaults={'is_active': True})[0]
         mitarbeiterin_role = Role.objects.get_or_create(name='Mitarbeiterin', defaults={'is_active': True})[0]
-        party_member = Role.objects.get_or_create(name='Party member', defaults={'is_active': True})[0]
 
-        # Party member only -> returns Party member
         gm = GroupMember.objects.create(user=self.user, group=self.group)
-        gm.roles.add(party_member)
-        self.assertEqual(gm.get_primary_role(), 'Party member')
-
-        # Member + Party member -> returns Member (higher priority)
         gm.roles.add(member_role)
         self.assertEqual(gm.get_primary_role(), 'Member')
 
-        # Deputy Leader + Member + Party member -> returns Deputy Leader
         gm.roles.add(deputy_leader)
         self.assertEqual(gm.get_primary_role(), 'Deputy Leader')
 
-        # Leader + others -> returns Leader
         gm.roles.add(leader)
         self.assertEqual(gm.get_primary_role(), 'Leader')
 
-        # Group Admin + others -> returns Group Admin
         gm.roles.add(group_admin)
         self.assertEqual(gm.get_primary_role(), 'Group Admin')
 
-        # Mitarbeiterin + Party member -> Mitarbeiterin wins
         gm.roles.clear()
-        gm.roles.add(mitarbeiterin_role, party_member)
+        gm.roles.add(mitarbeiterin_role)
         self.assertEqual(gm.get_primary_role(), 'Mitarbeiterin')
 
-        # Member + Mitarbeiterin -> Member wins
         gm.roles.add(member_role)
         self.assertEqual(gm.get_primary_role(), 'Member')
 
@@ -538,61 +487,19 @@ class GroupMemberModelTests(TestCase):
         group_member = GroupMember.objects.create(user=self.user, group=self.group)
         self.assertEqual(group_member.get_primary_role(), 'Member')
 
-    def test_group_member_form_includes_party_member_role(self):
-        """Test that GroupMemberForm includes Party member role when available"""
-        Role.objects.get_or_create(
-            name='Party member',
-            defaults={'description': 'Party member role', 'is_active': True}
+    def test_sync_dated_roles_from_open_period(self):
+        """Open period role is synced onto GroupMember.roles"""
+        gm = GroupMember.objects.create(user=self.user, group=self.group)
+        gm.roles.clear()
+        MembershipPeriod.objects.create(
+            member=gm,
+            start_date=timezone.localdate(),
+            end_date=None,
+            role='Leader',
         )
-        form = GroupMemberForm()
-        role_names = [r.name for r in form.fields['roles'].queryset]
-        self.assertIn('Party member', role_names)
-
-    def test_group_member_form_with_party_member_role(self):
-        """Test GroupMemberForm with Party member role assignment"""
-        party_member_role = Role.objects.get_or_create(
-            name='Party member',
-            defaults={'description': 'Party member role', 'is_active': True}
-        )[0]
-        form_data = {
-            'user': self.user.pk,
-            'group': self.group.pk,
-            'roles': [party_member_role.pk],
-            'is_active': True
-        }
-        form = GroupMemberForm(data=form_data)
-        self.assertTrue(form.is_valid(), form.errors)
-        group_member = form.save()
-        self.assertIn(party_member_role, group_member.roles.all())
-        self.assertEqual(group_member.get_primary_role(), 'Party member')
-
-    def test_group_member_form_includes_mitarbeiterin_role(self):
-        """Test that GroupMemberForm includes Mitarbeiterin role when available"""
-        Role.objects.get_or_create(
-            name='Mitarbeiterin',
-            defaults={'description': 'Staff member role', 'is_active': True},
-        )
-        form = GroupMemberForm()
-        role_names = [r.name for r in form.fields['roles'].queryset]
-        self.assertIn('Mitarbeiterin', role_names)
-
-    def test_group_member_form_with_mitarbeiterin_role(self):
-        """Test GroupMemberForm with Mitarbeiterin role assignment"""
-        mitarbeiterin_role = Role.objects.get_or_create(
-            name='Mitarbeiterin',
-            defaults={'description': 'Staff member role', 'is_active': True},
-        )[0]
-        form_data = {
-            'user': self.user.pk,
-            'group': self.group.pk,
-            'roles': [mitarbeiterin_role.pk],
-            'notes': '',
-        }
-        form = GroupMemberForm(data=form_data)
-        self.assertTrue(form.is_valid(), form.errors)
-        gm = form.save()
-        self.assertIn(mitarbeiterin_role, gm.roles.all())
-        self.assertEqual(gm.get_primary_role(), 'Mitarbeiterin')
+        gm.refresh_from_db()
+        self.assertTrue(gm.has_role('Leader'))
+        self.assertFalse(gm.has_role('Member'))
 
 
 class GroupMeetingFormTests(TestCase):
@@ -1729,6 +1636,15 @@ class MembershipPeriodTests(TestCase):
         period.save()
         self.active_member.refresh_from_db()
         self.assertFalse(self.active_member.is_active)
+
+    def test_period_role_syncs_dated_roles(self):
+        """Changing open period role updates Leader/Deputy Leader/Member on the member."""
+        period = self.active_member.current_period
+        period.role = 'Deputy Leader'
+        period.save()
+        self.active_member.refresh_from_db()
+        self.assertTrue(self.active_member.has_role('Deputy Leader'))
+        self.assertFalse(self.active_member.has_role('Member'))
 
     def test_group_detail_shows_all_members(self):
         """Group detail lists active and former members."""

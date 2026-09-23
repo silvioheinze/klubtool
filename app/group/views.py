@@ -501,7 +501,7 @@ class GroupMemberCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView)
         if self.request.method == 'POST':
             return MembershipPeriodFormSet(self.request.POST)
         return MembershipPeriodFormSet(
-            initial=[{'start_date': timezone.localdate()}],
+            initial=[{'start_date': timezone.localdate(), 'role': 'Member'}],
         )
 
     def get_context_data(self, **kwargs):
@@ -532,6 +532,7 @@ class GroupMemberCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView)
                 period_formset = MembershipPeriodFormSet(request.POST, instance=self.object)
                 if period_formset.is_valid():
                     period_formset.save()
+                    form.apply_additional_roles(self.object)
                     self.object.sync_is_active()
                     messages.success(
                         request,
@@ -584,6 +585,7 @@ class GroupMemberUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView)
             with transaction.atomic():
                 self.object = form.save()
                 period_formset.save()
+                form.apply_additional_roles(self.object)
                 self.object.sync_is_active()
             messages.success(request, "Membership updated successfully.")
             return redirect(self.get_success_url())
