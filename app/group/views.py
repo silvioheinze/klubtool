@@ -23,6 +23,47 @@ from .forms import (
 
 User = get_user_model()
 
+
+def _user_can_access_group(user, group):
+    """Same access as group detail: view permission, managers, or active members."""
+    if user.is_superuser or user.has_role_permission('group.view'):
+        return True
+    return (
+        group.can_user_manage_group(user)
+        or GroupMember.objects.filter(user=user, group=group, is_active=True).exists()
+    )
+
+
+def _group_member_list_context(group, user):
+    """Context for member list template and permissions."""
+    from user.models import Role
+
+    return {
+        'can_invite_member': user.is_superuser or group.can_user_manage_group(user),
+        'can_add_member': user.is_superuser or user.has_role_permission('group.create'),
+        'can_view_member': user.is_superuser or user.has_role_permission('group.view'),
+        'can_edit_member': (
+            user.is_superuser
+            or user.has_role_permission('group.edit')
+            or group.can_user_manage_group(user)
+        ),
+        'can_manage_roles': user.is_superuser,
+        'members': (
+            group.members.select_related('user')
+            .prefetch_related('roles', 'periods')
+            .annotate(
+                active_sort=Case(
+                    When(is_active=True, then=Value(0)),
+                    default=Value(1),
+                    output_field=IntegerField(),
+                )
+            )
+            .order_by('active_sort', 'user__first_name', 'user__last_name', 'user__username')
+        ),
+        'available_roles': Role.objects.filter(is_active=True).order_by('name'),
+    }
+
+
 def is_superuser_or_has_permission(permission):
     """Decorator to check if user is superuser or has specific permission"""
     def decorator(view_func):
@@ -150,9 +191,6 @@ class GroupDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
     context_object_name = 'group'
 
     def test_func(self):
-        # Allow superusers, users with group.view permission, group admins, or any active group member
-        if self.request.user.is_superuser or self.request.user.has_role_permission('group.view'):
-            return True
         group_pk = self.kwargs.get('pk')
         if group_pk is None:
             return False
@@ -163,10 +201,7 @@ class GroupDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         group = Group.objects.filter(pk=group_pk).first()
         if not group:
             return False
-        return (
-            group.can_user_manage_group(self.request.user)
-            or GroupMember.objects.filter(user=self.request.user, group=group, is_active=True).exists()
-        )
+        return _user_can_access_group(self.request.user, group)
 
     def get_context_data(self, **kwargs):
         from pages.views import _build_month_calendar
@@ -189,31 +224,7 @@ class GroupDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             or group.can_user_manage_group(user)
             or is_member
         )
-        context['can_invite_member'] = user.is_superuser or group.can_user_manage_group(user)
-        context['can_add_member'] = user.is_superuser or user.has_role_permission('group.create')
-        context['can_view_member'] = (
-            user.is_superuser or user.has_role_permission('group.view')
-        )
-        context['can_edit_member'] = (
-            user.is_superuser
-            or user.has_role_permission('group.edit')
-            or group.can_user_manage_group(user)
-        )
-        context['can_manage_roles'] = user.is_superuser
-        context['members'] = (
-            self.object.members.select_related('user')
-            .prefetch_related('roles', 'periods')
-            .annotate(
-                active_sort=Case(
-                    When(is_active=True, then=Value(0)),
-                    default=Value(1),
-                    output_field=IntegerField(),
-                )
-            )
-            .order_by('active_sort', 'user__first_name', 'user__last_name', 'user__username')
-        )
-        context['active_members'] = context['members'].filter(is_active=True)
-        
+
         # Add meetings data (paginated, 10 per page)
         from django.core.paginator import Paginator
         from django.http import QueryDict
@@ -241,10 +252,6 @@ class GroupDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         meetings_page = context['meetings_page']
         context['meetings_prev_url'] = _meetings_page_url(meetings_page.previous_page_number()) if meetings_page.has_previous() else None
         context['meetings_next_url'] = _meetings_page_url(meetings_page.next_page_number()) if meetings_page.has_next() else None
-
-        # Add available roles for role management
-        from user.models import Role
-        context['available_roles'] = Role.objects.filter(is_active=True).order_by('name')
 
         # Monthly calendar for this group's meetings
         now = timezone.now()
@@ -304,6 +311,30 @@ class GroupDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         if request.GET.get('partial') == 'meetings':
             return render(request, 'group/group_meetings_list_partial.html', context)
         return self.render_to_response(context)
+
+
+class GroupMemberListView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
+    model = Group
+    template_name = 'group/member_list.html'
+    context_object_name = 'group'
+
+    def test_func(self):
+        group_pk = self.kwargs.get('pk')
+        if group_pk is None:
+            return False
+        try:
+            group_pk = int(group_pk)
+        except (TypeError, ValueError):
+            return False
+        group = Group.objects.filter(pk=group_pk).first()
+        if not group:
+            return False
+        return _user_can_access_group(self.request.user, group)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(_group_member_list_context(self.object, self.request.user))
+        return context
 
 
 @login_required
@@ -682,8 +713,8 @@ def update_member_roles(request):
     # Check permissions
     if not (request.user.is_superuser or member.group.can_user_manage_group(request.user)):
         messages.error(request, "You don't have permission to perform this action.")
-        return redirect('group:group-detail', pk=member.group.pk)
-    
+        return redirect('group:group-members', pk=member.group.pk)
+
     # Get selected roles
     from user.models import Role
     roles_to_assign = Role.objects.filter(id__in=selected_roles, is_active=True)
@@ -701,7 +732,7 @@ def update_member_roles(request):
         member.roles.add(member_role)
     
     messages.success(request, f"Roles updated for '{member.user.username}' successfully.")
-    return redirect('group:group-detail', pk=member.group.pk)
+    return redirect('group:group-members', pk=member.group.pk)
 
 
 # Group Meeting Views
