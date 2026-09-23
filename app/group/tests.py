@@ -1647,14 +1647,22 @@ class MembershipPeriodTests(TestCase):
         self.assertFalse(self.active_member.has_role('Member'))
 
     def test_group_detail_shows_all_members(self):
-        """Group detail lists active and former members."""
+        """Group detail links to members page; members page lists active and former members."""
         self.client.login(username='admin', password='adminpass123')
-        url = reverse('group:group-detail', kwargs={'pk': self.group.pk})
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 200)
-        content = response.content.decode()
-        self.assertIn('activeuser', content)
-        self.assertIn('formeruser', content)
+        detail_url = reverse('group:group-detail', kwargs={'pk': self.group.pk})
+        members_url = reverse('group:group-members', kwargs={'pk': self.group.pk})
+        detail_response = self.client.get(detail_url)
+        self.assertEqual(detail_response.status_code, 200)
+        detail_content = detail_response.content.decode()
+        self.assertIn(members_url, detail_content)
+        self.assertNotIn('activeuser', detail_content)
+        self.assertNotIn('formeruser', detail_content)
+
+        members_response = self.client.get(members_url)
+        self.assertEqual(members_response.status_code, 200)
+        members_content = members_response.content.decode()
+        self.assertIn('activeuser', members_content)
+        self.assertIn('formeruser', members_content)
 
     def test_meeting_detail_lists_only_active_members(self):
         """Meeting detail attendance list includes only active members."""
@@ -1772,7 +1780,12 @@ class MeetingParticipationCompactTests(TestCase):
 
         manager_gm = GroupMember.objects.create(user=self.manager, group=self.group, is_active=True)
         manager_gm.roles.add(self.leader_role)
-        MembershipPeriod.objects.create(member=manager_gm, start_date=timezone.localdate(), end_date=None)
+        MembershipPeriod.objects.create(
+            member=manager_gm,
+            start_date=timezone.localdate(),
+            end_date=None,
+            role='Leader',
+        )
 
         self.member_gm = GroupMember.objects.create(user=self.member_user, group=self.group, is_active=True)
         self.member_gm.roles.add(self.member_role)

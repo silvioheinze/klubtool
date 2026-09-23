@@ -14,10 +14,17 @@ except ImportError:
 class SuppressExpectedRequestErrors(logging.Filter):
     """
     Filter out log records for expected HTTP client errors that are handled
-    by Django (403 Permission Denied). These are normal outcomes (e.g. tests
-    or users hitting forbidden URLs) and need not be logged as WARNING with
-    full traceback.
+    by Django (401, 400, 403, 404, 405). These are normal outcomes (e.g. tests
+    or users hitting forbidden URLs) and need not be logged as WARNING.
     """
+
+    _CLIENT_ERROR_PREFIXES = (
+        "Forbidden",
+        "Unauthorized",
+        "Bad Request",
+        "Not Found",
+        "Method Not Allowed",
+    )
 
     def filter(self, record):
         if record.exc_info:
@@ -26,6 +33,8 @@ class SuppressExpectedRequestErrors(logging.Filter):
                 if isinstance(exc_value, PermissionDenied):
                     return False
         msg = record.getMessage()
+        if msg.startswith(self._CLIENT_ERROR_PREFIXES):
+            return False
         if "Forbidden (Permission denied)" in msg:
             return False
         # Suppress form validation error logs (expected during tests / invalid input)
