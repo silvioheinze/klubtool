@@ -121,31 +121,22 @@
                             {% endif %}
                         </div>
 
-                        <div class="row">
+                        <div class="row mb-3">
                             <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="{{ form.roles.id_for_label }}" class="form-label">
-                                        {{ form.roles.label }}
-                                        {% if form.roles.field.required %}
-                                            <span class="text-danger">*</span>
-                                        {% endif %}
+                                <div class="form-check">
+                                    {{ form.is_mitarbeiterin }}
+                                    <label class="form-check-label" for="{{ form.is_mitarbeiterin.id_for_label }}">
+                                        {{ form.is_mitarbeiterin.label }}
                                     </label>
-                                    {{ form.roles }}
-                                    {% if form.roles.errors %}
-                                        <div class="invalid-feedback d-block">
-                                            {% for error in form.roles.errors %}
-                                                {{ error }}
-                                            {% endfor %}
-                                        </div>
-                                    {% endif %}
-                                    {% if form.roles.help_text %}
-                                        <div class="form-text">{{ form.roles.help_text }}</div>
-                                    {% endif %}
                                 </div>
                             </div>
-                            
                             <div class="col-md-6">
-
+                                <div class="form-check">
+                                    {{ form.is_group_admin }}
+                                    <label class="form-check-label" for="{{ form.is_group_admin.id_for_label }}">
+                                        {{ form.is_group_admin.label }}
+                                    </label>
+                                </div>
                             </div>
                         </div>
 
@@ -183,6 +174,7 @@
                                 <table class="table table-sm align-middle">
                                     <thead>
                                         <tr>
+                                            <th>{% trans "Role" %}</th>
                                             <th>{% trans "Start date" %}</th>
                                             <th>{% trans "End date" %}</th>
                                             {% if period_formset.can_delete %}
@@ -196,6 +188,14 @@
                                             {% for hidden in period_form.hidden_fields %}
                                                 {{ hidden }}
                                             {% endfor %}
+                                            <td>
+                                                {{ period_form.role }}
+                                                {% if period_form.role.errors %}
+                                                    <div class="invalid-feedback d-block">
+                                                        {% for error in period_form.role.errors %}{{ error }}{% endfor %}
+                                                    </div>
+                                                {% endif %}
+                                            </td>
                                             <td>
                                                 {{ period_form.start_date }}
                                                 {% if period_form.start_date.errors %}
@@ -227,7 +227,7 @@
                                 </table>
                             </div>
                             <p class="form-text text-muted mb-0">
-                                {% trans "Leave end date empty for the current active membership. A member can have several periods over time." %}
+                                {% trans "Set Leader, Deputy Leader, or Member for each period with start and end dates. Leave end date empty for the current active membership." %}
                             </p>
                         </div>
 
@@ -280,16 +280,13 @@
                     <ul class="text-muted">
                         <li><strong>{% trans "User" %}:</strong> {% trans "The user to add to the group" %}</li>
                         <li><strong>{% trans "Group" %}:</strong> {% trans "The political group to add the user to" %}</li>
-                        <li><strong>{% trans "Role" %}:</strong> {% trans "The role of the user within the group" %}</li>
                     </ul>
                     
-                    <h6>{% trans "Role Options" %}</h6>
+                    <h6>{% trans "Roles" %}</h6>
                     <ul class="text-muted">
-                        <li><strong>{% trans "Member" %}:</strong> {% trans "Regular group member" %}</li>
-                        <li><strong>{% trans "Mitarbeiterin" %}:</strong> {% trans "Staff member of the group with basic participation rights" %}</li>
-                        <li><strong>{% trans "Party member" %}:</strong> {% trans "Party-affiliated group participant" %}</li>
-                        <li><strong>{% trans "Leader" %}:</strong> {% trans "Group leader with decision-making authority" %}</li>
-                        <li><strong>{% trans "Deputy Leader" %}:</strong> {% trans "Assistant to the group leader" %}</li>
+                        <li><strong>{% trans "Membership periods" %}:</strong> {% trans "Leader, Deputy Leader, or Member with start and end dates" %}</li>
+                        <li><strong>{% trans "Mitarbeiterin" %}:</strong> {% trans "Additional staff role (checkbox)" %}</li>
+                        <li><strong>{% trans "Group Admin" %}:</strong> {% trans "Additional administration role (checkbox)" %}</li>
                     </ul>
                     
                     <h6>{% trans "Validation" %}</h6>

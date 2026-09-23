@@ -5,7 +5,7 @@ from .models import Group, GroupMember, MembershipPeriod
 class MembershipPeriodInline(admin.TabularInline):
     model = MembershipPeriod
     extra = 1
-    fields = ['start_date', 'end_date']
+    fields = ['role', 'start_date', 'end_date']
 
 
 @admin.register(Group)

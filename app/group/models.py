@@ -11,6 +11,15 @@ from user.models import Role
 
 User = get_user_model()
 
+DATED_MEMBERSHIP_ROLE_NAMES = ('Leader', 'Deputy Leader', 'Member')
+
+MEMBERSHIP_PERIOD_ROLE_CHOICES = [
+    ('Leader', _('Leader')),
+    ('Deputy Leader', _('Deputy Leader')),
+    ('Member', _('Member')),
+]
+
+
 class Group(models.Model):
     """Political group within a party"""
     name = models.CharField(max_length=200, help_text="Name of the political group")
@@ -128,14 +137,13 @@ class GroupMember(models.Model):
         return ', '.join([role.name for role in self.roles.all()])
 
     def get_primary_role(self):
-        """Get the primary role (Group Admin > Leader > Deputy Leader > Member > Mitarbeiterin > Party member)"""
+        """Get the primary role (Group Admin > Leader > Deputy Leader > Member > Mitarbeiterin)"""
         role_priority = [
             'Group Admin',
             'Leader',
             'Deputy Leader',
             'Member',
             'Mitarbeiterin',
-            'Party member',
         ]
         for role_name in role_priority:
             if self.has_role(role_name):
@@ -154,6 +162,18 @@ class GroupMember(models.Model):
             GroupMember.objects.filter(pk=self.pk).update(is_active=has_open_period)
             self.is_active = has_open_period
 
+    def sync_dated_roles(self):
+        """Sync Leader / Deputy Leader / Member roles from the open membership period."""
+        dated_roles = Role.objects.filter(name__in=DATED_MEMBERSHIP_ROLE_NAMES)
+        self.roles.remove(*dated_roles)
+        open_period = self.periods.filter(end_date__isnull=True).order_by('-start_date', '-pk').first()
+        if open_period:
+            role, _ = Role.objects.get_or_create(
+                name=open_period.role,
+                defaults={'description': f'{open_period.role} role', 'is_active': True},
+            )
+            self.roles.add(role)
+
 
 class MembershipPeriod(models.Model):
     """A date range during which a user was/is a group member."""
@@ -169,6 +189,12 @@ class MembershipPeriod(models.Model):
         blank=True,
         help_text="Last day of this membership period (leave empty if currently active)",
     )
+    role = models.CharField(
+        max_length=20,
+        choices=MEMBERSHIP_PERIOD_ROLE_CHOICES,
+        default='Member',
+        help_text="Role during this membership period",
+    )
 
     class Meta:
         ordering = ['-start_date', '-pk']
@@ -177,8 +203,8 @@ class MembershipPeriod(models.Model):
 
     def __str__(self):
         if self.end_date:
-            return f"{self.member.user.username}: {self.start_date} – {self.end_date}"
-        return f"{self.member.user.username}: {self.start_date} – {_('present')}"
+            return f"{self.member.user.username} ({self.role}): {self.start_date} – {self.end_date}"
+        return f"{self.member.user.username} ({self.role}): {self.start_date} – {_('present')}"
 
     def clean(self):
         if self.end_date and self.end_date < self.start_date:
@@ -194,11 +220,13 @@ class MembershipPeriod(models.Model):
         self.full_clean()
         super().save(*args, **kwargs)
         self.member.sync_is_active()
+        self.member.sync_dated_roles()
 
     def delete(self, *args, **kwargs):
         member = self.member
         super().delete(*args, **kwargs)
         member.sync_is_active()
+        member.sync_dated_roles()
 
 
 class GroupMeeting(models.Model):

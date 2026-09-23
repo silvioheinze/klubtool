@@ -44,23 +44,49 @@ class GroupFilterForm(forms.Form):
 
 class GroupMemberForm(forms.ModelForm):
     """Form for creating and editing group memberships"""
+
+    is_mitarbeiterin = forms.BooleanField(
+        required=False,
+        label=_('Mitarbeiterin'),
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+    )
+    is_group_admin = forms.BooleanField(
+        required=False,
+        label=_('Group Admin'),
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+    )
+
     class Meta:
         model = GroupMember
-        fields = ['user', 'group', 'roles', 'notes']
+        fields = ['user', 'group', 'notes']
         widgets = {
             'user': forms.Select(attrs={'class': 'form-select'}),
             'group': forms.Select(attrs={'class': 'form-select'}),
-            'roles': forms.SelectMultiple(attrs={'class': 'form-select'}),
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Filter to only show active users and groups
         self.fields['user'].queryset = self.fields['user'].queryset.filter(is_active=True)
         self.fields['group'].queryset = self.fields['group'].queryset.filter(is_active=True)
-        # Filter to only show active roles
-        self.fields['roles'].queryset = Role.objects.filter(is_active=True)
+        if self.instance and self.instance.pk:
+            self.fields['is_mitarbeiterin'].initial = self.instance.has_role('Mitarbeiterin')
+            self.fields['is_group_admin'].initial = self.instance.has_role('Group Admin')
+
+    def apply_additional_roles(self, member):
+        """Apply Mitarbeiterin and Group Admin flags to the member's roles."""
+        for role_name, field_name in (
+            ('Mitarbeiterin', 'is_mitarbeiterin'),
+            ('Group Admin', 'is_group_admin'),
+        ):
+            role, _ = Role.objects.get_or_create(
+                name=role_name,
+                defaults={'description': f'{role_name} role', 'is_active': True},
+            )
+            if self.cleaned_data.get(field_name):
+                member.roles.add(role)
+            else:
+                member.roles.remove(role)
 
 
 class MembershipPeriodForm(forms.ModelForm):
@@ -68,12 +94,14 @@ class MembershipPeriodForm(forms.ModelForm):
 
     class Meta:
         model = MembershipPeriod
-        fields = ['start_date', 'end_date']
+        fields = ['role', 'start_date', 'end_date']
         widgets = {
+            'role': forms.Select(attrs={'class': 'form-select'}),
             'start_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'end_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
         }
         labels = {
+            'role': _('Role'),
             'start_date': _('Start date'),
             'end_date': _('End date'),
         }
