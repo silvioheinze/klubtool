@@ -602,6 +602,16 @@ class DistrictEvent(models.Model):
     )
     title = models.CharField(max_length=200, help_text=_("Title of the event"))
     scheduled_date = models.DateTimeField(help_text=_("Date and time of the event"))
+    end_date = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text=_("Optional end date and time (must be after start)"),
+    )
+    location = models.CharField(
+        max_length=300,
+        blank=True,
+        help_text=_("Location or place of the event"),
+    )
     description = models.TextField(blank=True, help_text=_("Optional description or details"))
     external_link = models.URLField(blank=True, help_text=_("Optional external link for more information"))
     is_active = models.BooleanField(default=True, help_text=_("Whether the event is currently active"))
@@ -635,6 +645,11 @@ class DistrictEvent(models.Model):
     @property
     def is_upcoming(self):
         return self.scheduled_date > timezone.now()
+
+    def clean(self):
+        super().clean()
+        if self.end_date and self.scheduled_date and self.end_date <= self.scheduled_date:
+            raise ValidationError({'end_date': _('End time must be after the start time.')})
 
 
 class DistrictEventParticipation(models.Model):

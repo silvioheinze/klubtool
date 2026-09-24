@@ -178,7 +178,8 @@ def get_personal_calendar_events(user, group_memberships, councils_from_membersh
             'type': 'district_event',
             'badge_label': _('District event'),
             'subtitle': e.district.name,
-            'location': '',
+            'location': e.location or '',
+            'end_date': e.end_date,
             'pk': e.pk,
             'model': 'districtevent',
             'cancelled': False,
@@ -209,7 +210,13 @@ def build_personal_calendar_ics(events, request, host=None):
         if not timezone.is_aware(dt):
             dt = timezone.make_aware(dt)
         dt_utc = dt.astimezone(timezone.UTC)
-        dtend_utc = dt_utc + timedelta(hours=1)
+        end_dt = event.get('end_date')
+        if end_dt:
+            if not timezone.is_aware(end_dt):
+                end_dt = timezone.make_aware(end_dt)
+            dtend_utc = end_dt.astimezone(timezone.UTC)
+        else:
+            dtend_utc = dt_utc + timedelta(hours=1)
         dtstart_str = dt_utc.strftime('%Y%m%dT%H%M%SZ')
         dtend_str = dtend_utc.strftime('%Y%m%dT%H%M%SZ')
         uid = f"{event['model']}-{event['pk']}@{host}"
