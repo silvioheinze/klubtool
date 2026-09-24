@@ -76,6 +76,11 @@ def list_tools():
                         'type': 'string',
                         'description': 'ISO 8601 datetime, e.g. 2026-09-15T18:00:00+02:00',
                     },
+                    'end_date': {
+                        'type': 'string',
+                        'description': 'Optional ISO 8601 end datetime (must be after scheduled_date)',
+                    },
+                    'location': {'type': 'string', 'description': 'Optional place or venue'},
                     'description': {'type': 'string'},
                     'external_link': {'type': 'string', 'format': 'uri'},
                 },
@@ -91,6 +96,8 @@ def list_tools():
                     'event_id': {'type': 'integer'},
                     'title': {'type': 'string'},
                     'scheduled_date': {'type': 'string', 'description': 'ISO 8601 datetime'},
+                    'end_date': {'type': 'string', 'description': 'Optional ISO 8601 end datetime'},
+                    'location': {'type': 'string', 'description': 'Optional place or venue'},
                     'description': {'type': 'string'},
                     'external_link': {'type': 'string', 'format': 'uri'},
                 },
@@ -312,16 +319,22 @@ def _serialize_event(event, request=None):
     url = event.get_absolute_url()
     if request is not None:
         url = request.build_absolute_uri(url)
-    return {
+    payload = {
         'id': event.pk,
         'title': event.title,
         'scheduled_date': event.scheduled_date.isoformat(),
         'district_id': event.district_id,
         'description': event.description,
         'external_link': event.external_link,
+        'location': event.location,
         'is_active': event.is_active,
         'url': url,
     }
+    if event.end_date:
+        payload['end_date'] = event.end_date.isoformat()
+    else:
+        payload['end_date'] = None
+    return payload
 
 
 def _parse_scheduled_date(value):
@@ -361,8 +374,21 @@ def _validate_event_fields(data, *, district, instance=None):
         'scheduled_date': data.get('scheduled_date', getattr(instance, 'scheduled_date', '')),
         'description': data.get('description', getattr(instance, 'description', '')),
         'external_link': data.get('external_link', getattr(instance, 'external_link', '')),
+        'location': data.get('location', getattr(instance, 'location', '')),
         'district': district.pk,
     }
+    if 'end_date' in data:
+        end_val = data.get('end_date')
+        if end_val in (None, ''):
+            form_data['end_date'] = ''
+        elif isinstance(end_val, datetime):
+            form_data['end_date'] = end_val
+        else:
+            form_data['end_date'] = _parse_scheduled_date(end_val).strftime('%Y-%m-%dT%H:%M')
+    elif instance is not None and instance.pk:
+        form_data['end_date'] = instance.end_date.strftime('%Y-%m-%dT%H:%M') if instance.end_date else ''
+    else:
+        form_data['end_date'] = ''
     if 'scheduled_date' in data and not isinstance(form_data['scheduled_date'], datetime):
         form_data['scheduled_date'] = _parse_scheduled_date(form_data['scheduled_date']).strftime('%Y-%m-%dT%H:%M')
 

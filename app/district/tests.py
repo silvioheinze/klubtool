@@ -14,7 +14,7 @@ from .forms import (
     DistrictForm, DistrictFilterForm, CouncilForm, CouncilFilterForm,
     CommitteeForm, CommitteeFilterForm, CommitteeMeetingForm, CommitteeMemberForm, CommitteeMemberFilterForm,
     SessionForm, SessionFilterForm, TermForm, TermFilterForm,
-    PartyForm, PartyFilterForm, TermSeatDistributionForm
+    PartyForm, PartyFilterForm, TermSeatDistributionForm, DistrictEventForm,
 )
 from .models import (
     District, Council, Committee, CommitteeMeeting, CommitteeMember, CommitteeMembershipPeriod,
@@ -3158,6 +3158,64 @@ class DistrictEventTests(TestCase):
         response = self.client.get(reverse('personal-calendar-export-ics'))
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'District Meetup', response.content)
+
+    def test_district_event_form_accepts_end_and_location(self):
+        start = timezone.now() + timedelta(days=10)
+        end = start + timedelta(hours=2)
+        form = DistrictEventForm(
+            data={
+                'title': 'With end',
+                'scheduled_date': start.strftime('%Y-%m-%dT%H:%M'),
+                'end_date': end.strftime('%Y-%m-%dT%H:%M'),
+                'location': 'Rathaus',
+                'description': '',
+                'external_link': '',
+                'district': self.district.pk,
+            },
+        )
+        self.assertTrue(form.is_valid(), form.errors)
+
+    def test_district_event_form_rejects_end_before_start(self):
+        start = timezone.now() + timedelta(days=10)
+        end = start - timedelta(hours=1)
+        form = DistrictEventForm(
+            data={
+                'title': 'Bad end',
+                'scheduled_date': start.strftime('%Y-%m-%dT%H:%M'),
+                'end_date': end.strftime('%Y-%m-%dT%H:%M'),
+                'location': '',
+                'description': '',
+                'external_link': '',
+                'district': self.district.pk,
+            },
+        )
+        self.assertFalse(form.is_valid())
+        self.assertIn('end_date', form.errors)
+
+    def test_event_detail_shows_end_and_location(self):
+        start = timezone.now() + timedelta(days=14)
+        end = start + timedelta(hours=3)
+        self.event.end_date = end
+        self.event.location = 'Stadtpark'
+        self.event.save()
+        self.client.login(username='district_member', password='memberpass123')
+        response = self.client.get(reverse('district:event-detail', kwargs={'pk': self.event.pk}))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Stadtpark')
+
+    def test_event_export_ics_includes_location_and_custom_end(self):
+        start = timezone.now() + timedelta(days=14)
+        end = start + timedelta(hours=3)
+        self.event.end_date = end
+        self.event.location = 'Stadtpark'
+        self.event.save()
+        self.client.login(username='district_member', password='memberpass123')
+        response = self.client.get(reverse('district:event-export-ics', kwargs={'pk': self.event.pk}))
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode()
+        self.assertIn('LOCATION:Stadtpark', content)
+        dtend_utc = end.astimezone(timezone.UTC).strftime('%Y%m%dT%H%M%SZ')
+        self.assertIn(f'DTEND:{dtend_utc}', content)
 
 
 class RenameLocalToDistrictMigrationTests(TestCase):

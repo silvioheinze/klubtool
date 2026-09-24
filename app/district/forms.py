@@ -716,22 +716,29 @@ class DistrictEventForm(forms.ModelForm):
 
     class Meta:
         model = DistrictEvent
-        fields = ['title', 'scheduled_date', 'description', 'external_link', 'district']
+        fields = ['title', 'scheduled_date', 'end_date', 'location', 'description', 'external_link', 'district']
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control'}),
             'scheduled_date': forms.DateTimeInput(
                 attrs={'class': 'form-control', 'type': 'datetime-local'},
                 format='%Y-%m-%dT%H:%M',
             ),
+            'end_date': forms.DateTimeInput(
+                attrs={'class': 'form-control', 'type': 'datetime-local'},
+                format='%Y-%m-%dT%H:%M',
+            ),
+            'location': forms.TextInput(attrs={'class': 'form-control'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
             'external_link': forms.URLInput(attrs={'class': 'form-control'}),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['scheduled_date'].input_formats = [
-            '%Y-%m-%dT%H:%M', '%Y-%m-%d %H:%M:%S', '%Y-%m-%d %H:%M',
-        ]
+        datetime_formats = ['%Y-%m-%dT%H:%M', '%Y-%m-%d %H:%M:%S', '%Y-%m-%d %H:%M']
+        self.fields['scheduled_date'].input_formats = datetime_formats
+        self.fields['end_date'].required = False
+        self.fields['end_date'].input_formats = datetime_formats
+        self.fields['location'].required = False
         district_id = self.initial.get('district') or self.data.get('district')
         if not district_id and self.instance and self.instance.pk:
             district_id = self.instance.district_id
@@ -739,3 +746,11 @@ class DistrictEventForm(forms.ModelForm):
             self.fields['district'].widget = forms.HiddenInput()
             self.fields['district'].initial = district_id
         self.fields['district'].queryset = District.objects.filter(is_active=True)
+
+    def clean(self):
+        cleaned = super().clean()
+        start = cleaned.get('scheduled_date')
+        end = cleaned.get('end_date')
+        if start and end and end <= start:
+            self.add_error('end_date', _('End time must be after the start time.'))
+        return cleaned

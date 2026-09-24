@@ -44,12 +44,19 @@
                         <dt class="col-sm-3">{% trans "Date & Time" %}</dt>
                         <dd class="col-sm-9">
                             {{ event.scheduled_date|date:"d.m.Y H:i" }}
+                            {% if event.end_date %}
+                                – {{ event.end_date|date:"d.m.Y H:i" }}
+                            {% endif %}
                             {% if event.is_upcoming %}
                                 <br><small class="text-success">{% trans "Upcoming" %}</small>
                             {% else %}
                                 <br><small class="text-muted">{% trans "Past event" %}</small>
                             {% endif %}
                         </dd>
+                        {% if event.location %}
+                        <dt class="col-sm-3">{% trans "Location" %}</dt>
+                        <dd class="col-sm-9">{{ event.location }}</dd>
+                        {% endif %}
                         {% if event.external_link %}
                         <dt class="col-sm-3">{% trans "External link" %}</dt>
                         <dd class="col-sm-9">

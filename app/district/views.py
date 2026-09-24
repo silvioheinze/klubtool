@@ -3121,7 +3121,13 @@ def district_event_export_ics(request, pk):
     if not timezone.is_aware(dtstart):
         dtstart = timezone.make_aware(dtstart)
     dtstart_utc = dtstart.astimezone(timezone.UTC)
-    dtend_utc = dtstart_utc + timezone.timedelta(hours=1)
+    if event.end_date:
+        dtend = event.end_date
+        if not timezone.is_aware(dtend):
+            dtend = timezone.make_aware(dtend)
+        dtend_utc = dtend.astimezone(timezone.UTC)
+    else:
+        dtend_utc = dtstart_utc + timezone.timedelta(hours=1)
     dtstart_str = dtstart_utc.strftime('%Y%m%dT%H%M%SZ')
     dtend_str = dtend_utc.strftime('%Y%m%dT%H%M%SZ')
     uid = f"district-event-{event.pk}@{request.get_host()}"
@@ -3146,6 +3152,8 @@ def district_event_export_ics(request, pk):
     ]
     if event.description:
         ics_content.append(f"DESCRIPTION:{escape_ics_text(event.description)}")
+    if event.location:
+        ics_content.append(f"LOCATION:{escape_ics_text(event.location)}")
     created = event.created_at
     if not timezone.is_aware(created):
         created = timezone.make_aware(created)

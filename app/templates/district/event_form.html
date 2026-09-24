@@ -67,13 +67,26 @@
                                     {% if form.title.errors %}<div class="invalid-feedback d-block">{% for error in form.title.errors %}{{ error }}{% endfor %}</div>{% endif %}
                                 </div>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-3">
                                 <div class="mb-3">
                                     <label for="{{ form.scheduled_date.id_for_label }}" class="form-label">{{ form.scheduled_date.label }} <span class="text-danger">*</span></label>
                                     {{ form.scheduled_date }}
                                     {% if form.scheduled_date.errors %}<div class="invalid-feedback d-block">{% for error in form.scheduled_date.errors %}{{ error }}{% endfor %}</div>{% endif %}
                                 </div>
                             </div>
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label for="{{ form.end_date.id_for_label }}" class="form-label">{% trans "End time" %}</label>
+                                    {{ form.end_date }}
+                                    {% if form.end_date.errors %}<div class="invalid-feedback d-block">{% for error in form.end_date.errors %}{{ error }}{% endfor %}</div>{% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.location.id_for_label }}" class="form-label">{% trans "Location" %}</label>
+                            {{ form.location }}
+                            {% if form.location.errors %}<div class="invalid-feedback d-block">{% for error in form.location.errors %}{{ error }}{% endfor %}</div>{% endif %}
                         </div>
 
                         <div class="mb-3">

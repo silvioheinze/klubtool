@@ -216,9 +216,9 @@ class SessionPresenceAdmin(admin.ModelAdmin):
 
 @admin.register(DistrictEvent)
 class DistrictEventAdmin(admin.ModelAdmin):
-    list_display = ['title', 'district', 'scheduled_date', 'is_active', 'created_by', 'created_at']
+    list_display = ['title', 'district', 'scheduled_date', 'end_date', 'location', 'is_active', 'created_by', 'created_at']
     list_filter = ['is_active', 'district', 'scheduled_date']
-    search_fields = ['title', 'description', 'district__name']
+    search_fields = ['title', 'description', 'location', 'district__name']
     readonly_fields = ['created_at', 'updated_at']
     date_hierarchy = 'scheduled_date'
 
