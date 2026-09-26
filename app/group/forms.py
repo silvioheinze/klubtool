@@ -262,14 +262,35 @@ class GroupMeetingForm(forms.ModelForm):
             del self.fields['status']
         elif 'status' in self.fields:
             self.fields['status'].choices = self.STATUS_CHOICES
-        # Set the group field as hidden if provided in initial data
+        if 'title' in self.fields:
+            self.fields['title'].label = _('Title')
+            self.fields['title'].help_text = _(
+                'Title (set automatically on create: Klubsitzung + date)'
+            )
+        if 'scheduled_date' in self.fields:
+            self.fields['scheduled_date'].label = _('Date and time')
+            self.fields['scheduled_date'].help_text = _('When the meeting will take place')
+        if 'location' in self.fields:
+            self.fields['location'].label = _('Location')
+            self.fields['location'].help_text = _('Where the meeting will take place')
+        if 'description' in self.fields:
+            self.fields['description'].label = _('Description')
+            self.fields['description'].help_text = _('Agenda or additional details')
+        if 'status' in self.fields:
+            self.fields['status'].label = _('Status')
+            self.fields['status'].help_text = _('Current status of the meeting')
+        # Set the group field as hidden if editing or provided in initial/data
         group_id = self.initial.get('group') or self.data.get('group')
-        if group_id:
+        if self.instance.pk:
+            self.fields['group'].widget = forms.HiddenInput()
+            if self.instance.group_id:
+                self.fields['group'].initial = self.instance.group_id
+        elif group_id:
             self.fields['group'].widget = forms.HiddenInput()
             self.fields['group'].initial = group_id
         else:
             self.fields['group'].widget = forms.Select(attrs={'class': 'form-select'})
-        
+
         # Filter groups to only show active ones
         self.fields['group'].queryset = Group.objects.filter(is_active=True)
 

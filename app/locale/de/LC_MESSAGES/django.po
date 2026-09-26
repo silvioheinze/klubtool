@@ -66,10 +66,14 @@ msgstr "Abgesetzt"
 msgid "Invited"
 msgstr "Eingeladen"
 
-#, fuzzy
-#| msgid "Create Meeting"
+msgid "Date and time"
+msgstr "Datum und Uhrzeit"
+
+msgid "Title (set automatically on create: Klubsitzung + date)"
+msgstr "Titel (wird beim Anlegen automatisch gesetzt: Klubsitzung + Datum)"
+
 msgid "Current status of the meeting"
-msgstr "Aktueller Stand der Sitzung"
+msgstr "Aktueller Status der Sitzung"
 
 msgid "Agenda"
 msgstr "Tagesordnung"
