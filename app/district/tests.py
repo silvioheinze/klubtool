@@ -25,6 +25,7 @@ from .models import (
 from .views import (
     user_is_district_member,
     user_can_manage_district_events,
+    user_can_edit_district_event_attachment,
     CouncilCommitteesExportPDFView,
 )
 from pages.calendar_utils import get_personal_calendar_events
@@ -3283,6 +3284,151 @@ class DistrictEventTests(TestCase):
         self.assertEqual(response.status_code, 200)
         list_url = reverse('district:event-list', kwargs={'district_pk': self.district.pk})
         self.assertContains(response, list_url)
+
+    def test_manager_sees_parties_and_terms_links_on_district_detail(self):
+        parties_url = reverse('district:district-parties', kwargs={'pk': self.district.pk})
+        terms_url = reverse('district:district-terms', kwargs={'pk': self.district.pk})
+        self.client.login(username='district_manager', password='managerpass123')
+        response = self.client.get(reverse('district:district-detail', kwargs={'pk': self.district.pk}))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, parties_url)
+        self.assertContains(response, terms_url)
+        self.assertEqual(self.client.get(parties_url).status_code, 200)
+        self.assertEqual(self.client.get(terms_url).status_code, 200)
+
+    def test_member_cannot_access_district_parties_or_terms_pages(self):
+        parties_url = reverse('district:district-parties', kwargs={'pk': self.district.pk})
+        terms_url = reverse('district:district-terms', kwargs={'pk': self.district.pk})
+        self.client.login(username='district_member', password='memberpass123')
+        response = self.client.get(reverse('district:district-detail', kwargs={'pk': self.district.pk}))
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, parties_url)
+        self.assertNotContains(response, terms_url)
+        self.assertEqual(self.client.get(parties_url).status_code, 403)
+        self.assertEqual(self.client.get(terms_url).status_code, 403)
+
+    def test_district_detail_no_longer_shows_parties_or_terms_tables(self):
+        self.client.login(username='district_manager', password='managerpass123')
+        response = self.client.get(reverse('district:district-detail', kwargs={'pk': self.district.pk}))
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, 'No Parties found')
+        self.assertNotContains(response, 'No Terms found')
+        self.assertNotContains(response, 'Create First Party')
+        self.assertNotContains(response, 'Create First Term')
+
+    def _create_event_attachment(self, uploaded_by=None, description='Event flyer'):
+        return DistrictEventAttachment.objects.create(
+            event=self.event,
+            file=SimpleUploadedFile('info.pdf', b'%PDF-1.4 info', content_type='application/pdf'),
+            filename='info.pdf',
+            file_type='other',
+            description=description,
+            uploaded_by=uploaded_by or self.manager,
+        )
+
+    def test_manager_sees_edit_not_delete_on_event_detail(self):
+        attachment = self._create_event_attachment()
+        self.client.login(username='district_manager', password='managerpass123')
+        response = self.client.get(reverse('district:event-detail', kwargs={'pk': self.event.pk}))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            reverse(
+                'district:event-attachment-edit',
+                kwargs={'event_pk': self.event.pk, 'pk': attachment.pk},
+            ),
+        )
+        self.assertNotContains(response, 'event-attachment-delete')
+
+    def test_uploader_member_can_edit_and_delete_attachment(self):
+        attachment = self._create_event_attachment(uploaded_by=self.member, description='Member upload')
+        edit_url = reverse(
+            'district:event-attachment-edit',
+            kwargs={'event_pk': self.event.pk, 'pk': attachment.pk},
+        )
+        delete_url = reverse(
+            'district:event-attachment-delete',
+            kwargs={'event_pk': self.event.pk, 'pk': attachment.pk},
+        )
+        self.client.login(username='district_member', password='memberpass123')
+        response = self.client.get(edit_url)
+        self.assertEqual(response.status_code, 200)
+        response = self.client.post(
+            edit_url,
+            {'file_type': 'other', 'description': 'Updated by uploader'},
+        )
+        self.assertEqual(response.status_code, 302)
+        attachment.refresh_from_db()
+        self.assertEqual(attachment.description, 'Updated by uploader')
+        response = self.client.post(delete_url)
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(DistrictEventAttachment.objects.filter(pk=attachment.pk).exists())
+
+    def test_member_cannot_edit_another_users_attachment(self):
+        attachment = self._create_event_attachment(uploaded_by=self.manager)
+        edit_url = reverse(
+            'district:event-attachment-edit',
+            kwargs={'event_pk': self.event.pk, 'pk': attachment.pk},
+        )
+        delete_url = reverse(
+            'district:event-attachment-delete',
+            kwargs={'event_pk': self.event.pk, 'pk': attachment.pk},
+        )
+        self.client.login(username='district_member', password='memberpass123')
+        self.assertEqual(self.client.get(edit_url).status_code, 403)
+        self.assertEqual(self.client.post(delete_url).status_code, 403)
+
+    def test_group_admin_can_edit_attachment_they_did_not_upload(self):
+        from group.models import GroupMember
+        from user.models import Role
+
+        group_admin = User.objects.create_user(
+            username='district_group_admin',
+            email='district_group_admin@example.com',
+            password='adminpass123',
+        )
+        admin_membership = GroupMember.objects.create(
+            user=group_admin, group=self.group, is_active=True,
+        )
+        admin_role = Role.objects.get_or_create(name='Group Admin', defaults={'is_active': True})[0]
+        admin_membership.roles.add(admin_role)
+        attachment = self._create_event_attachment(uploaded_by=self.manager)
+        edit_url = reverse(
+            'district:event-attachment-edit',
+            kwargs={'event_pk': self.event.pk, 'pk': attachment.pk},
+        )
+        self.client.login(username='district_group_admin', password='adminpass123')
+        response = self.client.post(
+            edit_url,
+            {'file_type': 'invitation', 'description': 'Edited by group admin'},
+        )
+        self.assertEqual(response.status_code, 302)
+        attachment.refresh_from_db()
+        self.assertEqual(attachment.description, 'Edited by group admin')
+        self.assertTrue(user_can_edit_district_event_attachment(group_admin, attachment))
+
+    def test_event_attachment_accepts_agenda_and_minutes_types(self):
+        self.client.login(username='district_manager', password='managerpass123')
+        for file_type in ('agenda', 'minutes'):
+            with self.subTest(file_type=file_type):
+                response = self.client.post(
+                    reverse('district:event-attach', kwargs={'pk': self.event.pk}),
+                    {
+                        'file': SimpleUploadedFile(
+                            f'{file_type}.pdf',
+                            b'%PDF-1.4 district event attachment',
+                            content_type='application/pdf',
+                        ),
+                        'file_type': file_type,
+                        'description': file_type,
+                    },
+                )
+                self.assertEqual(response.status_code, 302)
+                self.assertTrue(
+                    DistrictEventAttachment.objects.filter(
+                        event=self.event, file_type=file_type,
+                    ).exists()
+                )
 
 
 class RenameLocalToDistrictMigrationTests(TestCase):

@@ -102,19 +102,7 @@ class DistrictDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context = super().get_context_data(**kwargs)
         # Show edit/add/delete buttons only to users who have access (same checks as Update/Create/Delete views)
         context['can_edit_local'] = self.request.user.is_superuser
-        context['can_add_party'] = self.request.user.is_superuser
-        context['can_add_term'] = self.request.user.is_superuser
-        context['can_view_party'] = self.request.user.is_superuser
-        context['can_edit_party'] = self.request.user.is_superuser
-        context['can_delete_party'] = self.request.user.is_superuser
-        context['can_manage_terms'] = self.request.user.is_superuser  # View, Edit, Seats (TermDetailView, TermUpdateView, TermSeatDistributionView)
 
-        # Get all active terms (not just those connected through seat distributions)
-        # This allows users to see and configure terms even before creating parties
-        context['terms'] = Term.objects.filter(is_active=True).order_by('-start_date')
-
-        context['parties'] = self.object.parties.filter(is_active=True).order_by('name')
-        
         # Get the current term and its seat distribution
         from django.utils import timezone
         today = timezone.now().date()
@@ -167,6 +155,53 @@ class DistrictDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         return context
 
 
+class DistrictPartiesListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
+    """List political parties for a district (group managers)."""
+    model = Party
+    context_object_name = 'parties'
+    template_name = 'district/district_parties.html'
+
+    def test_func(self):
+        district = get_object_or_404(District, pk=self.kwargs['pk'])
+        return user_can_manage_district_events(self.request.user, district)
+
+    def get_queryset(self):
+        district = get_object_or_404(District, pk=self.kwargs['pk'])
+        return district.parties.filter(is_active=True).order_by('name')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['district'] = get_object_or_404(District, pk=self.kwargs['pk'])
+        user = self.request.user
+        context['can_add_party'] = user.is_superuser
+        context['can_view_party'] = user.is_superuser
+        context['can_edit_party'] = user.is_superuser
+        context['can_delete_party'] = user.is_superuser
+        return context
+
+
+class DistrictTermsListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
+    """List political terms for district managers (terms are global, not per-district)."""
+    model = Term
+    context_object_name = 'terms'
+    template_name = 'district/district_terms.html'
+
+    def test_func(self):
+        district = get_object_or_404(District, pk=self.kwargs['pk'])
+        return user_can_manage_district_events(self.request.user, district)
+
+    def get_queryset(self):
+        return Term.objects.filter(is_active=True).order_by('-start_date')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['district'] = get_object_or_404(District, pk=self.kwargs['pk'])
+        user = self.request.user
+        context['can_add_term'] = user.is_superuser
+        context['can_manage_terms'] = user.is_superuser
+        return context
+
+
 class DistrictCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     """View for creating a new District object"""
     model = District
@@ -181,7 +216,7 @@ class DistrictCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     def get_context_data(self, **kwargs):
         """Add context information for URL parameters"""
         context = super().get_context_data(**kwargs)
-        
+
         # Check for local parameter in URL
         district_id = self.request.GET.get('district')
         if district_id:
@@ -341,6 +376,13 @@ def user_can_manage_district_events(user, district):
         party__is_active=True,
     )
     return any(group.can_user_manage_group(user) for group in groups)
+
+
+def user_can_edit_district_event_attachment(user, attachment):
+    """Uploader or district event manager (group admin, leader, deputy leader, superuser)."""
+    if attachment.uploaded_by_id == user.pk:
+        return True
+    return user_can_manage_district_events(user, attachment.event.district)
 
 
 COUNCIL_SESSIONS_PER_PAGE = 10
@@ -3052,6 +3094,10 @@ class DistrictEventDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailVie
         context['district'] = event.district
         context['can_edit_event'] = user_can_manage_district_events(self.request.user, event.district)
         context['can_manage_attachments'] = context['can_edit_event']
+        context['editable_attachment_ids'] = {
+            a.pk for a in event.attachments.all()
+            if user_can_edit_district_event_attachment(self.request.user, a)
+        }
         attending = DistrictEventParticipation.objects.filter(
             event=event, will_attend=True,
         ).select_related('user').order_by('user__last_name', 'user__first_name')
@@ -3246,12 +3292,52 @@ class DistrictEventAttachmentView(LoginRequiredMixin, UserPassesTestMixin, Creat
         return response
 
 
+class DistrictEventAttachmentUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
+    """Edit a district event attachment (metadata and optional file replacement)."""
+    model = DistrictEventAttachment
+    form_class = DistrictEventAttachmentForm
+    template_name = 'district/event_attachment_form.html'
+    context_object_name = 'attachment'
+
+    def get_queryset(self):
+        return DistrictEventAttachment.objects.filter(
+            event_id=self.kwargs['event_pk'],
+        ).select_related('event', 'event__district', 'uploaded_by')
+
+    def test_func(self):
+        attachment = self.get_object()
+        return user_can_edit_district_event_attachment(self.request.user, attachment)
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['event'] = self.object.event
+        return kwargs
+
+    def get_success_url(self):
+        return reverse('district:event-detail', kwargs={'pk': self.object.event_id})
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['event'] = self.object.event
+        context['is_edit'] = True
+        return context
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(
+            self.request,
+            _("Attachment '%(filename)s' updated successfully.")
+            % {'filename': form.instance.filename},
+        )
+        return response
+
+
 @login_required
 @require_POST
 def district_event_attachment_delete_view(request, event_pk, pk):
-    """Delete a district event attachment (district event managers only)."""
+    """Delete a district event attachment (uploader or district event managers)."""
     attachment = get_object_or_404(DistrictEventAttachment, pk=pk, event_id=event_pk)
-    if not user_can_manage_district_events(request.user, attachment.event.district):
+    if not user_can_edit_district_event_attachment(request.user, attachment):
         raise PermissionDenied
     name = attachment.filename
     if attachment.file:

@@ -1,7 +1,7 @@
 from django.urls import path
 from .views import (
-    DistrictListView, DistrictDetailView, DistrictCreateView, 
-    DistrictUpdateView, DistrictDeleteView,
+    DistrictListView, DistrictDetailView, DistrictPartiesListView, DistrictTermsListView,
+    DistrictCreateView, DistrictUpdateView, DistrictDeleteView,
     CouncilListView, CouncilDetailView, CouncilCreateView,
     CouncilUpdateView, CouncilDeleteView, CouncilNameUpdateView, CouncilCommitteesExportPDFView,
     council_sessions_partial,
@@ -17,7 +17,7 @@ from .views import (
     CommitteeMembershipHistoryView,
     DistrictEventListView, DistrictEventCreateView, DistrictEventDetailView, DistrictEventUpdateView, DistrictEventDeleteView,
     district_event_attend, district_event_export_ics, DistrictEventAttachmentView,
-    district_event_attachment_delete_view,
+    DistrictEventAttachmentUpdateView, district_event_attachment_delete_view,
 )
 
 app_name = 'district'
@@ -27,6 +27,8 @@ urlpatterns = [
     path('', DistrictListView.as_view(), name='district-list'),
     path('create/', DistrictCreateView.as_view(), name='district-create'),
     path('<int:pk>/', DistrictDetailView.as_view(), name='district-detail'),
+    path('<int:pk>/parties/', DistrictPartiesListView.as_view(), name='district-parties'),
+    path('<int:pk>/terms/', DistrictTermsListView.as_view(), name='district-terms'),
     path('<int:pk>/edit/', DistrictUpdateView.as_view(), name='district-edit'),
     path('<int:pk>/delete/', DistrictDeleteView.as_view(), name='district-delete'),
     path('<int:district_pk>/events/', DistrictEventListView.as_view(), name='event-list'),
@@ -35,6 +37,7 @@ urlpatterns = [
     # District event URLs
     path('events/<int:pk>/', DistrictEventDetailView.as_view(), name='event-detail'),
     path('events/<int:pk>/attach/', DistrictEventAttachmentView.as_view(), name='event-attach'),
+    path('events/<int:event_pk>/attachments/<int:pk>/edit/', DistrictEventAttachmentUpdateView.as_view(), name='event-attachment-edit'),
     path('events/<int:event_pk>/attachments/<int:pk>/delete/', district_event_attachment_delete_view, name='event-attachment-delete'),
     path('events/<int:pk>/edit/', DistrictEventUpdateView.as_view(), name='event-edit'),
     path('events/<int:pk>/delete/', DistrictEventDeleteView.as_view(), name='event-delete'),
