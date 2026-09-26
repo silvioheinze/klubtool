@@ -652,6 +652,43 @@ class DistrictEvent(models.Model):
             raise ValidationError({'end_date': _('End time must be after the start time.')})
 
 
+class DistrictEventAttachment(models.Model):
+    """File attachments for district events."""
+
+    ATTACHMENT_TYPE_CHOICES = [
+        ('invitation', _('Invitation')),
+        ('other', _('Other')),
+    ]
+
+    event = models.ForeignKey(
+        DistrictEvent,
+        on_delete=models.CASCADE,
+        related_name='attachments',
+    )
+    file = models.FileField(upload_to='district_event_attachments/%Y/%m/%d/')
+    filename = models.CharField(max_length=255)
+    file_type = models.CharField(
+        max_length=20,
+        choices=ATTACHMENT_TYPE_CHOICES,
+        default='other',
+    )
+    description = models.TextField(blank=True)
+    uploaded_by = models.ForeignKey(
+        'user.CustomUser',
+        on_delete=models.CASCADE,
+        related_name='district_event_attachments',
+    )
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-uploaded_at']
+        verbose_name = _("District Event Attachment")
+        verbose_name_plural = _("District Event Attachments")
+
+    def __str__(self):
+        return f"{self.filename} - {self.event.title}"
+
+
 class DistrictEventParticipation(models.Model):
     """RSVP: whether a district group member will attend a district event."""
 
@@ -701,4 +738,5 @@ auditlog.register(SessionAttachment)
 auditlog.register(SessionPresence)
 auditlog.register(SessionExcuse)
 auditlog.register(DistrictEvent)
+auditlog.register(DistrictEventAttachment)
 auditlog.register(DistrictEventParticipation)

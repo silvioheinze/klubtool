@@ -5,7 +5,7 @@ from django.utils.translation import gettext_lazy as _
 from .models import (
     District, Council, Committee, CommitteeMeeting, CommitteeMeetingAttachment,
     CommitteeMember, CommitteeMembershipPeriod, CommitteeParticipationSubstitute, Session, Term, Party,
-    TermSeatDistribution, SessionAttachment, DistrictEvent,
+    TermSeatDistribution, SessionAttachment, DistrictEvent, DistrictEventAttachment,
 )
 
 
@@ -709,6 +709,55 @@ class CommitteeParticipationSubstituteForm(forms.Form):
             def label_from_instance(obj):
                 return obj.user.get_full_name() or obj.user.username
             self.fields['substitute_member'].label_from_instance = label_from_instance
+
+
+class DistrictEventAttachmentForm(forms.ModelForm):
+    """Form for uploading attachments to district events."""
+
+    class Meta:
+        model = DistrictEventAttachment
+        fields = ['file', 'file_type', 'description']
+        widgets = {
+            'file': forms.FileInput(attrs={'class': 'form-control'}),
+            'file_type': forms.Select(attrs={'class': 'form-select'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.event = kwargs.pop('event', None)
+        self.uploaded_by = kwargs.pop('uploaded_by', None)
+        super().__init__(*args, **kwargs)
+
+    def clean_file(self):
+        file = self.cleaned_data.get('file')
+        if file:
+            if file.size > 50 * 1024 * 1024:
+                raise forms.ValidationError(_("File size must be under 50MB."))
+            import os
+            allowed_extensions = [
+                '.pdf', '.doc', '.docx', '.txt', '.jpg', '.jpeg', '.png', '.gif',
+                '.xls', '.xlsx', '.ppt', '.pptx',
+            ]
+            ext = os.path.splitext(file.name)[1].lower()
+            if ext not in allowed_extensions:
+                raise forms.ValidationError(
+                    _("File type not allowed. Allowed types: %(types)s")
+                    % {'types': ', '.join(allowed_extensions)}
+                )
+        return file
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        if self.event:
+            instance.event = self.event
+        if self.uploaded_by:
+            instance.uploaded_by = self.uploaded_by
+        if instance.file:
+            import os
+            instance.filename = os.path.basename(instance.file.name)
+        if commit:
+            instance.save()
+        return instance
 
 
 class DistrictEventForm(forms.ModelForm):

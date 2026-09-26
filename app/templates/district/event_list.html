@@ -1,0 +1,83 @@
+{% extends "_base.html" %}
+{% load i18n %}
+
+{% block title %}{% blocktrans with district=district.name %}District Events – {{ district }}{% endblocktrans %}{% endblock title %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1><i class="bi bi-calendar-event"></i> {% trans "District Events" %} – {{ district.name }}</h1>
+                <div>
+                    <a href="{% url 'district:district-detail' district.pk %}" class="btn btn-outline-secondary me-2">
+                        <i class="bi bi-arrow-left"></i> {% trans "Back to District" %}
+                    </a>
+                    {% if can_manage_district_events %}
+                    <a href="{% url 'district:event-create' district.pk %}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i> {% trans "Add Event" %}
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-6 mb-4 mb-lg-0">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">{% trans "Upcoming Events" %}</h5>
+                </div>
+                <div class="card-body">
+                    {% if upcoming_events %}
+                        <ul class="list-group list-group-flush">
+                            {% for event in upcoming_events %}
+                            <li class="list-group-item px-0">
+                                <a href="{% url 'district:event-detail' event.pk %}" class="text-decoration-none fw-semibold">{{ event.title }}</a>
+                                <br><small class="text-muted">
+                                    {{ event.scheduled_date|date:"d.m.Y H:i" }}
+                                    {% if event.end_date %} – {{ event.end_date|date:"d.m.Y H:i" }}{% endif %}
+                                </small>
+                                {% if event.location %}
+                                <br><small class="text-muted"><i class="bi bi-geo-alt"></i> {{ event.location }}</small>
+                                {% endif %}
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="text-muted mb-0">{% trans "No upcoming events." %}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">{% trans "Past Events" %}</h5>
+                </div>
+                <div class="card-body">
+                    {% if past_events %}
+                        <ul class="list-group list-group-flush">
+                            {% for event in past_events %}
+                            <li class="list-group-item px-0">
+                                <a href="{% url 'district:event-detail' event.pk %}" class="text-decoration-none fw-semibold">{{ event.title }}</a>
+                                <br><small class="text-muted">
+                                    {{ event.scheduled_date|date:"d.m.Y H:i" }}
+                                    {% if event.end_date %} – {{ event.end_date|date:"d.m.Y H:i" }}{% endif %}
+                                </small>
+                                {% if event.location %}
+                                <br><small class="text-muted"><i class="bi bi-geo-alt"></i> {{ event.location }}</small>
+                                {% endif %}
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="text-muted mb-0">{% trans "No past events." %}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
