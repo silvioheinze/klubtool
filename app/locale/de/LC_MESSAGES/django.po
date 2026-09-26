@@ -2770,10 +2770,8 @@ msgstr "Keine bevorstehenden Parteiveranstaltungen."
 msgid "Group Information"
 msgstr "Klubinformation"
 
-#, fuzzy
-#| msgid "No group members."
 msgid "View group members"
-msgstr "Keine Gruppenmitglieder."
+msgstr "Klubmitglieder anzeigen"
 
 msgid "Group Meetings"
 msgstr "Klubsitzungen"
