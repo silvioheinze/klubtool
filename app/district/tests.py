@@ -19,7 +19,8 @@ from .forms import (
 from .models import (
     District, Council, Committee, CommitteeMeeting, CommitteeMember, CommitteeMembershipPeriod,
     CommitteeParticipationSubstitute,
-    Session, Term, Party, TermSeatDistribution, SessionAttachment, DistrictEvent, DistrictEventParticipation,
+    Session, Term, Party, TermSeatDistribution, SessionAttachment, DistrictEvent, DistrictEventAttachment,
+    DistrictEventParticipation,
 )
 from .views import (
     user_is_district_member,
@@ -3216,6 +3217,72 @@ class DistrictEventTests(TestCase):
         self.assertIn('LOCATION:Stadtpark', content)
         dtend_utc = end.astimezone(timezone.UTC).strftime('%Y%m%dT%H%M%SZ')
         self.assertIn(f'DTEND:{dtend_utc}', content)
+
+    def _post_event_attachment(self):
+        return self.client.post(
+            reverse('district:event-attach', kwargs={'pk': self.event.pk}),
+            {
+                'file': SimpleUploadedFile(
+                    'flyer.pdf',
+                    b'%PDF-1.4 district event attachment',
+                    content_type='application/pdf',
+                ),
+                'file_type': 'invitation',
+                'description': 'Event flyer',
+            },
+        )
+
+    def test_manager_can_upload_event_attachment(self):
+        self.client.login(username='district_manager', password='managerpass123')
+        response = self._post_event_attachment()
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(
+            response,
+            reverse('district:event-detail', kwargs={'pk': self.event.pk}),
+            fetch_redirect_response=False,
+        )
+        self.assertTrue(
+            DistrictEventAttachment.objects.filter(event=self.event, filename='flyer.pdf').exists()
+        )
+
+    def test_member_sees_attachment_on_event_detail(self):
+        DistrictEventAttachment.objects.create(
+            event=self.event,
+            file=SimpleUploadedFile('info.pdf', b'%PDF-1.4 info', content_type='application/pdf'),
+            filename='info.pdf',
+            file_type='other',
+            uploaded_by=self.manager,
+        )
+        self.client.login(username='district_member', password='memberpass123')
+        response = self.client.get(reverse('district:event-detail', kwargs={'pk': self.event.pk}))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'info.pdf')
+
+    def test_member_cannot_access_event_attachment_upload(self):
+        self.client.login(username='district_member', password='memberpass123')
+        response = self.client.get(reverse('district:event-attach', kwargs={'pk': self.event.pk}))
+        self.assertEqual(response.status_code, 403)
+
+    def test_event_list_shows_upcoming_and_past(self):
+        past_event = DistrictEvent.objects.create(
+            title='Past District Event',
+            district=self.district,
+            scheduled_date=timezone.now() - timedelta(days=3),
+            created_by=self.manager,
+        )
+        self.client.login(username='district_member', password='memberpass123')
+        url = reverse('district:event-list', kwargs={'district_pk': self.district.pk})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'District Meetup')
+        self.assertContains(response, 'Past District Event')
+
+    def test_district_detail_links_to_event_list(self):
+        self.client.login(username='district_member', password='memberpass123')
+        response = self.client.get(reverse('district:district-detail', kwargs={'pk': self.district.pk}))
+        self.assertEqual(response.status_code, 200)
+        list_url = reverse('district:event-list', kwargs={'district_pk': self.district.pk})
+        self.assertContains(response, list_url)
 
 
 class RenameLocalToDistrictMigrationTests(TestCase):

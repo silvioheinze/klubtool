@@ -20,7 +20,7 @@ from .models import (
     District, Term, Council, TermSeatDistribution, Party, Session, Committee,
     CommitteeMeeting, CommitteeMeetingAttachment, CommitteeMember, CommitteeMembershipPeriod,
     CommitteeParticipationSubstitute, SessionAttachment, SessionPresence,
-    SessionExcuse, DistrictEvent, DistrictEventParticipation,
+    SessionExcuse, DistrictEvent, DistrictEventAttachment, DistrictEventParticipation,
 )
 from .forms import (
     DistrictForm, DistrictFilterForm, CouncilForm, CouncilFilterForm, TermForm,
@@ -29,7 +29,7 @@ from .forms import (
     CommitteeFilterForm, CommitteeMeetingForm, CommitteeMemberForm,
     CommitteeMembershipPeriodFormSet, CommitteeMemberFilterForm, SessionAttachmentForm,
     CommitteeMeetingAttachmentForm, SessionInvitationForm, SessionMinutesForm,
-    CommitteeParticipationSubstituteForm, DistrictEventForm,
+    CommitteeParticipationSubstituteForm, DistrictEventForm, DistrictEventAttachmentForm,
 )
 
 
@@ -2964,6 +2964,37 @@ class CommitteeMeetingAttachmentView(LoginRequiredMixin, UserPassesTestMixin, Cr
         return response
 
 
+class DistrictEventListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
+    """List all district events (upcoming and past) for a district."""
+    model = DistrictEvent
+    template_name = 'district/event_list.html'
+    context_object_name = 'events'
+
+    def test_func(self):
+        district = get_object_or_404(District, pk=self.kwargs['district_pk'])
+        return user_is_district_member(self.request.user, district)
+
+    def get_queryset(self):
+        return DistrictEvent.objects.none()
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        district = get_object_or_404(District, pk=self.kwargs['district_pk'])
+        now = timezone.now()
+        base_qs = DistrictEvent.objects.filter(district=district, is_active=True)
+        context['district'] = district
+        context['can_manage_district_events'] = user_can_manage_district_events(
+            self.request.user, district,
+        )
+        context['upcoming_events'] = base_qs.filter(
+            scheduled_date__gte=now,
+        ).order_by('scheduled_date')
+        context['past_events'] = base_qs.filter(
+            scheduled_date__lt=now,
+        ).order_by('-scheduled_date')
+        return context
+
+
 class DistrictEventCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     """Create a district event."""
     model = DistrictEvent
@@ -3004,6 +3035,14 @@ class DistrictEventDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailVie
     context_object_name = 'event'
     template_name = 'district/event_detail.html'
 
+    def get_queryset(self):
+        return DistrictEvent.objects.select_related('district').prefetch_related(
+            Prefetch(
+                'attachments',
+                queryset=DistrictEventAttachment.objects.select_related('uploaded_by'),
+            ),
+        )
+
     def test_func(self):
         return user_is_district_member(self.request.user, self.get_object().district)
 
@@ -3012,6 +3051,7 @@ class DistrictEventDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailVie
         event = self.object
         context['district'] = event.district
         context['can_edit_event'] = user_can_manage_district_events(self.request.user, event.district)
+        context['can_manage_attachments'] = context['can_edit_event']
         attending = DistrictEventParticipation.objects.filter(
             event=event, will_attend=True,
         ).select_related('user').order_by('user__last_name', 'user__first_name')
@@ -3167,3 +3207,55 @@ def district_event_export_ics(request, pk):
     safe_title = "".join(c if c.isalnum() or c in ' -_' else '_' for c in event.title)[:50]
     response['Content-Disposition'] = f'attachment; filename="event_{event.pk}_{safe_title.strip()}.ics"'
     return response
+
+
+class DistrictEventAttachmentView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
+    """Upload an attachment to a district event."""
+    model = DistrictEventAttachment
+    form_class = DistrictEventAttachmentForm
+    template_name = 'district/event_attachment_form.html'
+
+    def test_func(self):
+        event = get_object_or_404(DistrictEvent, pk=self.kwargs['pk'])
+        return user_can_manage_district_events(self.request.user, event.district)
+
+    def get_event(self):
+        return get_object_or_404(DistrictEvent, pk=self.kwargs['pk'])
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['event'] = self.get_event()
+        kwargs['uploaded_by'] = self.request.user
+        return kwargs
+
+    def get_success_url(self):
+        return reverse('district:event-detail', kwargs={'pk': self.get_event().pk})
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['event'] = self.get_event()
+        return context
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(
+            self.request,
+            _("Attachment '%(filename)s' uploaded successfully.")
+            % {'filename': form.instance.filename},
+        )
+        return response
+
+
+@login_required
+@require_POST
+def district_event_attachment_delete_view(request, event_pk, pk):
+    """Delete a district event attachment (district event managers only)."""
+    attachment = get_object_or_404(DistrictEventAttachment, pk=pk, event_id=event_pk)
+    if not user_can_manage_district_events(request.user, attachment.event.district):
+        raise PermissionDenied
+    name = attachment.filename
+    if attachment.file:
+        attachment.file.delete(save=False)
+    attachment.delete()
+    messages.success(request, _("Attachment '%(filename)s' deleted.") % {'filename': name})
+    return redirect('district:event-detail', pk=event_pk)

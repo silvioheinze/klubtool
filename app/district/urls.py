@@ -15,8 +15,9 @@ from .views import (
     CommitteeMeetingCreateView, CommitteeMeetingDetailView, CommitteeMeetingUpdateView, CommitteeMeetingDeleteView, CommitteeMeetingSetSubstituteView, committee_meeting_export_ics, CommitteeMeetingAttachmentView,
     CommitteeMemberListView, CommitteeMemberCreateView, CommitteeMemberUpdateView, CommitteeMemberDeleteView,
     CommitteeMembershipHistoryView,
-    DistrictEventCreateView, DistrictEventDetailView, DistrictEventUpdateView, DistrictEventDeleteView,
-    district_event_attend, district_event_export_ics,
+    DistrictEventListView, DistrictEventCreateView, DistrictEventDetailView, DistrictEventUpdateView, DistrictEventDeleteView,
+    district_event_attend, district_event_export_ics, DistrictEventAttachmentView,
+    district_event_attachment_delete_view,
 )
 
 app_name = 'district'
@@ -28,10 +29,13 @@ urlpatterns = [
     path('<int:pk>/', DistrictDetailView.as_view(), name='district-detail'),
     path('<int:pk>/edit/', DistrictUpdateView.as_view(), name='district-edit'),
     path('<int:pk>/delete/', DistrictDeleteView.as_view(), name='district-delete'),
+    path('<int:district_pk>/events/', DistrictEventListView.as_view(), name='event-list'),
     path('<int:pk>/events/create/', DistrictEventCreateView.as_view(), name='event-create'),
 
     # District event URLs
     path('events/<int:pk>/', DistrictEventDetailView.as_view(), name='event-detail'),
+    path('events/<int:pk>/attach/', DistrictEventAttachmentView.as_view(), name='event-attach'),
+    path('events/<int:event_pk>/attachments/<int:pk>/delete/', district_event_attachment_delete_view, name='event-attachment-delete'),
     path('events/<int:pk>/edit/', DistrictEventUpdateView.as_view(), name='event-edit'),
     path('events/<int:pk>/delete/', DistrictEventDeleteView.as_view(), name='event-delete'),
     path('events/<int:pk>/attend/', district_event_attend, name='event-attend'),

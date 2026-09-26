@@ -91,6 +91,68 @@
                 </div>
             </div>
 
+            <div class="card mt-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-paperclip"></i> {% trans "Event Attachments" %}
+                    </h5>
+                    {% if can_manage_attachments %}
+                    <a href="{% url 'district:event-attach' event.pk %}" class="btn btn-sm btn-primary">
+                        <i class="bi bi-upload"></i> {% trans "Upload File" %}
+                    </a>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    {% if event.attachments.all %}
+                        <div class="row">
+                            {% for attachment in event.attachments.all %}
+                            <div class="col-md-6 col-lg-4 mb-3">
+                                <div class="card h-100">
+                                    <div class="card-body">
+                                        <div class="d-flex align-items-center mb-2">
+                                            <i class="bi bi-file-earmark me-2"></i>
+                                            <strong class="text-truncate">{{ attachment.filename }}</strong>
+                                        </div>
+                                        <small class="text-muted d-block">{{ attachment.get_file_type_display }}</small>
+                                        <small class="text-muted d-block">
+                                            {% trans "Uploaded by" %} {{ attachment.uploaded_by.get_full_name|default:attachment.uploaded_by.username }}
+                                        </small>
+                                        <small class="text-muted d-block">{{ attachment.uploaded_at|date:"d.m.Y H:i" }}</small>
+                                        {% if attachment.description %}
+                                        <p class="mt-2 mb-0 small">{{ attachment.description }}</p>
+                                        {% endif %}
+                                        <div class="mt-2 d-flex gap-1 flex-wrap">
+                                            <a href="{{ attachment.file.url }}" class="btn btn-sm btn-outline-primary" target="_blank">
+                                                <i class="bi bi-download"></i> {% trans "Download" %}
+                                            </a>
+                                            {% if can_manage_attachments %}
+                                            <form method="post" action="{% url 'district:event-attachment-delete' event.pk attachment.pk %}" class="d-inline">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('{% trans "Delete this attachment?" %}');">
+                                                    <i class="bi bi-trash"></i> {% trans "Delete" %}
+                                                </button>
+                                            </form>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="bi bi-paperclip text-muted" style="font-size: 3rem;"></i>
+                            <p class="text-muted mt-2">{% trans "No attachments uploaded for this event yet." %}</p>
+                            {% if can_manage_attachments %}
+                            <a href="{% url 'district:event-attach' event.pk %}" class="btn btn-primary">
+                                <i class="bi bi-upload"></i> {% trans "Upload First File" %}
+                            </a>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
             {% if attending_members %}
             <div class="card mt-4">
                 <div class="card-header">
