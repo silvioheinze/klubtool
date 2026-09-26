@@ -727,9 +727,15 @@ class DistrictEventAttachmentForm(forms.ModelForm):
         self.event = kwargs.pop('event', None)
         self.uploaded_by = kwargs.pop('uploaded_by', None)
         super().__init__(*args, **kwargs)
+        if self.instance.pk:
+            self.fields['file'].required = False
 
     def clean_file(self):
         file = self.cleaned_data.get('file')
+        if not file:
+            if self.instance.pk:
+                return self.instance.file
+            raise forms.ValidationError(_("This field is required."))
         if file:
             if file.size > 50 * 1024 * 1024:
                 raise forms.ValidationError(_("File size must be under 50MB."))

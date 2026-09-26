@@ -657,6 +657,8 @@ class DistrictEventAttachment(models.Model):
 
     ATTACHMENT_TYPE_CHOICES = [
         ('invitation', _('Invitation')),
+        ('agenda', _('Agenda')),
+        ('minutes', _('Minutes')),
         ('other', _('Other')),
     ]
 
