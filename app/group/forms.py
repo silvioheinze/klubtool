@@ -232,14 +232,23 @@ class GroupEventForm(forms.ModelForm):
 
 class GroupMeetingForm(forms.ModelForm):
     """Form for creating and editing group meetings"""
+
+    STATUS_CHOICES = [
+        ('scheduled', _('Scheduled')),
+        ('invited', _('Invited')),
+        ('completed', _('Completed')),
+        ('cancelled', _('Cancelled')),
+    ]
+
     class Meta:
         model = GroupMeeting
-        fields = ['title', 'scheduled_date', 'location', 'description', 'group']
+        fields = ['title', 'scheduled_date', 'location', 'description', 'status', 'group']
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control'}),
             'scheduled_date': forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local'}, format='%Y-%m-%dT%H:%M'),
             'location': forms.TextInput(attrs={'class': 'form-control'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
+            'status': forms.Select(attrs={'class': 'form-select'}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -249,6 +258,10 @@ class GroupMeetingForm(forms.ModelForm):
         # On create: hide title (set in save() as "Klubsitzung" + date)
         if not self.instance.pk and 'title' in self.fields:
             del self.fields['title']
+        if not self.instance.pk and 'status' in self.fields:
+            del self.fields['status']
+        elif 'status' in self.fields:
+            self.fields['status'].choices = self.STATUS_CHOICES
         # Set the group field as hidden if provided in initial data
         group_id = self.initial.get('group') or self.data.get('group')
         if group_id:

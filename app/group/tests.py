@@ -628,6 +628,73 @@ class GroupMeetingFormTests(TestCase):
         form = GroupMeetingForm(data=form_data)
         self.assertTrue(form.is_valid())
 
+    def test_group_meeting_form_create_has_no_status_field(self):
+        form = GroupMeetingForm()
+        self.assertNotIn('status', form.fields)
+
+    def test_group_meeting_form_edit_includes_status(self):
+        meeting = GroupMeeting.objects.create(
+            group=self.group,
+            title='Status Form Meeting',
+            scheduled_date=timezone.now() + timedelta(days=5),
+            status='scheduled',
+        )
+        form = GroupMeetingForm(instance=meeting)
+        self.assertIn('status', form.fields)
+
+
+class GroupMeetingStatusEditTests(TestCase):
+    """Group leaders can change meeting status on the edit form."""
+
+    def setUp(self):
+        self.client = Client()
+        self.leader_role = Role.objects.get_or_create(name='Leader', defaults={'is_active': True})[0]
+        self.leader = User.objects.create_user(
+            username='meeting_leader',
+            email='leader@example.com',
+            password='pass123',
+        )
+        self.district = District.objects.create(name='Status Local', code='SL', description='Test')
+        self.party = Party.objects.create(name='Status Party', district=self.district)
+        self.group = Group.objects.create(name='Status Group', party=self.party)
+        leader_gm = GroupMember.objects.create(user=self.leader, group=self.group, is_active=True)
+        leader_gm.roles.add(self.leader_role)
+        MembershipPeriod.objects.create(
+            member=leader_gm,
+            start_date=timezone.localdate(),
+            end_date=None,
+            role='Leader',
+        )
+        self.meeting = GroupMeeting.objects.create(
+            group=self.group,
+            title='Status Edit Meeting',
+            scheduled_date=timezone.now() + timedelta(days=3),
+            status='scheduled',
+            created_by=self.leader,
+        )
+
+    def test_leader_can_change_meeting_status_via_edit(self):
+        self.client.login(username='meeting_leader', password='pass123')
+        scheduled = self.meeting.scheduled_date
+        if timezone.is_naive(scheduled):
+            scheduled = timezone.make_aware(scheduled)
+        local = timezone.localtime(scheduled)
+        url = reverse('group:meeting-edit', kwargs={'pk': self.meeting.pk})
+        response = self.client.post(
+            url,
+            {
+                'title': self.meeting.title,
+                'scheduled_date': local.strftime('%Y-%m-%dT%H:%M'),
+                'location': '',
+                'description': '',
+                'status': 'invited',
+                'group': self.group.pk,
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        self.meeting.refresh_from_db()
+        self.assertEqual(self.meeting.status, 'invited')
+
 
 class GroupMeetingModelTests(TestCase):
     """Test cases for GroupMeeting model"""
