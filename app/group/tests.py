@@ -642,6 +642,22 @@ class GroupMeetingFormTests(TestCase):
         form = GroupMeetingForm(instance=meeting)
         self.assertIn('status', form.fields)
 
+    def test_group_meeting_form_edit_hides_group_and_german_labels(self):
+        meeting = GroupMeeting.objects.create(
+            group=self.group,
+            title='Edit Label Meeting',
+            scheduled_date=timezone.now() + timedelta(days=5),
+            status='scheduled',
+        )
+        form = GroupMeetingForm(instance=meeting)
+        self.assertIsInstance(form.fields['group'].widget, forms.HiddenInput)
+        self.assertEqual(form.fields['group'].initial, self.group.pk)
+        self.assertEqual(str(form.fields['scheduled_date'].label), 'Datum und Uhrzeit')
+        self.assertEqual(
+            str(form.fields['scheduled_date'].help_text),
+            'Wann die Sitzung stattfindet',
+        )
+
 
 class GroupMeetingStatusEditTests(TestCase):
     """Group leaders can change meeting status on the edit form."""

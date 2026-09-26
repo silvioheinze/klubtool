@@ -160,7 +160,9 @@
                         </div>
                         {% endif %}
 
-                        {% if not selected_group %}
+                        {% if object %}
+                        {{ form.group }}
+                        {% elif not selected_group %}
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
@@ -267,7 +269,9 @@
                     <h6>{% trans "Required Fields" %}</h6>
                     <ul class="text-muted">
                         <li><strong>{% trans "Date & Time" %}:</strong> {% trans "When the meeting will take place" %}</li>
+                        {% if not object %}
                         <li><strong>{% trans "Group" %}:</strong> {% trans "Which group is holding the meeting" %}</li>
+                        {% endif %}
                     </ul>
                     
                     <h6>{% trans "Optional Fields" %}</h6>
