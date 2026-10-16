@@ -1301,64 +1301,42 @@ class GroupEventListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
         return qs.filter(Q(invited_members_only=False) | Q(invited_members=member))
 
     def get_context_data(self, **kwargs):
+        from pages.views import _build_month_calendar
+        import calendar as cal_module
+
         context = super().get_context_data(**kwargs)
-        context['group'] = get_object_or_404(Group, pk=self.kwargs['group_pk'])
-        context['can_add_event'] = context['group'].can_user_manage_group(self.request.user) or self.request.user.is_superuser
+        group = get_object_or_404(Group, pk=self.kwargs['group_pk'])
+        context['group'] = group
+        context['can_add_event'] = group.can_user_manage_group(self.request.user) or self.request.user.is_superuser
         now = timezone.now()
         req_month = self.request.GET.get('calendar_month')
         req_year = self.request.GET.get('calendar_year')
         try:
             cal_month = int(req_month) if req_month else now.month
             cal_year = int(req_year) if req_year else now.year
-            if cal_month < 1 or cal_month > 12:
-                cal_month = now.month
-            if cal_year < 2000 or cal_year > 2100:
-                cal_year = now.year
+            if cal_month < 1 or cal_month > 12 or cal_year < 2000 or cal_year > 2100:
+                cal_month, cal_year = now.month, now.year
         except (TypeError, ValueError):
             cal_month, cal_year = now.month, now.year
-        context['calendar_weeks'] = _build_event_list_calendar(
-            context['group'], cal_year, cal_month, self.request.user
-        )
+        events = _get_group_calendar_events_for_month(group, cal_year, cal_month, self.request.user)
+        cal_month, cal_year, context['calendar_weeks'] = _build_month_calendar(events, cal_year, cal_month)
         context['calendar_month'] = cal_month
         context['calendar_year'] = cal_year
+        context['calendar_month_name'] = cal_module.month_name[cal_month]
+        context['calendar_today_day'] = now.day if (now.year == cal_year and now.month == cal_month) else None
+        list_url = reverse('group:event-list', kwargs={'group_pk': group.pk})
+        if cal_month == 1:
+            prev_month, prev_year = 12, cal_year - 1
+        else:
+            prev_month, prev_year = cal_month - 1, cal_year
+        if cal_month == 12:
+            next_month, next_year = 1, cal_year + 1
+        else:
+            next_month, next_year = cal_month + 1, cal_year
+        context['calendar_prev_url'] = f'{list_url}?calendar_month={prev_month}&calendar_year={prev_year}'
+        context['calendar_next_url'] = f'{list_url}?calendar_month={next_month}&calendar_year={next_year}'
+        context['calendar_today_url'] = f'{list_url}?calendar_month={now.month}&calendar_year={now.year}'
         return context
-
-
-def _build_event_list_calendar(group, year, month, user=None):
-    """Build calendar weeks for event list page (reuse group calendar logic)."""
-    from datetime import date, timedelta
-    import calendar as cal_mod
-    start = date(year, month, 1)
-    if month == 12:
-        end = date(year, 12, 31)
-    else:
-        end = date(year, month + 1, 1) - timedelta(days=1)
-    events = _get_group_calendar_events_for_month(group, year, month, user)
-    events_by_day = {}
-    for e in events:
-        d = e['date'].date() if hasattr(e['date'], 'date') else e['date']
-        events_by_day.setdefault(d, []).append(e)
-    first_weekday = cal_mod.weekday(year, month, 1)
-    start_offset = (first_weekday - 0) % 7
-    days_in_month = cal_mod.monthrange(year, month)[1]
-    weeks = []
-    day_num = 1
-    week = []
-    for _ in range(start_offset):
-        week.append(None)
-    while day_num <= days_in_month:
-        d = date(year, month, day_num)
-        cell_events = events_by_day.get(d, [])
-        week.append({'day': day_num, 'events': cell_events})
-        if len(week) == 7:
-            weeks.append(week)
-            week = []
-        day_num += 1
-    if week:
-        while len(week) < 7:
-            week.append(None)
-        weeks.append(week)
-    return weeks
 
 
 class GroupEventCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
@@ -1801,13 +1779,14 @@ class AgendaItemUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
 
 
 class AgendaItemDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
-    """View for deleting an AgendaItem"""
+    """View for deleting an AgendaItem (confirm in UI; GET/POST perform delete)."""
     model = AgendaItem
-    template_name = 'group/agenda_item_confirm_delete.html'
 
     def test_func(self):
-        """Check if user has permission to delete agenda items"""
-        return self.request.user.is_superuser
+        obj = self.get_object()
+        if self.request.user.is_superuser:
+            return True
+        return obj.meeting.group.can_user_manage_group(self.request.user)
 
     def dispatch(self, request, *args, **kwargs):
         """Only allow delete when meeting status is scheduled"""
@@ -1823,6 +1802,16 @@ class AgendaItemDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
     def get_success_url(self):
         """Redirect to the meeting detail page"""
         return reverse('group:meeting-detail', kwargs={'pk': self.object.meeting.pk})
+
+    def get(self, request, *args, **kwargs):
+        obj = self.get_object()
+        meeting_pk = obj.meeting.pk
+        obj.delete()
+        messages.success(request, _('Agenda item deleted.'))
+        return redirect('group:meeting-detail', pk=meeting_pk)
+
+    def post(self, request, *args, **kwargs):
+        return self.get(request, *args, **kwargs)
 
 
 # AJAX Views for agenda management

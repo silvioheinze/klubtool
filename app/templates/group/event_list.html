@@ -75,36 +75,41 @@
                 </div>
             </div>
         </div>
-        <div class="col-lg-6">
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0"><i class="bi bi-calendar3"></i> {{ calendar_month }}/{{ calendar_year }}</h5>
-                    <div class="btn-group btn-group-sm">
-                        <a href="?calendar_month={% if calendar_month == 1 %}12{% else %}{{ calendar_month|add:'-1' }}{% endif %}&calendar_year={% if calendar_month == 1 %}{{ calendar_year|add:'-1' }}{% else %}{{ calendar_year }}{% endif %}" class="btn btn-outline-secondary"><i class="bi bi-chevron-left"></i></a>
-                        <a href="?calendar_month={% now 'n' %}&calendar_year={% now 'Y' %}" class="btn btn-outline-secondary">{% trans "Today" %}</a>
-                        <a href="?calendar_month={% if calendar_month == 12 %}1{% else %}{{ calendar_month|add:"1" }}{% endif %}&calendar_year={% if calendar_month == 12 %}{{ calendar_year|add:"1" }}{% else %}{{ calendar_year }}{% endif %}" class="btn btn-outline-secondary"><i class="bi bi-chevron-right"></i></a>
-                    </div>
+        <div class="col-lg-6" id="event-list-calendar-container">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-calendar3"></i> {% trans "Monthly calendar" %} – {{ calendar_month_name }} {{ calendar_year }}</h5>
                 </div>
-                <div class="card-body p-2">
+                <div class="card-body position-relative" id="event-list-calendar-card-body">
                     {% if calendar_weeks %}
                     <div class="table-responsive">
-                        <table class="table table-bordered mb-0 small">
+                        <table class="table table-bordered mb-0 small calendar-month-table" role="grid">
                             <thead>
                                 <tr class="text-center">
-                                    <th>{% trans "Mon" %}</th><th>{% trans "Tue" %}</th><th>{% trans "Wed" %}</th><th>{% trans "Thu" %}</th><th>{% trans "Fri" %}</th><th>{% trans "Sat" %}</th><th>{% trans "Sun" %}</th>
+                                    <th scope="col" style="width:14%">{% trans "Mon" %}</th>
+                                    <th scope="col" style="width:14%">{% trans "Tue" %}</th>
+                                    <th scope="col" style="width:14%">{% trans "Wed" %}</th>
+                                    <th scope="col" style="width:14%">{% trans "Thu" %}</th>
+                                    <th scope="col" style="width:14%">{% trans "Fri" %}</th>
+                                    <th scope="col" style="width:14%">{% trans "Sat" %}</th>
+                                    <th scope="col" style="width:14%">{% trans "Sun" %}</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for week in calendar_weeks %}
-                                <tr>
+                                <tr role="row">
                                     {% for day_cell in week %}
-                                    <td class="align-top p-1">
+                                    <td class="calendar-day align-top p-2 {% if day_cell and calendar_today_day == day_cell.day %}calendar-day-today{% endif %}{% if day_cell and day_cell.events %} calendar-day-has-events{% endif %}" role="gridcell">
                                         {% if day_cell %}
-                                            <span class="fw-bold">{{ day_cell.day }}</span>
+                                            <span class="calendar-day-num fw-bold">{{ day_cell.day }}</span>
                                             {% if day_cell.events %}
-                                            <div class="mt-1">
-                                                {% for ev in day_cell.events %}
-                                                <a href="{{ ev.url }}" class="d-block small text-decoration-none" title="{{ ev.title }}">{{ ev.title|truncatewords:3 }}</a>
+                                            <div class="calendar-day-events-source d-none" aria-hidden="true">
+                                                {% for event in day_cell.events %}
+                                                <div class="calendar-popup-event">
+                                                    <span class="badge bg-success me-1">{{ event.badge_label }}</span>
+                                                    <a href="{{ event.url }}" class="text-decoration-none">{{ event.title }}</a>
+                                                    <small class="text-muted ms-1">{{ event.date|time:"H:i" }}</small>
+                                                </div>
                                                 {% endfor %}
                                             </div>
                                             {% endif %}
@@ -120,8 +125,60 @@
                     <p class="text-muted mb-0">{% trans "Calendar not available." %}</p>
                     {% endif %}
                 </div>
+                {% if calendar_weeks and calendar_prev_url and calendar_next_url %}
+                <div class="card-footer d-flex justify-content-center gap-1 flex-wrap">
+                    <a href="{{ calendar_prev_url }}" class="btn btn-sm btn-outline-secondary" aria-label="{% trans 'Previous month' %}">
+                        <i class="bi bi-chevron-left"></i> {% trans "Previous month" %}
+                    </a>
+                    <a href="{{ calendar_today_url }}" class="btn btn-sm btn-outline-secondary" aria-label="{% trans 'Current month' %}">{% trans "Today" %}</a>
+                    <a href="{{ calendar_next_url }}" class="btn btn-sm btn-outline-secondary" aria-label="{% trans 'Next month' %}">
+                        {% trans "Next month" %} <i class="bi bi-chevron-right"></i>
+                    </a>
+                </div>
+                {% endif %}
             </div>
+            <div id="event-list-calendar-events-popup" class="calendar-events-popup d-none" role="tooltip" aria-live="polite"></div>
         </div>
     </div>
 </div>
+
+<script>
+/* Event list calendar: hover popup for days with events */
+(function() {
+    var popupEl = document.getElementById('event-list-calendar-events-popup');
+    var containerEl = document.getElementById('event-list-calendar-container');
+    var popupHideTimeout = null;
+    if (popupEl && containerEl) {
+        containerEl.addEventListener('mouseover', function(e) {
+            var cell = e.target.closest('.calendar-day-has-events');
+            if (!cell) return;
+            if (popupHideTimeout) { clearTimeout(popupHideTimeout); popupHideTimeout = null; }
+            var source = cell.querySelector('.calendar-day-events-source');
+            if (!source) return;
+            popupEl.innerHTML = source.innerHTML;
+            popupEl.classList.remove('d-none');
+            var rect = cell.getBoundingClientRect();
+            popupEl.style.left = rect.left + 'px';
+            popupEl.style.top = (rect.bottom + 6) + 'px';
+            var pr = popupEl.getBoundingClientRect();
+            if (pr.bottom > window.innerHeight - 8) popupEl.style.top = (rect.top - pr.height - 6) + 'px';
+            if (pr.right > window.innerWidth - 8) popupEl.style.left = (window.innerWidth - pr.width - 8) + 'px';
+            if (parseInt(popupEl.style.left, 10) < 8) popupEl.style.left = '8px';
+        });
+        containerEl.addEventListener('mouseout', function(e) {
+            var toPopup = e.relatedTarget && (e.relatedTarget === popupEl || popupEl.contains(e.relatedTarget));
+            var stillInside = containerEl.contains(e.relatedTarget);
+            if (!toPopup && !stillInside) {
+                popupHideTimeout = setTimeout(function() { popupEl.classList.add('d-none'); popupHideTimeout = null; }, 150);
+            }
+        });
+        popupEl.addEventListener('mouseenter', function() {
+            if (popupHideTimeout) { clearTimeout(popupHideTimeout); popupHideTimeout = null; }
+        });
+        popupEl.addEventListener('mouseleave', function() {
+            popupHideTimeout = setTimeout(function() { popupEl.classList.add('d-none'); popupHideTimeout = null; }, 100);
+        });
+    }
+})();
+</script>
 {% endblock content %}

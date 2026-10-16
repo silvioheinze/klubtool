@@ -488,6 +488,9 @@ msgstr ""
 msgid "Minute item deleted."
 msgstr "Der Punkt wurde aus dem Protokoll entfernt."
 
+msgid "Agenda item deleted."
+msgstr "Der Tagesordnungspunkt wurde gelöscht."
+
 msgid "You don't have permission to invite members to this group."
 msgstr "Sie haben keine Berechtigung, Mitglieder in diesen Klub einzuladen."
 
@@ -1108,11 +1111,21 @@ msgstr "Bearbeiten"
 msgid "Back"
 msgstr "Zurück"
 
-#, fuzzy
-#| msgctxt "Ausschuss"
-#| msgid "Committee Meetings"
+msgctxt "Ausschuss"
 msgid "Committee Meetings"
 msgstr "Ausschusssitzungen"
+
+msgctxt "Kommission"
+msgid "Committee Meetings"
+msgstr "Kommissionssitzungen"
+
+msgctxt "Ausschuss"
+msgid "Committee Information"
+msgstr "Ausschussinformation"
+
+msgctxt "Kommission"
+msgid "Committee Information"
+msgstr "Kommissionsinformation"
 
 msgid "Add"
 msgstr "Hinzufügen"
@@ -1141,11 +1154,13 @@ msgstr "Erstellen Sie Gremiumssitzungen, um Sitzungen zu organisieren."
 msgid "Create First Meeting"
 msgstr "Erstelle erste Sitzung"
 
-#, fuzzy
-#| msgctxt "Ausschuss"
-#| msgid "Committee Motions"
+msgctxt "Ausschuss"
 msgid "Committee Motions"
 msgstr "Ausschussanträge"
+
+msgctxt "Kommission"
+msgid "Committee Motions"
+msgstr "Kommissionsanträge"
 
 msgid "Party"
 msgstr "Partei"
@@ -1165,11 +1180,13 @@ msgstr "Alle Anträge anzeigen"
 msgid "No Motions found"
 msgstr "Keine Anträge gefunden"
 
-#, fuzzy
-#| msgctxt "Ausschuss"
-#| msgid "Committee Members"
+msgctxt "Ausschuss"
 msgid "Committee Members"
 msgstr "Ausschussmitglieder"
+
+msgctxt "Kommission"
+msgid "Committee Members"
+msgstr "Kommissionsmitglieder"
 
 msgid "Membership history"
 msgstr "Mitgliedschaftshistorie"
@@ -4570,26 +4587,6 @@ msgstr "Deine E-Mail-Adresse wurde bestätigt und du bist nun angemeldet."
 
 msgid "Your email has been confirmed."
 msgstr "Deine E-Mail-Adresse wurde bestätigt."
-
-#~ msgctxt "Ausschuss"
-#~ msgid "Committee Information"
-#~ msgstr "Ausschussinformation"
-
-#~ msgctxt "Kommission"
-#~ msgid "Committee Information"
-#~ msgstr "Kommissionsinformation"
-
-#~ msgctxt "Kommission"
-#~ msgid "Committee Meetings"
-#~ msgstr "Kommissionssitzungen"
-
-#~ msgctxt "Kommission"
-#~ msgid "Committee Members"
-#~ msgstr "Kommissionsmitglieder"
-
-#~ msgctxt "Kommission"
-#~ msgid "Committee Motions"
-#~ msgstr "Kommissionsanträge"
 
 #~ msgid "Group member"
 #~ msgstr "Gruppenmitglied"

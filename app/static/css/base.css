@@ -105,7 +105,8 @@ table.calendar-month-table td.calendar-day.calendar-day-today.calendar-day-has-e
 }
 
 #calendar-card-body,
-#group-calendar-card-body {
+#group-calendar-card-body,
+#event-list-calendar-card-body {
     min-height: 16rem;
 }
 

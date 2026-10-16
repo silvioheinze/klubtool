@@ -655,6 +655,15 @@ class InquiryUpdateViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'motion/inquiry_form.html')
 
+    def test_inquiry_edit_shows_delete_link(self):
+        """Delete action is on the edit form, not the detail page"""
+        self.client.login(username='admin', password='adminpass123')
+        delete_url = reverse('inquiry:inquiry-delete', kwargs={'pk': self.inquiry.pk})
+        edit_response = self.client.get(reverse('inquiry:inquiry-edit', kwargs={'pk': self.inquiry.pk}))
+        self.assertContains(edit_response, delete_url)
+        detail_response = self.client.get(reverse('inquiry:inquiry-detail', kwargs={'pk': self.inquiry.pk}))
+        self.assertNotContains(detail_response, delete_url)
+
 
 class InquiryDeleteViewTests(TestCase):
     """Test cases for InquiryDeleteView"""
