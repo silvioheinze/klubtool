@@ -31,9 +31,7 @@
             <!-- Committee Meetings -->
             <div class="card mb-3 mb-lg-4">
                 <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-                    {% with committee_type_label=committee.get_committee_type_display %}
-                    <h5 class="mb-0"><i class="bi bi-calendar-event"></i> {% trans "Committee Meetings" context committee_type_label %}</h5>
-                    {% endwith %}
+                    <h5 class="mb-0"><i class="bi bi-calendar-event"></i> {% if committee.committee_type == "Kommission" %}{% trans "Committee Meetings" context "Kommission" %}{% else %}{% trans "Committee Meetings" context "Ausschuss" %}{% endif %}</h5>
                     <div>
                         {% if can_add_committee_meeting %}
                         <a href="{% url 'district:committee-meeting-create' committee.pk %}" class="btn btn-sm btn-primary">
@@ -107,9 +105,7 @@
             <!-- Committee Motions -->
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    {% with committee_type_label=committee.get_committee_type_display %}
-                    <h5 class="mb-0"><i class="bi bi-file-text"></i> {% trans "Committee Motions" context committee_type_label %}</h5>
-                    {% endwith %}
+                    <h5 class="mb-0"><i class="bi bi-file-text"></i> {% if committee.committee_type == "Kommission" %}{% trans "Committee Motions" context "Kommission" %}{% else %}{% trans "Committee Motions" context "Ausschuss" %}{% endif %}</h5>
                     <div></div>
                 </div>
                 <div class="card-body">
@@ -164,10 +160,12 @@
                                                 {% endif %}
                                             </td>
                                             <td>
-                                                {% if motion.group.party %}
-                                                    <span class="badge" style="background-color: {{ motion.group.party.color }}; color: white;">
-                                                        {{ motion.group.party.short_name|default:motion.group.party.name }}
-                                                    </span>
+                                                {% if motion.parties.exists %}
+                                                    {% for party in motion.parties.all %}
+                                                        <span class="badge" style="background-color: {{ party.color }}; color: white; margin-right: 2px;">
+                                                            {{ party.short_name|default:party.name }}
+                                                        </span>
+                                                    {% endfor %}
                                                 {% else %}
                                                     <span class="text-muted">-</span>
                                                 {% endif %}
@@ -202,15 +200,10 @@
         <div class="col-12 col-lg-4">
             <div class="card mb-3">
                 <div class="card-header">
-                    {% with committee_type_label=committee.get_committee_type_display %}
-                    <h5 class="mb-0">{% trans "Committee Information" context committee_type_label %}</h5>
-                    {% endwith %}
+                    <h5 class="mb-0">{% if committee.committee_type == "Kommission" %}{% trans "Committee Information" context "Kommission" %}{% else %}{% trans "Committee Information" context "Ausschuss" %}{% endif %}</h5>
                 </div>
                 <div class="card-body">
                     <dl class="row mb-0">
-                        <dt class="col-sm-4">{% trans "Name" %}</dt>
-                        <dd class="col-sm-8">{{ committee.name }}</dd>
-
                         <dt class="col-sm-4">{% trans "Type" %}</dt>
                         <dd class="col-sm-8">
                             <span class="badge bg-secondary">{{ committee.get_committee_type_display }}</span>
@@ -245,9 +238,7 @@
 
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-                    {% with committee_type_label=committee.get_committee_type_display %}
-                    <h5 class="mb-0"><i class="bi bi-person-lines-fill"></i> {% trans "Committee Members" context committee_type_label %}</h5>
-                    {% endwith %}
+                    <h5 class="mb-0"><i class="bi bi-person-lines-fill"></i> {% if committee.committee_type == "Kommission" %}{% trans "Committee Members" context "Kommission" %}{% else %}{% trans "Committee Members" context "Ausschuss" %}{% endif %}</h5>
                     <div class="d-flex gap-1">
                         <a href="{% url 'district:committee-membership-history' committee.pk %}" class="btn btn-sm btn-outline-secondary">
                             <i class="bi bi-clock-history"></i> {% trans "Membership history" %}

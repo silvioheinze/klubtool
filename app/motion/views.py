@@ -2157,6 +2157,18 @@ class InquiryUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
         messages.success(self.request, f"Inquiry '{form.instance.title}' updated successfully.")
         return response
 
+    def get_context_data(self, **kwargs):
+        """Add can_delete_inquiry for group leaders"""
+        context = super().get_context_data(**kwargs)
+        inquiry = self.object
+        user = self.request.user
+        context['can_delete_inquiry'] = (
+            user.is_superuser
+            or (inquiry.submitted_by == user if inquiry.submitted_by else False)
+            or (inquiry.group and is_leader_or_deputy_leader_of_group(user, inquiry.group))
+        )
+        return context
+
 
 class InquiryDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
     """View for deleting an Inquiry object"""

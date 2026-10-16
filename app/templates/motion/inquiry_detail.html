@@ -21,11 +21,6 @@
                     <i class="bi bi-pencil"></i> {% trans "Edit" %}
                 </a>
             {% endif %}
-            {% if user.is_superuser or inquiry.submitted_by == user %}
-                <a href="{% url 'inquiry:inquiry-delete' inquiry.pk %}" class="btn btn-outline-danger">
-                    <i class="bi bi-trash"></i> {% trans "Delete" %}
-                </a>
-            {% endif %}
             {% if inquiry.session %}
                 <a href="{% url 'district:session-detail' inquiry.session.pk %}" class="btn btn-outline-secondary">
                     <i class="bi bi-arrow-left"></i> {% trans "Back to Session" %}
@@ -64,12 +59,14 @@
                         </div>
                         <div class="col-md-6">
                             <dl class="row">
-                                <dt class="col-sm-4">{% trans "Group" %}</dt>
+                                <dt class="col-sm-4">{% trans "Supporting Parties" %}</dt>
                                 <dd class="col-sm-8">
-                                    {% if inquiry.group %}
-                                        <a href="{% url 'group:group-detail' inquiry.group.pk %}">
-                                            {{ inquiry.group.name }}
-                                        </a>
+                                    {% if inquiry.parties.exists %}
+                                        {% for party in inquiry.parties.all %}
+                                            <span class="badge bg-primary me-1 mb-1" style="background-color: {{ party.color }} !important;">
+                                                {{ party.name }}
+                                            </span>
+                                        {% endfor %}
                                     {% else %}
                                         <span class="text-muted">{% trans "Not assigned" %}</span>
                                     {% endif %}
@@ -138,20 +135,6 @@
                                 </ul>
                             {% endif %}
                         {% endwith %}
-                    {% endif %}
-                    
-                    {% if inquiry.parties.exists %}
-                        <hr>
-                        <h6><i class="bi bi-people"></i> {% trans "Supporting Parties" %}</h6>
-                        <div class="row">
-                            {% for party in inquiry.parties.all %}
-                                <div class="col-md-6 col-lg-4 mb-2">
-                                    <span class="badge bg-primary me-2" style="background-color: {{ party.color }} !important;">
-                                        {{ party.name }}
-                                    </span>
-                                </div>
-                            {% endfor %}
-                        </div>
                     {% endif %}
                     
                     {% include "motion/_wortmeldung_editor.html" with interventions=inquiry.interventions.all %}

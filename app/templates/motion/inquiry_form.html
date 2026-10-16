@@ -164,24 +164,31 @@
                         </div>
 
                         <!-- Form Actions -->
-                        <div class="d-flex justify-content-between mt-4">
-                            {% if object %}
-                                {# When editing, link to question detail #}
-                                <a href="{% url 'inquiry:inquiry-detail' object.pk %}" class="btn btn-secondary">
-                                    <i class="bi bi-x-circle"></i> {% trans "Cancel" %}
-                                </a>
-                            {% else %}
-                                {# When creating, link to session from form if available #}
-                                {% if form.session.value %}
-                                    <a href="{% url 'district:session-detail' form.session.value %}" class="btn btn-secondary">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-4">
+                            <div class="d-flex gap-2">
+                                {% if object %}
+                                    {# When editing, link to inquiry detail #}
+                                    <a href="{% url 'inquiry:inquiry-detail' object.pk %}" class="btn btn-secondary">
                                         <i class="bi bi-x-circle"></i> {% trans "Cancel" %}
                                     </a>
+                                    {% if can_delete_inquiry %}
+                                        <a href="{% url 'inquiry:inquiry-delete' object.pk %}" class="btn btn-outline-danger">
+                                            <i class="bi bi-trash"></i> {% trans "Delete Inquiry" %}
+                                        </a>
+                                    {% endif %}
                                 {% else %}
-                            <a href="{% url 'inquiry:inquiry-list' %}" class="btn btn-secondary">
-                                <i class="bi bi-x-circle"></i> {% trans "Cancel" %}
-                            </a>
+                                    {# When creating, link to session from form if available #}
+                                    {% if form.session.value %}
+                                        <a href="{% url 'district:session-detail' form.session.value %}" class="btn btn-secondary">
+                                            <i class="bi bi-x-circle"></i> {% trans "Cancel" %}
+                                        </a>
+                                    {% else %}
+                                        <a href="{% url 'inquiry:inquiry-list' %}" class="btn btn-secondary">
+                                            <i class="bi bi-x-circle"></i> {% trans "Cancel" %}
+                                        </a>
+                                    {% endif %}
                                 {% endif %}
-                            {% endif %}
+                            </div>
                             <button type="submit" class="btn btn-primary">
                                 <i class="bi bi-check-circle"></i>
                                 {% if object %}

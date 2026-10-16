@@ -1318,6 +1318,86 @@ class AgendaItemModelTests(TestCase):
         self.assertEqual(items[1], item2)
 
 
+class AgendaItemDeleteViewTests(TestCase):
+    """DELETE via GET on agenda-item-delete (UI confirm already shown)."""
+
+    def setUp(self):
+        self.client = Client()
+        self.leader_role = Role.objects.get_or_create(name='Leader', defaults={'is_active': True})[0]
+        self.superuser = User.objects.create_user(
+            username='agenda_admin',
+            email='agenda_admin@example.com',
+            password='pass123',
+            is_superuser=True,
+        )
+        self.leader = User.objects.create_user(
+            username='agenda_leader',
+            email='agenda_leader@example.com',
+            password='pass123',
+        )
+        self.member = User.objects.create_user(
+            username='agenda_member',
+            email='agenda_member@example.com',
+            password='pass123',
+        )
+        self.district = District.objects.create(name='Agenda Local', code='AL', description='Test')
+        self.party = Party.objects.create(name='Agenda Party', district=self.district)
+        self.group = Group.objects.create(name='Agenda Group', party=self.party)
+        leader_gm = GroupMember.objects.create(user=self.leader, group=self.group, is_active=True)
+        leader_gm.roles.add(self.leader_role)
+        MembershipPeriod.objects.create(
+            member=leader_gm,
+            start_date=timezone.localdate(),
+            end_date=None,
+            role='Leader',
+        )
+        GroupMember.objects.create(user=self.member, group=self.group, is_active=True)
+        self.meeting = GroupMeeting.objects.create(
+            group=self.group,
+            title='Agenda Delete Meeting',
+            scheduled_date=timezone.now() + timedelta(days=2),
+            status='scheduled',
+            created_by=self.leader,
+        )
+        self.agenda_item = AgendaItem.objects.create(
+            meeting=self.meeting,
+            title='Point to delete',
+            order=1,
+            created_by=self.leader,
+        )
+
+    def test_superuser_get_deletes_and_redirects(self):
+        self.client.login(username='agenda_admin', password='pass123')
+        url = reverse('group:agenda-item-delete', kwargs={'pk': self.agenda_item.pk})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('group:meeting-detail', kwargs={'pk': self.meeting.pk}))
+        self.assertFalse(AgendaItem.objects.filter(pk=self.agenda_item.pk).exists())
+
+    def test_non_scheduled_meeting_does_not_delete(self):
+        self.meeting.status = 'invited'
+        self.meeting.save(update_fields=['status'])
+        self.client.login(username='agenda_admin', password='pass123')
+        url = reverse('group:agenda-item-delete', kwargs={'pk': self.agenda_item.pk})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(AgendaItem.objects.filter(pk=self.agenda_item.pk).exists())
+
+    def test_group_manager_can_delete(self):
+        self.client.login(username='agenda_leader', password='pass123')
+        url = reverse('group:agenda-item-delete', kwargs={'pk': self.agenda_item.pk})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(AgendaItem.objects.filter(pk=self.agenda_item.pk).exists())
+
+    def test_plain_member_forbidden(self):
+        self.client.login(username='agenda_member', password='pass123')
+        url = reverse('group:agenda-item-delete', kwargs={'pk': self.agenda_item.pk})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 403)
+        self.assertTrue(AgendaItem.objects.filter(pk=self.agenda_item.pk).exists())
+
+
 class GroupMeetingICSExportTests(TestCase):
     """Test cases for GroupMeeting ICS export view"""
     
