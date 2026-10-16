@@ -1516,3 +1516,44 @@ class StatusAnswerFileTests(TestCase):
         status_entry = self.inquiry.status_history.filter(status='answered').first()
         self.assertIsNotNone(status_entry)
         self.assertEqual(status_entry.answer_files.count(), 2)
+
+    LONG_DOTTED_ANSWER_PDF = (
+        '5_Ausgleichszahlungen_lt._Baumschutzgesetz_ins_Bezirksbudget_'
+        'Beantwortung_Czernohorszky.pdf'
+    )
+
+    def test_motion_status_change_view_saves_long_dotted_answer_pdf(self):
+        self.client.login(username='answer_admin', password='adminpass123')
+        url = reverse('motion:motion-status-change', kwargs={'pk': self.motion.pk}) + '?status=answered'
+        response = self.client.post(
+            url,
+            {
+                'status': 'answered',
+                'reason': 'Written answer',
+                'answer_files': [self._pdf_file(self.LONG_DOTTED_ANSWER_PDF)],
+            },
+            format='multipart',
+        )
+        self.assertEqual(response.status_code, 302)
+        status_entry = self.motion.status_history.filter(status='answered').first()
+        self.assertIsNotNone(status_entry)
+        answer_file = status_entry.answer_files.get()
+        self.assertEqual(answer_file.filename, self.LONG_DOTTED_ANSWER_PDF)
+
+    def test_inquiry_status_change_view_saves_long_dotted_answer_pdf(self):
+        self.client.login(username='answer_admin', password='adminpass123')
+        url = reverse('inquiry:inquiry-status-change', kwargs={'pk': self.inquiry.pk})
+        response = self.client.post(
+            url,
+            {
+                'status': 'answered',
+                'reason': 'Written answer',
+                'answer_files': [self._pdf_file(self.LONG_DOTTED_ANSWER_PDF)],
+            },
+            format='multipart',
+        )
+        self.assertEqual(response.status_code, 302)
+        status_entry = self.inquiry.status_history.filter(status='answered').first()
+        self.assertIsNotNone(status_entry)
+        answer_file = status_entry.answer_files.get()
+        self.assertEqual(answer_file.filename, self.LONG_DOTTED_ANSWER_PDF)
