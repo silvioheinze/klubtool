@@ -225,7 +225,7 @@ class CommitteeMeetingAttachment(models.Model):
     committee_meeting = models.ForeignKey(
         CommitteeMeeting, on_delete=models.CASCADE, related_name='attachments'
     )
-    file = models.FileField(upload_to='committee_meeting_attachments/%Y/%m/%d/')
+    file = models.FileField(upload_to='committee_meeting_attachments/%Y/%m/%d/', max_length=500)
     filename = models.CharField(max_length=255)
     file_type = models.CharField(
         max_length=20, choices=ATTACHMENT_TYPE_CHOICES, default='other'
@@ -524,7 +524,7 @@ class SessionAttachment(models.Model):
     ]
     
     session = models.ForeignKey(Session, on_delete=models.CASCADE, related_name='attachments')
-    file = models.FileField(upload_to='session_attachments/%Y/%m/%d/')
+    file = models.FileField(upload_to='session_attachments/%Y/%m/%d/', max_length=500)
     filename = models.CharField(max_length=255)
     file_type = models.CharField(max_length=20, choices=ATTACHMENT_TYPE_CHOICES, default='other')
     description = models.TextField(blank=True)
@@ -667,7 +667,7 @@ class DistrictEventAttachment(models.Model):
         on_delete=models.CASCADE,
         related_name='attachments',
     )
-    file = models.FileField(upload_to='district_event_attachments/%Y/%m/%d/')
+    file = models.FileField(upload_to='district_event_attachments/%Y/%m/%d/', max_length=500)
     filename = models.CharField(max_length=255)
     file_type = models.CharField(
         max_length=20,
