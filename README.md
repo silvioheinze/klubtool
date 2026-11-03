@@ -307,7 +307,7 @@ For local development the app still listens on HTTP; Settings always shows `http
 | `list_motions` | Search/list motions with optional filters (view access) |
 | `get_motion` | Single motion by id (view access) |
 | `create_motion` | Create motion as draft (group members / `motion.create`) |
-| `update_motion` | Update motion; omitted fields unchanged; status not editable |
+| `update_motion` | Update motion; optional `status_change` for committee assignment and votes (status-change permission); `get_motion` includes `status_history` |
 | `list_inquiries` | Search/list inquiries with optional filters (view access) |
 | `get_inquiry` | Single inquiry by id (view access) |
 | `create_inquiry` | Create inquiry as draft (group members / `motion.create`) |
@@ -370,6 +370,24 @@ Example `create_motion` arguments:
 ```
 
 `group_id` is optional when the user belongs to a group (defaults to the first accessible group). On create, motions are always saved as `draft` and do not accept `intervention_ids` (Wortmeldung); use `update_motion` with `intervention_ids` to set speakers after creation.
+
+Example `update_motion` with committee referral and votes (requires status-change permission; same majority rules as the web UI):
+
+```json
+{
+  "motion_id": 42,
+  "status_change": {
+    "status": "refer_to_committee",
+    "committee_id": 3,
+    "reason": "Budget review",
+    "votes": [
+      {"party_id": 1, "approve_votes": 8, "reject_votes": 2}
+    ]
+  }
+}
+```
+
+Allowed `status_change.status` values: `refer_to_committee`, `voted_in_committee`, `approved`, `rejected`. Votes are required for those statuses; at least one party must cast approve or reject votes (no abstention). If referral votes do not show a majority in favor, the motion status becomes `refer_no_majority` and the committee is not assigned.
 
 Example `upload_motion_attachment` with `file_url` (preferred for large files; server downloads via HTTPS):
 

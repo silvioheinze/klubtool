@@ -24,9 +24,17 @@ from district.models import (
     Session,
     SessionAttachment,
     Term,
+    TermSeatDistribution,
 )
 from group.models import Group, GroupMember
-from motion.models import Inquiry, InquiryAttachment, Motion, MotionAttachment
+from motion.models import (
+    Inquiry,
+    InquiryAttachment,
+    Motion,
+    MotionAttachment,
+    MotionStatus,
+    MotionVote,
+)
 from user.models import McpToken, Role
 
 User = get_user_model()
@@ -708,6 +716,267 @@ class McpMotionInquiryTests(TestCase):
         self.assertFalse(is_error)
         self.assertEqual(data['count'], 1)
         self.assertEqual(data['motions'][0]['session_id'], self.session.pk)
+
+
+class McpMotionStatusChangeTests(TestCase):
+    """MCP update_motion status_change (committee assignment and votes)."""
+
+    def setUp(self):
+        self.client = Client()
+        self.member = User.objects.create_user(
+            username='status_mcp_member',
+            email='status_mcp_member@example.com',
+            password='memberpass123',
+        )
+        self.status_editor = User.objects.create_user(
+            username='status_mcp_editor',
+            email='status_mcp_editor@example.com',
+            password='editorpass123',
+        )
+        self.district = District.objects.create(
+            name='Status MCP District',
+            code='SMD',
+            description='Test district',
+            is_active=True,
+        )
+        self.party = Party.objects.create(
+            name='Status MCP Party',
+            district=self.district,
+            is_active=True,
+        )
+        self.other_party = Party.objects.create(
+            name='Status MCP Other Party',
+            district=self.district,
+            is_active=True,
+        )
+        self.group = Group.objects.create(
+            name='Status MCP Group',
+            party=self.party,
+            is_active=True,
+        )
+        GroupMember.objects.create(user=self.member, group=self.group, is_active=True)
+        editor_membership = GroupMember.objects.create(
+            user=self.status_editor,
+            group=self.group,
+            is_active=True,
+        )
+        motion_edit_role = Role.objects.create(
+            name='Status MCP Motion Editor',
+            is_active=True,
+            permissions={'permissions': ['motion.edit', 'motion.view']},
+        )
+        editor_membership.roles.add(motion_edit_role)
+        self.status_editor.role = motion_edit_role
+        self.status_editor.save(update_fields=['role'])
+
+        self.council, _ = Council.objects.get_or_create(
+            district=self.district,
+            defaults={'name': 'Status MCP Council', 'is_active': True},
+        )
+        self.term = Term.objects.create(
+            name='Status MCP Term',
+            start_date=timezone.now().date(),
+            end_date=(timezone.now() + timedelta(days=365)).date(),
+        )
+        self.session = Session.objects.create(
+            title='Status MCP Session',
+            council=self.council,
+            term=self.term,
+            scheduled_date=timezone.now() + timedelta(days=7),
+            is_active=True,
+        )
+        self.committee = Committee.objects.create(
+            name='Status MCP Committee',
+            council=self.council,
+            is_active=True,
+        )
+        TermSeatDistribution.objects.create(term=self.term, party=self.party, seats=10)
+        TermSeatDistribution.objects.create(term=self.term, party=self.other_party, seats=8)
+
+        _, self.member_token = McpToken.create_token(self.member)
+        _, self.editor_token = McpToken.create_token(self.status_editor)
+
+    def _tool_call(self, name, arguments, token):
+        payload = {
+            'jsonrpc': '2.0',
+            'id': 1,
+            'method': 'tools/call',
+            'params': {'name': name, 'arguments': arguments},
+        }
+        response = self.client.post(
+            reverse('mcp'),
+            data=json.dumps(payload),
+            content_type='application/json',
+            HTTP_AUTHORIZATION=f'Bearer {token}',
+        )
+        self.assertEqual(response.status_code, 200, response.content)
+        body = response.json()
+        result = body['result']
+        text = result['content'][0]['text']
+        return json.loads(text), result.get('isError', False)
+
+    def _create_motion(self, **kwargs):
+        motion = Motion.objects.create(
+            title=kwargs.get('title', 'Status Motion'),
+            text='Body',
+            session=self.session,
+            group=self.group,
+            submitted_by=self.status_editor,
+            status=kwargs.get('status', 'submitted'),
+            committee=kwargs.get('committee'),
+        )
+        motion.parties.add(self.party)
+        return motion
+
+    def test_refer_to_committee_with_majority_assigns_committee_and_records_votes(self):
+        motion = self._create_motion()
+        data, is_error = self._tool_call(
+            'update_motion',
+            {
+                'motion_id': motion.pk,
+                'status_change': {
+                    'status': 'refer_to_committee',
+                    'committee_id': self.committee.pk,
+                    'votes': [
+                        {'party_id': self.party.pk, 'approve_votes': 6, 'reject_votes': 2},
+                    ],
+                },
+            },
+            self.editor_token,
+        )
+        self.assertFalse(is_error)
+        motion.refresh_from_db()
+        self.assertEqual(motion.status, 'refer_to_committee')
+        self.assertEqual(motion.committee_id, self.committee.pk)
+        self.assertEqual(len(data['motion']['status_history']), 1)
+        entry = data['motion']['status_history'][0]
+        self.assertEqual(entry['status'], 'refer_to_committee')
+        self.assertEqual(entry['committee_id'], self.committee.pk)
+        self.assertEqual(len(entry['votes']), 1)
+        self.assertEqual(entry['votes'][0]['approve_votes'], 6)
+
+    def test_refer_to_committee_without_majority_sets_refer_no_majority(self):
+        motion = self._create_motion()
+        data, is_error = self._tool_call(
+            'update_motion',
+            {
+                'motion_id': motion.pk,
+                'status_change': {
+                    'status': 'refer_to_committee',
+                    'committee_id': self.committee.pk,
+                    'votes': [
+                        {'party_id': self.party.pk, 'approve_votes': 4, 'reject_votes': 5},
+                    ],
+                },
+            },
+            self.editor_token,
+        )
+        self.assertFalse(is_error)
+        motion.refresh_from_db()
+        self.assertEqual(motion.status, 'refer_no_majority')
+        self.assertIsNone(motion.committee_id)
+        self.assertEqual(data['motion']['status_history'][0]['status'], 'refer_no_majority')
+        self.assertEqual(len(data['motion']['status_history'][0]['votes']), 1)
+
+    def test_voted_in_committee_requires_prior_referral(self):
+        motion = self._create_motion()
+        denied, is_error = self._tool_call(
+            'update_motion',
+            {
+                'motion_id': motion.pk,
+                'status_change': {
+                    'status': 'voted_in_committee',
+                    'committee_id': self.committee.pk,
+                    'votes': [
+                        {'party_id': self.party.pk, 'approve_votes': 5, 'reject_votes': 1},
+                    ],
+                },
+            },
+            self.editor_token,
+        )
+        self.assertTrue(is_error)
+
+        motion.status = 'refer_to_committee'
+        motion.committee = self.committee
+        motion.save()
+        MotionStatus.objects.create(
+            motion=motion,
+            status='refer_to_committee',
+            committee=self.committee,
+        )
+
+        data, is_error = self._tool_call(
+            'update_motion',
+            {
+                'motion_id': motion.pk,
+                'status_change': {
+                    'status': 'voted_in_committee',
+                    'committee_id': self.committee.pk,
+                    'votes': [
+                        {'party_id': self.party.pk, 'approve_votes': 7, 'reject_votes': 1},
+                    ],
+                },
+            },
+            self.editor_token,
+        )
+        self.assertFalse(is_error)
+        motion.refresh_from_db()
+        self.assertEqual(motion.status, 'voted_in_committee')
+
+    def test_excessive_votes_rejected(self):
+        motion = self._create_motion()
+        data, is_error = self._tool_call(
+            'update_motion',
+            {
+                'motion_id': motion.pk,
+                'status_change': {
+                    'status': 'approved',
+                    'votes': [
+                        {'party_id': self.party.pk, 'approve_votes': 11, 'reject_votes': 0},
+                    ],
+                },
+            },
+            self.editor_token,
+        )
+        self.assertTrue(is_error)
+        motion.refresh_from_db()
+        self.assertEqual(motion.status, 'submitted')
+        self.assertFalse(MotionVote.objects.filter(motion=motion).exists())
+
+    def test_member_without_status_permission_cannot_use_status_change(self):
+        motion = self._create_motion()
+        data, is_error = self._tool_call(
+            'update_motion',
+            {
+                'motion_id': motion.pk,
+                'title': 'Still editable?',
+                'status_change': {
+                    'status': 'approved',
+                    'votes': [
+                        {'party_id': self.party.pk, 'approve_votes': 5, 'reject_votes': 0},
+                    ],
+                },
+            },
+            self.member_token,
+        )
+        self.assertTrue(is_error)
+        self.assertIn('status', data['error'].lower())
+        motion.refresh_from_db()
+        self.assertEqual(motion.title, 'Status Motion')
+        self.assertEqual(motion.status, 'submitted')
+
+    def test_update_without_status_change_leaves_status_unchanged(self):
+        motion = self._create_motion(status='draft')
+        data, is_error = self._tool_call(
+            'update_motion',
+            {'motion_id': motion.pk, 'title': 'Renamed only'},
+            self.member_token,
+        )
+        self.assertFalse(is_error)
+        motion.refresh_from_db()
+        self.assertEqual(motion.title, 'Renamed only')
+        self.assertEqual(motion.status, 'draft')
+        self.assertEqual(data['motion']['status_history'], [])
 
 
 class McpAttachmentTests(TestCase):
