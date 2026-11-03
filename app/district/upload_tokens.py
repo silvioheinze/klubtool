@@ -77,9 +77,15 @@ def consume_upload_jti(jti: str) -> bool:
 
 
 def build_attachment_upload_url(request, payload: dict) -> str:
+    """Return an absolute HTTPS upload URL.
+
+    The app sits behind a reverse proxy that terminates TLS, so the incoming
+    request is HTTP. MCP clients always reach the public host over HTTPS, the
+    same way the MCP server URL in settings is built.
+    """
     signed = mint_upload_token(payload)
     path = reverse('attachment-upload', kwargs={'token': signed})
-    return request.build_absolute_uri(path)
+    return f'https://{request.get_host()}{path}'
 
 
 def upload_url_response_fields() -> dict:

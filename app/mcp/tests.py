@@ -1007,7 +1007,7 @@ class McpCommitteeMeetingAttachmentTests(TestCase):
                 token,
             )
             self.assertFalse(is_error, data)
-            self.assertIn('upload_url', data)
+            self.assertTrue(data['upload_url'].startswith('https://'))
             self.assertEqual(data['method'], 'PUT')
             self.assertEqual(data['expires_in'], 600)
             self.assertEqual(data['max_bytes'], 25 * 1024 * 1024)
