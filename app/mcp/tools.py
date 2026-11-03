@@ -10,9 +10,26 @@ from django.db.models import Q
 from django.http import QueryDict
 from django.utils import timezone
 
-from district.forms import DistrictEventForm, SessionAttachmentForm
-from district.models import District, DistrictEvent, Session, SessionAttachment
-from district.views import user_can_manage_district_events, user_is_district_member
+from district.forms import (
+    CommitteeMeetingAttachmentForm,
+    DistrictEventForm,
+    SessionAttachmentForm,
+)
+from district.models import (
+    CommitteeMeeting,
+    CommitteeMeetingAttachment,
+    District,
+    DistrictEvent,
+    Session,
+    SessionAttachment,
+)
+from district.views import (
+    _can_user_edit_committee_meeting,
+    _complete_committee_meeting_if_protocol_uploaded,
+    _invite_committee_meeting_if_invitation_uploaded,
+    user_can_manage_district_events,
+    user_is_district_member,
+)
 from group.models import Group
 from motion.forms import InquiryAttachmentForm, InquiryForm, MotionAttachmentForm, MotionForm
 from motion.models import Inquiry, InquiryAttachment, Motion, MotionAttachment
@@ -310,6 +327,28 @@ def list_tools():
                     'description': {'type': 'string'},
                 },
                 'required': ['inquiry_id', 'filename', 'content_base64'],
+            },
+        },
+        {
+            'name': 'upload_committee_meeting_attachment',
+            'description': (
+                'Upload a file attachment to a committee meeting '
+                '(same permissions as web upload: superuser or qualifying group leader).'
+            ),
+            'inputSchema': {
+                'type': 'object',
+                'properties': {
+                    'committee_meeting_id': {'type': 'integer'},
+                    'filename': {'type': 'string', 'description': 'Original filename including extension'},
+                    'content_base64': {'type': 'string', 'description': 'File content as base64 (optional data: URL prefix allowed)'},
+                    'file_type': {
+                        'type': 'string',
+                        'enum': ['agenda', 'invitation', 'minutes', 'other'],
+                        'description': 'Defaults to other',
+                    },
+                    'description': {'type': 'string'},
+                },
+                'required': ['committee_meeting_id', 'filename', 'content_base64'],
             },
         },
     ]
@@ -671,6 +710,13 @@ def _get_session_or_error(session_id):
         raise McpToolError(f'Session {session_id} not found.') from exc
 
 
+def _get_committee_meeting_or_error(committee_meeting_id):
+    try:
+        return CommitteeMeeting.objects.get(pk=committee_meeting_id)
+    except CommitteeMeeting.DoesNotExist as exc:
+        raise McpToolError(f'Committee meeting {committee_meeting_id} not found.') from exc
+
+
 def _validate_attachment_form(form):
     if not form.is_valid():
         raise McpToolError(json.dumps(form.errors, ensure_ascii=False))
@@ -753,6 +799,34 @@ def _upload_inquiry_attachment(arguments, user):
     attachment.uploaded_by = user
     attachment.save()
     return attachment
+
+
+def _upload_committee_meeting_attachment(arguments, user):
+    meeting = _get_committee_meeting_or_error(arguments['committee_meeting_id'])
+    if not _can_user_edit_committee_meeting(user, meeting):
+        raise McpToolError('You do not have permission to upload committee meeting attachments.')
+    file_type = _validate_choice(
+        arguments.get('file_type', 'other'),
+        CommitteeMeetingAttachment.ATTACHMENT_TYPE_CHOICES,
+        'file_type',
+    ) or 'other'
+    content_bytes = _decode_base64_content(arguments['content_base64'])
+    uploaded_file = _build_uploaded_file(arguments['filename'], content_bytes)
+    form = CommitteeMeetingAttachmentForm(
+        data={
+            'file_type': file_type,
+            'description': arguments.get('description', ''),
+        },
+        files={'file': uploaded_file},
+        committee_meeting=meeting,
+        uploaded_by=user,
+    )
+    form = _validate_attachment_form(form)
+    attachment = form.save()
+    _complete_committee_meeting_if_protocol_uploaded(meeting, attachment.file_type)
+    _invite_committee_meeting_if_invitation_uploaded(meeting, attachment.file_type)
+    meeting.refresh_from_db()
+    return attachment, meeting
 
 
 def _serialize_motion(motion, request=None):
@@ -1090,6 +1164,14 @@ def call_tool(name, arguments, user, request=None):
     if name == 'upload_inquiry_attachment':
         attachment = _upload_inquiry_attachment(arguments, user)
         return {'attachment': _serialize_attachment(attachment, request)}
+
+    if name == 'upload_committee_meeting_attachment':
+        attachment, meeting = _upload_committee_meeting_attachment(arguments, user)
+        return {
+            'attachment': _serialize_attachment(attachment, request),
+            'committee_meeting_id': meeting.pk,
+            'meeting_status': meeting.status,
+        }
 
     raise McpToolError(f'Unknown tool: {name}')
 

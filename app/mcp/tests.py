@@ -9,7 +9,19 @@ from django.test import Client, TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from district.models import Council, District, DistrictEvent, Party, Session, SessionAttachment, Term
+from district.models import (
+    Committee,
+    CommitteeMeeting,
+    CommitteeMeetingAttachment,
+    CommitteeMember,
+    Council,
+    District,
+    DistrictEvent,
+    Party,
+    Session,
+    SessionAttachment,
+    Term,
+)
 from group.models import Group, GroupMember
 from motion.models import Inquiry, InquiryAttachment, Motion, MotionAttachment
 from user.models import McpToken, Role
@@ -314,6 +326,7 @@ class McpMotionInquiryTests(TestCase):
             'upload_session_attachment',
             'upload_motion_attachment',
             'upload_inquiry_attachment',
+            'upload_committee_meeting_attachment',
         ):
             self.assertIn(tool_name, names)
 
@@ -781,6 +794,198 @@ class McpAttachmentTests(TestCase):
         self.assertTrue(is_error)
         self.assertIn('file', data['error'])
         self.assertFalse(MotionAttachment.objects.filter(motion=self.motion).exists())
+
+
+class McpCommitteeMeetingAttachmentTests(TestCase):
+    """MCP JSON-RPC tool for committee meeting attachments."""
+
+    PDF_BYTES = b'%PDF-1.4 test content'
+
+    def setUp(self):
+        self.client = Client()
+        self.committee_member_user = User.objects.create_user(
+            username='cm_member',
+            email='cm_member@example.com',
+            password='memberpass123',
+        )
+        self.group_leader = User.objects.create_user(
+            username='cm_leader',
+            email='cm_leader@example.com',
+            password='leaderpass123',
+        )
+        self.outsider = User.objects.create_user(
+            username='cm_outsider',
+            email='cm_outsider@example.com',
+            password='outsiderpass123',
+        )
+        self.superuser = User.objects.create_superuser(
+            username='cm_super',
+            email='cm_super@example.com',
+            password='superpass123',
+        )
+        self.district = District.objects.create(
+            name='CM MCP District',
+            code='CMD',
+            description='Test district',
+            is_active=True,
+        )
+        self.party = Party.objects.create(
+            name='CM MCP Party',
+            district=self.district,
+            is_active=True,
+        )
+        self.group = Group.objects.create(
+            name='CM MCP Group',
+            party=self.party,
+            is_active=True,
+        )
+        GroupMember.objects.create(
+            user=self.committee_member_user,
+            group=self.group,
+            is_active=True,
+        )
+        leader_membership = GroupMember.objects.create(
+            user=self.group_leader,
+            group=self.group,
+            is_active=True,
+        )
+        leader_role = Role.objects.get_or_create(name='Leader', defaults={'is_active': True})[0]
+        leader_membership.roles.add(leader_role)
+        self.council, _ = Council.objects.get_or_create(
+            district=self.district,
+            defaults={'name': 'CM MCP Council', 'is_active': True},
+        )
+        self.committee = Committee.objects.create(
+            name='CM MCP Committee',
+            council=self.council,
+            is_active=True,
+        )
+        CommitteeMember.objects.create(
+            committee=self.committee,
+            user=self.committee_member_user,
+            role='member',
+            is_active=True,
+        )
+        self.meeting = CommitteeMeeting.objects.create(
+            committee=self.committee,
+            title='CM MCP Meeting',
+            scheduled_date=timezone.now() + timedelta(days=3),
+            status='scheduled',
+            is_active=True,
+        )
+        _, self.leader_token = McpToken.create_token(self.group_leader)
+        _, self.outsider_token = McpToken.create_token(self.outsider)
+        _, self.superuser_token = McpToken.create_token(self.superuser)
+        self.pdf_base64 = base64.b64encode(self.PDF_BYTES).decode('ascii')
+
+    def _rpc(self, method, params=None, token=None, request_id=1):
+        headers = {'HTTP_AUTHORIZATION': f'Bearer {token}'} if token else {}
+        payload = {
+            'jsonrpc': '2.0',
+            'id': request_id,
+            'method': method,
+            'params': params or {},
+        }
+        return self.client.post(
+            reverse('mcp'),
+            data=json.dumps(payload),
+            content_type='application/json',
+            **headers,
+        )
+
+    def _tool_call(self, name, arguments, token):
+        response = self._rpc(
+            'tools/call',
+            {'name': name, 'arguments': arguments},
+            token=token,
+        )
+        self.assertEqual(response.status_code, 200, response.content)
+        body = response.json()
+        self.assertNotIn('error', body)
+        result = body['result']
+        text = result['content'][0]['text']
+        return json.loads(text), result.get('isError', False)
+
+    def _upload(self, token, **extra):
+        args = {
+            'committee_meeting_id': self.meeting.pk,
+            'filename': 'doc.pdf',
+            'content_base64': self.pdf_base64,
+        }
+        args.update(extra)
+        return self._tool_call('upload_committee_meeting_attachment', args, token)
+
+    def test_superuser_and_group_leader_can_upload(self):
+        data, is_error = self._upload(self.superuser_token, filename='super-agenda.pdf', file_type='agenda')
+        self.assertFalse(is_error)
+        self.assertEqual(data['attachment']['filename'], 'super-agenda.pdf')
+        self.assertEqual(data['attachment']['file_type'], 'agenda')
+        self.assertEqual(data['committee_meeting_id'], self.meeting.pk)
+        self.assertEqual(data['meeting_status'], 'scheduled')
+
+        data, is_error = self._upload(self.leader_token, filename='leader-invite.pdf', file_type='invitation')
+        self.assertFalse(is_error)
+        self.assertEqual(data['attachment']['filename'], 'leader-invite.pdf')
+        self.assertTrue(
+            CommitteeMeetingAttachment.objects.filter(committee_meeting=self.meeting).exists()
+        )
+
+    def test_outsider_cannot_upload(self):
+        data, is_error = self._upload(self.outsider_token, filename='forbidden.pdf')
+        self.assertTrue(is_error)
+        self.assertIn('permission', data['error'].lower())
+        self.assertFalse(
+            CommitteeMeetingAttachment.objects.filter(committee_meeting=self.meeting).exists()
+        )
+
+    def test_minutes_sets_meeting_completed(self):
+        data, is_error = self._upload(
+            self.superuser_token,
+            filename='protocol.pdf',
+            file_type='minutes',
+        )
+        self.assertFalse(is_error)
+        self.assertEqual(data['meeting_status'], 'completed')
+        self.meeting.refresh_from_db()
+        self.assertEqual(self.meeting.status, 'completed')
+
+    def test_invitation_sets_meeting_invited(self):
+        data, is_error = self._upload(
+            self.superuser_token,
+            filename='invite.pdf',
+            file_type='invitation',
+        )
+        self.assertFalse(is_error)
+        self.assertEqual(data['meeting_status'], 'invited')
+        self.meeting.refresh_from_db()
+        self.assertEqual(self.meeting.status, 'invited')
+
+    def test_agenda_does_not_change_meeting_status(self):
+        data, is_error = self._upload(
+            self.superuser_token,
+            filename='agenda.pdf',
+            file_type='agenda',
+        )
+        self.assertFalse(is_error)
+        self.assertEqual(data['meeting_status'], 'scheduled')
+        self.meeting.refresh_from_db()
+        self.assertEqual(self.meeting.status, 'scheduled')
+
+    def test_invalid_file_extension_returns_form_error(self):
+        data, is_error = self._tool_call(
+            'upload_committee_meeting_attachment',
+            {
+                'committee_meeting_id': self.meeting.pk,
+                'filename': 'virus.exe',
+                'content_base64': base64.b64encode(b'bad').decode('ascii'),
+            },
+            self.superuser_token,
+        )
+        self.assertTrue(is_error)
+        self.assertIn('file', data['error'])
+        self.assertFalse(
+            CommitteeMeetingAttachment.objects.filter(committee_meeting=self.meeting).exists()
+        )
 
 
 class McpTokenSettingsTests(TestCase):
