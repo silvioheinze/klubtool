@@ -321,6 +321,7 @@ For local development the app still listens on HTTP; Settings always shows `http
 | `list_committee_meetings` | List committee meetings with optional committee and date filters |
 | `list_sessions` | List council sessions in a district with optional date filters |
 | `get_committee_meeting` | Committee meeting details (agenda, participants, attachments, status) |
+| `update_committee_meeting` | Update committee meeting; omitted fields unchanged; status not editable |
 | `list_attachments` | List attachments for a session, motion, inquiry, or committee meeting |
 | `delete_attachment` | Delete an attachment (same rules as web; confirm with user first) |
 
@@ -392,6 +393,17 @@ Example `list_committee_meetings` arguments:
   "committee_id": 3,
   "from_date": "2026-10-01",
   "to_date": "2026-10-31"
+}
+```
+
+Example `update_committee_meeting` arguments:
+
+```json
+{
+  "committee_meeting_id": 12,
+  "title": "Kulturkommission 14.10.2026",
+  "location": "Rathaus, Saal 2",
+  "agenda": "TOP 1: Budget\nTOP 2: Berichte"
 }
 ```
 

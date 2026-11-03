@@ -16,6 +16,7 @@ from django.utils import timezone
 
 from district.forms import (
     CommitteeMeetingAttachmentForm,
+    CommitteeMeetingForm,
     DistrictEventForm,
     SessionAttachmentForm,
 )
@@ -455,6 +456,25 @@ def list_tools():
                     'id': {'type': 'integer', 'description': 'Committee meeting primary key'},
                 },
                 'required': ['id'],
+            },
+        },
+        {
+            'name': 'update_committee_meeting',
+            'description': (
+                'Update a committee meeting. Omitted fields stay unchanged; status cannot be changed.'
+            ),
+            'inputSchema': {
+                'type': 'object',
+                'properties': {
+                    'committee_meeting_id': {'type': 'integer'},
+                    'title': {'type': 'string'},
+                    'location': {'type': 'string'},
+                    'agenda': {
+                        'type': 'string',
+                        'description': 'Meeting agenda (stored as description)',
+                    },
+                },
+                'required': ['committee_meeting_id'],
             },
         },
         {
@@ -1481,6 +1501,34 @@ def _validate_inquiry_form(arguments, user, *, instance=None):
     return form
 
 
+def _committee_meeting_scheduled_date_form_value(meeting):
+    local_dt = timezone.localtime(meeting.scheduled_date)
+    return local_dt.strftime('%Y-%m-%dT%H:%M')
+
+
+def _build_committee_meeting_form_data(arguments, *, instance):
+    data = QueryDict(mutable=True)
+    data['committee'] = str(instance.committee_id)
+    data['title'] = arguments.get('title', instance.title)
+    data['scheduled_date'] = _committee_meeting_scheduled_date_form_value(instance)
+    data['location'] = arguments.get('location', instance.location or '')
+    data['description'] = arguments.get('agenda', instance.description or '')
+    data['status'] = instance.status
+    return data
+
+
+def _validate_committee_meeting_form(arguments, *, instance):
+    form_data = _build_committee_meeting_form_data(arguments, instance=instance)
+    form = CommitteeMeetingForm(
+        data=form_data,
+        instance=instance,
+        committee=instance.committee,
+    )
+    if not form.is_valid():
+        raise McpToolError(json.dumps(form.errors, ensure_ascii=False))
+    return form
+
+
 def _get_motion_or_error(motion_id):
     try:
         return Motion.objects.select_related(
@@ -1751,6 +1799,22 @@ def call_tool(name, arguments, user, request=None):
             raise McpToolError(f'Committee meeting {arguments["id"]} not found.')
         if not _user_can_view_committee_meeting(user, meeting):
             raise McpToolError('You do not have permission to view this committee meeting.')
+        meeting = (
+            CommitteeMeeting.objects.filter(pk=meeting.pk)
+            .select_related('committee')
+            .prefetch_related('attachments')
+            .get()
+        )
+        return {'committee_meeting': _serialize_committee_meeting_detail(meeting, request)}
+
+    if name == 'update_committee_meeting':
+        meeting = _get_committee_meeting_or_error(arguments['committee_meeting_id'])
+        if not meeting.is_active:
+            raise McpToolError(f'Committee meeting {arguments["committee_meeting_id"]} not found.')
+        if not _can_user_edit_committee_meeting(user, meeting):
+            raise McpToolError('You do not have permission to update this committee meeting.')
+        form = _validate_committee_meeting_form(arguments, instance=meeting)
+        meeting = form.save()
         meeting = (
             CommitteeMeeting.objects.filter(pk=meeting.pk)
             .select_related('committee')
