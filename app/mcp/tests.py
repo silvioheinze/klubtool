@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from unittest.mock import MagicMock, patch
 
 from django.contrib.auth import get_user_model
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -18,6 +19,7 @@ from district.models import (
     Council,
     District,
     DistrictEvent,
+    DistrictEventAttachment,
     Party,
     Session,
     SessionAttachment,
@@ -67,8 +69,28 @@ class McpDistrictEventTests(TestCase):
             user=self.manager, group=self.group, is_active=True,
         )
         manager_membership.roles.add(leader_role)
+        self.superuser = User.objects.create_superuser(
+            username='mcp_event_super',
+            email='mcp_event_super@example.com',
+            password='superpass123',
+        )
+        self.outsider = User.objects.create_user(
+            username='mcp_event_outsider',
+            email='mcp_event_outsider@example.com',
+            password='outsiderpass123',
+        )
         _, self.manager_token = McpToken.create_token(self.manager)
         _, self.member_token = McpToken.create_token(self.member)
+        _, self.superuser_token = McpToken.create_token(self.superuser)
+        _, self.outsider_token = McpToken.create_token(self.outsider)
+
+    def _attachment_event(self):
+        return DistrictEvent.objects.create(
+            title='Attachment Event',
+            district=self.district,
+            scheduled_date=timezone.now() + timedelta(days=4),
+            created_by=self.manager,
+        )
 
     def _rpc(self, method, params=None, token=None, request_id=1):
         headers = {'HTTP_AUTHORIZATION': f'Bearer {token}'} if token else {}
@@ -114,6 +136,7 @@ class McpDistrictEventTests(TestCase):
         response = self._rpc('tools/list', token=self.manager_token)
         names = [tool['name'] for tool in response.json()['result']['tools']]
         self.assertIn('create_district_event', names)
+        self.assertIn('create_district_event_upload_url', names)
 
     def test_manager_can_create_event(self):
         scheduled = (timezone.now() + timedelta(days=3)).replace(microsecond=0)
@@ -204,6 +227,97 @@ class McpDistrictEventTests(TestCase):
         )
         self.assertTrue(is_error)
         self.assertTrue(DistrictEvent.objects.filter(pk=event.pk).exists())
+
+    def test_create_upload_url_superuser_and_manager(self):
+        event = self._attachment_event()
+        for token in (self.superuser_token, self.manager_token):
+            data, is_error = self._tool_call(
+                'create_district_event_upload_url',
+                {
+                    'event_id': event.pk,
+                    'filename': 'agenda.pdf',
+                    'file_type': 'agenda',
+                },
+                token,
+            )
+            self.assertFalse(is_error, data)
+            self.assertTrue(data['upload_url'].startswith('https://'))
+            self.assertEqual(data['event_id'], event.pk)
+            self.assertEqual(data['method'], 'PUT')
+            self.assertEqual(data['expires_in'], 600)
+            self.assertEqual(data['max_bytes'], 25 * 1024 * 1024)
+
+    def test_create_upload_url_member_denied(self):
+        event = self._attachment_event()
+        data, is_error = self._tool_call(
+            'create_district_event_upload_url',
+            {
+                'event_id': event.pk,
+                'filename': 'agenda.pdf',
+            },
+            self.member_token,
+        )
+        self.assertTrue(is_error)
+        self.assertIn('permission', data['error'].lower())
+
+    def test_create_upload_url_invalid_extension(self):
+        event = self._attachment_event()
+        data, is_error = self._tool_call(
+            'create_district_event_upload_url',
+            {
+                'event_id': event.pk,
+                'filename': 'bad.exe',
+            },
+            self.manager_token,
+        )
+        self.assertTrue(is_error)
+        self.assertIn('not allowed', data['error'].lower())
+
+    def test_list_and_delete_district_event_attachment(self):
+        event = self._attachment_event()
+        pdf_bytes = b'%PDF-1.4 district event list'
+        attachment = DistrictEventAttachment.objects.create(
+            event=event,
+            file=SimpleUploadedFile('listed.pdf', pdf_bytes),
+            filename='listed.pdf',
+            file_type='agenda',
+            uploaded_by=self.manager,
+        )
+
+        list_data, list_error = self._tool_call(
+            'list_attachments',
+            {'parent_type': 'district_event', 'parent_id': event.pk},
+            self.member_token,
+        )
+        self.assertFalse(list_error)
+        self.assertEqual(len(list_data['attachments']), 1)
+        self.assertEqual(list_data['attachments'][0]['id'], attachment.pk)
+
+        denied, is_error = self._tool_call(
+            'list_attachments',
+            {'parent_type': 'district_event', 'parent_id': event.pk},
+            self.outsider_token,
+        )
+        self.assertTrue(is_error)
+        self.assertIn('access', denied['error'].lower())
+
+        delete_denied, is_error = self._tool_call(
+            'delete_attachment',
+            {'parent_type': 'district_event', 'attachment_id': attachment.pk},
+            self.outsider_token,
+        )
+        self.assertTrue(is_error)
+        self.assertIn('permission', delete_denied['error'].lower())
+        self.assertTrue(DistrictEventAttachment.objects.filter(pk=attachment.pk).exists())
+
+        deleted, is_error = self._tool_call(
+            'delete_attachment',
+            {'parent_type': 'district_event', 'attachment_id': attachment.pk},
+            self.manager_token,
+        )
+        self.assertFalse(is_error)
+        self.assertTrue(deleted['deleted'])
+        self.assertFalse(DistrictEventAttachment.objects.filter(pk=attachment.pk).exists())
 
 
 class McpMotionInquiryTests(TestCase):
@@ -329,6 +443,7 @@ class McpMotionInquiryTests(TestCase):
             'upload_inquiry_attachment',
             'upload_committee_meeting_attachment',
             'create_committee_meeting_upload_url',
+            'create_district_event_upload_url',
             'list_committees',
             'list_committee_meetings',
             'list_sessions',
