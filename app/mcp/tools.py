@@ -29,6 +29,12 @@ from district.models import (
     Session,
     SessionAttachment,
 )
+from district.upload_tokens import (
+    build_attachment_upload_url,
+    build_committee_meeting_upload_payload,
+    upload_url_response_fields,
+)
+from district.upload_validation import normalize_upload_filename, validate_upload_extension
 from district.views import (
     _can_user_edit_committee_meeting,
     _complete_committee_meeting_if_protocol_uploaded,
@@ -370,6 +376,28 @@ def list_tools():
                     'committee_meeting_id': {'type': 'integer'},
                     'filename': {'type': 'string', 'description': 'Original filename including extension'},
                     **_UPLOAD_FILE_SOURCE_SCHEMA,
+                    'file_type': {
+                        'type': 'string',
+                        'enum': ['agenda', 'invitation', 'minutes', 'other'],
+                        'description': 'Defaults to other',
+                    },
+                    'description': {'type': 'string'},
+                },
+                'required': ['committee_meeting_id', 'filename'],
+            },
+        },
+        {
+            'name': 'create_committee_meeting_upload_url',
+            'description': (
+                'Create a one-time HTTPS PUT URL for uploading a committee meeting attachment '
+                '(same permissions as web upload: superuser or qualifying group leader). '
+                'Does not accept file content; use the returned upload_url with HTTP PUT.'
+            ),
+            'inputSchema': {
+                'type': 'object',
+                'properties': {
+                    'committee_meeting_id': {'type': 'integer'},
+                    'filename': {'type': 'string', 'description': 'Original filename including extension'},
                     'file_type': {
                         'type': 'string',
                         'enum': ['agenda', 'invitation', 'minutes', 'other'],
@@ -1241,6 +1269,35 @@ def _upload_inquiry_attachment(arguments, user):
     return attachment
 
 
+def _create_committee_meeting_upload_url(arguments, user, request):
+    meeting = _get_committee_meeting_or_error(arguments['committee_meeting_id'])
+    if not _can_user_edit_committee_meeting(user, meeting):
+        raise McpToolError('You do not have permission to upload committee meeting attachments.')
+    file_type = _validate_choice(
+        arguments.get('file_type', 'other'),
+        CommitteeMeetingAttachment.ATTACHMENT_TYPE_CHOICES,
+        'file_type',
+    ) or 'other'
+    try:
+        safe_filename = normalize_upload_filename(arguments['filename'])
+        validate_upload_extension(safe_filename)
+    except ValueError as exc:
+        raise McpToolError(str(exc)) from exc
+    payload = build_committee_meeting_upload_payload(
+        committee_meeting_id=meeting.pk,
+        user_id=user.pk,
+        filename=safe_filename,
+        file_type=file_type,
+        description=arguments.get('description', ''),
+    )
+    upload_url = build_attachment_upload_url(request, payload)
+    return {
+        'upload_url': upload_url,
+        'committee_meeting_id': meeting.pk,
+        **upload_url_response_fields(),
+    }
+
+
 def _upload_committee_meeting_attachment(arguments, user):
     meeting = _get_committee_meeting_or_error(arguments['committee_meeting_id'])
     if not _can_user_edit_committee_meeting(user, meeting):
@@ -1612,6 +1669,11 @@ def call_tool(name, arguments, user, request=None):
             'committee_meeting_id': meeting.pk,
             'meeting_status': meeting.status,
         }
+
+    if name == 'create_committee_meeting_upload_url':
+        if request is None:
+            raise McpToolError('Request context is required to build an upload URL.')
+        return _create_committee_meeting_upload_url(arguments, user, request)
 
     if name == 'list_committees':
         district = _get_district_or_error(user, arguments['district_id'])

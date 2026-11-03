@@ -316,6 +316,7 @@ For local development the app still listens on HTTP; Settings always shows `http
 | `upload_motion_attachment` | Upload file to motion (superuser, `motion.attach`, or group member) |
 | `upload_inquiry_attachment` | Upload file to inquiry (same permissions as motion attachments) |
 | `upload_committee_meeting_attachment` | Upload file to committee meeting (superuser or qualifying group leader; max 50 MB) |
+| `create_committee_meeting_upload_url` | One-time PUT URL for committee meeting upload (10 min, max 25 MB; no file content in the tool call) |
 | `list_committees` | List committees in a district (`id`, name, abbreviation) |
 | `list_committee_meetings` | List committee meetings with optional committee and date filters |
 | `list_sessions` | List council sessions in a district with optional date filters |
@@ -395,6 +396,22 @@ Example `list_committee_meetings` arguments:
 ```
 
 Allowed extensions: `.pdf`, `.doc`, `.docx`, `.txt`, `.jpg`, `.jpeg`, `.png`, `.gif`, `.xls`, `.xlsx`, `.ppt`, `.pptx`. Motion and inquiry uploads are limited to 10 MB; session and committee meeting uploads to 50 MB.
+
+### Committee meeting upload URL (PUT)
+
+1. Call `create_committee_meeting_upload_url` with `committee_meeting_id`, `filename`, and optional `file_type` / `description`.
+2. `PUT` the raw file bytes to the returned `upload_url` within `expires_in` seconds (default 600). Each URL works once; max size 25 MB.
+3. The response is JSON: `id`, `filename`, `file_size`.
+
+**Deploy:** after upgrading, run once per environment:
+
+```bash
+python manage.py createcachetable upload_token_cache
+```
+
+This creates the database table used for one-time upload tokens (`upload_tokens` cache alias).
+
+**Claude sandbox:** for Claude to `PUT` files to your Klubtool host, add your production domain (for example `klub.neubauergruene.at`) to the **network allowlist** in Claude admin (sandbox / connector settings). MCP calls use `/mcp/`; the upload step uses `/uploads/attachments/…` on the same host.
 
 ## 🛠️ Development
 

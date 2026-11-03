@@ -21,6 +21,7 @@ from django.conf.urls.static import static
 from django.shortcuts import redirect
 
 from mcp.views import mcp_endpoint
+from district.views_attachment_upload import attachment_upload_view
 
 def redirect_to_user_login(request):
     """Redirect /accounts/login/ to /user/settings/"""
@@ -42,6 +43,11 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('mcp', mcp_endpoint),
     path('mcp/', mcp_endpoint, name='mcp'),
+    path(
+        'uploads/attachments/<path:token>',
+        attachment_upload_view,
+        name='attachment-upload',
+    ),
     path('i18n/', include('django.conf.urls.i18n')),
     path('', include('pages.urls')),
     path('user/', include('user.urls')),

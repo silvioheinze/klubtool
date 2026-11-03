@@ -328,6 +328,7 @@ class McpMotionInquiryTests(TestCase):
             'upload_motion_attachment',
             'upload_inquiry_attachment',
             'upload_committee_meeting_attachment',
+            'create_committee_meeting_upload_url',
             'list_committees',
             'list_committee_meetings',
             'list_sessions',
@@ -993,6 +994,49 @@ class McpCommitteeMeetingAttachmentTests(TestCase):
         self.assertFalse(
             CommitteeMeetingAttachment.objects.filter(committee_meeting=self.meeting).exists()
         )
+
+    def test_create_upload_url_superuser_and_leader(self):
+        for token in (self.superuser_token, self.leader_token):
+            data, is_error = self._tool_call(
+                'create_committee_meeting_upload_url',
+                {
+                    'committee_meeting_id': self.meeting.pk,
+                    'filename': 'agenda.pdf',
+                    'file_type': 'agenda',
+                },
+                token,
+            )
+            self.assertFalse(is_error, data)
+            self.assertIn('upload_url', data)
+            self.assertEqual(data['method'], 'PUT')
+            self.assertEqual(data['expires_in'], 600)
+            self.assertEqual(data['max_bytes'], 25 * 1024 * 1024)
+            self.assertNotIn('content_base64', data)
+            self.assertNotIn('file_url', data)
+
+    def test_create_upload_url_outsider_denied(self):
+        data, is_error = self._tool_call(
+            'create_committee_meeting_upload_url',
+            {
+                'committee_meeting_id': self.meeting.pk,
+                'filename': 'agenda.pdf',
+            },
+            self.outsider_token,
+        )
+        self.assertTrue(is_error)
+        self.assertIn('permission', data['error'].lower())
+
+    def test_create_upload_url_invalid_extension(self):
+        data, is_error = self._tool_call(
+            'create_committee_meeting_upload_url',
+            {
+                'committee_meeting_id': self.meeting.pk,
+                'filename': 'bad.exe',
+            },
+            self.superuser_token,
+        )
+        self.assertTrue(is_error)
+        self.assertIn('not allowed', data['error'].lower())
 
 
 class McpFileUrlUploadTests(TestCase):
