@@ -2,11 +2,15 @@
 
 import base64
 import binascii
+import ipaddress
 import json
+import socket
 from datetime import datetime
+from urllib.parse import urljoin, urlparse
 
+import requests
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.db.models import Q
+from django.db.models import Case, IntegerField, Q, Value, When
 from django.http import QueryDict
 from django.utils import timezone
 
@@ -16,8 +20,10 @@ from district.forms import (
     SessionAttachmentForm,
 )
 from district.models import (
+    Committee,
     CommitteeMeeting,
     CommitteeMeetingAttachment,
+    CommitteeParticipationSubstitute,
     District,
     DistrictEvent,
     Session,
@@ -26,7 +32,9 @@ from district.models import (
 from district.views import (
     _can_user_edit_committee_meeting,
     _complete_committee_meeting_if_protocol_uploaded,
+    _get_user_accessible_council_ids,
     _invite_committee_meeting_if_invitation_uploaded,
+    user_can_delete_session_attachment,
     user_can_manage_district_events,
     user_is_district_member,
 )
@@ -35,8 +43,28 @@ from motion.forms import InquiryAttachmentForm, InquiryForm, MotionAttachmentFor
 from motion.models import Inquiry, InquiryAttachment, Motion, MotionAttachment
 from motion.views import (
     _get_user_accessible_group_ids,
+    user_can_delete_inquiry_attachment,
+    user_can_delete_motion_attachment,
     user_can_view_inquiry,
 )
+
+_ATTACHMENT_PARENT_TYPES = ('session', 'motion', 'inquiry', 'committee_meeting')
+_UPLOAD_MAX_BYTES_SESSION = 50 * 1024 * 1024
+_UPLOAD_MAX_BYTES_MOTION_INQUIRY = 10 * 1024 * 1024
+_FILE_URL_MAX_REDIRECTS = 5
+_FILE_URL_TIMEOUT_SECONDS = 60
+
+_UPLOAD_FILE_SOURCE_SCHEMA = {
+    'file_url': {
+        'type': 'string',
+        'format': 'uri',
+        'description': 'HTTPS URL; the server downloads the file (preferred for large files)',
+    },
+    'content_base64': {
+        'type': 'string',
+        'description': 'File content as base64 (optional data: URL prefix allowed); use file_url for large files',
+    },
+}
 
 
 class McpToolError(Exception):
@@ -274,13 +302,13 @@ def list_tools():
         },
         {
             'name': 'upload_session_attachment',
-            'description': 'Upload a file attachment to a council session (superuser only).',
+            'description': 'Upload a file attachment to a council session (superuser only). Provide file_url or content_base64.',
             'inputSchema': {
                 'type': 'object',
                 'properties': {
                     'session_id': {'type': 'integer'},
                     'filename': {'type': 'string', 'description': 'Original filename including extension'},
-                    'content_base64': {'type': 'string', 'description': 'File content as base64 (optional data: URL prefix allowed)'},
+                    **_UPLOAD_FILE_SOURCE_SCHEMA,
                     'file_type': {
                         'type': 'string',
                         'enum': ['agenda', 'budget', 'invitation', 'minutes', 'other'],
@@ -288,18 +316,18 @@ def list_tools():
                     },
                     'description': {'type': 'string'},
                 },
-                'required': ['session_id', 'filename', 'content_base64'],
+                'required': ['session_id', 'filename'],
             },
         },
         {
             'name': 'upload_motion_attachment',
-            'description': 'Upload a file attachment to a motion (same permissions as web upload).',
+            'description': 'Upload a file attachment to a motion (same permissions as web upload). Provide file_url or content_base64.',
             'inputSchema': {
                 'type': 'object',
                 'properties': {
                     'motion_id': {'type': 'integer'},
                     'filename': {'type': 'string'},
-                    'content_base64': {'type': 'string'},
+                    **_UPLOAD_FILE_SOURCE_SCHEMA,
                     'file_type': {
                         'type': 'string',
                         'enum': ['document', 'image', 'spreadsheet', 'presentation', 'other'],
@@ -307,18 +335,18 @@ def list_tools():
                     },
                     'description': {'type': 'string'},
                 },
-                'required': ['motion_id', 'filename', 'content_base64'],
+                'required': ['motion_id', 'filename'],
             },
         },
         {
             'name': 'upload_inquiry_attachment',
-            'description': 'Upload a file attachment to an inquiry (same permissions as web upload).',
+            'description': 'Upload a file attachment to an inquiry (same permissions as web upload). Provide file_url or content_base64.',
             'inputSchema': {
                 'type': 'object',
                 'properties': {
                     'inquiry_id': {'type': 'integer'},
                     'filename': {'type': 'string'},
-                    'content_base64': {'type': 'string'},
+                    **_UPLOAD_FILE_SOURCE_SCHEMA,
                     'file_type': {
                         'type': 'string',
                         'enum': ['document', 'image', 'spreadsheet', 'presentation', 'other'],
@@ -326,21 +354,22 @@ def list_tools():
                     },
                     'description': {'type': 'string'},
                 },
-                'required': ['inquiry_id', 'filename', 'content_base64'],
+                'required': ['inquiry_id', 'filename'],
             },
         },
         {
             'name': 'upload_committee_meeting_attachment',
             'description': (
                 'Upload a file attachment to a committee meeting '
-                '(same permissions as web upload: superuser or qualifying group leader).'
+                '(same permissions as web upload: superuser or qualifying group leader). '
+                'Provide file_url or content_base64.'
             ),
             'inputSchema': {
                 'type': 'object',
                 'properties': {
                     'committee_meeting_id': {'type': 'integer'},
                     'filename': {'type': 'string', 'description': 'Original filename including extension'},
-                    'content_base64': {'type': 'string', 'description': 'File content as base64 (optional data: URL prefix allowed)'},
+                    **_UPLOAD_FILE_SOURCE_SCHEMA,
                     'file_type': {
                         'type': 'string',
                         'enum': ['agenda', 'invitation', 'minutes', 'other'],
@@ -348,7 +377,89 @@ def list_tools():
                     },
                     'description': {'type': 'string'},
                 },
-                'required': ['committee_meeting_id', 'filename', 'content_base64'],
+                'required': ['committee_meeting_id', 'filename'],
+            },
+        },
+        {
+            'name': 'list_committees',
+            'description': 'List committees (Gremien) in a district with their ids.',
+            'inputSchema': {
+                'type': 'object',
+                'properties': {
+                    'district_id': {'type': 'integer', 'description': 'District primary key'},
+                },
+                'required': ['district_id'],
+            },
+        },
+        {
+            'name': 'list_committee_meetings',
+            'description': 'List committee meetings in a district, optionally filtered by committee and date range.',
+            'inputSchema': {
+                'type': 'object',
+                'properties': {
+                    'district_id': {'type': 'integer'},
+                    'committee_id': {'type': 'integer', 'description': 'Optional committee filter'},
+                    'from_date': {'type': 'string', 'description': 'Inclusive start date YYYY-MM-DD'},
+                    'to_date': {'type': 'string', 'description': 'Inclusive end date YYYY-MM-DD'},
+                },
+                'required': ['district_id'],
+            },
+        },
+        {
+            'name': 'list_sessions',
+            'description': 'List council sessions in a district, optionally filtered by date range.',
+            'inputSchema': {
+                'type': 'object',
+                'properties': {
+                    'district_id': {'type': 'integer'},
+                    'from_date': {'type': 'string', 'description': 'Inclusive start date YYYY-MM-DD'},
+                    'to_date': {'type': 'string', 'description': 'Inclusive end date YYYY-MM-DD'},
+                },
+                'required': ['district_id'],
+            },
+        },
+        {
+            'name': 'get_committee_meeting',
+            'description': 'Get committee meeting details: agenda, participants, attachments, and status.',
+            'inputSchema': {
+                'type': 'object',
+                'properties': {
+                    'id': {'type': 'integer', 'description': 'Committee meeting primary key'},
+                },
+                'required': ['id'],
+            },
+        },
+        {
+            'name': 'list_attachments',
+            'description': 'List file attachments for a session, motion, inquiry, or committee meeting.',
+            'inputSchema': {
+                'type': 'object',
+                'properties': {
+                    'parent_type': {
+                        'type': 'string',
+                        'enum': list(_ATTACHMENT_PARENT_TYPES),
+                    },
+                    'parent_id': {'type': 'integer'},
+                },
+                'required': ['parent_type', 'parent_id'],
+            },
+        },
+        {
+            'name': 'delete_attachment',
+            'description': (
+                'Permanently delete an attachment by id. Only call after explicit user confirmation. '
+                'Does not revert session or meeting status.'
+            ),
+            'inputSchema': {
+                'type': 'object',
+                'properties': {
+                    'parent_type': {
+                        'type': 'string',
+                        'enum': list(_ATTACHMENT_PARENT_TYPES),
+                    },
+                    'attachment_id': {'type': 'integer'},
+                },
+                'required': ['parent_type', 'attachment_id'],
             },
         },
     ]
@@ -662,23 +773,352 @@ def _decode_base64_content(content_base64):
         raise McpToolError('Invalid base64 content.') from exc
 
 
+def _is_blocked_ip(ip):
+    if ip.is_loopback or ip.is_private or ip.is_link_local or ip.is_reserved or ip.is_multicast:
+        return True
+    if ip.is_unspecified:
+        return True
+    return False
+
+
+def _ensure_file_url_host_allowed(hostname):
+    if not hostname:
+        raise McpToolError('Invalid file_url.')
+    try:
+        addr_infos = socket.getaddrinfo(hostname, None, type=socket.SOCK_STREAM)
+    except socket.gaierror as exc:
+        raise McpToolError(f'Could not resolve file_url host: {hostname}') from exc
+    if not addr_infos:
+        raise McpToolError(f'Could not resolve file_url host: {hostname}')
+    for info in addr_infos:
+        ip = ipaddress.ip_address(info[4][0])
+        if _is_blocked_ip(ip):
+            raise McpToolError('file_url host is not allowed.')
+
+
+def _validate_https_file_url(file_url):
+    if not file_url or not isinstance(file_url, str):
+        raise McpToolError('file_url is required.')
+    parsed = urlparse(file_url.strip())
+    if parsed.scheme != 'https':
+        raise McpToolError('file_url must use https.')
+    if parsed.username or parsed.password:
+        raise McpToolError('file_url must not contain credentials.')
+    if not parsed.hostname:
+        raise McpToolError('Invalid file_url.')
+    _ensure_file_url_host_allowed(parsed.hostname)
+    return file_url.strip()
+
+
+def _read_response_body_limited(response, max_bytes):
+    chunks = []
+    total = 0
+    for chunk in response.iter_content(chunk_size=65536):
+        if not chunk:
+            continue
+        total += len(chunk)
+        if total > max_bytes:
+            raise McpToolError(f'File exceeds maximum size of {max_bytes} bytes.')
+        chunks.append(chunk)
+    return b''.join(chunks)
+
+
+def _fetch_file_from_url(file_url, max_bytes):
+    url = _validate_https_file_url(file_url)
+    for _redirect in range(_FILE_URL_MAX_REDIRECTS + 1):
+        response = requests.get(
+            url,
+            allow_redirects=False,
+            timeout=_FILE_URL_TIMEOUT_SECONDS,
+            stream=True,
+        )
+        if response.status_code in (301, 302, 303, 307, 308):
+            location = response.headers.get('Location')
+            if not location:
+                raise McpToolError('Invalid redirect from file_url.')
+            url = urljoin(url, location)
+            continue
+        if response.status_code != 200:
+            raise McpToolError(f'file_url returned HTTP {response.status_code}.')
+        try:
+            return _read_response_body_limited(response, max_bytes)
+        finally:
+            response.close()
+    raise McpToolError('Too many redirects from file_url.')
+
+
+def _resolve_upload_content_bytes(arguments, max_bytes):
+    file_url = arguments.get('file_url')
+    content_base64 = arguments.get('content_base64')
+    has_url = bool(file_url and str(file_url).strip())
+    has_b64 = bool(content_base64 and str(content_base64).strip())
+    if has_url and has_b64:
+        raise McpToolError('Provide either file_url or content_base64, not both.')
+    if not has_url and not has_b64:
+        raise McpToolError('Either file_url or content_base64 is required.')
+    if has_url:
+        return _fetch_file_from_url(str(file_url).strip(), max_bytes)
+    content_bytes = _decode_base64_content(content_base64)
+    if len(content_bytes) > max_bytes:
+        raise McpToolError(f'File exceeds maximum size of {max_bytes} bytes.')
+    return content_bytes
+
+
 def _build_uploaded_file(filename, content_bytes):
     if not filename or not isinstance(filename, str):
         raise McpToolError('filename is required.')
     return SimpleUploadedFile(filename, content_bytes)
 
 
+def _attachment_file_size(attachment):
+    try:
+        return attachment.file.size
+    except (OSError, ValueError):
+        return None
+
+
 def _serialize_attachment(attachment, request=None):
     file_url = attachment.file.url
     if request is not None:
         file_url = request.build_absolute_uri(file_url)
-    return {
+    payload = {
         'id': attachment.pk,
         'filename': attachment.filename,
         'file_type': attachment.file_type,
         'description': attachment.description or '',
         'url': file_url,
+        'file_size': _attachment_file_size(attachment),
     }
+    return payload
+
+
+def _parse_date_filter(value, field_name):
+    if value is None or value == '':
+        return None
+    text = str(value).strip()
+    try:
+        return datetime.strptime(text, '%Y-%m-%d').date()
+    except ValueError as exc:
+        raise McpToolError(f'Invalid {field_name}: use YYYY-MM-DD.') from exc
+
+
+def _apply_scheduled_date_filters(queryset, arguments):
+    from_date = _parse_date_filter(arguments.get('from_date'), 'from_date')
+    to_date = _parse_date_filter(arguments.get('to_date'), 'to_date')
+    if from_date:
+        queryset = queryset.filter(scheduled_date__date__gte=from_date)
+    if to_date:
+        queryset = queryset.filter(scheduled_date__date__lte=to_date)
+    return queryset
+
+
+def _accessible_council_ids_in_district(user, district_id):
+    district = _get_district_or_error(user, district_id)
+    accessible = _get_user_accessible_council_ids(user)
+    if not accessible:
+        return set()
+    council = getattr(district, 'council', None)
+    if council is None or not council.is_active or council.pk not in accessible:
+        return set()
+    return {council.pk}
+
+
+def _validate_attachment_parent_type(parent_type):
+    if parent_type not in _ATTACHMENT_PARENT_TYPES:
+        raise McpToolError(
+            f'Invalid parent_type: {parent_type!r}. '
+            f'Use one of: {", ".join(_ATTACHMENT_PARENT_TYPES)}.'
+        )
+
+
+def _user_can_view_session(user, session):
+    if user.is_superuser:
+        return True
+    if session.council_id is None:
+        return False
+    return session.council_id in _get_user_accessible_council_ids(user)
+
+
+def _user_can_view_committee_meeting(user, meeting):
+    if user.is_superuser:
+        return True
+    council_id = (
+        CommitteeMeeting.objects.filter(pk=meeting.pk)
+        .values_list('committee__council_id', flat=True)
+        .first()
+    )
+    if council_id is None:
+        return False
+    return council_id in _get_user_accessible_council_ids(user)
+
+
+def _user_can_delete_committee_meeting_attachment(user, attachment):
+    if user.is_superuser or attachment.uploaded_by_id == user.pk:
+        return True
+    return _can_user_edit_committee_meeting(user, attachment.committee_meeting)
+
+
+def _serialize_committee_ref(committee):
+    return {
+        'id': committee.pk,
+        'name': committee.name,
+        'abbreviation': committee.abbreviation or '',
+    }
+
+
+def _serialize_committee_meeting_list_item(meeting, request=None):
+    return {
+        'id': meeting.pk,
+        'committee': _serialize_committee_ref(meeting.committee),
+        'scheduled_date': meeting.scheduled_date.isoformat(),
+        'location': meeting.location or '',
+        'status': meeting.status,
+        'attachments': [
+            _serialize_attachment(attachment, request)
+            for attachment in meeting.attachments.all()
+        ],
+    }
+
+
+def _serialize_session_list_item(session, request=None):
+    return {
+        'id': session.pk,
+        'title': session.title,
+        'scheduled_date': session.scheduled_date.isoformat(),
+        'location': session.location or '',
+        'status': session.status,
+        'attachments': [
+            _serialize_attachment(attachment, request)
+            for attachment in session.attachments.all()
+        ],
+    }
+
+
+def _serialize_committee_meeting_detail(meeting, request=None):
+    role_order = Case(
+        When(role='chairperson', then=Value(1)),
+        When(role='vice_chairperson', then=Value(2)),
+        When(role='member', then=Value(3)),
+        default=Value(4),
+        output_field=IntegerField(),
+    )
+    participants = list(
+        meeting.committee.members.filter(is_active=True)
+        .exclude(role='substitute_member')
+        .select_related('user')
+        .order_by(role_order, 'user__last_name', 'user__first_name')
+    )
+    substitute_map = {
+        sub.member_id: sub.substitute_member
+        for sub in CommitteeParticipationSubstitute.objects.filter(
+            committee_meeting=meeting,
+        ).select_related('substitute_member', 'substitute_member__user')
+    }
+    participant_payload = []
+    for member in participants:
+        substitute = substitute_map.get(member.pk)
+        user = member.user
+        entry = {
+            'member_id': member.pk,
+            'user_id': user.pk,
+            'name': user.get_full_name() or user.username,
+            'role': member.role,
+            'substitute': None,
+        }
+        if substitute is not None:
+            sub_user = substitute.user
+            entry['substitute'] = {
+                'member_id': substitute.pk,
+                'user_id': sub_user.pk,
+                'name': sub_user.get_full_name() or sub_user.username,
+            }
+        participant_payload.append(entry)
+    url = meeting.get_absolute_url()
+    if request is not None:
+        url = request.build_absolute_uri(url)
+    return {
+        'id': meeting.pk,
+        'title': meeting.title,
+        'committee': _serialize_committee_ref(meeting.committee),
+        'scheduled_date': meeting.scheduled_date.isoformat(),
+        'location': meeting.location or '',
+        'status': meeting.status,
+        'agenda': meeting.description or '',
+        'attachments': [
+            _serialize_attachment(attachment, request)
+            for attachment in meeting.attachments.all()
+        ],
+        'participants': participant_payload,
+        'url': url,
+    }
+
+
+def _list_attachments_for_parent(parent_type, parent_id, user, request):
+    _validate_attachment_parent_type(parent_type)
+    if parent_type == 'session':
+        session = _get_session_or_error(parent_id)
+        if not _user_can_view_session(user, session):
+            raise McpToolError('You do not have permission to view this session.')
+        attachments = session.attachments.all()
+    elif parent_type == 'motion':
+        motion = _get_motion_or_error(parent_id)
+        if not _user_can_view_motion(user, motion.pk):
+            raise McpToolError('You do not have permission to view this motion.')
+        attachments = motion.attachments.all()
+    elif parent_type == 'inquiry':
+        inquiry = _get_inquiry_or_error(parent_id)
+        if not user_can_view_inquiry(user, inquiry.pk):
+            raise McpToolError('You do not have permission to view this inquiry.')
+        attachments = inquiry.attachments.all()
+    else:
+        meeting = _get_committee_meeting_or_error(parent_id)
+        if not _user_can_view_committee_meeting(user, meeting):
+            raise McpToolError('You do not have permission to view this committee meeting.')
+        attachments = meeting.attachments.all()
+    return {
+        'parent_type': parent_type,
+        'parent_id': parent_id,
+        'attachments': [_serialize_attachment(a, request) for a in attachments],
+    }
+
+
+def _delete_attachment_by_type(parent_type, attachment_id, user, request):
+    _validate_attachment_parent_type(parent_type)
+    if parent_type == 'session':
+        try:
+            attachment = SessionAttachment.objects.select_related('session').get(pk=attachment_id)
+        except SessionAttachment.DoesNotExist as exc:
+            raise McpToolError(f'Attachment {attachment_id} not found.') from exc
+        if not user_can_delete_session_attachment(user, attachment):
+            raise McpToolError('You do not have permission to delete this attachment.')
+    elif parent_type == 'motion':
+        try:
+            attachment = MotionAttachment.objects.select_related('motion').get(pk=attachment_id)
+        except MotionAttachment.DoesNotExist as exc:
+            raise McpToolError(f'Attachment {attachment_id} not found.') from exc
+        if not user_can_delete_motion_attachment(user, attachment):
+            raise McpToolError('You do not have permission to delete this attachment.')
+    elif parent_type == 'inquiry':
+        try:
+            attachment = InquiryAttachment.objects.select_related('inquiry').get(pk=attachment_id)
+        except InquiryAttachment.DoesNotExist as exc:
+            raise McpToolError(f'Attachment {attachment_id} not found.') from exc
+        if not user_can_delete_inquiry_attachment(user, attachment):
+            raise McpToolError('You do not have permission to delete this attachment.')
+    else:
+        try:
+            attachment = CommitteeMeetingAttachment.objects.select_related(
+                'committee_meeting',
+            ).get(pk=attachment_id)
+        except CommitteeMeetingAttachment.DoesNotExist as exc:
+            raise McpToolError(f'Attachment {attachment_id} not found.') from exc
+        if not _user_can_delete_committee_meeting_attachment(user, attachment):
+            raise McpToolError('You do not have permission to delete this attachment.')
+    payload = _serialize_attachment(attachment, request)
+    if attachment.file:
+        attachment.file.delete(save=False)
+    attachment.delete()
+    return {'deleted': True, 'attachment': payload}
 
 
 def _user_can_upload_session_attachment(user):
@@ -732,7 +1172,7 @@ def _upload_session_attachment(arguments, user):
         SessionAttachment.ATTACHMENT_TYPE_CHOICES,
         'file_type',
     ) or 'other'
-    content_bytes = _decode_base64_content(arguments['content_base64'])
+    content_bytes = _resolve_upload_content_bytes(arguments, _UPLOAD_MAX_BYTES_SESSION)
     uploaded_file = _build_uploaded_file(arguments['filename'], content_bytes)
     form = SessionAttachmentForm(
         data={
@@ -758,7 +1198,7 @@ def _upload_motion_attachment(arguments, user):
         MotionAttachment.ATTACHMENT_TYPE_CHOICES,
         'file_type',
     ) or 'document'
-    content_bytes = _decode_base64_content(arguments['content_base64'])
+    content_bytes = _resolve_upload_content_bytes(arguments, _UPLOAD_MAX_BYTES_MOTION_INQUIRY)
     uploaded_file = _build_uploaded_file(arguments['filename'], content_bytes)
     form = MotionAttachmentForm(
         data={
@@ -784,7 +1224,7 @@ def _upload_inquiry_attachment(arguments, user):
         InquiryAttachment.ATTACHMENT_TYPE_CHOICES,
         'file_type',
     ) or 'document'
-    content_bytes = _decode_base64_content(arguments['content_base64'])
+    content_bytes = _resolve_upload_content_bytes(arguments, _UPLOAD_MAX_BYTES_MOTION_INQUIRY)
     uploaded_file = _build_uploaded_file(arguments['filename'], content_bytes)
     form = InquiryAttachmentForm(
         data={
@@ -810,7 +1250,7 @@ def _upload_committee_meeting_attachment(arguments, user):
         CommitteeMeetingAttachment.ATTACHMENT_TYPE_CHOICES,
         'file_type',
     ) or 'other'
-    content_bytes = _decode_base64_content(arguments['content_base64'])
+    content_bytes = _resolve_upload_content_bytes(arguments, _UPLOAD_MAX_BYTES_SESSION)
     uploaded_file = _build_uploaded_file(arguments['filename'], content_bytes)
     form = CommitteeMeetingAttachmentForm(
         data={
@@ -1172,6 +1612,106 @@ def call_tool(name, arguments, user, request=None):
             'committee_meeting_id': meeting.pk,
             'meeting_status': meeting.status,
         }
+
+    if name == 'list_committees':
+        district = _get_district_or_error(user, arguments['district_id'])
+        council_ids = _accessible_council_ids_in_district(user, district.pk)
+        if not council_ids:
+            return {'committees': []}
+        committees = (
+            Committee.objects.filter(council_id__in=council_ids, is_active=True)
+            .order_by('name')
+        )
+        return {
+            'committees': [
+                {
+                    'id': committee.pk,
+                    'name': committee.name,
+                    'abbreviation': committee.abbreviation or '',
+                    'committee_type': committee.committee_type,
+                }
+                for committee in committees
+            ],
+        }
+
+    if name == 'list_committee_meetings':
+        district = _get_district_or_error(user, arguments['district_id'])
+        council_ids = _accessible_council_ids_in_district(user, district.pk)
+        if not council_ids:
+            return {'committee_meetings': []}
+        queryset = (
+            CommitteeMeeting.objects.filter(
+                committee__council_id__in=council_ids,
+                is_active=True,
+            )
+            .select_related('committee')
+            .prefetch_related('attachments')
+            .order_by('-scheduled_date')
+        )
+        if arguments.get('committee_id') is not None:
+            committee_id = arguments['committee_id']
+            if not Committee.objects.filter(
+                pk=committee_id,
+                council_id__in=council_ids,
+                is_active=True,
+            ).exists():
+                raise McpToolError(f'Committee {committee_id} not found in this district.')
+            queryset = queryset.filter(committee_id=committee_id)
+        queryset = _apply_scheduled_date_filters(queryset, arguments)
+        return {
+            'committee_meetings': [
+                _serialize_committee_meeting_list_item(meeting, request)
+                for meeting in queryset
+            ],
+        }
+
+    if name == 'list_sessions':
+        district = _get_district_or_error(user, arguments['district_id'])
+        council_ids = _accessible_council_ids_in_district(user, district.pk)
+        if not council_ids:
+            return {'sessions': []}
+        queryset = (
+            Session.objects.filter(council_id__in=council_ids, is_active=True)
+            .prefetch_related('attachments')
+            .order_by('-scheduled_date')
+        )
+        queryset = _apply_scheduled_date_filters(queryset, arguments)
+        return {
+            'sessions': [
+                _serialize_session_list_item(session, request)
+                for session in queryset
+            ],
+        }
+
+    if name == 'get_committee_meeting':
+        meeting = _get_committee_meeting_or_error(arguments['id'])
+        if not meeting.is_active:
+            raise McpToolError(f'Committee meeting {arguments["id"]} not found.')
+        if not _user_can_view_committee_meeting(user, meeting):
+            raise McpToolError('You do not have permission to view this committee meeting.')
+        meeting = (
+            CommitteeMeeting.objects.filter(pk=meeting.pk)
+            .select_related('committee')
+            .prefetch_related('attachments')
+            .get()
+        )
+        return {'committee_meeting': _serialize_committee_meeting_detail(meeting, request)}
+
+    if name == 'list_attachments':
+        return _list_attachments_for_parent(
+            arguments['parent_type'],
+            arguments['parent_id'],
+            user,
+            request,
+        )
+
+    if name == 'delete_attachment':
+        return _delete_attachment_by_type(
+            arguments['parent_type'],
+            arguments['attachment_id'],
+            user,
+            request,
+        )
 
     raise McpToolError(f'Unknown tool: {name}')
 

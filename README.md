@@ -315,8 +315,15 @@ For local development the app still listens on HTTP; Settings always shows `http
 | `upload_session_attachment` | Upload file to session (superuser only; max 50 MB) |
 | `upload_motion_attachment` | Upload file to motion (superuser, `motion.attach`, or group member) |
 | `upload_inquiry_attachment` | Upload file to inquiry (same permissions as motion attachments) |
+| `upload_committee_meeting_attachment` | Upload file to committee meeting (superuser or qualifying group leader; max 50 MB) |
+| `list_committees` | List committees in a district (`id`, name, abbreviation) |
+| `list_committee_meetings` | List committee meetings with optional committee and date filters |
+| `list_sessions` | List council sessions in a district with optional date filters |
+| `get_committee_meeting` | Committee meeting details (agenda, participants, attachments, status) |
+| `list_attachments` | List attachments for a session, motion, inquiry, or committee meeting |
+| `delete_attachment` | Delete an attachment (same rules as web; confirm with user first) |
 
-`get_motion` and `get_inquiry` include an `attachments` array (`id`, `filename`, `file_type`, `url`).
+`get_motion` and `get_inquiry` include an `attachments` array (`id`, `filename`, `file_type`, `url`, `file_size`). Upload tools return the same attachment fields.
 
 Example `create_district_event` arguments:
 
@@ -362,19 +369,32 @@ Example `create_motion` arguments:
 
 `group_id` is optional when the user belongs to a group (defaults to the first accessible group). On create, motions are always saved as `draft` and do not accept `intervention_ids` (Wortmeldung); use `update_motion` with `intervention_ids` to set speakers after creation.
 
-Example `upload_motion_attachment` arguments (file content as base64; optional `data:` URL prefix is stripped):
+Example `upload_motion_attachment` with `file_url` (preferred for large files; server downloads via HTTPS):
 
 ```json
 {
   "motion_id": 42,
   "filename": "agenda.pdf",
-  "content_base64": "JVBERi0xLjQK...",
+  "file_url": "https://example.com/files/agenda.pdf",
   "file_type": "document",
   "description": "Supporting document"
 }
 ```
 
-Allowed extensions: `.pdf`, `.doc`, `.docx`, `.txt`, `.jpg`, `.jpeg`, `.png`, `.gif`, `.xls`, `.xlsx`, `.ppt`, `.pptx`. Motion and inquiry uploads are limited to 10 MB; session uploads to 50 MB.
+Alternatively use `content_base64` (optional `data:` URL prefix is stripped) for small files.
+
+Example `list_committee_meetings` arguments:
+
+```json
+{
+  "district_id": 1,
+  "committee_id": 3,
+  "from_date": "2026-10-01",
+  "to_date": "2026-10-31"
+}
+```
+
+Allowed extensions: `.pdf`, `.doc`, `.docx`, `.txt`, `.jpg`, `.jpeg`, `.png`, `.gif`, `.xls`, `.xlsx`, `.ppt`, `.pptx`. Motion and inquiry uploads are limited to 10 MB; session and committee meeting uploads to 50 MB.
 
 ## 🛠️ Development
 
