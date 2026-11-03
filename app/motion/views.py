@@ -225,6 +225,136 @@ def can_change_inquiry_status(user, inquiry):
     return inquiry.group.can_user_manage_group(user)
 
 
+def motion_status_requires_votes(status):
+    """Return True if the given target status requires party vote counts."""
+    return status in ['approved', 'rejected', 'refer_to_committee', 'voted_in_committee']
+
+
+def party_seat_map_for_motion(motion):
+    """Map party PK to max seats for the motion session's term."""
+    from district.models import Term, TermSeatDistribution
+
+    session = motion.session
+    term = session.term
+    if not term and session.council and session.council.district:
+        today = timezone.now().date()
+        term = Term.objects.filter(
+            start_date__lte=today,
+            end_date__gte=today,
+            is_active=True,
+        ).first()
+    if not term:
+        return {}
+    seat_distributions = TermSeatDistribution.objects.filter(
+        term=term,
+        party__district=session.council.district,
+        party__is_active=True,
+    ).select_related('party')
+    return {dist.party.pk: dist.seats for dist in seat_distributions}
+
+
+def record_motion_status_change(
+    *,
+    motion,
+    initial_status,
+    changed_by,
+    reason='',
+    committee=None,
+    session=None,
+    vote_formset=None,
+    answer_files=None,
+):
+    """
+    Apply a motion status change and optionally persist votes from a validated formset.
+    Returns dict with new_status, refer_no_majority (bool), and votes_created (int).
+    """
+    import logging
+
+    logger = logging.getLogger(__name__)
+    requires_votes = motion_status_requires_votes(initial_status)
+    new_status = initial_status
+    reason = (reason or '').strip()
+
+    if initial_status == 'refer_to_committee' and requires_votes and vote_formset is not None:
+        total_approve = 0
+        total_reject = 0
+        for vote_form in vote_formset:
+            if vote_form.cleaned_data and not vote_form.cleaned_data.get('DELETE', False):
+                total_approve += (vote_form.cleaned_data.get('approve_votes') or 0)
+                total_reject += (vote_form.cleaned_data.get('reject_votes') or 0)
+        if total_approve <= total_reject:
+            new_status = 'refer_no_majority'
+            reason_note = _(
+                'Referral to committee rejected – no majority (in favor: %(approve)s, against: %(reject)s).'
+            ) % {
+                'approve': total_approve,
+                'reject': total_reject,
+            }
+            reason = f"{reason_note}\n{reason}" if reason else reason_note
+            committee = None
+            logger.info(
+                'Refer to committee: no majority (approve=%s, reject=%s). Setting status to refer_no_majority.',
+                total_approve,
+                total_reject,
+            )
+
+    motion._status_changed_by = changed_by
+    motion._status_change_reason = reason
+    motion._status_committee = committee
+    motion._status_session = session
+    motion.status = new_status
+
+    if new_status in ['refer_to_committee', 'voted_in_committee'] and committee:
+        motion.committee = committee
+    if new_status == 'tabled' and session:
+        motion.session = session
+
+    motion.save()
+
+    status_entry = (
+        MotionStatus.objects.filter(motion_id=motion.pk)
+        .order_by('-changed_at')
+        .first()
+    )
+
+    if new_status == 'answered' and answer_files and status_entry:
+        _save_motion_status_answer_files(status_entry, answer_files)
+
+    votes_created = 0
+    if new_status in ['approved', 'rejected', 'refer_to_committee', 'refer_no_majority', 'voted_in_committee']:
+        if status_entry is None:
+            logger.error(
+                'Status entry was not created for motion %s with status %s',
+                motion.pk,
+                new_status,
+            )
+        elif vote_formset is not None:
+            logger.info('Creating votes for status entry %s', status_entry.pk)
+            for vote_form in vote_formset:
+                if vote_form.cleaned_data and not vote_form.cleaned_data.get('DELETE', False):
+                    party = vote_form.cleaned_data.get('party')
+                    approve_votes = vote_form.cleaned_data.get('approve_votes', 0) or 0
+                    reject_votes = vote_form.cleaned_data.get('reject_votes', 0) or 0
+                    notes = vote_form.cleaned_data.get('notes', '')
+                    if (approve_votes > 0 or reject_votes > 0) and party:
+                        MotionVote.objects.create(
+                            motion=motion,
+                            party=party,
+                            status=status_entry,
+                            approve_votes=approve_votes,
+                            reject_votes=reject_votes,
+                            notes=notes,
+                        )
+                        votes_created += 1
+            logger.info('Created %s votes for status change', votes_created)
+
+    return {
+        'new_status': new_status,
+        'refer_no_majority': new_status == 'refer_no_majority',
+        'votes_created': votes_created,
+    }
+
+
 class MotionListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
     """View for listing all Motion objects"""
     model = Motion
@@ -1046,106 +1176,20 @@ def motion_status_change_view(request, pk):
         
         if form_valid and vote_formset_valid:
             logger.info(f"Form and formset are valid. Proceeding with status change to: {initial_status}")
-            
-            # Get the new status (use locked_status to ensure it matches query parameter)
-            new_status = initial_status
-            reason = form.cleaned_data.get('reason', '')
-            committee = form.cleaned_data.get('committee')
-            session = form.cleaned_data.get('session')
-            
-            # For "refer to committee": check majority (approve > reject); if no majority, record in log but don't refer
-            if initial_status == 'refer_to_committee' and requires_votes:
-                total_approve = 0
-                total_reject = 0
-                for vote_form in vote_formset:
-                    if vote_form.cleaned_data and not vote_form.cleaned_data.get('DELETE', False):
-                        total_approve += (vote_form.cleaned_data.get('approve_votes') or 0)
-                        total_reject += (vote_form.cleaned_data.get('reject_votes') or 0)
-                if total_approve <= total_reject:
-                    # No majority for referral: record in status log, don't refer
-                    new_status = 'refer_no_majority'
-                    reason = (reason or '').strip()
-                    reason_note = _('Referral to committee rejected – no majority (in favor: %(approve)s, against: %(reject)s).') % {
-                        'approve': total_approve,
-                        'reject': total_reject,
-                    }
-                    reason = f"{reason_note}\n{reason}" if reason else reason_note
-                    committee = None  # Don't set committee
-                    logger.info(f"Refer to committee: no majority (approve={total_approve}, reject={total_reject}). Setting status to refer_no_majority.")
-            
-            # Debug logging
-            logger.info(f"Saving status change: status={new_status}, reason={reason}, committee={committee}, session={session}")
-            logger.info(f"Current motion status: {motion.status}")
-            
-            # Set attributes for the save method to use
-            motion._status_changed_by = request.user
-            motion._status_change_reason = reason
-            motion._status_committee = committee
-            motion._status_session = session
-            
-            # Update the motion status
-            old_status = motion.status
-            motion.status = new_status
-            
-            # If status is 'refer_to_committee' or 'voted_in_committee', also update the motion's committee (not for refer_no_majority)
-            if new_status in ['refer_to_committee', 'voted_in_committee'] and committee:
-                motion.committee = committee
-            
-            # If status is 'tabled' and session is provided, update the motion's session
-            if new_status == 'tabled' and session:
-                motion.session = session
-            
-            # Save the motion (this will trigger the save method which creates the status history entry)
-            motion.save()
-            
-            logger.debug(f"Motion saved. Old status: {old_status}, New status: {motion.status}")
-            
-            if new_status == 'answered':
-                status_entry = motion.status_history.first()
-                answer_files = form.cleaned_data.get('answer_files', [])
-                if status_entry and answer_files:
-                    _save_motion_status_answer_files(status_entry, answer_files)
-                    logger.info(
-                        "Saved %s answer file(s) to status entry %s",
-                        len(answer_files),
-                        status_entry.pk,
-                    )
-            
-            # Process vote formset if status requires voting (including refer_no_majority so votes are recorded)
-            if new_status in ['approved', 'rejected', 'refer_to_committee', 'refer_no_majority', 'voted_in_committee']:
-                # Get the status entry that was just created
-                status_entry = motion.status_history.first()
-                
-                if not status_entry:
-                    logger.error(f"Status entry was not created for motion {motion.pk} with status {new_status}")
-                    messages.error(request, "Status was updated but status history entry was not created. Please check the logs.")
-                else:
-                    logger.info(f"Creating votes for status entry {status_entry.pk}")
-                    votes_created = 0
-                for vote_form in vote_formset:
-                    if vote_form.cleaned_data and not vote_form.cleaned_data.get('DELETE', False):
-                        party = vote_form.cleaned_data.get('party')
-                        approve_votes = vote_form.cleaned_data.get('approve_votes', 0) or 0
-                        reject_votes = vote_form.cleaned_data.get('reject_votes', 0) or 0
-                        notes = vote_form.cleaned_data.get('notes', '')
-                        
-                        # Only create vote if there are actual votes (approve or reject > 0) and party is set
-                        if (approve_votes > 0 or reject_votes > 0) and party:
-                            MotionVote.objects.create(
-                                motion=motion,
-                                party=party,
-                                status=status_entry,
-                                approve_votes=approve_votes,
-                                reject_votes=reject_votes,
-                                notes=notes
-                            )
-                            votes_created += 1
-                            logger.info(f"Created vote for party {party.name}: approve={approve_votes}, reject={reject_votes}")
-                        elif (approve_votes > 0 or reject_votes > 0) and not party:
-                            logger.warning(f"Skipping vote creation: votes entered but no party set (approve={approve_votes}, reject={reject_votes})")
-                    
-                    logger.info(f"Created {votes_created} votes for status change")
-            
+
+            result = record_motion_status_change(
+                motion=motion,
+                initial_status=initial_status,
+                changed_by=request.user,
+                reason=form.cleaned_data.get('reason', ''),
+                committee=form.cleaned_data.get('committee'),
+                session=form.cleaned_data.get('session'),
+                vote_formset=vote_formset if requires_votes else None,
+                answer_files=form.cleaned_data.get('answer_files'),
+            )
+            new_status = result['new_status']
+            motion.refresh_from_db()
+
             # Create success message
             if new_status == 'refer_no_majority':
                 messages.warning(

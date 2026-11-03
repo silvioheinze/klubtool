@@ -10,7 +10,7 @@ from urllib.parse import urljoin, urlparse
 
 import requests
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.db.models import Case, IntegerField, Q, Value, When
+from django.db.models import Case, IntegerField, Prefetch, Q, Value, When
 from django.http import QueryDict
 from django.utils import timezone
 
@@ -28,6 +28,7 @@ from district.models import (
     District,
     DistrictEvent,
     DistrictEventAttachment,
+    Party,
     Session,
     SessionAttachment,
 )
@@ -55,10 +56,21 @@ from district.views import (
     user_is_district_member,
 )
 from group.models import Group
-from motion.forms import InquiryAttachmentForm, InquiryForm, MotionAttachmentForm, MotionForm
-from motion.models import Inquiry, InquiryAttachment, Motion, MotionAttachment
+from motion.forms import (
+    InquiryAttachmentForm,
+    InquiryForm,
+    MotionAttachmentForm,
+    MotionForm,
+    MotionStatusForm,
+    MotionVoteFormSetFactory,
+)
+from motion.models import Inquiry, InquiryAttachment, Motion, MotionAttachment, MotionStatus
 from motion.views import (
     _get_user_accessible_group_ids,
+    can_change_motion_status,
+    motion_status_requires_votes,
+    party_seat_map_for_motion,
+    record_motion_status_change,
     user_can_delete_inquiry_attachment,
     user_can_delete_motion_attachment,
     user_can_upload_inquiry_attachment,
@@ -247,7 +259,11 @@ def list_tools():
         },
         {
             'name': 'update_motion',
-            'description': 'Update a motion. Omitted fields stay unchanged; status cannot be changed.',
+            'description': (
+                'Update a motion. Omitted fields stay unchanged. '
+                'Optional status_change records committee assignment and voting results '
+                '(same rules as the web status-change form; requires status-change permission).'
+            ),
             'inputSchema': {
                 'type': 'object',
                 'properties': {
@@ -266,6 +282,44 @@ def list_tools():
                         'description': 'User PKs of group members (Wortmeldung)',
                     },
                     'tags': {'type': 'array', 'items': {'type': 'string'}},
+                    'status_change': {
+                        'type': 'object',
+                        'description': 'Optional status change with committee assignment and votes',
+                        'properties': {
+                            'status': {
+                                'type': 'string',
+                                'enum': [
+                                    'refer_to_committee',
+                                    'voted_in_committee',
+                                    'approved',
+                                    'rejected',
+                                ],
+                            },
+                            'committee_id': {
+                                'type': 'integer',
+                                'description': 'Required for refer_to_committee and voted_in_committee',
+                            },
+                            'reason': {'type': 'string'},
+                            'votes': {
+                                'type': 'array',
+                                'items': {
+                                    'type': 'object',
+                                    'properties': {
+                                        'party_id': {'type': 'integer'},
+                                        'approve_votes': {'type': 'integer'},
+                                        'reject_votes': {'type': 'integer'},
+                                        'notes': {'type': 'string'},
+                                    },
+                                    'required': ['party_id'],
+                                },
+                                'description': (
+                                    'Party vote counts; required for approved, rejected, '
+                                    'refer_to_committee, and voted_in_committee'
+                                ),
+                            },
+                        },
+                        'required': ['status'],
+                    },
                 },
                 'required': ['motion_id'],
             },
@@ -1516,11 +1570,43 @@ def _upload_committee_meeting_attachment(arguments, user):
     return attachment, meeting
 
 
-def _serialize_motion(motion, request=None):
+_MOTION_MCP_STATUS_CHANGE_STATUSES = frozenset({
+    'refer_to_committee',
+    'voted_in_committee',
+    'approved',
+    'rejected',
+})
+
+
+def _serialize_motion_status_vote(vote):
+    return {
+        'party_id': vote.party_id,
+        'approve_votes': vote.approve_votes,
+        'reject_votes': vote.reject_votes,
+        'notes': vote.notes,
+    }
+
+
+def _serialize_motion_status_entry(status_entry):
+    return {
+        'id': status_entry.pk,
+        'status': status_entry.status,
+        'committee_id': status_entry.committee_id,
+        'session_id': status_entry.session_id,
+        'reason': status_entry.reason,
+        'changed_at': status_entry.changed_at.isoformat(),
+        'votes': [
+            _serialize_motion_status_vote(vote)
+            for vote in status_entry.votes.all()
+        ],
+    }
+
+
+def _serialize_motion(motion, request=None, *, include_status_history=False):
     url = motion.get_absolute_url()
     if request is not None:
         url = request.build_absolute_uri(url)
-    return {
+    payload = {
         'id': motion.pk,
         'title': motion.title,
         'text': motion.text,
@@ -1539,6 +1625,95 @@ def _serialize_motion(motion, request=None):
         ],
         'url': url,
     }
+    if include_status_history:
+        payload['status_history'] = [
+            _serialize_motion_status_entry(entry)
+            for entry in motion.status_history.all()
+        ]
+    return payload
+
+
+def _build_motion_vote_formset_from_mcp(motion, votes, party_seat_map):
+    post = QueryDict(mutable=True)
+    post['form-TOTAL_FORMS'] = str(len(votes))
+    post['form-INITIAL_FORMS'] = '0'
+    post['form-MIN_NUM_FORMS'] = '0'
+    post['form-MAX_NUM_FORMS'] = '1000'
+    initial = []
+    district_id = motion.session.council.district_id
+    for index, vote in enumerate(votes):
+        party_id = vote['party_id']
+        if not Party.objects.filter(pk=party_id, district_id=district_id, is_active=True).exists():
+            raise McpToolError(f'Party {party_id} is not valid for this motion session.')
+        post[f'form-{index}-party'] = str(party_id)
+        post[f'form-{index}-approve_votes'] = str(vote.get('approve_votes', 0))
+        post[f'form-{index}-reject_votes'] = str(vote.get('reject_votes', 0))
+        post[f'form-{index}-notes'] = vote.get('notes', '')
+        initial.append({'party': party_id})
+    return MotionVoteFormSetFactory(
+        post,
+        motion=motion,
+        initial=initial,
+        party_seat_map=party_seat_map,
+    )
+
+
+def _apply_motion_status_change(motion, user, status_change):
+    if not isinstance(status_change, dict):
+        raise McpToolError('status_change must be an object.')
+    if not can_change_motion_status(user, motion):
+        raise McpToolError('You do not have permission to change this motion status.')
+
+    status = status_change.get('status')
+    if status not in _MOTION_MCP_STATUS_CHANGE_STATUSES:
+        raise McpToolError(
+            f'Invalid status_change.status: {status!r}. '
+            f'Allowed: {", ".join(sorted(_MOTION_MCP_STATUS_CHANGE_STATUSES))}.'
+        )
+
+    form_data = QueryDict(mutable=True)
+    form_data['status'] = status
+    form_data['reason'] = status_change.get('reason', '')
+    committee_id = status_change.get('committee_id')
+    if committee_id is not None:
+        form_data['committee'] = str(committee_id)
+    else:
+        form_data['committee'] = ''
+
+    form = MotionStatusForm(
+        data=form_data,
+        motion=motion,
+        changed_by=user,
+        locked_status=status,
+    )
+    if not form.is_valid():
+        raise McpToolError(json.dumps(form.errors, ensure_ascii=False))
+
+    vote_formset = None
+    if motion_status_requires_votes(status):
+        votes = status_change.get('votes')
+        if not votes:
+            raise McpToolError('status_change.votes is required for this status.')
+        party_seat_map = party_seat_map_for_motion(motion)
+        vote_formset = _build_motion_vote_formset_from_mcp(motion, votes, party_seat_map)
+        if not vote_formset.is_valid():
+            errors = {
+                '__all__': list(vote_formset.non_form_errors()),
+            }
+            for index, vote_form in enumerate(vote_formset):
+                if vote_form.errors:
+                    errors[f'votes[{index}]'] = vote_form.errors
+            raise McpToolError(json.dumps(errors, ensure_ascii=False))
+
+    record_motion_status_change(
+        motion=motion,
+        initial_status=status,
+        changed_by=user,
+        reason=form.cleaned_data.get('reason', ''),
+        committee=form.cleaned_data.get('committee'),
+        session=form.cleaned_data.get('session'),
+        vote_formset=vote_formset,
+    )
 
 
 def _serialize_inquiry(inquiry, request=None):
@@ -1704,7 +1879,16 @@ def _get_motion_or_error(motion_id):
         return Motion.objects.select_related(
             'session', 'group', 'committee',
         ).prefetch_related(
-            'parties', 'interventions', 'tags', 'attachments',
+            'parties',
+            'interventions',
+            'tags',
+            'attachments',
+            Prefetch(
+                'status_history',
+                queryset=MotionStatus.objects.select_related(
+                    'committee', 'session',
+                ).prefetch_related('votes').order_by('-changed_at'),
+            ),
         ).get(pk=motion_id)
     except Motion.DoesNotExist as exc:
         raise McpToolError(f'Motion {motion_id} not found.') from exc
@@ -1807,7 +1991,7 @@ def call_tool(name, arguments, user, request=None):
         motion = _get_motion_or_error(arguments['motion_id'])
         if not _user_can_view_motion(user, motion.pk):
             raise McpToolError('You do not have permission to view this motion.')
-        return {'motion': _serialize_motion(motion, request)}
+        return {'motion': _serialize_motion(motion, request, include_status_history=True)}
 
     if name == 'list_inquiries':
         _require_list_motions_or_inquiries(user)
@@ -1838,9 +2022,15 @@ def call_tool(name, arguments, user, request=None):
         motion = _get_motion_or_error(arguments['motion_id'])
         if not _user_can_update_motion(user, motion):
             raise McpToolError('You do not have permission to update this motion.')
+        if 'status_change' in arguments and arguments['status_change'] is not None:
+            if not can_change_motion_status(user, motion):
+                raise McpToolError('You do not have permission to change this motion status.')
         form = _validate_motion_form(arguments, user, instance=motion)
         motion = form.save()
-        return {'motion': _serialize_motion(motion, request)}
+        if 'status_change' in arguments and arguments['status_change'] is not None:
+            _apply_motion_status_change(motion, user, arguments['status_change'])
+            motion = _get_motion_or_error(motion.pk)
+        return {'motion': _serialize_motion(motion, request, include_status_history=True)}
 
     if name == 'get_inquiry':
         inquiry = _get_inquiry_or_error(arguments['inquiry_id'])
