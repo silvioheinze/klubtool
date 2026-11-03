@@ -2,7 +2,8 @@
 
 import base64
 import json
-from datetime import timedelta
+from datetime import datetime, timedelta
+from unittest.mock import MagicMock, patch
 
 from django.contrib.auth import get_user_model
 from django.test import Client, TestCase
@@ -327,6 +328,12 @@ class McpMotionInquiryTests(TestCase):
             'upload_motion_attachment',
             'upload_inquiry_attachment',
             'upload_committee_meeting_attachment',
+            'list_committees',
+            'list_committee_meetings',
+            'list_sessions',
+            'get_committee_meeting',
+            'list_attachments',
+            'delete_attachment',
         ):
             self.assertIn(tool_name, names)
 
@@ -986,6 +993,420 @@ class McpCommitteeMeetingAttachmentTests(TestCase):
         self.assertFalse(
             CommitteeMeetingAttachment.objects.filter(committee_meeting=self.meeting).exists()
         )
+
+
+class McpFileUrlUploadTests(TestCase):
+    """MCP uploads via file_url with SSRF checks."""
+
+    PDF_BYTES = b'%PDF-1.4 url upload'
+
+    def setUp(self):
+        self.client = Client()
+        self.member = User.objects.create_user(
+            username='url_member',
+            email='url_member@example.com',
+            password='memberpass123',
+        )
+        self.district = District.objects.create(
+            name='URL MCP District',
+            code='URLD',
+            description='Test',
+            is_active=True,
+        )
+        self.party = Party.objects.create(name='URL Party', district=self.district, is_active=True)
+        self.group = Group.objects.create(name='URL Group', party=self.party, is_active=True)
+        GroupMember.objects.create(user=self.member, group=self.group, is_active=True)
+        self.council, _ = Council.objects.get_or_create(
+            district=self.district,
+            defaults={'name': 'URL Council', 'is_active': True},
+        )
+        self.term = Term.objects.create(
+            name='URL Term',
+            start_date=timezone.now().date(),
+            end_date=(timezone.now() + timedelta(days=365)).date(),
+        )
+        self.session = Session.objects.create(
+            title='URL Session',
+            council=self.council,
+            term=self.term,
+            scheduled_date=timezone.now() + timedelta(days=5),
+            is_active=True,
+        )
+        self.motion = Motion.objects.create(
+            title='URL Motion',
+            text='Body',
+            session=self.session,
+            group=self.group,
+            submitted_by=self.member,
+            status='draft',
+        )
+        _, self.member_token = McpToken.create_token(self.member)
+
+    def _tool_call(self, name, arguments, token):
+        payload = {
+            'jsonrpc': '2.0',
+            'id': 1,
+            'method': 'tools/call',
+            'params': {'name': name, 'arguments': arguments},
+        }
+        response = self.client.post(
+            reverse('mcp'),
+            data=json.dumps(payload),
+            content_type='application/json',
+            HTTP_AUTHORIZATION=f'Bearer {token}',
+        )
+        self.assertEqual(response.status_code, 200, response.content)
+        body = response.json()
+        result = body['result']
+        text = result['content'][0]['text']
+        return json.loads(text), result.get('isError', False)
+
+    def _mock_response(self, content, status_code=200):
+        response = MagicMock()
+        response.status_code = status_code
+        response.headers = {}
+        response.iter_content = lambda chunk_size: [content]
+        response.close = MagicMock()
+        return response
+
+    @patch('mcp.tools._ensure_file_url_host_allowed')
+    @patch('mcp.tools.requests.get')
+    def test_upload_motion_via_file_url_returns_file_size(self, mock_get, _mock_host_ok):
+        mock_get.return_value = self._mock_response(self.PDF_BYTES)
+        data, is_error = self._tool_call(
+            'upload_motion_attachment',
+            {
+                'motion_id': self.motion.pk,
+                'filename': 'from-url.pdf',
+                'file_url': 'https://files.example.com/doc.pdf',
+            },
+            self.member_token,
+        )
+        self.assertFalse(is_error)
+        self.assertEqual(data['attachment']['filename'], 'from-url.pdf')
+        self.assertEqual(data['attachment']['file_size'], len(self.PDF_BYTES))
+        mock_get.assert_called_once()
+
+    def test_rejects_http_file_url(self):
+        data, is_error = self._tool_call(
+            'upload_motion_attachment',
+            {
+                'motion_id': self.motion.pk,
+                'filename': 'bad.pdf',
+                'file_url': 'http://files.example.com/doc.pdf',
+            },
+            self.member_token,
+        )
+        self.assertTrue(is_error)
+        self.assertIn('https', data['error'].lower())
+
+    def test_rejects_loopback_file_url_host(self):
+        data, is_error = self._tool_call(
+            'upload_motion_attachment',
+            {
+                'motion_id': self.motion.pk,
+                'filename': 'bad.pdf',
+                'file_url': 'https://127.0.0.1/secret.pdf',
+            },
+            self.member_token,
+        )
+        self.assertTrue(is_error)
+        self.assertIn('not allowed', data['error'].lower())
+
+    def test_rejects_both_file_url_and_base64(self):
+        data, is_error = self._tool_call(
+            'upload_motion_attachment',
+            {
+                'motion_id': self.motion.pk,
+                'filename': 'bad.pdf',
+                'file_url': 'https://files.example.com/doc.pdf',
+                'content_base64': base64.b64encode(self.PDF_BYTES).decode('ascii'),
+            },
+            self.member_token,
+        )
+        self.assertTrue(is_error)
+        self.assertIn('not both', data['error'].lower())
+
+    def test_requires_file_source(self):
+        data, is_error = self._tool_call(
+            'upload_motion_attachment',
+            {
+                'motion_id': self.motion.pk,
+                'filename': 'bad.pdf',
+            },
+            self.member_token,
+        )
+        self.assertTrue(is_error)
+        self.assertIn('required', data['error'].lower())
+
+
+class McpDistrictSessionCommitteeListTests(TestCase):
+    """MCP list/get tools for committees, meetings, and sessions."""
+
+    def setUp(self):
+        self.client = Client()
+        self.member = User.objects.create_user(
+            username='list_member',
+            email='list_member@example.com',
+            password='memberpass123',
+        )
+        self.outsider = User.objects.create_user(
+            username='list_outsider',
+            email='list_outsider@example.com',
+            password='outsiderpass123',
+        )
+        self.district = District.objects.create(
+            name='List MCP District',
+            code='LMD',
+            description='Test',
+            is_active=True,
+        )
+        self.other_district = District.objects.create(
+            name='Other District',
+            code='OTH',
+            description='Other',
+            is_active=True,
+        )
+        self.party = Party.objects.create(name='List Party', district=self.district, is_active=True)
+        self.group = Group.objects.create(name='List Group', party=self.party, is_active=True)
+        GroupMember.objects.create(user=self.member, group=self.group, is_active=True)
+        self.council, _ = Council.objects.get_or_create(
+            district=self.district,
+            defaults={'name': 'List Council', 'is_active': True},
+        )
+        self.term = Term.objects.create(
+            name='List Term',
+            start_date=timezone.now().date(),
+            end_date=(timezone.now() + timedelta(days=365)).date(),
+        )
+        self.committee = Committee.objects.create(
+            name='Kulturkommission',
+            abbreviation='KK',
+            council=self.council,
+            is_active=True,
+        )
+        self.meeting_date = timezone.make_aware(datetime(2026, 10, 14, 18, 0))
+        self.meeting = CommitteeMeeting.objects.create(
+            committee=self.committee,
+            title='KK 2026-10-14',
+            scheduled_date=self.meeting_date,
+            location='Rathaus',
+            description='TOP 1: Budget',
+            status='scheduled',
+            is_active=True,
+        )
+        CommitteeMember.objects.create(
+            committee=self.committee,
+            user=self.member,
+            role='member',
+            is_active=True,
+        )
+        self.session = Session.objects.create(
+            title='BV Sitzung',
+            council=self.council,
+            term=self.term,
+            scheduled_date=self.meeting_date,
+            location='Saal',
+            is_active=True,
+        )
+        _, self.member_token = McpToken.create_token(self.member)
+        _, self.outsider_token = McpToken.create_token(self.outsider)
+
+    def _tool_call(self, name, arguments, token):
+        payload = {
+            'jsonrpc': '2.0',
+            'id': 1,
+            'method': 'tools/call',
+            'params': {'name': name, 'arguments': arguments},
+        }
+        response = self.client.post(
+            reverse('mcp'),
+            data=json.dumps(payload),
+            content_type='application/json',
+            HTTP_AUTHORIZATION=f'Bearer {token}',
+        )
+        self.assertEqual(response.status_code, 200, response.content)
+        body = response.json()
+        result = body['result']
+        text = result['content'][0]['text']
+        return json.loads(text), result.get('isError', False)
+
+    def test_list_committees_and_meetings_with_date_filter(self):
+        data, is_error = self._tool_call(
+            'list_committees',
+            {'district_id': self.district.pk},
+            self.member_token,
+        )
+        self.assertFalse(is_error)
+        self.assertEqual(len(data['committees']), 1)
+        self.assertEqual(data['committees'][0]['abbreviation'], 'KK')
+
+        data, is_error = self._tool_call(
+            'list_committee_meetings',
+            {
+                'district_id': self.district.pk,
+                'committee_id': self.committee.pk,
+                'from_date': '2026-10-01',
+                'to_date': '2026-10-31',
+            },
+            self.member_token,
+        )
+        self.assertFalse(is_error)
+        self.assertEqual(len(data['committee_meetings']), 1)
+        meeting = data['committee_meetings'][0]
+        self.assertEqual(meeting['id'], self.meeting.pk)
+        self.assertEqual(meeting['committee']['name'], 'Kulturkommission')
+        self.assertEqual(meeting['location'], 'Rathaus')
+
+    def test_list_sessions_in_district(self):
+        data, is_error = self._tool_call(
+            'list_sessions',
+            {
+                'district_id': self.district.pk,
+                'from_date': '2026-10-01',
+                'to_date': '2026-10-31',
+            },
+            self.member_token,
+        )
+        self.assertFalse(is_error)
+        self.assertEqual(len(data['sessions']), 1)
+        self.assertEqual(data['sessions'][0]['id'], self.session.pk)
+
+    def test_get_committee_meeting_includes_agenda_and_participants(self):
+        data, is_error = self._tool_call(
+            'get_committee_meeting',
+            {'id': self.meeting.pk},
+            self.member_token,
+        )
+        self.assertFalse(is_error)
+        meeting = data['committee_meeting']
+        self.assertEqual(meeting['agenda'], 'TOP 1: Budget')
+        self.assertEqual(meeting['status'], 'scheduled')
+        self.assertEqual(len(meeting['participants']), 1)
+        self.assertEqual(meeting['participants'][0]['user_id'], self.member.pk)
+
+    def test_outsider_cannot_list_foreign_district(self):
+        data, is_error = self._tool_call(
+            'list_committees',
+            {'district_id': self.district.pk},
+            self.outsider_token,
+        )
+        self.assertTrue(is_error)
+        self.assertIn('access', data['error'].lower())
+
+
+class McpAttachmentListDeleteTests(TestCase):
+    """MCP list_attachments and delete_attachment tools."""
+
+    PDF_BYTES = b'%PDF-1.4 list delete'
+
+    def setUp(self):
+        self.client = Client()
+        self.member = User.objects.create_user(
+            username='del_member',
+            email='del_member@example.com',
+            password='memberpass123',
+        )
+        self.outsider = User.objects.create_user(
+            username='del_outsider',
+            email='del_outsider@example.com',
+            password='outsiderpass123',
+        )
+        self.district = District.objects.create(
+            name='Del MCP District',
+            code='DMD',
+            description='Test',
+            is_active=True,
+        )
+        self.party = Party.objects.create(name='Del Party', district=self.district, is_active=True)
+        self.group = Group.objects.create(name='Del Group', party=self.party, is_active=True)
+        GroupMember.objects.create(user=self.member, group=self.group, is_active=True)
+        self.council, _ = Council.objects.get_or_create(
+            district=self.district,
+            defaults={'name': 'Del Council', 'is_active': True},
+        )
+        self.term = Term.objects.create(
+            name='Del Term',
+            start_date=timezone.now().date(),
+            end_date=(timezone.now() + timedelta(days=365)).date(),
+        )
+        self.session = Session.objects.create(
+            title='Del Session',
+            council=self.council,
+            term=self.term,
+            scheduled_date=timezone.now() + timedelta(days=2),
+            is_active=True,
+        )
+        self.motion = Motion.objects.create(
+            title='Del Motion',
+            text='Body',
+            session=self.session,
+            group=self.group,
+            submitted_by=self.member,
+            status='draft',
+        )
+        _, self.member_token = McpToken.create_token(self.member)
+        _, self.outsider_token = McpToken.create_token(self.outsider)
+        self.pdf_base64 = base64.b64encode(self.PDF_BYTES).decode('ascii')
+
+    def _tool_call(self, name, arguments, token):
+        payload = {
+            'jsonrpc': '2.0',
+            'id': 1,
+            'method': 'tools/call',
+            'params': {'name': name, 'arguments': arguments},
+        }
+        response = self.client.post(
+            reverse('mcp'),
+            data=json.dumps(payload),
+            content_type='application/json',
+            HTTP_AUTHORIZATION=f'Bearer {token}',
+        )
+        self.assertEqual(response.status_code, 200, response.content)
+        body = response.json()
+        result = body['result']
+        text = result['content'][0]['text']
+        return json.loads(text), result.get('isError', False)
+
+    def test_list_and_delete_motion_attachment(self):
+        upload_data, upload_error = self._tool_call(
+            'upload_motion_attachment',
+            {
+                'motion_id': self.motion.pk,
+                'filename': 'listed.pdf',
+                'content_base64': self.pdf_base64,
+            },
+            self.member_token,
+        )
+        self.assertFalse(upload_error)
+        attachment_id = upload_data['attachment']['id']
+
+        list_data, list_error = self._tool_call(
+            'list_attachments',
+            {'parent_type': 'motion', 'parent_id': self.motion.pk},
+            self.member_token,
+        )
+        self.assertFalse(list_error)
+        self.assertEqual(len(list_data['attachments']), 1)
+        self.assertEqual(list_data['attachments'][0]['id'], attachment_id)
+
+        denied, is_error = self._tool_call(
+            'delete_attachment',
+            {'parent_type': 'motion', 'attachment_id': attachment_id},
+            self.outsider_token,
+        )
+        self.assertTrue(is_error)
+        self.assertIn('permission', denied['error'].lower())
+        self.assertTrue(MotionAttachment.objects.filter(pk=attachment_id).exists())
+
+        deleted, is_error = self._tool_call(
+            'delete_attachment',
+            {'parent_type': 'motion', 'attachment_id': attachment_id},
+            self.member_token,
+        )
+        self.assertFalse(is_error)
+        self.assertTrue(deleted['deleted'])
+        self.assertFalse(MotionAttachment.objects.filter(pk=attachment_id).exists())
 
 
 class McpTokenSettingsTests(TestCase):
