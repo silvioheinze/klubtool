@@ -19,7 +19,10 @@ from district.models import (
     DistrictEvent,
     DistrictEventAttachment,
     Party,
+    Session,
+    Term,
 )
+from motion.models import Inquiry, InquiryAttachment, Motion, MotionAttachment
 from district.upload_validation import UPLOAD_PUT_MAX_BYTES
 from group.models import Group, GroupMember, Role
 from user.models import McpToken
@@ -342,5 +345,159 @@ class DistrictEventAttachmentPutUploadTests(TestCase):
         path = self._upload_path_from_url(data['upload_url'])
         membership = GroupMember.objects.get(user=self.manager, group=self.group)
         membership.roles.clear()
+        response = self.client.put(path, data=self.PDF_BYTES, content_type='application/pdf')
+        self.assertEqual(response.status_code, 403)
+
+
+@override_settings(CACHES=UPLOAD_TEST_CACHES)
+class MotionInquiryAttachmentPutUploadTests(TestCase):
+    PDF_BYTES = b'%PDF-1.4 motion inquiry put'
+
+    def setUp(self):
+        caches['upload_tokens'].clear()
+        self.client = Client()
+        self.member = User.objects.create_user(
+            username='put_mi_member',
+            email='put_mi_member@example.com',
+            password='memberpass123',
+        )
+        self.district = District.objects.create(
+            name='PUT MI District',
+            code='PMI',
+            description='Test',
+            is_active=True,
+        )
+        self.party = Party.objects.create(name='PUT MI Party', district=self.district, is_active=True)
+        self.group = Group.objects.create(name='PUT MI Group', party=self.party, is_active=True)
+        GroupMember.objects.create(user=self.member, group=self.group, is_active=True)
+        self.council, _ = Council.objects.get_or_create(
+            district=self.district,
+            defaults={'name': 'PUT MI Council', 'is_active': True},
+        )
+        self.term = Term.objects.create(
+            name='PUT MI Term',
+            start_date=timezone.now().date(),
+            end_date=(timezone.now() + timedelta(days=365)).date(),
+        )
+        self.session = Session.objects.create(
+            title='PUT MI Session',
+            council=self.council,
+            term=self.term,
+            scheduled_date=timezone.now() + timedelta(days=2),
+            is_active=True,
+        )
+        self.motion = Motion.objects.create(
+            title='PUT Motion',
+            text='Body',
+            session=self.session,
+            group=self.group,
+            submitted_by=self.member,
+            status='draft',
+        )
+        self.inquiry = Inquiry.objects.create(
+            title='PUT Inquiry',
+            text='Question',
+            session=self.session,
+            group=self.group,
+            submitted_by=self.member,
+            status='draft',
+        )
+        _, self.member_token = McpToken.create_token(self.member)
+
+    def _mcp_create_upload_url(self, tool_name, token, **extra):
+        args = {'filename': 'upload.pdf', 'file_type': 'document'}
+        args.update(extra)
+        payload = {
+            'jsonrpc': '2.0',
+            'id': 1,
+            'method': 'tools/call',
+            'params': {'name': tool_name, 'arguments': args},
+        }
+        response = self.client.post(
+            reverse('mcp'),
+            data=json.dumps(payload),
+            content_type='application/json',
+            HTTP_AUTHORIZATION=f'Bearer {token}',
+        )
+        self.assertEqual(response.status_code, 200, response.content)
+        body = response.json()
+        text = body['result']['content'][0]['text']
+        data = json.loads(text)
+        is_error = body['result'].get('isError', False)
+        return data, is_error
+
+    def _upload_path_from_url(self, upload_url: str) -> str:
+        prefix = 'https://testserver'
+        self.assertTrue(upload_url.startswith(prefix))
+        return upload_url[len(prefix):]
+
+    def test_motion_put_upload_creates_attachment(self):
+        data, is_error = self._mcp_create_upload_url(
+            'create_motion_upload_url',
+            self.member_token,
+            motion_id=self.motion.pk,
+        )
+        self.assertFalse(is_error)
+        path = self._upload_path_from_url(data['upload_url'])
+        response = self.client.put(
+            path,
+            data=self.PDF_BYTES,
+            content_type='application/pdf',
+        )
+        self.assertEqual(response.status_code, 201, response.content)
+        attachment = MotionAttachment.objects.get(pk=response.json()['id'])
+        self.assertEqual(attachment.motion_id, self.motion.pk)
+
+    def test_inquiry_put_upload_creates_attachment(self):
+        data, is_error = self._mcp_create_upload_url(
+            'create_inquiry_upload_url',
+            self.member_token,
+            inquiry_id=self.inquiry.pk,
+        )
+        self.assertFalse(is_error)
+        path = self._upload_path_from_url(data['upload_url'])
+        response = self.client.put(
+            path,
+            data=self.PDF_BYTES,
+            content_type='application/pdf',
+        )
+        self.assertEqual(response.status_code, 201, response.content)
+        attachment = InquiryAttachment.objects.get(pk=response.json()['id'])
+        self.assertEqual(attachment.inquiry_id, self.inquiry.pk)
+
+    def test_motion_second_put_returns_409(self):
+        data, _ = self._mcp_create_upload_url(
+            'create_motion_upload_url',
+            self.member_token,
+            motion_id=self.motion.pk,
+        )
+        path = self._upload_path_from_url(data['upload_url'])
+        self.assertEqual(
+            self.client.put(path, data=self.PDF_BYTES, content_type='application/pdf').status_code,
+            201,
+        )
+        self.assertEqual(
+            self.client.put(path, data=self.PDF_BYTES, content_type='application/pdf').status_code,
+            409,
+        )
+
+    def test_motion_tampered_token_rejected(self):
+        data, _ = self._mcp_create_upload_url(
+            'create_motion_upload_url',
+            self.member_token,
+            motion_id=self.motion.pk,
+        )
+        path = self._upload_path_from_url(data['upload_url']) + 'x'
+        response = self.client.put(path, data=self.PDF_BYTES, content_type='application/pdf')
+        self.assertEqual(response.status_code, 403)
+
+    def test_motion_permission_revoked_before_put(self):
+        data, _ = self._mcp_create_upload_url(
+            'create_motion_upload_url',
+            self.member_token,
+            motion_id=self.motion.pk,
+        )
+        path = self._upload_path_from_url(data['upload_url'])
+        GroupMember.objects.filter(user=self.member).update(is_active=False)
         response = self.client.put(path, data=self.PDF_BYTES, content_type='application/pdf')
         self.assertEqual(response.status_code, 403)

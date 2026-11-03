@@ -444,6 +444,8 @@ class McpMotionInquiryTests(TestCase):
             'upload_committee_meeting_attachment',
             'create_committee_meeting_upload_url',
             'create_district_event_upload_url',
+            'create_motion_upload_url',
+            'create_inquiry_upload_url',
             'list_committees',
             'list_committee_meetings',
             'list_sessions',
@@ -918,6 +920,61 @@ class McpAttachmentTests(TestCase):
         self.assertTrue(is_error)
         self.assertIn('file', data['error'])
         self.assertFalse(MotionAttachment.objects.filter(motion=self.motion).exists())
+
+    def test_create_motion_and_inquiry_upload_url_member(self):
+        motion_url, motion_error = self._tool_call(
+            'create_motion_upload_url',
+            {
+                'motion_id': self.motion.pk,
+                'filename': 'motion-put.pdf',
+                'file_type': 'document',
+            },
+            self.member_token,
+        )
+        self.assertFalse(motion_error, motion_url)
+        self.assertTrue(motion_url['upload_url'].startswith('https://'))
+        self.assertEqual(motion_url['motion_id'], self.motion.pk)
+        self.assertEqual(motion_url['method'], 'PUT')
+        self.assertEqual(motion_url['max_bytes'], 10 * 1024 * 1024)
+
+        inquiry_url, inquiry_error = self._tool_call(
+            'create_inquiry_upload_url',
+            {
+                'inquiry_id': self.inquiry.pk,
+                'filename': 'inquiry-put.pdf',
+            },
+            self.member_token,
+        )
+        self.assertFalse(inquiry_error, inquiry_url)
+        self.assertEqual(inquiry_url['inquiry_id'], self.inquiry.pk)
+        self.assertEqual(inquiry_url['max_bytes'], 10 * 1024 * 1024)
+
+    def test_create_upload_url_outsider_denied(self):
+        for tool_name, args in (
+            (
+                'create_motion_upload_url',
+                {'motion_id': self.motion.pk, 'filename': 'blocked.pdf'},
+            ),
+            (
+                'create_inquiry_upload_url',
+                {'inquiry_id': self.inquiry.pk, 'filename': 'blocked.pdf'},
+            ),
+        ):
+            data, is_error = self._tool_call(tool_name, args, self.outsider_token)
+            self.assertTrue(is_error)
+            self.assertIn('permission', data['error'].lower())
+
+    def test_create_motion_upload_url_invalid_extension(self):
+        data, is_error = self._tool_call(
+            'create_motion_upload_url',
+            {
+                'motion_id': self.motion.pk,
+                'filename': 'bad.exe',
+            },
+            self.member_token,
+        )
+        self.assertTrue(is_error)
+        self.assertIn('not allowed', data['error'].lower())
 
 
 class McpCommitteeMeetingAttachmentTests(TestCase):

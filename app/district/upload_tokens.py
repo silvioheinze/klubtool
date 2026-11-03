@@ -54,6 +54,50 @@ def build_committee_meeting_upload_payload(
     }
 
 
+def build_motion_upload_payload(
+    *,
+    motion_id: int,
+    user_id: int,
+    filename: str,
+    file_type: str,
+    description: str = '',
+) -> dict:
+    safe_name = normalize_upload_filename(filename)
+    validate_upload_extension(safe_name)
+    desc = (description or '')[:UPLOAD_DESCRIPTION_MAX_LENGTH]
+    return {
+        'parent': 'motion',
+        'parent_id': motion_id,
+        'user_id': user_id,
+        'filename': safe_name,
+        'file_type': file_type,
+        'description': desc,
+        'jti': secrets.token_urlsafe(16),
+    }
+
+
+def build_inquiry_upload_payload(
+    *,
+    inquiry_id: int,
+    user_id: int,
+    filename: str,
+    file_type: str,
+    description: str = '',
+) -> dict:
+    safe_name = normalize_upload_filename(filename)
+    validate_upload_extension(safe_name)
+    desc = (description or '')[:UPLOAD_DESCRIPTION_MAX_LENGTH]
+    return {
+        'parent': 'inquiry',
+        'parent_id': inquiry_id,
+        'user_id': user_id,
+        'filename': safe_name,
+        'file_type': file_type,
+        'description': desc,
+        'jti': secrets.token_urlsafe(16),
+    }
+
+
 def build_district_event_upload_payload(
     *,
     event_id: int,
@@ -110,9 +154,9 @@ def build_attachment_upload_url(request, payload: dict) -> str:
     return f'https://{request.get_host()}{path}'
 
 
-def upload_url_response_fields() -> dict:
+def upload_url_response_fields(*, max_bytes: int | None = None) -> dict:
     return {
         'expires_in': _token_timeout(),
         'method': 'PUT',
-        'max_bytes': UPLOAD_PUT_MAX_BYTES,
+        'max_bytes': UPLOAD_PUT_MAX_BYTES if max_bytes is None else max_bytes,
     }
