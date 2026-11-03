@@ -93,6 +93,26 @@ def is_leader_or_deputy_leader(user, motion):
     return is_leader_or_deputy_leader_of_group(user, motion.group)
 
 
+def user_can_upload_motion_attachment(user, motion):
+    """Same rules as MCP/web motion attachment upload."""
+    if user.is_superuser or user.has_role_permission('motion.attach'):
+        return True
+    if motion.group_id is None:
+        return False
+    group_ids = _get_user_accessible_group_ids(user)
+    return group_ids is not None and motion.group_id in group_ids
+
+
+def user_can_upload_inquiry_attachment(user, inquiry):
+    """Same rules as MCP/web inquiry attachment upload."""
+    if user.is_superuser or user.has_role_permission('motion.attach'):
+        return True
+    if inquiry.group_id is None:
+        return False
+    group_ids = _get_user_accessible_group_ids(user)
+    return group_ids is not None and inquiry.group_id in group_ids
+
+
 def user_can_delete_motion_attachment(user, attachment):
     """Superuser, uploader, or leader/deputy of the motion's group."""
     if user.is_superuser or attachment.uploaded_by_id == user.pk:

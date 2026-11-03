@@ -35,9 +35,15 @@ from district.upload_tokens import (
     build_attachment_upload_url,
     build_committee_meeting_upload_payload,
     build_district_event_upload_payload,
+    build_inquiry_upload_payload,
+    build_motion_upload_payload,
     upload_url_response_fields,
 )
-from district.upload_validation import normalize_upload_filename, validate_upload_extension
+from district.upload_validation import (
+    UPLOAD_MOTION_INQUIRY_PUT_MAX_BYTES,
+    normalize_upload_filename,
+    validate_upload_extension,
+)
 from district.views import (
     _can_user_edit_committee_meeting,
     _complete_committee_meeting_if_protocol_uploaded,
@@ -55,6 +61,8 @@ from motion.views import (
     _get_user_accessible_group_ids,
     user_can_delete_inquiry_attachment,
     user_can_delete_motion_attachment,
+    user_can_upload_inquiry_attachment,
+    user_can_upload_motion_attachment,
     user_can_view_inquiry,
 )
 
@@ -432,6 +440,50 @@ def list_tools():
                     'description': {'type': 'string'},
                 },
                 'required': ['event_id', 'filename'],
+            },
+        },
+        {
+            'name': 'create_motion_upload_url',
+            'description': (
+                'Create a one-time HTTPS PUT URL for uploading a motion attachment '
+                '(same permissions as web upload). '
+                'Does not accept file content; use the returned upload_url with HTTP PUT.'
+            ),
+            'inputSchema': {
+                'type': 'object',
+                'properties': {
+                    'motion_id': {'type': 'integer'},
+                    'filename': {'type': 'string', 'description': 'Original filename including extension'},
+                    'file_type': {
+                        'type': 'string',
+                        'enum': ['document', 'image', 'spreadsheet', 'presentation', 'other'],
+                        'description': 'Defaults to document',
+                    },
+                    'description': {'type': 'string'},
+                },
+                'required': ['motion_id', 'filename'],
+            },
+        },
+        {
+            'name': 'create_inquiry_upload_url',
+            'description': (
+                'Create a one-time HTTPS PUT URL for uploading an inquiry attachment '
+                '(same permissions as web upload). '
+                'Does not accept file content; use the returned upload_url with HTTP PUT.'
+            ),
+            'inputSchema': {
+                'type': 'object',
+                'properties': {
+                    'inquiry_id': {'type': 'integer'},
+                    'filename': {'type': 'string', 'description': 'Original filename including extension'},
+                    'file_type': {
+                        'type': 'string',
+                        'enum': ['document', 'image', 'spreadsheet', 'presentation', 'other'],
+                        'description': 'Defaults to document',
+                    },
+                    'description': {'type': 'string'},
+                },
+                'required': ['inquiry_id', 'filename'],
             },
         },
         {
@@ -1215,24 +1267,6 @@ def _user_can_upload_session_attachment(user):
     return user.is_superuser
 
 
-def _user_can_upload_motion_attachment(user, motion):
-    if user.is_superuser or user.has_role_permission('motion.attach'):
-        return True
-    if motion.group_id is None:
-        return False
-    group_ids = _get_user_accessible_group_ids(user)
-    return group_ids is not None and motion.group_id in group_ids
-
-
-def _user_can_upload_inquiry_attachment(user, inquiry):
-    if user.is_superuser or user.has_role_permission('motion.attach'):
-        return True
-    if inquiry.group_id is None:
-        return False
-    group_ids = _get_user_accessible_group_ids(user)
-    return group_ids is not None and inquiry.group_id in group_ids
-
-
 def _get_session_or_error(session_id):
     try:
         return Session.objects.get(pk=session_id)
@@ -1281,7 +1315,7 @@ def _upload_session_attachment(arguments, user):
 
 def _upload_motion_attachment(arguments, user):
     motion = _get_motion_or_error(arguments['motion_id'])
-    if not _user_can_upload_motion_attachment(user, motion):
+    if not user_can_upload_motion_attachment(user, motion):
         raise McpToolError('You do not have permission to upload motion attachments.')
     file_type = _validate_choice(
         arguments.get('file_type', 'document'),
@@ -1307,7 +1341,7 @@ def _upload_motion_attachment(arguments, user):
 
 def _upload_inquiry_attachment(arguments, user):
     inquiry = _get_inquiry_or_error(arguments['inquiry_id'])
-    if not _user_can_upload_inquiry_attachment(user, inquiry):
+    if not user_can_upload_inquiry_attachment(user, inquiry):
         raise McpToolError('You do not have permission to upload inquiry attachments.')
     file_type = _validate_choice(
         arguments.get('file_type', 'document'),
@@ -1336,6 +1370,64 @@ def _get_district_event_or_error(event_id):
         return DistrictEvent.objects.select_related('district').get(pk=event_id)
     except DistrictEvent.DoesNotExist as exc:
         raise McpToolError(f'Event {event_id} not found.') from exc
+
+
+def _create_motion_upload_url(arguments, user, request):
+    motion = _get_motion_or_error(arguments['motion_id'])
+    if not user_can_upload_motion_attachment(user, motion):
+        raise McpToolError('You do not have permission to upload motion attachments.')
+    file_type = _validate_choice(
+        arguments.get('file_type', 'document'),
+        MotionAttachment.ATTACHMENT_TYPE_CHOICES,
+        'file_type',
+    ) or 'document'
+    try:
+        safe_filename = normalize_upload_filename(arguments['filename'])
+        validate_upload_extension(safe_filename)
+    except ValueError as exc:
+        raise McpToolError(str(exc)) from exc
+    payload = build_motion_upload_payload(
+        motion_id=motion.pk,
+        user_id=user.pk,
+        filename=safe_filename,
+        file_type=file_type,
+        description=arguments.get('description', ''),
+    )
+    upload_url = build_attachment_upload_url(request, payload)
+    return {
+        'upload_url': upload_url,
+        'motion_id': motion.pk,
+        **upload_url_response_fields(max_bytes=UPLOAD_MOTION_INQUIRY_PUT_MAX_BYTES),
+    }
+
+
+def _create_inquiry_upload_url(arguments, user, request):
+    inquiry = _get_inquiry_or_error(arguments['inquiry_id'])
+    if not user_can_upload_inquiry_attachment(user, inquiry):
+        raise McpToolError('You do not have permission to upload inquiry attachments.')
+    file_type = _validate_choice(
+        arguments.get('file_type', 'document'),
+        InquiryAttachment.ATTACHMENT_TYPE_CHOICES,
+        'file_type',
+    ) or 'document'
+    try:
+        safe_filename = normalize_upload_filename(arguments['filename'])
+        validate_upload_extension(safe_filename)
+    except ValueError as exc:
+        raise McpToolError(str(exc)) from exc
+    payload = build_inquiry_upload_payload(
+        inquiry_id=inquiry.pk,
+        user_id=user.pk,
+        filename=safe_filename,
+        file_type=file_type,
+        description=arguments.get('description', ''),
+    )
+    upload_url = build_attachment_upload_url(request, payload)
+    return {
+        'upload_url': upload_url,
+        'inquiry_id': inquiry.pk,
+        **upload_url_response_fields(max_bytes=UPLOAD_MOTION_INQUIRY_PUT_MAX_BYTES),
+    }
 
 
 def _create_district_event_upload_url(arguments, user, request):
@@ -1805,6 +1897,16 @@ def call_tool(name, arguments, user, request=None):
         if request is None:
             raise McpToolError('Request context is required to build an upload URL.')
         return _create_district_event_upload_url(arguments, user, request)
+
+    if name == 'create_motion_upload_url':
+        if request is None:
+            raise McpToolError('Request context is required to build an upload URL.')
+        return _create_motion_upload_url(arguments, user, request)
+
+    if name == 'create_inquiry_upload_url':
+        if request is None:
+            raise McpToolError('Request context is required to build an upload URL.')
+        return _create_inquiry_upload_url(arguments, user, request)
 
     if name == 'list_committees':
         district = _get_district_or_error(user, arguments['district_id'])
