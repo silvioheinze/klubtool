@@ -333,6 +333,7 @@ class McpMotionInquiryTests(TestCase):
             'list_committee_meetings',
             'list_sessions',
             'get_committee_meeting',
+            'update_committee_meeting',
             'list_attachments',
             'delete_attachment',
         ):
@@ -878,10 +879,13 @@ class McpCommitteeMeetingAttachmentTests(TestCase):
             committee=self.committee,
             title='CM MCP Meeting',
             scheduled_date=timezone.now() + timedelta(days=3),
+            location='Room 101',
+            description='Original agenda',
             status='scheduled',
             is_active=True,
         )
         _, self.leader_token = McpToken.create_token(self.group_leader)
+        _, self.committee_member_token = McpToken.create_token(self.committee_member_user)
         _, self.outsider_token = McpToken.create_token(self.outsider)
         _, self.superuser_token = McpToken.create_token(self.superuser)
         self.pdf_base64 = base64.b64encode(self.PDF_BYTES).decode('ascii')
@@ -1037,6 +1041,68 @@ class McpCommitteeMeetingAttachmentTests(TestCase):
         )
         self.assertTrue(is_error)
         self.assertIn('not allowed', data['error'].lower())
+
+    def test_group_leader_can_update_committee_meeting_status_unchanged(self):
+        self.meeting.status = 'invited'
+        self.meeting.save(update_fields=['status'])
+
+        data, is_error = self._tool_call(
+            'update_committee_meeting',
+            {
+                'committee_meeting_id': self.meeting.pk,
+                'title': 'Updated Meeting Title',
+                'location': 'Room 202',
+                'agenda': 'Updated agenda',
+                'status': 'cancelled',
+            },
+            self.leader_token,
+        )
+        self.assertFalse(is_error)
+        self.assertEqual(data['committee_meeting']['title'], 'Updated Meeting Title')
+        self.assertEqual(data['committee_meeting']['location'], 'Room 202')
+        self.assertEqual(data['committee_meeting']['agenda'], 'Updated agenda')
+        self.assertEqual(data['committee_meeting']['status'], 'invited')
+
+        self.meeting.refresh_from_db()
+        self.assertEqual(self.meeting.title, 'Updated Meeting Title')
+        self.assertEqual(self.meeting.location, 'Room 202')
+        self.assertEqual(self.meeting.description, 'Updated agenda')
+        self.assertEqual(self.meeting.status, 'invited')
+
+    def test_update_committee_meeting_partial_fields_unchanged(self):
+        data, is_error = self._tool_call(
+            'update_committee_meeting',
+            {
+                'committee_meeting_id': self.meeting.pk,
+                'location': 'Room 303',
+            },
+            self.leader_token,
+        )
+        self.assertFalse(is_error)
+        self.assertEqual(data['committee_meeting']['location'], 'Room 303')
+        self.assertEqual(data['committee_meeting']['title'], 'CM MCP Meeting')
+        self.assertEqual(data['committee_meeting']['agenda'], 'Original agenda')
+
+        self.meeting.refresh_from_db()
+        self.assertEqual(self.meeting.location, 'Room 303')
+        self.assertEqual(self.meeting.title, 'CM MCP Meeting')
+        self.assertEqual(self.meeting.description, 'Original agenda')
+
+    def test_committee_member_and_outsider_cannot_update_committee_meeting(self):
+        for token in (self.committee_member_token, self.outsider_token):
+            data, is_error = self._tool_call(
+                'update_committee_meeting',
+                {
+                    'committee_meeting_id': self.meeting.pk,
+                    'title': 'Hacked title',
+                },
+                token,
+            )
+            self.assertTrue(is_error)
+            self.assertIn('permission', data['error'].lower())
+
+        self.meeting.refresh_from_db()
+        self.assertEqual(self.meeting.title, 'CM MCP Meeting')
 
 
 class McpFileUrlUploadTests(TestCase):
