@@ -27,12 +27,14 @@ from district.models import (
     CommitteeParticipationSubstitute,
     District,
     DistrictEvent,
+    DistrictEventAttachment,
     Session,
     SessionAttachment,
 )
 from district.upload_tokens import (
     build_attachment_upload_url,
     build_committee_meeting_upload_payload,
+    build_district_event_upload_payload,
     upload_url_response_fields,
 )
 from district.upload_validation import normalize_upload_filename, validate_upload_extension
@@ -42,6 +44,7 @@ from district.views import (
     _get_user_accessible_council_ids,
     _invite_committee_meeting_if_invitation_uploaded,
     user_can_delete_session_attachment,
+    user_can_edit_district_event_attachment,
     user_can_manage_district_events,
     user_is_district_member,
 )
@@ -55,7 +58,7 @@ from motion.views import (
     user_can_view_inquiry,
 )
 
-_ATTACHMENT_PARENT_TYPES = ('session', 'motion', 'inquiry', 'committee_meeting')
+_ATTACHMENT_PARENT_TYPES = ('session', 'motion', 'inquiry', 'committee_meeting', 'district_event')
 _UPLOAD_MAX_BYTES_SESSION = 50 * 1024 * 1024
 _UPLOAD_MAX_BYTES_MOTION_INQUIRY = 10 * 1024 * 1024
 _FILE_URL_MAX_REDIRECTS = 5
@@ -410,6 +413,28 @@ def list_tools():
             },
         },
         {
+            'name': 'create_district_event_upload_url',
+            'description': (
+                'Create a one-time HTTPS PUT URL for uploading a district event attachment '
+                '(same permissions as web upload: superuser or group manager in the district). '
+                'Does not accept file content; use the returned upload_url with HTTP PUT.'
+            ),
+            'inputSchema': {
+                'type': 'object',
+                'properties': {
+                    'event_id': {'type': 'integer'},
+                    'filename': {'type': 'string', 'description': 'Original filename including extension'},
+                    'file_type': {
+                        'type': 'string',
+                        'enum': ['invitation', 'agenda', 'minutes', 'other'],
+                        'description': 'Defaults to other',
+                    },
+                    'description': {'type': 'string'},
+                },
+                'required': ['event_id', 'filename'],
+            },
+        },
+        {
             'name': 'list_committees',
             'description': 'List committees (Gremien) in a district with their ids.',
             'inputSchema': {
@@ -479,7 +504,9 @@ def list_tools():
         },
         {
             'name': 'list_attachments',
-            'description': 'List file attachments for a session, motion, inquiry, or committee meeting.',
+            'description': (
+                'List file attachments for a session, motion, inquiry, committee meeting, or district event.'
+            ),
             'inputSchema': {
                 'type': 'object',
                 'properties': {
@@ -1118,11 +1145,16 @@ def _list_attachments_for_parent(parent_type, parent_id, user, request):
         if not user_can_view_inquiry(user, inquiry.pk):
             raise McpToolError('You do not have permission to view this inquiry.')
         attachments = inquiry.attachments.all()
-    else:
+    elif parent_type == 'committee_meeting':
         meeting = _get_committee_meeting_or_error(parent_id)
         if not _user_can_view_committee_meeting(user, meeting):
             raise McpToolError('You do not have permission to view this committee meeting.')
         attachments = meeting.attachments.all()
+    else:
+        event = _get_district_event_or_error(parent_id)
+        if not user_is_district_member(user, event.district):
+            raise McpToolError('You do not have access to this event.')
+        attachments = event.attachments.all()
     return {
         'parent_type': parent_type,
         'parent_id': parent_id,
@@ -1153,7 +1185,7 @@ def _delete_attachment_by_type(parent_type, attachment_id, user, request):
             raise McpToolError(f'Attachment {attachment_id} not found.') from exc
         if not user_can_delete_inquiry_attachment(user, attachment):
             raise McpToolError('You do not have permission to delete this attachment.')
-    else:
+    elif parent_type == 'committee_meeting':
         try:
             attachment = CommitteeMeetingAttachment.objects.select_related(
                 'committee_meeting',
@@ -1161,6 +1193,16 @@ def _delete_attachment_by_type(parent_type, attachment_id, user, request):
         except CommitteeMeetingAttachment.DoesNotExist as exc:
             raise McpToolError(f'Attachment {attachment_id} not found.') from exc
         if not _user_can_delete_committee_meeting_attachment(user, attachment):
+            raise McpToolError('You do not have permission to delete this attachment.')
+    else:
+        try:
+            attachment = DistrictEventAttachment.objects.select_related(
+                'event',
+                'event__district',
+            ).get(pk=attachment_id)
+        except DistrictEventAttachment.DoesNotExist as exc:
+            raise McpToolError(f'Attachment {attachment_id} not found.') from exc
+        if not user_can_edit_district_event_attachment(user, attachment):
             raise McpToolError('You do not have permission to delete this attachment.')
     payload = _serialize_attachment(attachment, request)
     if attachment.file:
@@ -1287,6 +1329,42 @@ def _upload_inquiry_attachment(arguments, user):
     attachment.uploaded_by = user
     attachment.save()
     return attachment
+
+
+def _get_district_event_or_error(event_id):
+    try:
+        return DistrictEvent.objects.select_related('district').get(pk=event_id)
+    except DistrictEvent.DoesNotExist as exc:
+        raise McpToolError(f'Event {event_id} not found.') from exc
+
+
+def _create_district_event_upload_url(arguments, user, request):
+    event = _get_district_event_or_error(arguments['event_id'])
+    if not user_can_manage_district_events(user, event.district):
+        raise McpToolError('You do not have permission to upload district event attachments.')
+    file_type = _validate_choice(
+        arguments.get('file_type', 'other'),
+        DistrictEventAttachment.ATTACHMENT_TYPE_CHOICES,
+        'file_type',
+    ) or 'other'
+    try:
+        safe_filename = normalize_upload_filename(arguments['filename'])
+        validate_upload_extension(safe_filename)
+    except ValueError as exc:
+        raise McpToolError(str(exc)) from exc
+    payload = build_district_event_upload_payload(
+        event_id=event.pk,
+        user_id=user.pk,
+        filename=safe_filename,
+        file_type=file_type,
+        description=arguments.get('description', ''),
+    )
+    upload_url = build_attachment_upload_url(request, payload)
+    return {
+        'upload_url': upload_url,
+        'event_id': event.pk,
+        **upload_url_response_fields(),
+    }
 
 
 def _create_committee_meeting_upload_url(arguments, user, request):
@@ -1722,6 +1800,11 @@ def call_tool(name, arguments, user, request=None):
         if request is None:
             raise McpToolError('Request context is required to build an upload URL.')
         return _create_committee_meeting_upload_url(arguments, user, request)
+
+    if name == 'create_district_event_upload_url':
+        if request is None:
+            raise McpToolError('Request context is required to build an upload URL.')
+        return _create_district_event_upload_url(arguments, user, request)
 
     if name == 'list_committees':
         district = _get_district_or_error(user, arguments['district_id'])
