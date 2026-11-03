@@ -143,7 +143,7 @@ class CommitteeMeetingAttachmentPutUploadTests(TestCase):
         return data, is_error
 
     def _upload_path_from_url(self, upload_url: str) -> str:
-        prefix = 'http://testserver'
+        prefix = 'https://testserver'
         self.assertTrue(upload_url.startswith(prefix))
         return upload_url[len(prefix):]
 
