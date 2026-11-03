@@ -178,7 +178,11 @@ CACHES = {
     'default': {
         'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
         'LOCATION': 'klubtool-default',
-    }
+    },
+    'upload_tokens': {
+        'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
+        'LOCATION': 'upload_token_cache',
+    },
 }
 CALENDAR_SUBSCRIPTION_CACHE_TTL = int(os.environ.get('CALENDAR_SUBSCRIPTION_CACHE_TTL', 900))  # 15 min
 

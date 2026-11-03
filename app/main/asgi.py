@@ -11,6 +11,8 @@ import os
 
 from django.core.asgi import get_asgi_application
 
+from main.upload_asgi_middleware import UploadSizeLimitMiddleware
+
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'main.settings')
 
-application = get_asgi_application()
+application = UploadSizeLimitMiddleware(get_asgi_application())
