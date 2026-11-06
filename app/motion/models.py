@@ -194,11 +194,24 @@ class MotionVote(models.Model):
         ('approve', _('Approve')),
         ('reject', _('Reject')),
     ]
+
+    STANCE_CHOICES = [
+        ('approve', _('Approve')),
+        ('reject', _('Reject')),
+        ('mixed', _('Mixed')),
+    ]
     
     motion = models.ForeignKey(Motion, on_delete=models.CASCADE, related_name='votes')
     party = models.ForeignKey(Party, on_delete=models.CASCADE, related_name='motion_votes', help_text="Party casting the vote")
     vote_type = models.CharField(max_length=20, choices=VOTE_TYPE_CHOICES, default='regular', help_text="Type of vote: regular or refer to committee")
     status = models.ForeignKey('MotionStatus', on_delete=models.CASCADE, related_name='votes', null=True, blank=True, help_text="Status change this vote is connected to")
+    stance = models.CharField(
+        max_length=10,
+        choices=STANCE_CHOICES,
+        blank=True,
+        default='',
+        help_text="Party line: approve (all seats in favor), reject (all against), or mixed (no seat weight)",
+    )
     approve_votes = models.PositiveIntegerField(default=0, help_text="Number of votes in favor from this party")
     reject_votes = models.PositiveIntegerField(default=0, help_text="Number of votes against from this party")
     notes = models.TextField(blank=True, help_text="Additional notes about the voting")
@@ -274,6 +287,23 @@ class MotionVote(models.Model):
             motion_title = "Unknown Motion"
         
         return f"{party_name} - {self.get_vote_summary()} on {motion_title}"
+
+    def get_party_stance_display(self):
+        """Human-readable party stance for UI (uses stance when set, else infers from counts)."""
+        if self.stance == 'approve':
+            return str(dict(self.STANCE_CHOICES).get('approve', _('Approve')))
+        if self.stance == 'reject':
+            return str(dict(self.STANCE_CHOICES).get('reject', _('Reject')))
+        if self.stance == 'mixed':
+            return str(dict(self.STANCE_CHOICES).get('mixed', _('Mixed')))
+        total_votes = self.approve_votes + self.reject_votes
+        if total_votes == 0:
+            return str(_('Mixed'))
+        if self.reject_votes == 0 and self.approve_votes > 0:
+            return str(_('Approve'))
+        if self.approve_votes == 0 and self.reject_votes > 0:
+            return str(_('Reject'))
+        return str(_('Mixed'))
     
     def get_vote_summary(self):
         """Get a summary of the voting results"""

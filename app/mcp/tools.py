@@ -59,6 +59,7 @@ from group.models import Group
 from motion.forms import (
     InquiryAttachmentForm,
     InquiryForm,
+    InquiryStatusForm,
     MotionAttachmentForm,
     MotionForm,
     MotionStatusForm,
@@ -67,6 +68,9 @@ from motion.forms import (
 from motion.models import Inquiry, InquiryAttachment, Motion, MotionAttachment, MotionStatus, Tag
 from motion.views import (
     _get_user_accessible_group_ids,
+    _save_inquiry_status_answer_files,
+    _save_motion_status_answer_files,
+    can_change_inquiry_status,
     can_change_motion_status,
     motion_status_requires_votes,
     party_seat_map_for_motion,
@@ -326,20 +330,32 @@ def list_tools():
                     'tags': {'type': 'array', 'items': {'type': 'string'}},
                     'status_change': {
                         'type': 'object',
-                        'description': 'Optional status change with committee assignment and votes',
+                        'description': (
+                            'Optional status transition (same rules as the web flow). '
+                            'Votes use stance per party (approve/reject/mixed) or legacy approve_votes/reject_votes.'
+                        ),
                         'properties': {
                             'status': {
                                 'type': 'string',
                                 'enum': [
+                                    'submitted',
+                                    'tabled',
+                                    'withdrawn',
+                                    'not_admitted',
                                     'refer_to_committee',
                                     'voted_in_committee',
                                     'approved',
                                     'rejected',
+                                    'answered',
                                 ],
                             },
                             'committee_id': {
                                 'type': 'integer',
                                 'description': 'Required for refer_to_committee and voted_in_committee',
+                            },
+                            'session_id': {
+                                'type': 'integer',
+                                'description': 'Required for tabled (session where motion is tabled); optional otherwise',
                             },
                             'reason': {'type': 'string'},
                             'votes': {
@@ -348,16 +364,32 @@ def list_tools():
                                     'type': 'object',
                                     'properties': {
                                         'party_id': {'type': 'integer'},
+                                        'stance': {
+                                            'type': 'string',
+                                            'enum': ['approve', 'reject', 'mixed'],
+                                            'description': 'Preferred: party line (seat weight from term distribution)',
+                                        },
                                         'approve_votes': {'type': 'integer'},
                                         'reject_votes': {'type': 'integer'},
-                                        'notes': {'type': 'string'},
                                     },
                                     'required': ['party_id'],
                                 },
                                 'description': (
-                                    'Party vote counts; required for approved, rejected, '
-                                    'refer_to_committee, and voted_in_committee'
+                                    'Party votes: required for approved, rejected, refer_to_committee, '
+                                    'and voted_in_committee (use stance or counts)'
                                 ),
+                            },
+                            'answer_files': {
+                                'type': 'array',
+                                'description': 'Optional PDFs when status is answered (filename + file_url or content_base64 each)',
+                                'items': {
+                                    'type': 'object',
+                                    'properties': {
+                                        'filename': {'type': 'string'},
+                                        **_UPLOAD_FILE_SOURCE_SCHEMA,
+                                    },
+                                    'required': ['filename'],
+                                },
                             },
                         },
                         'required': ['status'],
@@ -398,7 +430,10 @@ def list_tools():
         },
         {
             'name': 'update_inquiry',
-            'description': 'Update an inquiry. Omitted fields stay unchanged; status cannot be changed.',
+            'description': (
+                'Update an inquiry. Omitted fields stay unchanged. '
+                'Optional status_change applies a transition (requires same permission as web status change).'
+            ),
             'inputSchema': {
                 'type': 'object',
                 'properties': {
@@ -412,6 +447,42 @@ def list_tools():
                     'party_ids': {'type': 'array', 'items': {'type': 'integer'}},
                     'intervention_ids': {'type': 'array', 'items': {'type': 'integer'}},
                     'tags': {'type': 'array', 'items': {'type': 'string'}},
+                    'status_change': {
+                        'type': 'object',
+                        'properties': {
+                            'status': {
+                                'type': 'string',
+                                'enum': [
+                                    'draft',
+                                    'submitted',
+                                    'refer_to_committee',
+                                    'approved',
+                                    'rejected',
+                                    'answered',
+                                    'withdrawn',
+                                    'not_admitted',
+                                ],
+                            },
+                            'committee_id': {
+                                'type': 'integer',
+                                'description': 'Required when status is refer_to_committee',
+                            },
+                            'reason': {'type': 'string'},
+                            'answer_files': {
+                                'type': 'array',
+                                'description': 'Optional PDFs when status is answered',
+                                'items': {
+                                    'type': 'object',
+                                    'properties': {
+                                        'filename': {'type': 'string'},
+                                        **_UPLOAD_FILE_SOURCE_SCHEMA,
+                                    },
+                                    'required': ['filename'],
+                                },
+                            },
+                        },
+                        'required': ['status'],
+                    },
                 },
                 'required': ['inquiry_id'],
             },
@@ -1617,20 +1688,29 @@ def _upload_committee_meeting_attachment(arguments, user):
 
 
 _MOTION_MCP_STATUS_CHANGE_STATUSES = frozenset({
+    'submitted',
+    'tabled',
+    'withdrawn',
+    'not_admitted',
     'refer_to_committee',
     'voted_in_committee',
     'approved',
     'rejected',
+    'answered',
 })
+
+_INQUIRY_MCP_STATUS_CHANGE_STATUSES = frozenset(dict(Inquiry.STATUS_CHOICES).keys())
 
 
 def _serialize_motion_status_vote(vote):
-    return {
+    payload = {
         'party_id': vote.party_id,
+        'stance': vote.stance or '',
         'approve_votes': vote.approve_votes,
         'reject_votes': vote.reject_votes,
         'notes': vote.notes,
     }
+    return payload
 
 
 def _serialize_motion_status_entry(status_entry):
@@ -1693,9 +1773,15 @@ def _build_motion_vote_formset_from_mcp(motion, votes, party_seat_map):
         if not Party.objects.filter(pk=party_id, district_id=district_id, is_active=True).exists():
             raise McpToolError(f'Party {party_id} is not valid for this motion session.')
         post[f'form-{index}-party'] = str(party_id)
-        post[f'form-{index}-approve_votes'] = str(vote.get('approve_votes', 0))
-        post[f'form-{index}-reject_votes'] = str(vote.get('reject_votes', 0))
-        post[f'form-{index}-notes'] = vote.get('notes', '')
+        stance = vote.get('stance')
+        if stance is not None:
+            post[f'form-{index}-stance'] = str(stance).strip()
+            post[f'form-{index}-approve_votes'] = '0'
+            post[f'form-{index}-reject_votes'] = '0'
+        else:
+            post[f'form-{index}-stance'] = ''
+            post[f'form-{index}-approve_votes'] = str(vote.get('approve_votes', 0))
+            post[f'form-{index}-reject_votes'] = str(vote.get('reject_votes', 0))
         initial.append({'party': party_id})
     return MotionVoteFormSetFactory(
         post,
@@ -1703,6 +1789,27 @@ def _build_motion_vote_formset_from_mcp(motion, votes, party_seat_map):
         initial=initial,
         party_seat_map=party_seat_map,
     )
+
+
+def _mcp_build_answer_pdf_files(status_change):
+    """Build list of SimpleUploadedFile from status_change.answer_files (optional)."""
+    if 'answer_files' not in status_change:
+        return None
+    raw = status_change.get('answer_files')
+    if raw is None:
+        return []
+    if not raw:
+        return []
+    if not isinstance(raw, list):
+        raise McpToolError('status_change.answer_files must be an array.')
+    files = []
+    for index, item in enumerate(raw):
+        if not isinstance(item, dict):
+            raise McpToolError(f'status_change.answer_files[{index}] must be an object.')
+        filename = item.get('filename')
+        content_bytes = _resolve_upload_content_bytes(item, _UPLOAD_MAX_BYTES_MOTION_INQUIRY)
+        files.append(_build_uploaded_file(filename, content_bytes))
+    return files
 
 
 def _apply_motion_status_change(motion, user, status_change):
@@ -1727,11 +1834,26 @@ def _apply_motion_status_change(motion, user, status_change):
     else:
         form_data['committee'] = ''
 
+    session_id = status_change.get('session_id')
+    if session_id is not None:
+        form_data['session'] = str(session_id)
+    elif status == 'tabled':
+        form_data['session'] = str(motion.session_id)
+
+    files_for_form = None
+    answer_list = _mcp_build_answer_pdf_files(status_change)
+    if status == 'answered' and answer_list is None:
+        raise McpToolError('status_change.answer_files is required when status is answered.')
+    if answer_list is not None:
+        files_for_form = {'answer_files': answer_list}
+
     form = MotionStatusForm(
         data=form_data,
+        files=files_for_form,
         motion=motion,
         changed_by=user,
         locked_status=status,
+        optional_answer_pdfs=True,
     )
     if not form.is_valid():
         raise McpToolError(json.dumps(form.errors, ensure_ascii=False))
@@ -1752,6 +1874,7 @@ def _apply_motion_status_change(motion, user, status_change):
                     errors[f'votes[{index}]'] = vote_form.errors
             raise McpToolError(json.dumps(errors, ensure_ascii=False))
 
+    answer_files_clean = form.cleaned_data.get('answer_files') or []
     record_motion_status_change(
         motion=motion,
         initial_status=status,
@@ -1760,7 +1883,64 @@ def _apply_motion_status_change(motion, user, status_change):
         committee=form.cleaned_data.get('committee'),
         session=form.cleaned_data.get('session'),
         vote_formset=vote_formset,
+        answer_files=answer_files_clean if status == 'answered' else None,
     )
+
+
+def _apply_inquiry_status_change(inquiry, user, status_change):
+    if not isinstance(status_change, dict):
+        raise McpToolError('status_change must be an object.')
+    if not can_change_inquiry_status(user, inquiry):
+        raise McpToolError('You do not have permission to change this inquiry status.')
+
+    status = status_change.get('status')
+    if status not in _INQUIRY_MCP_STATUS_CHANGE_STATUSES:
+        raise McpToolError(
+            f'Invalid status_change.status: {status!r}. '
+            f'Allowed: {", ".join(sorted(_INQUIRY_MCP_STATUS_CHANGE_STATUSES))}.'
+        )
+
+    form_data = QueryDict(mutable=True)
+    form_data['status'] = status
+    form_data['reason'] = status_change.get('reason', '')
+    committee_id = status_change.get('committee_id')
+    if committee_id is not None:
+        form_data['committee'] = str(committee_id)
+    else:
+        form_data['committee'] = ''
+
+    files_for_form = None
+    answer_list = _mcp_build_answer_pdf_files(status_change)
+    if status == 'answered' and answer_list is None:
+        raise McpToolError('status_change.answer_files is required when status is answered.')
+    if answer_list is not None:
+        files_for_form = {'answer_files': answer_list}
+
+    form = InquiryStatusForm(
+        data=form_data,
+        files=files_for_form,
+        inquiry=inquiry,
+        changed_by=user,
+        optional_answer_pdfs=True,
+    )
+    if not form.is_valid():
+        raise McpToolError(json.dumps(form.errors, ensure_ascii=False))
+
+    new_status = form.cleaned_data['status']
+    reason = form.cleaned_data.get('reason', '')
+    committee = form.cleaned_data.get('committee')
+
+    inquiry._status_changed_by = user
+    inquiry._status_change_reason = reason
+    inquiry._status_committee = committee
+    inquiry.status = new_status
+    inquiry.save()
+
+    if new_status == 'answered':
+        status_entry = inquiry.status_history.first()
+        answer_files = form.cleaned_data.get('answer_files') or []
+        if status_entry and answer_files:
+            _save_inquiry_status_answer_files(status_entry, answer_files)
 
 
 def _serialize_inquiry(inquiry, request=None):
@@ -2149,8 +2329,14 @@ def call_tool(name, arguments, user, request=None):
         inquiry = _get_inquiry_or_error(arguments['inquiry_id'])
         if not _user_can_update_inquiry(user, inquiry):
             raise McpToolError('You do not have permission to update this inquiry.')
+        if 'status_change' in arguments and arguments['status_change'] is not None:
+            if not can_change_inquiry_status(user, inquiry):
+                raise McpToolError('You do not have permission to change this inquiry status.')
         form = _validate_inquiry_form(arguments, user, instance=inquiry)
         inquiry = form.save()
+        if 'status_change' in arguments and arguments['status_change'] is not None:
+            _apply_inquiry_status_change(inquiry, user, arguments['status_change'])
+            inquiry = _get_inquiry_or_error(inquiry.pk)
         return {'inquiry': _serialize_inquiry(inquiry, request)}
 
     if name == 'upload_session_attachment':

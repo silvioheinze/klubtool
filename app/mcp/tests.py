@@ -926,7 +926,8 @@ class McpMotionStatusChangeTests(TestCase):
                     'status': 'refer_to_committee',
                     'committee_id': self.committee.pk,
                     'votes': [
-                        {'party_id': self.party.pk, 'approve_votes': 6, 'reject_votes': 2},
+                        {'party_id': self.party.pk, 'stance': 'approve'},
+                        {'party_id': self.other_party.pk, 'stance': 'reject'},
                     ],
                 },
             },
@@ -940,8 +941,10 @@ class McpMotionStatusChangeTests(TestCase):
         entry = data['motion']['status_history'][0]
         self.assertEqual(entry['status'], 'refer_to_committee')
         self.assertEqual(entry['committee_id'], self.committee.pk)
-        self.assertEqual(len(entry['votes']), 1)
-        self.assertEqual(entry['votes'][0]['approve_votes'], 6)
+        self.assertEqual(len(entry['votes']), 2)
+        party_vote = {v['party_id']: v for v in entry['votes']}
+        self.assertEqual(party_vote[self.party.pk]['stance'], 'approve')
+        self.assertEqual(party_vote[self.party.pk]['approve_votes'], 10)
 
     def test_refer_to_committee_without_majority_sets_refer_no_majority(self):
         motion = self._create_motion()
@@ -953,7 +956,8 @@ class McpMotionStatusChangeTests(TestCase):
                     'status': 'refer_to_committee',
                     'committee_id': self.committee.pk,
                     'votes': [
-                        {'party_id': self.party.pk, 'approve_votes': 4, 'reject_votes': 5},
+                        {'party_id': self.party.pk, 'stance': 'reject'},
+                        {'party_id': self.other_party.pk, 'stance': 'approve'},
                     ],
                 },
             },
@@ -964,7 +968,7 @@ class McpMotionStatusChangeTests(TestCase):
         self.assertEqual(motion.status, 'refer_no_majority')
         self.assertIsNone(motion.committee_id)
         self.assertEqual(data['motion']['status_history'][0]['status'], 'refer_no_majority')
-        self.assertEqual(len(data['motion']['status_history'][0]['votes']), 1)
+        self.assertEqual(len(data['motion']['status_history'][0]['votes']), 2)
 
     def test_voted_in_committee_requires_prior_referral(self):
         motion = self._create_motion()
@@ -976,7 +980,7 @@ class McpMotionStatusChangeTests(TestCase):
                     'status': 'voted_in_committee',
                     'committee_id': self.committee.pk,
                     'votes': [
-                        {'party_id': self.party.pk, 'approve_votes': 5, 'reject_votes': 1},
+                        {'party_id': self.party.pk, 'stance': 'approve'},
                     ],
                 },
             },
@@ -1001,7 +1005,7 @@ class McpMotionStatusChangeTests(TestCase):
                     'status': 'voted_in_committee',
                     'committee_id': self.committee.pk,
                     'votes': [
-                        {'party_id': self.party.pk, 'approve_votes': 7, 'reject_votes': 1},
+                        {'party_id': self.party.pk, 'stance': 'approve'},
                     ],
                 },
             },
@@ -1020,6 +1024,7 @@ class McpMotionStatusChangeTests(TestCase):
                 'status_change': {
                     'status': 'approved',
                     'votes': [
+                        # Legacy counts over max seats (10) must fail
                         {'party_id': self.party.pk, 'approve_votes': 11, 'reject_votes': 0},
                     ],
                 },
@@ -1041,7 +1046,7 @@ class McpMotionStatusChangeTests(TestCase):
                 'status_change': {
                     'status': 'approved',
                     'votes': [
-                        {'party_id': self.party.pk, 'approve_votes': 5, 'reject_votes': 0},
+                        {'party_id': self.party.pk, 'stance': 'approve'},
                     ],
                 },
             },

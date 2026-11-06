@@ -118,28 +118,26 @@
                         {% endif %}
                         
                         <div class="alert alert-info">
-                            <i class="bi bi-info-circle"></i> 
-                            {% trans "Each party can vote in favor or against. Abstaining is not allowed. Votes cannot exceed the party's maximum seats for this term." %}
+                            <i class="bi bi-info-circle"></i>
+                            {% trans "Each party chooses approve, reject, or mixed. Leave all buttons off for a party to skip." %}
                         </div>
                         
                         <div class="table-responsive">
                             <table class="table table-bordered table-hover table-sm">
                                 <thead class="table-dark">
                                     <tr>
-                                        <th style="width: 20%; text-align: center;">{% trans "Party" %}</th>
-                                        <th style="width: 15%; text-align: center;">{% trans "Max Seats" %}</th>
-                                        <th style="width: 18%; text-align: center;">{% trans "In Favor" %}</th>
-                                        <th style="width: 18%; text-align: center;">{% trans "Against" %}</th>
-                                        <th style="width: 14%; text-align: center;">{% trans "Total" %}</th>
-                                        <th style="width: 15%; text-align: center;">{% trans "Notes" %}</th>
+                                        <th style="width: 40%;">{% trans "Party" %}</th>
+                                        <th class="text-center">{% trans "Vote" %}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {% for item in forms_with_data %}
                                         {% with form=item.form party_info=item.party_info %}
-                                        <tr>
+                                        <tr class="party-stance-row">
                                             <td class="align-middle">
                                                 {{ form.party }}
+                                                {{ form.approve_votes }}
+                                                {{ form.reject_votes }}
                                                 {% if party_info %}
                                                 <div class="fw-bold" style="color: {{ party_info.party.color }};">
                                                     {{ party_info.party.name }}
@@ -147,43 +145,18 @@
                                                 {% endif %}
                                             </td>
                                             <td class="text-center align-middle">
-                                                {% if party_info %}
-                                                <span class="badge bg-secondary">{{ party_info.max_seats }}</span>
-                                                {% else %}
-                                                <span class="badge bg-secondary">-</span>
-                                                {% endif %}
-                                            </td>
-                                            <td class="text-center">
-                                                {{ form.approve_votes }}
-                                                {% if form.errors and form.approve_votes.errors %}
-                                                    <div class="text-danger">
-                                                        {% for error in form.approve_votes.errors %}
-                                                            <small>{{ error }}</small>
-                                                        {% endfor %}
-                                                    </div>
-                                                {% endif %}
-                                            </td>
-                                            <td class="text-center">
-                                                {{ form.reject_votes }}
-                                                {% if form.errors and form.reject_votes.errors %}
-                                                    <div class="text-danger">
-                                                        {% for error in form.reject_votes.errors %}
-                                                            <small>{{ error }}</small>
-                                                        {% endfor %}
-                                                    </div>
-                                                {% endif %}
-                                            </td>
-                                            <td class="text-center align-middle">
-                                                <div class="form-control-plaintext text-center fw-bold" id="total-{{ forloop.counter0 }}">
-                                                    0
+                                                {{ form.stance }}
+                                                <div class="btn-group btn-group-sm" role="group" aria-label="{% trans 'Party vote' %}">
+                                                    <button type="button" class="btn btn-outline-success stance-pick" data-stance="approve">{% trans "Approve" %}</button>
+                                                    <button type="button" class="btn btn-outline-danger stance-pick" data-stance="reject">{% trans "Reject" %}</button>
+                                                    <button type="button" class="btn btn-outline-secondary stance-pick" data-stance="mixed">{% trans "Mixed" %}</button>
                                                 </div>
-                                            </td>
-                                            <td>
-                                                {{ form.notes }}
-                                                {% if form.errors and form.notes.errors %}
-                                                    <div class="text-danger">
-                                                        {% for error in form.notes.errors %}
-                                                            <small>{{ error }}</small>
+                                                {% if form.errors %}
+                                                    <div class="text-danger mt-1">
+                                                        {% for field in form %}
+                                                            {% for error in field.errors %}
+                                                                <small>{{ error }}</small>
+                                                            {% endfor %}
                                                         {% endfor %}
                                                     </div>
                                                 {% endif %}
@@ -206,22 +179,15 @@
                     </form>
                     
                     <script>
-                        // Calculate totals for each party and validate against max seats
                         document.addEventListener('DOMContentLoaded', function() {
-                            const approveInputs = document.querySelectorAll('input[name*="approve_votes"]');
-                            const rejectInputs = document.querySelectorAll('input[name*="reject_votes"]');
                             const voteTypeRadios = document.querySelectorAll('input[name="vote_type"]');
                             const committeeField = document.getElementById('committee-field');
                             const committeeSelect = document.getElementById('id_committee');
-                            
-                            // Show/hide committee field based on vote type
                             function toggleCommitteeField() {
                                 const selectedType = document.querySelector('input[name="vote_type"]:checked');
                                 if (selectedType && selectedType.value === 'refer_to_committee') {
                                     committeeField.style.display = 'block';
-                                    if (committeeSelect) {
-                                        committeeSelect.required = true;
-                                    }
+                                    if (committeeSelect) committeeSelect.required = true;
                                 } else {
                                     committeeField.style.display = 'none';
                                     if (committeeSelect) {
@@ -230,48 +196,46 @@
                                     }
                                 }
                             }
-                            
                             voteTypeRadios.forEach(function(radio) {
                                 radio.addEventListener('change', toggleCommitteeField);
                             });
-                            toggleCommitteeField(); // Initial check
-                            
-                            function updateTotal(index) {
-                                const row = approveInputs[index].closest('tr');
-                                const maxSeatsBadge = row.querySelector('.badge');
-                                const maxSeats = parseInt(maxSeatsBadge.textContent) || 0;
-                                
-                                const approve = parseInt(approveInputs[index].value) || 0;
-                                const reject = parseInt(rejectInputs[index].value) || 0;
-                                const total = approve + reject;
-                                
-                                const totalElement = document.getElementById('total-' + index);
-                                totalElement.textContent = total;
-                                
-                                // Highlight if exceeds max seats
-                                if (total > maxSeats) {
-                                    totalElement.classList.add('text-danger');
-                                    totalElement.classList.remove('text-success');
-                                } else if (total > 0) {
-                                    totalElement.classList.remove('text-danger');
-                                    totalElement.classList.add('text-success');
-                                } else {
-                                    totalElement.classList.remove('text-danger', 'text-success');
-                                }
-                                
-                                // Set max attribute on inputs
-                                approveInputs[index].setAttribute('max', maxSeats);
-                                rejectInputs[index].setAttribute('max', maxSeats);
+                            toggleCommitteeField();
+
+                            function syncStanceRow(row) {
+                                const hidden = row.querySelector('input[name$="-stance"]');
+                                if (!hidden) return;
+                                const val = (hidden.value || '').trim();
+                                row.querySelectorAll('.stance-pick').forEach(function(btn) {
+                                    const s = btn.getAttribute('data-stance');
+                                    const on = val === s;
+                                    btn.classList.toggle('active', on);
+                                    if (s === 'approve') {
+                                        btn.classList.toggle('btn-success', on);
+                                        btn.classList.toggle('btn-outline-success', !on);
+                                    } else if (s === 'reject') {
+                                        btn.classList.toggle('btn-danger', on);
+                                        btn.classList.toggle('btn-outline-danger', !on);
+                                    } else if (s === 'mixed') {
+                                        btn.classList.toggle('btn-secondary', on);
+                                        btn.classList.toggle('btn-outline-secondary', !on);
+                                    }
+                                });
                             }
-                            
-                            approveInputs.forEach(function(input, index) {
-                                input.addEventListener('input', function() { updateTotal(index); });
-                                updateTotal(index);
-                            });
-                            
-                            rejectInputs.forEach(function(input, index) {
-                                input.addEventListener('input', function() { updateTotal(index); });
-                                updateTotal(index);
+                            document.querySelectorAll('.party-stance-row').forEach(function(row) {
+                                syncStanceRow(row);
+                                row.querySelectorAll('.stance-pick').forEach(function(btn) {
+                                    btn.addEventListener('click', function() {
+                                        const hidden = row.querySelector('input[name$="-stance"]');
+                                        if (!hidden) return;
+                                        const s = btn.getAttribute('data-stance');
+                                        if ((hidden.value || '').trim() === s) {
+                                            hidden.value = '';
+                                        } else {
+                                            hidden.value = s;
+                                        }
+                                        syncStanceRow(row);
+                                    });
+                                });
                             });
                         });
                     </script>

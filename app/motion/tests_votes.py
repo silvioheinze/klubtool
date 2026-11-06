@@ -372,13 +372,13 @@ class MotionVoteFormTests(TestCase):
             seats=10
         )
     
-    def test_form_valid_with_votes(self):
-        """Test form with valid vote data"""
+    def test_form_valid_with_stance_approve(self):
+        """Test form with stance approve (seat-weighted)"""
         form_data = {
             'party': self.party.pk,
-            'approve_votes': 5,
-            'reject_votes': 3,
-            'notes': 'Test notes'
+            'stance': 'approve',
+            'approve_votes': 0,
+            'reject_votes': 0,
         }
         
         form = MotionVoteForm(
@@ -387,14 +387,16 @@ class MotionVoteFormTests(TestCase):
             max_seats=10
         )
         self.assertTrue(form.is_valid())
+        self.assertEqual(form.cleaned_data['approve_votes'], 10)
+        self.assertEqual(form.cleaned_data['reject_votes'], 0)
     
-    def test_form_requires_at_least_one_vote(self):
-        """Test that form requires at least one vote (no abstaining)"""
+    def test_form_empty_stance_skips_party(self):
+        """No stance and zero counts means this party row is skipped"""
         form_data = {
             'party': self.party.pk,
+            'stance': '',
             'approve_votes': 0,
             'reject_votes': 0,
-            'notes': ''
         }
         
         form = MotionVoteForm(
@@ -402,8 +404,7 @@ class MotionVoteFormTests(TestCase):
             motion=self.motion,
             max_seats=10
         )
-        self.assertFalse(form.is_valid())
-        self.assertIn('__all__', form.errors)
+        self.assertTrue(form.is_valid())
     
     def test_form_validates_max_seats(self):
         """Test that form validates votes don't exceed max seats"""
@@ -448,9 +449,9 @@ class MotionVoteFormTests(TestCase):
         """Test that form.save() creates a MotionVote instance"""
         form_data = {
             'party': self.party.pk,
-            'approve_votes': 5,
-            'reject_votes': 3,
-            'notes': 'Test notes'
+            'stance': 'approve',
+            'approve_votes': 0,
+            'reject_votes': 0,
         }
         
         form = MotionVoteForm(
@@ -464,8 +465,9 @@ class MotionVoteFormTests(TestCase):
         self.assertIsNotNone(vote.pk)
         self.assertEqual(vote.motion, self.motion)
         self.assertEqual(vote.party, self.party)
-        self.assertEqual(vote.approve_votes, 5)
-        self.assertEqual(vote.reject_votes, 3)
+        self.assertEqual(vote.approve_votes, 10)
+        self.assertEqual(vote.reject_votes, 0)
+        self.assertEqual(vote.stance, 'approve')
 
 
 class MotionVoteTypeFormTests(TestCase):
@@ -683,11 +685,13 @@ class MotionVoteFormSetTests(TestCase):
             'form-MIN_NUM_FORMS': '0',
             'form-MAX_NUM_FORMS': '1000',
             'form-0-party': self.party1.pk,
-            'form-0-approve_votes': '6',
-            'form-0-reject_votes': '4',
+            'form-0-stance': 'approve',
+            'form-0-approve_votes': '0',
+            'form-0-reject_votes': '0',
             'form-1-party': self.party2.pk,
-            'form-1-approve_votes': '5',
-            'form-1-reject_votes': '3',
+            'form-1-stance': 'reject',
+            'form-1-approve_votes': '0',
+            'form-1-reject_votes': '0',
         }
         
         formset = MotionVoteFormSetFactory(
@@ -840,11 +844,13 @@ class MotionVoteViewTests(TestCase):
             'form-MIN_NUM_FORMS': '0',
             'form-MAX_NUM_FORMS': '1000',
             'form-0-party': self.party1.pk,
-            'form-0-approve_votes': '6',
-            'form-0-reject_votes': '4',
+            'form-0-stance': 'approve',
+            'form-0-approve_votes': '0',
+            'form-0-reject_votes': '0',
             'form-1-party': self.party2.pk,
-            'form-1-approve_votes': '5',
-            'form-1-reject_votes': '3',
+            'form-1-stance': 'reject',
+            'form-1-approve_votes': '0',
+            'form-1-reject_votes': '0',
         }
         
         response = self.client.post(
@@ -860,8 +866,8 @@ class MotionVoteViewTests(TestCase):
         
         # Check totals and outcome
         vote1 = votes.get(party=self.party1)
-        self.assertEqual(vote1.total_favor, 11)  # 6 + 5
-        self.assertEqual(vote1.total_against, 7)  # 4 + 3
+        self.assertEqual(vote1.total_favor, 10)
+        self.assertEqual(vote1.total_against, 8)
         self.assertEqual(vote1.outcome, 'adopted')
     
     def test_vote_view_post_updates_motion_status_adopted(self):
@@ -877,11 +883,13 @@ class MotionVoteViewTests(TestCase):
             'form-MIN_NUM_FORMS': '0',
             'form-MAX_NUM_FORMS': '1000',
             'form-0-party': self.party1.pk,
-            'form-0-approve_votes': '8',
-            'form-0-reject_votes': '2',
+            'form-0-stance': 'approve',
+            'form-0-approve_votes': '0',
+            'form-0-reject_votes': '0',
             'form-1-party': self.party2.pk,
-            'form-1-approve_votes': '6',
-            'form-1-reject_votes': '2',
+            'form-1-stance': 'approve',
+            'form-1-approve_votes': '0',
+            'form-1-reject_votes': '0',
         }
         
         response = self.client.post(
@@ -905,11 +913,13 @@ class MotionVoteViewTests(TestCase):
             'form-MIN_NUM_FORMS': '0',
             'form-MAX_NUM_FORMS': '1000',
             'form-0-party': self.party1.pk,
-            'form-0-approve_votes': '2',
-            'form-0-reject_votes': '8',
+            'form-0-stance': 'reject',
+            'form-0-approve_votes': '0',
+            'form-0-reject_votes': '0',
             'form-1-party': self.party2.pk,
-            'form-1-approve_votes': '2',
-            'form-1-reject_votes': '6',
+            'form-1-stance': 'reject',
+            'form-1-approve_votes': '0',
+            'form-1-reject_votes': '0',
         }
         
         response = self.client.post(
@@ -934,11 +944,13 @@ class MotionVoteViewTests(TestCase):
             'form-MIN_NUM_FORMS': '0',
             'form-MAX_NUM_FORMS': '1000',
             'form-0-party': self.party1.pk,
-            'form-0-approve_votes': '8',
-            'form-0-reject_votes': '2',
+            'form-0-stance': 'approve',
+            'form-0-approve_votes': '0',
+            'form-0-reject_votes': '0',
             'form-1-party': self.party2.pk,
-            'form-1-approve_votes': '6',
-            'form-1-reject_votes': '2',
+            'form-1-stance': 'approve',
+            'form-1-approve_votes': '0',
+            'form-1-reject_votes': '0',
         }
         
         response = self.client.post(
@@ -964,11 +976,13 @@ class MotionVoteViewTests(TestCase):
             'form-MIN_NUM_FORMS': '0',
             'form-MAX_NUM_FORMS': '1000',
             'form-0-party': self.party1.pk,
-            'form-0-approve_votes': '6',
-            'form-0-reject_votes': '4',
+            'form-0-stance': 'approve',
+            'form-0-approve_votes': '0',
+            'form-0-reject_votes': '0',
             'form-1-party': self.party2.pk,
-            'form-1-approve_votes': '5',
-            'form-1-reject_votes': '3',
+            'form-1-stance': 'reject',
+            'form-1-approve_votes': '0',
+            'form-1-reject_votes': '0',
         }
         
         self.client.post(
@@ -986,11 +1000,13 @@ class MotionVoteViewTests(TestCase):
             'form-MIN_NUM_FORMS': '0',
             'form-MAX_NUM_FORMS': '1000',
             'form-0-party': self.party1.pk,
-            'form-0-approve_votes': '8',
-            'form-0-reject_votes': '2',
+            'form-0-stance': 'approve',
+            'form-0-approve_votes': '0',
+            'form-0-reject_votes': '0',
             'form-1-party': self.party2.pk,
-            'form-1-approve_votes': '7',
-            'form-1-reject_votes': '1',
+            'form-1-stance': 'approve',
+            'form-1-approve_votes': '0',
+            'form-1-reject_votes': '0',
         }
         
         self.client.post(
@@ -1009,8 +1025,8 @@ class MotionVoteViewTests(TestCase):
         vote1_round1 = round1_votes.get(party=self.party1)
         vote1_round2 = round2_votes.get(party=self.party1)
         
-        self.assertEqual(vote1_round1.total_favor, 11)  # 6 + 5
-        self.assertEqual(vote1_round2.total_favor, 15)  # 8 + 7
+        self.assertEqual(vote1_round1.total_favor, 10)
+        self.assertEqual(vote1_round2.total_favor, 18)
 
 
 class MotionDetailViewVoteTests(TestCase):
