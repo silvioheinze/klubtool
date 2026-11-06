@@ -1036,6 +1036,34 @@ class McpMotionStatusChangeTests(TestCase):
         self.assertEqual(motion.status, 'submitted')
         self.assertFalse(MotionVote.objects.filter(motion=motion).exists())
 
+    def test_inquiry_answered_with_reason_does_not_require_pdf(self):
+        self.status_editor.is_superuser = True
+        self.status_editor.save(update_fields=['is_superuser'])
+        inquiry = Inquiry.objects.create(
+            title='Answer Inquiry',
+            text='Question',
+            session=self.session,
+            group=self.group,
+            submitted_by=self.status_editor,
+            status='submitted',
+        )
+        data, is_error = self._tool_call(
+            'update_inquiry',
+            {
+                'inquiry_id': inquiry.pk,
+                'status_change': {
+                    'status': 'answered',
+                    'reason': 'Text answer',
+                },
+            },
+            self.editor_token,
+        )
+        self.assertFalse(is_error, data)
+        inquiry.refresh_from_db()
+        self.assertEqual(inquiry.status, 'answered')
+        self.assertEqual(inquiry.status_history.first().reason, 'Text answer')
+        self.assertEqual(inquiry.status_history.first().answer_files.count(), 0)
+
     def test_member_without_status_permission_cannot_use_status_change(self):
         motion = self._create_motion()
         data, is_error = self._tool_call(
