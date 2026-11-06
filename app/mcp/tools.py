@@ -1842,8 +1842,10 @@ def _apply_motion_status_change(motion, user, status_change):
 
     files_for_form = None
     answer_list = _mcp_build_answer_pdf_files(status_change)
-    if status == 'answered' and answer_list is None:
-        raise McpToolError('status_change.answer_files is required when status is answered.')
+    if status == 'answered' and answer_list is None and not (status_change.get('reason') or '').strip():
+        raise McpToolError(
+            'A text reason or status_change.answer_files is required when status is answered.'
+        )
     if answer_list is not None:
         files_for_form = {'answer_files': answer_list}
 

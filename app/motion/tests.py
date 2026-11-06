@@ -1444,9 +1444,20 @@ class StatusAnswerFileTests(TestCase):
         self.assertTrue(form.is_valid())
         self.assertEqual(len(form.cleaned_data['answer_files']), 2)
 
-    def test_motion_status_form_requires_pdf_when_answered(self):
+    def test_motion_status_form_accepts_text_reason_without_pdf(self):
         form = MotionStatusForm(
             data={'status': 'answered', 'reason': 'Answered'},
+            files=MultiValueDict(),
+            motion=self.motion,
+            changed_by=self.user,
+            locked_status='answered',
+        )
+        self.assertTrue(form.is_valid())
+        self.assertEqual(form.cleaned_data.get('answer_files'), [])
+
+    def test_motion_status_form_requires_pdf_or_reason_when_answered(self):
+        form = MotionStatusForm(
+            data={'status': 'answered', 'reason': ''},
             files=MultiValueDict(),
             motion=self.motion,
             changed_by=self.user,

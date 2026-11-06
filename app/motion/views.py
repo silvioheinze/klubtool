@@ -328,7 +328,7 @@ def record_motion_status_change(
                 motion.pk,
                 new_status,
             )
-        el        if vote_formset is not None:
+        elif vote_formset is not None:
             logger.info('Creating votes for status entry %s', status_entry.pk)
             for vote_form in vote_formset:
                 if vote_form.cleaned_data and not vote_form.cleaned_data.get('DELETE', False):
