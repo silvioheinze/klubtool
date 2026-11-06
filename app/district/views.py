@@ -4,7 +4,8 @@ from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.urls import reverse_lazy, reverse
-from django.db.models import Q, Prefetch, Case, When, Value, IntegerField
+from django.db.models import Q, Prefetch, Case, When, Value, IntegerField, Count
+from django.db.models.functions import ExtractYear
 from django.db import transaction
 from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
@@ -397,6 +398,101 @@ def _council_sessions_queryset(council):
     )
 
 
+def _council_party_year_statistics(council):
+    """
+    Count motions (by type) and inquiries per supporting party and session year.
+
+    Year is taken from session.scheduled_date in the project timezone.
+    Only active motions/inquiries with at least one supporting party are included.
+    """
+    from motion.models import Motion, Inquiry
+
+    tz = timezone.get_current_timezone()
+
+    motion_ann = (
+        Motion.objects.filter(session__council=council, is_active=True)
+        .filter(parties__id__isnull=False)
+        .annotate(year=ExtractYear('session__scheduled_date', tzinfo=tz))
+        .values('parties__id', 'year', 'motion_type')
+        .annotate(c=Count('id', distinct=True))
+    )
+    inquiry_ann = (
+        Inquiry.objects.filter(session__council=council, is_active=True)
+        .filter(parties__id__isnull=False)
+        .annotate(year=ExtractYear('session__scheduled_date', tzinfo=tz))
+        .values('parties__id', 'year')
+        .annotate(c=Count('id', distinct=True))
+    )
+
+    cells = {}
+
+    def _cell(party_id, year):
+        key = (party_id, year)
+        if key not in cells:
+            cells[key] = {'motions': 0, 'resolutions': 0, 'inquiries': 0}
+        return cells[key]
+
+    years_set = set()
+    party_ids = set()
+
+    for row in motion_ann:
+        party_id = row['parties__id']
+        yr = row['year']
+        if yr is None:
+            continue
+        years_set.add(yr)
+        party_ids.add(party_id)
+        c = _cell(party_id, yr)
+        mt = row['motion_type']
+        if mt == 'general':
+            c['motions'] += row['c']
+        elif mt == 'resolution':
+            c['resolutions'] += row['c']
+
+    for row in inquiry_ann:
+        party_id = row['parties__id']
+        yr = row['year']
+        if yr is None:
+            continue
+        years_set.add(yr)
+        party_ids.add(party_id)
+        c = _cell(party_id, yr)
+        c['inquiries'] += row['c']
+
+    if not party_ids or not years_set:
+        return {
+            'years': [],
+            'rows': [],
+            'totals': [],
+        }
+
+    years = sorted(years_set)
+    parties = Party.objects.filter(pk__in=party_ids).order_by('name')
+
+    rows = []
+    for party in parties:
+        row_cells = []
+        for yr in years:
+            row_cells.append(dict(cells.get((party.pk, yr), {'motions': 0, 'resolutions': 0, 'inquiries': 0})))
+        rows.append({'party': party, 'cells': row_cells})
+
+    totals = []
+    for yr in years:
+        tot = {'motions': 0, 'resolutions': 0, 'inquiries': 0}
+        for party in parties:
+            t = cells.get((party.pk, yr), {'motions': 0, 'resolutions': 0, 'inquiries': 0})
+            tot['motions'] += t['motions']
+            tot['resolutions'] += t['resolutions']
+            tot['inquiries'] += t['inquiries']
+        totals.append(tot)
+
+    return {
+        'years': years,
+        'rows': rows,
+        'totals': totals,
+    }
+
+
 @login_required
 def council_sessions_partial(request, pk):
     """
@@ -498,7 +594,9 @@ class CouncilDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         else:
             context['current_term'] = None
             context['current_term_seat_distributions'] = []
-        
+
+        context['party_year_statistics'] = _council_party_year_statistics(self.object)
+
         return context
 
 

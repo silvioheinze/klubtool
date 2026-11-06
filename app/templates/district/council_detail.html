@@ -189,6 +189,74 @@
             </div>
         </div>
     </div>
+
+    <!-- Party × year statistics (motions, resolutions, inquiries) -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-graph-up"></i> {% trans "Statistics" %}</h5>
+                </div>
+                <div class="card-body">
+                    {% if party_year_statistics.rows %}
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th scope="col" rowspan="2" class="align-middle">{% trans "Party" %}</th>
+                                        {% for year in party_year_statistics.years %}
+                                            <th scope="colgroup" colspan="3" class="text-center">{{ year }}</th>
+                                        {% endfor %}
+                                    </tr>
+                                    <tr>
+                                        {% for year in party_year_statistics.years %}
+                                            <th scope="col" class="text-center small text-muted">{% trans "Motions" %}</th>
+                                            <th scope="col" class="text-center small text-muted">{% trans "Resolutions" %}</th>
+                                            <th scope="col" class="text-center small text-muted">{% trans "Inquiries" %}</th>
+                                        {% endfor %}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for row in party_year_statistics.rows %}
+                                        <tr>
+                                            <th scope="row">
+                                                <div class="d-flex align-items-center">
+                                                    {% if row.party.color %}
+                                                        <div class="me-2" style="width: 12px; height: 12px; background-color: {{ row.party.color }}; border-radius: 2px;"></div>
+                                                    {% endif %}
+                                                    <span>
+                                                        <strong>{{ row.party.name }}</strong>
+                                                        {% if row.party.short_name %}
+                                                            <small class="text-muted ms-1">({{ row.party.short_name }})</small>
+                                                        {% endif %}
+                                                    </span>
+                                                </div>
+                                            </th>
+                                            {% for cell in row.cells %}
+                                                <td class="text-center">{{ cell.motions }}</td>
+                                                <td class="text-center">{{ cell.resolutions }}</td>
+                                                <td class="text-center">{{ cell.inquiries }}</td>
+                                            {% endfor %}
+                                        </tr>
+                                    {% endfor %}
+                                    <tr class="table-secondary fw-bold">
+                                        <th scope="row">{% trans "Total" %}</th>
+                                        {% for t in party_year_statistics.totals %}
+                                            <td class="text-center">{{ t.motions }}</td>
+                                            <td class="text-center">{{ t.resolutions }}</td>
+                                            <td class="text-center">{{ t.inquiries }}</td>
+                                        {% endfor %}
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted mb-0">{% trans "No statistics available yet." %}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- D3.js Hemicycle Chart Script -->
