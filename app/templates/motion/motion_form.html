@@ -44,6 +44,23 @@
                         </div>
 
                         <div class="mb-3">
+                            <label for="{{ form.file_number.id_for_label }}" class="form-label">
+                                {% trans "Aktenzahl" %}
+                            </label>
+                            {{ form.file_number }}
+                            {% if form.file_number.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.file_number.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            {% if form.file_number.help_text %}
+                                <div class="form-text">{{ form.file_number.help_text }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
                             <label for="{{ form.text.id_for_label }}" class="form-label">
                                 {% trans "Motion Text" %} <span class="text-danger">*</span>
                             </label>

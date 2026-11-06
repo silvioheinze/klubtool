@@ -61,6 +61,13 @@ class Motion(models.Model):
     
     # Basic Information
     title = models.CharField(max_length=200, help_text="Title of the motion")
+    file_number = models.CharField(
+        _('Aktenzahl'),
+        max_length=100,
+        blank=True,
+        default='',
+        help_text=_('Official file / case number (optional)'),
+    )
     text = models.TextField(blank=True, help_text="Detailed text of the motion")
     rationale = models.TextField(blank=True, help_text="Rationale and justification for the motion")
     motion_type = models.CharField(max_length=20, choices=MOTION_TYPE_CHOICES, default='general')
@@ -534,6 +541,13 @@ class Inquiry(models.Model):
     
     # Basic Information
     title = models.CharField(max_length=200, help_text="Title of the inquiry")
+    file_number = models.CharField(
+        _('Aktenzahl'),
+        max_length=100,
+        blank=True,
+        default='',
+        help_text=_('Official file / case number (optional)'),
+    )
     text = models.TextField(blank=True, help_text="Detailed text of the inquiry")
     answer = models.TextField(blank=True, help_text="Answer to the inquiry")
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')

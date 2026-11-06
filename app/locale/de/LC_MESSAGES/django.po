@@ -549,8 +549,8 @@ msgstr "Englisch"
 msgid "German"
 msgstr "Deutsch"
 
-msgid "Search by title, text, rationale, or group"
-msgstr "Suche nach Titel, Text, Begründung oder Klub"
+msgid "Search by title, Aktenzahl, text, rationale, or group"
+msgstr "Suche nach Titel, Aktenzahl, Text, Begründung oder Klub"
 
 msgid "All Types"
 msgstr "Alle Typen"
@@ -567,8 +567,14 @@ msgstr "Alle Parteien"
 msgid "Tags"
 msgstr "Schlagwörter"
 
-msgid "Search by title, text, or group"
-msgstr "Suche nach Titel, Text oder Klub"
+msgid "Search by title, Aktenzahl, text, or group"
+msgstr "Suche nach Titel, Aktenzahl, Text oder Klub"
+
+msgid "Aktenzahl"
+msgstr "Aktenzahl"
+
+msgid "Official file / case number (optional)"
+msgstr "Amtliche Aktenzahl (optional)"
 
 msgid ""
 "At least one vote (in favor or against) must be cast. Abstaining is not "

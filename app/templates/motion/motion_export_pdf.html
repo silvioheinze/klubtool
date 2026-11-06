@@ -25,6 +25,9 @@
 
     <div class="header">
         <h1>{{ motion.title }}</h1>
+        {% if motion.file_number %}
+        <p style="margin-top: 8px;"><strong>Aktenzahl:</strong> {{ motion.file_number }}</p>
+        {% endif %}
     </div>
 
     <div class="motion-intro">

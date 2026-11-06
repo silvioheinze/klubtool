@@ -149,6 +149,7 @@
                                 <thead>
                                     <tr>
                                         <th>{% trans "Title" %}</th>
+                                        <th>{% trans "Aktenzahl" %}</th>
                                         <th>{% trans "Status" %}</th>
                                         <th>{% trans "Parties" %}</th>
                                     </tr>
@@ -160,6 +161,13 @@
                                                 <a href="{% url 'inquiry:inquiry-detail' inquiry.pk %}">
                                                     {{ inquiry.title }}
                                                 </a>
+                                            </td>
+                                            <td>
+                                                {% if inquiry.file_number %}
+                                                    {{ inquiry.file_number }}
+                                                {% else %}
+                                                    <span class="text-muted">—</span>
+                                                {% endif %}
                                             </td>
                                             <td>
                                                 {% if inquiry.status == 'draft' %}
