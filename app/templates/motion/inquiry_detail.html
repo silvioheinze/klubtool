@@ -46,7 +46,12 @@
                             <dl class="row">
                                 <dt class="col-sm-4">{% trans "Title" %}</dt>
                                 <dd class="col-sm-8"><strong>{{ inquiry.title }}</strong></dd>
-                                
+
+                                {% if inquiry.file_number %}
+                                    <dt class="col-sm-4">{% trans "Aktenzahl" %}</dt>
+                                    <dd class="col-sm-8">{{ inquiry.file_number }}</dd>
+                                {% endif %}
+
                                 {% if inquiry.tags.exists %}
                                     <dt class="col-sm-4">{% trans "Tags" %}</dt>
                                     <dd class="col-sm-8">

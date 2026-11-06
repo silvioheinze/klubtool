@@ -24,6 +24,9 @@
 
     <div class="header">
         <h1>{{ inquiry.title }}</h1>
+        {% if inquiry.file_number %}
+        <p style="margin-top: 8px;"><strong>Aktenzahl:</strong> {{ inquiry.file_number }}</p>
+        {% endif %}
     </div>
 
     <div class="section">

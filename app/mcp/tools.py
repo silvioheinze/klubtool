@@ -64,7 +64,7 @@ from motion.forms import (
     MotionStatusForm,
     MotionVoteFormSetFactory,
 )
-from motion.models import Inquiry, InquiryAttachment, Motion, MotionAttachment, MotionStatus
+from motion.models import Inquiry, InquiryAttachment, Motion, MotionAttachment, MotionStatus, Tag
 from motion.views import (
     _get_user_accessible_group_ids,
     can_change_motion_status,
@@ -191,12 +191,49 @@ def list_tools():
             },
         },
         {
+            'name': 'list_parties',
+            'description': (
+                'List political parties in a district. Use returned ids as party_ids when creating '
+                'or updating motions and inquiries.'
+            ),
+            'inputSchema': {
+                'type': 'object',
+                'properties': {
+                    'district_id': {'type': 'integer', 'description': 'District primary key'},
+                    'search': {
+                        'type': 'string',
+                        'description': 'Optional filter by party name or short name (case-insensitive)',
+                    },
+                },
+                'required': ['district_id'],
+            },
+        },
+        {
+            'name': 'list_tags',
+            'description': (
+                'List active tag names and ids. Tag names can be passed to motion/inquiry create and '
+                'update tools and to list_motions/list_inquiries filters.'
+            ),
+            'inputSchema': {
+                'type': 'object',
+                'properties': {
+                    'search': {
+                        'type': 'string',
+                        'description': 'Optional filter by tag name (case-insensitive substring)',
+                    },
+                },
+            },
+        },
+        {
             'name': 'list_motions',
             'description': 'Search and list motions (Anträge) with optional filters. Same access as the web list.',
             'inputSchema': {
                 'type': 'object',
                 'properties': {
-                    'search': {'type': 'string', 'description': 'Search title, text, rationale, or group name'},
+                    'search': {
+                        'type': 'string',
+                        'description': 'Search title, file number, text, rationale, or group name',
+                    },
                     'status': {'type': 'string', 'description': 'Motion status filter'},
                     'session_id': {'type': 'integer'},
                     'party_id': {'type': 'integer'},
@@ -213,7 +250,10 @@ def list_tools():
             'inputSchema': {
                 'type': 'object',
                 'properties': {
-                    'search': {'type': 'string', 'description': 'Search title, text, or group name'},
+                    'search': {
+                        'type': 'string',
+                        'description': 'Search title, file number, text, or group name',
+                    },
                     'status': {'type': 'string', 'description': 'Inquiry status filter'},
                     'session_id': {'type': 'integer'},
                     'party_id': {'type': 'integer'},
@@ -241,6 +281,7 @@ def list_tools():
                 'type': 'object',
                 'properties': {
                     'title': {'type': 'string'},
+                    'file_number': {'type': 'string', 'description': 'Optional file / case number (Aktenzahl)'},
                     'session_id': {'type': 'integer'},
                     'group_id': {'type': 'integer', 'description': 'Optional; defaults to first accessible group'},
                     'text': {'type': 'string'},
@@ -269,6 +310,7 @@ def list_tools():
                 'properties': {
                     'motion_id': {'type': 'integer'},
                     'title': {'type': 'string'},
+                    'file_number': {'type': 'string', 'description': 'Optional file / case number (Aktenzahl)'},
                     'session_id': {'type': 'integer'},
                     'group_id': {'type': 'integer'},
                     'text': {'type': 'string'},
@@ -342,6 +384,7 @@ def list_tools():
                 'type': 'object',
                 'properties': {
                     'title': {'type': 'string'},
+                    'file_number': {'type': 'string', 'description': 'Optional file / case number (Aktenzahl)'},
                     'session_id': {'type': 'integer'},
                     'group_id': {'type': 'integer', 'description': 'Optional; defaults to first accessible group'},
                     'text': {'type': 'string'},
@@ -361,6 +404,7 @@ def list_tools():
                 'properties': {
                     'inquiry_id': {'type': 'integer'},
                     'title': {'type': 'string'},
+                    'file_number': {'type': 'string', 'description': 'Optional file / case number (Aktenzahl)'},
                     'session_id': {'type': 'integer'},
                     'group_id': {'type': 'integer'},
                     'text': {'type': 'string'},
@@ -856,6 +900,7 @@ def _filter_motions_queryset(queryset, arguments):
     if search:
         queryset = queryset.filter(
             Q(title__icontains=search)
+            | Q(file_number__icontains=search)
             | Q(text__icontains=search)
             | Q(rationale__icontains=search)
             | Q(group__name__icontains=search)
@@ -883,6 +928,7 @@ def _filter_inquiries_queryset(queryset, arguments):
     if search:
         queryset = queryset.filter(
             Q(title__icontains=search)
+            | Q(file_number__icontains=search)
             | Q(text__icontains=search)
             | Q(group__name__icontains=search)
         )
@@ -1609,6 +1655,7 @@ def _serialize_motion(motion, request=None, *, include_status_history=False):
     payload = {
         'id': motion.pk,
         'title': motion.title,
+        'file_number': motion.file_number,
         'text': motion.text,
         'rationale': motion.rationale,
         'motion_type': motion.motion_type,
@@ -1723,6 +1770,7 @@ def _serialize_inquiry(inquiry, request=None):
     return {
         'id': inquiry.pk,
         'title': inquiry.title,
+        'file_number': inquiry.file_number,
         'text': inquiry.text,
         'answer': inquiry.answer,
         'status': inquiry.status,
@@ -1743,6 +1791,10 @@ def _build_motion_form_data(arguments, *, instance=None):
     data = QueryDict(mutable=True)
     if instance:
         data['title'] = arguments.get('title', instance.title)
+        if 'file_number' in arguments:
+            data['file_number'] = arguments['file_number'] or ''
+        else:
+            data['file_number'] = instance.file_number or ''
         data['text'] = arguments.get('text', instance.text or '')
         data['rationale'] = arguments.get('rationale', instance.rationale or '')
         data['motion_type'] = arguments.get('motion_type', instance.motion_type)
@@ -1771,6 +1823,7 @@ def _build_motion_form_data(arguments, *, instance=None):
             data['tags'] = ', '.join(instance.tags.values_list('name', flat=True))
     else:
         data['title'] = arguments.get('title', '')
+        data['file_number'] = arguments.get('file_number', '') or ''
         data['text'] = arguments.get('text', '')
         data['rationale'] = arguments.get('rationale', '')
         data['motion_type'] = arguments.get('motion_type', 'general')
@@ -1792,6 +1845,10 @@ def _build_inquiry_form_data(arguments, *, instance=None):
     data = QueryDict(mutable=True)
     if instance:
         data['title'] = arguments.get('title', instance.title)
+        if 'file_number' in arguments:
+            data['file_number'] = arguments['file_number'] or ''
+        else:
+            data['file_number'] = instance.file_number or ''
         data['text'] = arguments.get('text', instance.text or '')
         data['answer'] = arguments.get('answer', instance.answer or '')
         data['status'] = instance.status
@@ -1814,6 +1871,7 @@ def _build_inquiry_form_data(arguments, *, instance=None):
             data['tags'] = ', '.join(instance.tags.values_list('name', flat=True))
     else:
         data['title'] = arguments.get('title', '')
+        data['file_number'] = arguments.get('file_number', '') or ''
         data['text'] = arguments.get('text', '')
         data['answer'] = arguments.get('answer', '')
         data['status'] = 'draft'
@@ -1973,6 +2031,43 @@ def call_tool(name, arguments, user, request=None):
         payload = _serialize_event(event, request)
         event.delete()
         return {'deleted': True, 'event': payload}
+
+    if name == 'list_parties':
+        district = _get_district_or_error(user, arguments['district_id'])
+        qs = Party.objects.filter(district=district, is_active=True).order_by('name')
+        search = arguments.get('search')
+        if search:
+            qs = qs.filter(
+                Q(name__icontains=search) | Q(short_name__icontains=search)
+            )
+        return {
+            'parties': [
+                {
+                    'id': party.pk,
+                    'name': party.name,
+                    'short_name': party.short_name,
+                    'color': party.color,
+                }
+                for party in qs
+            ],
+        }
+
+    if name == 'list_tags':
+        qs = Tag.objects.filter(is_active=True).order_by('name')
+        search = arguments.get('search')
+        if search:
+            qs = qs.filter(name__icontains=search)
+        return {
+            'tags': [
+                {
+                    'id': tag.pk,
+                    'name': tag.name,
+                    'slug': tag.slug,
+                    'color': tag.color,
+                }
+                for tag in qs
+            ],
+        }
 
     if name == 'list_motions':
         _require_list_motions_or_inquiries(user)

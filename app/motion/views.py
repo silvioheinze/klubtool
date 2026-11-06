@@ -391,6 +391,7 @@ class MotionListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
             if search_query:
                 queryset = queryset.filter(
                     Q(title__icontains=search_query) |
+                    Q(file_number__icontains=search_query) |
                     Q(text__icontains=search_query) |
                     Q(rationale__icontains=search_query) |
                     Q(group__name__icontains=search_query)
@@ -2028,6 +2029,7 @@ class InquiryListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
             if search_query:
                 queryset = queryset.filter(
                     Q(title__icontains=search_query) |
+                    Q(file_number__icontains=search_query) |
                     Q(text__icontains=search_query) |
                     Q(group__name__icontains=search_query)
                 )

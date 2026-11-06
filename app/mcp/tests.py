@@ -34,6 +34,7 @@ from motion.models import (
     MotionAttachment,
     MotionStatus,
     MotionVote,
+    Tag,
 )
 from user.models import McpToken, Role
 
@@ -454,6 +455,8 @@ class McpMotionInquiryTests(TestCase):
             'create_district_event_upload_url',
             'create_motion_upload_url',
             'create_inquiry_upload_url',
+            'list_parties',
+            'list_tags',
             'list_committees',
             'list_committee_meetings',
             'list_sessions',
@@ -469,6 +472,7 @@ class McpMotionInquiryTests(TestCase):
             'create_motion',
             {
                 'title': 'MCP Motion',
+                'file_number': 'BV-2025-01',
                 'session_id': self.session.pk,
                 'text': 'Motion text',
                 'party_ids': [self.party.pk],
@@ -476,8 +480,10 @@ class McpMotionInquiryTests(TestCase):
             self.member_token,
         )
         self.assertFalse(motion_error)
+        self.assertEqual(motion_data['motion']['file_number'], 'BV-2025-01')
         motion = Motion.objects.get(pk=motion_data['motion']['id'])
         self.assertEqual(motion.title, 'MCP Motion')
+        self.assertEqual(motion.file_number, 'BV-2025-01')
         self.assertEqual(motion.status, 'draft')
         self.assertEqual(motion.submitted_by, self.member)
         self.assertEqual(motion.interventions.count(), 0)
@@ -716,6 +722,88 @@ class McpMotionInquiryTests(TestCase):
         self.assertFalse(is_error)
         self.assertEqual(data['count'], 1)
         self.assertEqual(data['motions'][0]['session_id'], self.session.pk)
+
+    def test_list_parties_in_district_with_search(self):
+        second_party = Party.objects.create(
+            name='Alpha List Party',
+            short_name='ALP',
+            district=self.district,
+            is_active=True,
+            color='#112233',
+        )
+        data, is_error = self._tool_call(
+            'list_parties',
+            {'district_id': self.district.pk},
+            self.member_token,
+        )
+        self.assertFalse(is_error)
+        ids = {p['id'] for p in data['parties']}
+        self.assertIn(self.party.pk, ids)
+        self.assertIn(second_party.pk, ids)
+        self.assertEqual(
+            next(p for p in data['parties'] if p['id'] == second_party.pk)['short_name'],
+            'ALP',
+        )
+
+        filtered, is_error = self._tool_call(
+            'list_parties',
+            {'district_id': self.district.pk, 'search': 'Alpha'},
+            self.member_token,
+        )
+        self.assertFalse(is_error)
+        self.assertEqual(len(filtered['parties']), 1)
+        self.assertEqual(filtered['parties'][0]['id'], second_party.pk)
+
+    def test_list_parties_denied_for_foreign_district(self):
+        data, is_error = self._tool_call(
+            'list_parties',
+            {'district_id': self.other_district.pk},
+            self.member_token,
+        )
+        self.assertTrue(is_error)
+        self.assertIn('access', data['error'].lower())
+
+    def test_list_tags_with_search(self):
+        Tag.objects.create(name='Zebra MCP Tag', slug='zebra-mcp-tag', is_active=True)
+        housing = Tag.objects.create(name='Housing MCP', slug='housing-mcp', is_active=True)
+        Tag.objects.create(name='Inactive Tag', slug='inactive-tag', is_active=False)
+
+        data, is_error = self._tool_call('list_tags', {}, self.member_token)
+        self.assertFalse(is_error)
+        names = [t['name'] for t in data['tags']]
+        self.assertIn('Housing MCP', names)
+        self.assertIn('Zebra MCP Tag', names)
+        self.assertNotIn('Inactive Tag', names)
+
+        filtered, is_error = self._tool_call(
+            'list_tags',
+            {'search': 'Hous'},
+            self.member_token,
+        )
+        self.assertFalse(is_error)
+        self.assertEqual(len(filtered['tags']), 1)
+        self.assertEqual(filtered['tags'][0]['id'], housing.pk)
+        self.assertEqual(filtered['tags'][0]['slug'], 'housing-mcp')
+
+    def test_list_motions_search_matches_file_number(self):
+        Motion.objects.create(
+            title='File Number Motion',
+            file_number='BV-2025-42',
+            text='Body',
+            session=self.session,
+            group=self.group,
+            submitted_by=self.member,
+            status='draft',
+        )
+
+        data, is_error = self._tool_call(
+            'list_motions',
+            {'search': 'BV-2025-42'},
+            self.member_token,
+        )
+        self.assertFalse(is_error)
+        self.assertEqual(data['count'], 1)
+        self.assertEqual(data['motions'][0]['file_number'], 'BV-2025-42')
 
 
 class McpMotionStatusChangeTests(TestCase):

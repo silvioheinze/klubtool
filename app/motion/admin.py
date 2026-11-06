@@ -33,21 +33,21 @@ class TagAdmin(admin.ModelAdmin):
 class MotionAdmin(admin.ModelAdmin):
     """Admin configuration for Motion model"""
     list_display = [
-        'title', 'motion_type', 'status', 'group', 'session', 
+        'title', 'file_number', 'motion_type', 'status', 'group', 'session',
         'submitted_by', 'submitted_date', 'supporting_parties_count'
     ]
     list_filter = [
         'motion_type', 'status', 'tags', 'group__party__district', 
         'session__council', 'submitted_date', 'is_active'
     ]
-    search_fields = ['title', 'description', 'group__name', 'submitted_by__username']
+    search_fields = ['title', 'file_number', 'text', 'rationale', 'group__name', 'submitted_by__username']
     readonly_fields = ['submitted_date', 'last_modified', 'created_at', 'updated_at']
     filter_horizontal = ['parties', 'tags']
     date_hierarchy = 'submitted_date'
     
     fieldsets = (
         ('Basic Information', {
-            'fields': ('title', 'description', 'motion_type', 'status')
+            'fields': ('title', 'file_number', 'text', 'rationale', 'motion_type', 'status')
         }),
         ('Relationships', {
             'fields': ('session', 'group', 'parties', 'tags')
@@ -196,21 +196,21 @@ class InquiryStatusAdmin(admin.ModelAdmin):
 class InquiryAdmin(admin.ModelAdmin):
     """Admin configuration for Inquiry model"""
     list_display = [
-        'title', 'status', 'group', 'session', 
+        'title', 'file_number', 'status', 'group', 'session',
         'submitted_by', 'submitted_date', 'supporting_parties_count'
     ]
     list_filter = [
         'status', 'tags', 'group__party__district', 
         'session__council', 'submitted_date', 'is_active'
     ]
-    search_fields = ['title', 'text', 'answer', 'group__name', 'submitted_by__username']
+    search_fields = ['title', 'file_number', 'text', 'answer', 'group__name', 'submitted_by__username']
     readonly_fields = ['submitted_date', 'last_modified', 'created_at', 'updated_at']
     filter_horizontal = ['parties', 'interventions', 'tags']
     date_hierarchy = 'submitted_date'
     
     fieldsets = (
         ('Basic Information', {
-            'fields': ('title', 'text', 'answer', 'status')
+            'fields': ('title', 'file_number', 'text', 'answer', 'status')
         }),
         ('Relationships', {
             'fields': ('session', 'group', 'parties', 'interventions')

@@ -80,11 +80,12 @@ class MotionForm(forms.ModelForm):
     class Meta:
         model = Motion
         fields = [
-            'title', 'text', 'rationale', 'motion_type', 'status',
+            'title', 'file_number', 'text', 'rationale', 'motion_type', 'status',
             'session', 'committee', 'group', 'parties', 'interventions', 'tags'
         ]
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control'}),
+            'file_number': forms.TextInput(attrs={'class': 'form-control'}),
             'text': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
             'rationale': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
             'motion_type': forms.Select(attrs={'class': 'form-select'}),
@@ -245,11 +246,12 @@ class InquiryForm(forms.ModelForm):
     class Meta:
         model = Inquiry
         fields = [
-            'title', 'text', 'answer', 'status',
+            'title', 'file_number', 'text', 'answer', 'status',
             'session', 'group', 'parties', 'interventions', 'tags'
         ]
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control'}),
+            'file_number': forms.TextInput(attrs={'class': 'form-control'}),
             'text': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
             'answer': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
             'status': forms.HiddenInput(),
@@ -419,7 +421,7 @@ class MotionFilterForm(forms.Form):
         required=False,
         widget=forms.TextInput(attrs={
             'class': 'form-control',
-            'placeholder': _('Search by title, text, rationale, or group'),
+            'placeholder': _('Search by title, Aktenzahl, text, rationale, or group'),
         })
     )
     motion_type = forms.ChoiceField(
@@ -461,7 +463,7 @@ class InquiryFilterForm(forms.Form):
         required=False,
         widget=forms.TextInput(attrs={
             'class': 'form-control',
-            'placeholder': _('Search by title, text, or group'),
+            'placeholder': _('Search by title, Aktenzahl, text, or group'),
         })
     )
     status = forms.ChoiceField(

@@ -41,7 +41,12 @@
                             <dl class="row">
                                 <dt class="col-sm-4">{% trans "Title" %}</dt>
                                 <dd class="col-sm-8"><strong>{{ motion.title }}</strong></dd>
-                                
+
+                                {% if motion.file_number %}
+                                    <dt class="col-sm-4">{% trans "Aktenzahl" %}</dt>
+                                    <dd class="col-sm-8">{{ motion.file_number }}</dd>
+                                {% endif %}
+
                                 <dt class="col-sm-4">{% trans "Type" %}</dt>
                                 <dd class="col-sm-8">
                                     <span class="badge bg-secondary">{{ motion.get_motion_type_display }}</span>
