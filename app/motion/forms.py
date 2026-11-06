@@ -1261,10 +1261,11 @@ class MotionStatusForm(forms.ModelForm):
         
         if status == 'answered':
             answer_files = self.files.getlist('answer_files') if self.files else []
+            reason = (cleaned_data.get('reason') or '').strip()
             try:
                 cleaned_data['answer_files'] = validate_answer_pdf_files(
                     answer_files,
-                    require_at_least_one=not self.optional_answer_pdfs,
+                    require_at_least_one=not self.optional_answer_pdfs and not reason,
                 )
             except forms.ValidationError as exc:
                 self.add_error('answer_files', exc)
@@ -1337,10 +1338,11 @@ class InquiryStatusForm(forms.ModelForm):
 
         if status == 'answered':
             answer_files = self.files.getlist('answer_files') if self.files else []
+            reason = (cleaned_data.get('reason') or '').strip()
             try:
                 cleaned_data['answer_files'] = validate_answer_pdf_files(
                     answer_files,
-                    require_at_least_one=not self.optional_answer_pdfs,
+                    require_at_least_one=not self.optional_answer_pdfs and not reason,
                 )
             except forms.ValidationError as exc:
                 self.add_error('answer_files', exc)
