@@ -818,6 +818,15 @@ msgstr "Anträge"
 msgid "Inquiries"
 msgstr "Anfragen"
 
+msgid "Statistics"
+msgstr "Statistiken"
+
+msgid "Resolutions"
+msgstr "Resolutionen"
+
+msgid "No statistics available yet."
+msgstr "Noch keine Statistiken vorhanden."
+
 msgid "Next Session"
 msgstr "Nächste Sitzung"
 

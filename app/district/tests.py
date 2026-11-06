@@ -27,7 +27,10 @@ from .views import (
     user_can_manage_district_events,
     user_can_edit_district_event_attachment,
     CouncilCommitteesExportPDFView,
+    _council_party_year_statistics,
 )
+from motion.models import Motion, Inquiry
+from group.models import Group
 from pages.calendar_utils import get_personal_calendar_events
 
 User = get_user_model()
@@ -1380,6 +1383,176 @@ class CouncilViewTests(TestCase):
         # Check that the council was updated
         self.council.refresh_from_db()
         self.assertEqual(self.council.name, 'Updated Council')
+
+    def test_council_detail_statistics_empty_message(self):
+        """Statistics card shows empty message when there is nothing to count."""
+        self.client.login(username='admin', password='adminpass123')
+        response = self.client.get(reverse('district:council-detail', kwargs={'pk': self.council.pk}))
+        self.assertEqual(response.status_code, 200)
+        # Default LANGUAGE_CODE is de; assert translated strings
+        self.assertContains(response, 'Statistiken')
+        self.assertContains(response, 'Noch keine Statistiken vorhanden.')
+
+    def test_council_party_year_statistics_by_supporting_party_and_session_year(self):
+        """Counts use supporting parties and session.scheduled_date year; types split correctly."""
+        term = Term.objects.create(
+            name='Stats Term',
+            start_date=timezone.now().date(),
+            end_date=timezone.now().date() + timedelta(days=365),
+        )
+        party_a = Party.objects.create(name='Party Alpha', district=self.district, is_active=True)
+        party_b = Party.objects.create(name='Party Beta', district=self.district, is_active=True)
+        group_a = Group.objects.create(name='Group A', party=party_a, is_active=True)
+        group_b = Group.objects.create(name='Group B', party=party_b, is_active=True)
+
+        s2023 = Session.objects.create(
+            title='Session 2023',
+            council=self.council,
+            term=term,
+            session_type='regular',
+            status='scheduled',
+            scheduled_date=timezone.make_aware(datetime(2023, 6, 15, 10, 0, 0)),
+        )
+        s2024 = Session.objects.create(
+            title='Session 2024',
+            council=self.council,
+            term=term,
+            session_type='regular',
+            status='scheduled',
+            scheduled_date=timezone.make_aware(datetime(2024, 3, 10, 10, 0, 0)),
+        )
+
+        m_general = Motion.objects.create(
+            title='General motion',
+            session=s2023,
+            group=group_a,
+            motion_type='general',
+            status='submitted',
+            submitted_by=self.superuser,
+            is_active=True,
+        )
+        m_general.parties.add(party_a)
+
+        m_res = Motion.objects.create(
+            title='Resolution motion',
+            session=s2023,
+            group=group_a,
+            motion_type='resolution',
+            status='submitted',
+            submitted_by=self.superuser,
+            is_active=True,
+        )
+        m_res.parties.add(party_a)
+
+        inq = Inquiry.objects.create(
+            title='Inquiry one',
+            session=s2024,
+            group=group_b,
+            status='submitted',
+            submitted_by=self.superuser,
+            is_active=True,
+        )
+        inq.parties.add(party_b)
+
+        m_joint = Motion.objects.create(
+            title='Joint motion',
+            session=s2024,
+            group=group_a,
+            motion_type='general',
+            status='submitted',
+            submitted_by=self.superuser,
+            is_active=True,
+        )
+        m_joint.parties.add(party_a, party_b)
+
+        Motion.objects.create(
+            title='No supporting parties',
+            session=s2024,
+            group=group_a,
+            motion_type='general',
+            status='submitted',
+            submitted_by=self.superuser,
+            is_active=True,
+        )
+
+        Motion.objects.create(
+            title='Inactive skip',
+            session=s2024,
+            group=group_a,
+            motion_type='general',
+            status='submitted',
+            submitted_by=self.superuser,
+            is_active=False,
+        )
+        inactive = Motion.objects.get(title='Inactive skip')
+        inactive.parties.add(party_a)
+
+        other_district = District.objects.create(
+            name='Other Local',
+            code='OL',
+            description='Other',
+        )
+        other_party = Party.objects.create(name='Other Party', district=other_district, is_active=True)
+        other_group = Group.objects.create(name='Other Group', party=other_party, is_active=True)
+        other_session = Session.objects.create(
+            title='Other council session',
+            council=other_district.council,
+            term=term,
+            session_type='regular',
+            status='scheduled',
+            scheduled_date=timezone.make_aware(datetime(2024, 1, 1, 12, 0, 0)),
+        )
+        m_other = Motion.objects.create(
+            title='Other council motion',
+            session=other_session,
+            group=other_group,
+            motion_type='general',
+            status='submitted',
+            submitted_by=self.superuser,
+            is_active=True,
+        )
+        m_other.parties.add(other_party)
+
+        m_year_from_session = Motion.objects.create(
+            title='Year from session date',
+            session=s2024,
+            group=group_a,
+            motion_type='general',
+            status='submitted',
+            submitted_by=self.superuser,
+            is_active=True,
+        )
+        m_year_from_session.parties.add(party_a)
+        Motion.objects.filter(pk=m_year_from_session.pk).update(
+            submitted_date=timezone.make_aware(datetime(2023, 1, 1, 0, 0, 0))
+        )
+
+        stats = _council_party_year_statistics(self.council)
+        self.assertEqual(stats['years'], [2023, 2024])
+
+        rows_by_party = {r['party'].pk: r['cells'] for r in stats['rows']}
+        self.assertEqual(len(rows_by_party), 2)
+
+        idx_2023 = 0
+        idx_2024 = 1
+
+        a2023 = rows_by_party[party_a.pk][idx_2023]
+        self.assertEqual(a2023, {'motions': 1, 'resolutions': 1, 'inquiries': 0})
+        a2024 = rows_by_party[party_a.pk][idx_2024]
+        self.assertEqual(a2024, {'motions': 2, 'resolutions': 0, 'inquiries': 0})
+
+        b2023 = rows_by_party[party_b.pk][idx_2023]
+        self.assertEqual(b2023, {'motions': 0, 'resolutions': 0, 'inquiries': 0})
+        b2024 = rows_by_party[party_b.pk][idx_2024]
+        self.assertEqual(b2024, {'motions': 1, 'resolutions': 0, 'inquiries': 1})
+
+        self.assertEqual(
+            stats['totals'],
+            [
+                {'motions': 1, 'resolutions': 1, 'inquiries': 0},
+                {'motions': 3, 'resolutions': 0, 'inquiries': 1},
+            ],
+        )
 
 
 class SessionViewTests(TestCase):
