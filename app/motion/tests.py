@@ -204,29 +204,26 @@ class MotionVoteFormTests(TestCase):
         )
     
     def test_motion_vote_form_valid_data(self):
-        """Test MotionVoteForm with valid data"""
+        """Test MotionVoteForm with valid legacy counts (mixed)"""
         form_data = {
             'party': self.party.pk,
             'approve_votes': 5,
             'reject_votes': 3,
-            'notes': 'Test vote notes'
         }
         
         form = MotionVoteForm(data=form_data, motion=self.motion)
         self.assertTrue(form.is_valid())
     
-    def test_motion_vote_form_no_votes(self):
-        """Test MotionVoteForm with party selected but no votes cast is invalid (abstaining not allowed)"""
+    def test_motion_vote_form_no_stance_means_no_vote(self):
+        """Empty stance and zero counts is valid (party skipped in a round)"""
         form_data = {
             'party': self.party.pk,
             'approve_votes': 0,
             'reject_votes': 0,
-            'notes': ''
         }
         
         form = MotionVoteForm(data=form_data, motion=self.motion)
-        self.assertFalse(form.is_valid())
-        self.assertIn('__all__', form.errors)
+        self.assertTrue(form.is_valid())
     
     def test_motion_vote_form_negative_votes(self):
         """Test MotionVoteForm with negative votes"""
@@ -350,11 +347,9 @@ class MotionVoteFormSetTests(TestCase):
             'form-0-party': self.party1.pk,
             'form-0-approve_votes': '5',
             'form-0-reject_votes': '3',
-            'form-0-notes': '',
             'form-1-party': self.party1.pk,  # Duplicate party
             'form-1-approve_votes': '2',
             'form-1-reject_votes': '1',
-            'form-1-notes': '',
         }
         
         formset = MotionVoteFormSetFactory(data=form_data, motion=self.motion)
@@ -849,7 +844,7 @@ class MotionListViewTests(TestCase):
         response = self.client.get(reverse('motion:motion-list'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Alle Sitzungen')
-        self.assertContains(response, 'Suche nach Titel, Text, Begründung oder Klub')
+        self.assertContains(response, 'Suche nach Titel, Aktenzahl, Text, Begründung oder Klub')
 
 
 class MotionCreateViewTests(TestCase):

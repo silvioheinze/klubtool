@@ -213,18 +213,17 @@
                                         <table class="table table-bordered table-hover table-sm">
                                             <thead class="table-dark">
                                                 <tr>
-                                                    <th style="width: 25%; text-align: center;">{% trans "Party" %}</th>
-                                                    <th style="width: 15%; text-align: center;">{% trans "Approve" %}</th>
-                                                    <th style="width: 15%; text-align: center;">{% trans "Reject" %}</th>
-                                                    <th style="width: 10%; text-align: center;">{% trans "Total" %}</th>
-                                                    <th style="width: 20%; text-align: center;">{% trans "Notes" %}</th>
+                                                    <th style="width: 40%;">{% trans "Party" %}</th>
+                                                    <th class="text-center">{% trans "Vote" %}</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 {% for form in vote_formset %}
-                                                    <tr>
+                                                    <tr class="party-stance-row">
                                                         <td class="align-middle">
                                                             {{ form.party }}
+                                                            {{ form.approve_votes }}
+                                                            {{ form.reject_votes }}
                                                             <div class="fw-bold text-primary">
                                                                 {% if form.initial.party %}
                                                                     {% for party in form.party.field.queryset %}
@@ -248,49 +247,18 @@
                                                                     {% trans "Party" %}
                                                                 {% endif %}
                                                             </div>
-                                                            {% if form.max_seats %}
-                                                                <small class="text-muted d-block">{% trans "Max seats" %}: {{ form.max_seats }}</small>
-                                                            {% endif %}
                                                         </td>
-                                                        <td class="text-center">
-                                                            {{ form.approve_votes }}
-                                                            {% if form.approve_votes.errors %}
-                                                                <div class="text-danger">
-                                                                    {% for error in form.approve_votes.errors %}
-                                                                        <small>{{ error }}</small>
-                                                                    {% endfor %}
-                                                                </div>
-                                                            {% endif %}
-                                                            {% if form.non_field_errors %}
-                                                                <div class="text-danger">
-                                                                    {% for error in form.non_field_errors %}
-                                                                        <small>{{ error }}</small>
-                                                                    {% endfor %}
-                                                                </div>
-                                                            {% endif %}
-                                                        </td>
-                                                        <td class="text-center">
-                                                            {{ form.reject_votes }}
-                                                            {% if form.reject_votes.errors %}
-                                                                <div class="text-danger">
-                                                                    {% for error in form.reject_votes.errors %}
-                                                                        <small>{{ error }}</small>
-                                                                    {% endfor %}
-                                                                </div>
-                                                            {% endif %}
-                                                        </td>
-                                                        <td class="text-center">
-                                                            <div class="form-control-plaintext text-center fw-bold" id="total-{{ forloop.counter0 }}">
-                                                                0
+                                                        <td class="text-center align-middle">
+                                                            {{ form.stance }}
+                                                            <div class="btn-group btn-group-sm" role="group" aria-label="{% trans 'Party vote' %}">
+                                                                <button type="button" class="btn btn-outline-success stance-pick" data-stance="approve">{% trans "Approve" %}</button>
+                                                                <button type="button" class="btn btn-outline-danger stance-pick" data-stance="reject">{% trans "Reject" %}</button>
+                                                                <button type="button" class="btn btn-outline-secondary stance-pick" data-stance="mixed">{% trans "Mixed" %}</button>
                                                             </div>
-                                                        </td>
-                                                        <td>
-                                                            {{ form.notes }}
-                                                            {% if form.notes.errors %}
-                                                                <div class="text-danger">
-                                                                    {% for error in form.notes.errors %}
-                                                                        <small>{{ error }}</small>
-                                                                    {% endfor %}
+                                                            {% if form.stance.errors or form.non_field_errors %}
+                                                                <div class="text-danger mt-1">
+                                                                    {% for error in form.stance.errors %}<small>{{ error }}</small>{% endfor %}
+                                                                    {% for error in form.non_field_errors %}<small>{{ error }}</small>{% endfor %}
                                                                 </div>
                                                             {% endif %}
                                                         </td>
@@ -453,74 +421,43 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Calculate totals for vote formset
-    const approveInputs = document.querySelectorAll('input[name*="approve_votes"]');
-    const rejectInputs = document.querySelectorAll('input[name*="reject_votes"]');
-    
-    function updateTotal(index) {
-        // Safely get values, defaulting to 0 if element doesn't exist
-        const approve = (approveInputs[index] && approveInputs[index].value) ? parseInt(approveInputs[index].value) || 0 : 0;
-        const reject = (rejectInputs[index] && rejectInputs[index].value) ? parseInt(rejectInputs[index].value) || 0 : 0;
-        const total = approve + reject;
-        
-        const totalElement = document.getElementById('total-' + index);
-        if (totalElement) {
-            totalElement.textContent = total;
-            
-            // Check if total exceeds max seats and highlight if so
-            const approveInput = approveInputs[index];
-            const maxSeats = approveInput ? parseInt(approveInput.getAttribute('max')) || 0 : 0;
-            if (maxSeats > 0 && total > maxSeats) {
-                totalElement.classList.add('text-danger', 'fw-bold');
-                totalElement.title = '{% trans "Total exceeds maximum seats" %}';
-            } else {
-                totalElement.classList.remove('text-danger', 'fw-bold');
-                totalElement.title = '';
+    function syncStanceRow(row) {
+        const hidden = row.querySelector('input[name$="-stance"]');
+        if (!hidden) return;
+        const val = (hidden.value || '').trim();
+        row.querySelectorAll('.stance-pick').forEach(function(btn) {
+            const s = btn.getAttribute('data-stance');
+            const on = val === s;
+            btn.classList.toggle('active', on);
+            if (s === 'approve') {
+                btn.classList.toggle('btn-success', on);
+                btn.classList.toggle('btn-outline-success', !on);
+            } else if (s === 'reject') {
+                btn.classList.toggle('btn-danger', on);
+                btn.classList.toggle('btn-outline-danger', !on);
+            } else if (s === 'mixed') {
+                btn.classList.toggle('btn-secondary', on);
+                btn.classList.toggle('btn-outline-secondary', !on);
             }
-        }
+        });
     }
-    
-    // Only process if we have matching inputs
-    const maxLength = Math.max(approveInputs.length, rejectInputs.length);
-    for (let index = 0; index < maxLength; index++) {
-        if (approveInputs[index]) {
-            // Ensure the input has a numeric value (for proper spinner behavior)
-            if (approveInputs[index].value === '' || approveInputs[index].value === null || isNaN(parseInt(approveInputs[index].value))) {
-                approveInputs[index].value = '0';
-            }
-            // Listen to both 'input' and 'change' events for number inputs
-            // 'change' is triggered by spinner arrows, 'input' by typing
-            approveInputs[index].addEventListener('input', function() { 
-                updateTotal(index); 
-            }, false);
-            approveInputs[index].addEventListener('change', function() { 
-                // Normalize empty values to 0 after change
-                if (this.value === '' || this.value === null) {
-                    this.value = '0';
+
+    document.querySelectorAll('.party-stance-row').forEach(function(row) {
+        syncStanceRow(row);
+        row.querySelectorAll('.stance-pick').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                const hidden = row.querySelector('input[name$="-stance"]');
+                if (!hidden) return;
+                const s = btn.getAttribute('data-stance');
+                if ((hidden.value || '').trim() === s) {
+                    hidden.value = '';
+                } else {
+                    hidden.value = s;
                 }
-                updateTotal(index); 
-            }, false);
-            updateTotal(index);
-        }
-        if (rejectInputs[index]) {
-            // Ensure the input has a numeric value (for proper spinner behavior)
-            if (rejectInputs[index].value === '' || rejectInputs[index].value === null || isNaN(parseInt(rejectInputs[index].value))) {
-                rejectInputs[index].value = '0';
-            }
-            // Listen to both 'input' and 'change' events for number inputs
-            rejectInputs[index].addEventListener('input', function() { 
-                updateTotal(index); 
-            }, false);
-            rejectInputs[index].addEventListener('change', function() { 
-                // Normalize empty values to 0 after change
-                if (this.value === '' || this.value === null) {
-                    this.value = '0';
-                }
-                updateTotal(index); 
-            }, false);
-            updateTotal(index);
-        }
-    }
+                syncStanceRow(row);
+            });
+        });
+    });
 });
 </script>
 {% endblock content %}

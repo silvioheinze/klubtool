@@ -228,7 +228,7 @@ class InquiryListViewTests(TestCase):
         response = self.client.get(reverse('inquiry:inquiry-list'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Alle Sitzungen')
-        self.assertContains(response, 'Suche nach Titel, Text oder Klub')
+        self.assertContains(response, 'Suche nach Titel, Aktenzahl, Text oder Klub')
 
 
 class InquiryDetailViewTests(TestCase):

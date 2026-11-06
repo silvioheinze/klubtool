@@ -328,22 +328,34 @@ def record_motion_status_change(
                 motion.pk,
                 new_status,
             )
-        elif vote_formset is not None:
+        el        if vote_formset is not None:
             logger.info('Creating votes for status entry %s', status_entry.pk)
             for vote_form in vote_formset:
                 if vote_form.cleaned_data and not vote_form.cleaned_data.get('DELETE', False):
                     party = vote_form.cleaned_data.get('party')
                     approve_votes = vote_form.cleaned_data.get('approve_votes', 0) or 0
                     reject_votes = vote_form.cleaned_data.get('reject_votes', 0) or 0
-                    notes = vote_form.cleaned_data.get('notes', '')
-                    if (approve_votes > 0 or reject_votes > 0) and party:
+                    stance = (vote_form.cleaned_data.get('stance') or '').strip()
+                    if not stance and approve_votes == 0 and reject_votes == 0:
+                        continue
+                    if not stance:
+                        if approve_votes > 0 and reject_votes == 0:
+                            stance = 'approve'
+                        elif reject_votes > 0 and approve_votes == 0:
+                            stance = 'reject'
+                        elif approve_votes == 0 and reject_votes == 0:
+                            continue
+                        else:
+                            stance = 'mixed'
+                    if party:
                         MotionVote.objects.create(
                             motion=motion,
                             party=party,
                             status=status_entry,
+                            stance=stance,
                             approve_votes=approve_votes,
                             reject_votes=reject_votes,
-                            notes=notes,
+                            notes='',
                         )
                         votes_created += 1
             logger.info('Created %s votes for status change', votes_created)
@@ -872,7 +884,16 @@ def motion_vote_view(request, pk):
                     party = form.cleaned_data['party']
                     approve_votes = form.cleaned_data.get('approve_votes', 0) or 0
                     reject_votes = form.cleaned_data.get('reject_votes', 0) or 0
-                    notes = form.cleaned_data.get('notes', '')
+                    stance = (form.cleaned_data.get('stance') or '').strip()
+                    if not stance:
+                        if approve_votes > 0 and reject_votes == 0:
+                            stance = 'approve'
+                        elif reject_votes > 0 and approve_votes == 0:
+                            stance = 'reject'
+                        elif approve_votes == 0 and reject_votes == 0:
+                            stance = 'mixed'
+                        else:
+                            stance = 'mixed'
                     total_favor += approve_votes
                     total_against += reject_votes
                     MotionVote.objects.create(
@@ -881,9 +902,10 @@ def motion_vote_view(request, pk):
                         vote_type=new_vote_type,
                         vote_name=new_vote_name,
                         vote_session=new_vote_session,
+                        stance=stance,
                         approve_votes=approve_votes,
                         reject_votes=reject_votes,
-                        notes=notes
+                        notes=''
                     )
 
             # Update motion status based on outcome
@@ -1235,14 +1257,8 @@ def motion_status_change_view(request, pk):
                         prefix = vote_form.prefix
                         has_votes = False
                         if request.POST:
-                            approve_str = request.POST.get(f'{prefix}-approve_votes', '')
-                            reject_str = request.POST.get(f'{prefix}-reject_votes', '')
-                            try:
-                                approve_votes = int(approve_str) if approve_str and approve_str.strip() else 0
-                                reject_votes = int(reject_str) if reject_str and reject_str.strip() else 0
-                                has_votes = approve_votes > 0 or reject_votes > 0
-                            except (ValueError, TypeError):
-                                pass
+                            stance_str = (request.POST.get(f'{prefix}-stance') or '').strip()
+                            has_votes = bool(stance_str)
                         
                         # Only show errors if this form has votes (empty forms can have errors but we'll ignore them)
                         if has_votes:

@@ -3558,6 +3558,28 @@ msgstr "Gegen"
 msgid "Total"
 msgstr "Total"
 
+msgid "Vote"
+msgstr "Stimme"
+
+msgid "Mixed"
+msgstr "Gemischt"
+
+msgid "Party vote"
+msgstr "Parteistimme"
+
+msgid "No vote"
+msgstr "Keine Stimme"
+
+msgid "At least one party must have a vote (approve, reject, or mixed)."
+msgstr ""
+"Mindestens eine Partei muss eine Stimme haben (Zustimmen, Ablehnen oder "
+"Gemischt)."
+
+msgid "Each party chooses approve, reject, or mixed. Leave all buttons off for a party to skip."
+msgstr ""
+"Jede Partei wählt Zustimmen, Ablehnen oder Gemischt. Alle Buttons aus lassen, "
+"um die Partei zu überspringen."
+
 msgid "No status changes recorded."
 msgstr "Keine Statusänderungen aufgezeichnet."
 
@@ -3692,7 +3714,7 @@ msgstr ""
 "des Antrags zu verfolgen."
 
 msgid "Record Party Votes"
-msgstr "Erste Stimmen aufzeichnen"
+msgstr "Stimmen der Parteien"
 
 msgid "Max seats"
 msgstr "Maximale Mandate"
@@ -3713,9 +3735,8 @@ msgid ""
 "Each party can vote in favor or against. Abstaining is not allowed. Votes "
 "cannot exceed the party's maximum seats for this term."
 msgstr ""
-"Jede Partei kann dafür oder dagegen stimmen. Eine Stimmenthaltung ist nicht "
-"erlaubt. Die Stimmen dürfen die maximale Anzahl der Sitze der Partei für "
-"diese Legislaturperiode nicht überschreiten."
+"Jede Partei wählt Zustimmen, Ablehnen oder Gemischt. Alle Buttons aus lassen, "
+"um die Partei zu überspringen."
 
 msgid "In Favor"
 msgstr "Zustimmung"
@@ -3724,7 +3745,7 @@ msgid "Update All Votes"
 msgstr "Alle Stimmen aufzeichnen"
 
 msgid "Record All Votes"
-msgstr "Alle Stimmen aufzeichnen"
+msgstr "Stimmen speichern"
 
 msgid "Delete Vote Round"
 msgstr "Antrag löschen"
