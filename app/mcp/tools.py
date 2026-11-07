@@ -10,6 +10,7 @@ from urllib.parse import urljoin, urlparse
 
 import requests
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.db import transaction
 from django.db.models import Case, IntegerField, Prefetch, Q, Value, When
 from django.http import QueryDict
 from django.utils import timezone
@@ -485,6 +486,60 @@ def list_tools():
                     },
                 },
                 'required': ['inquiry_id'],
+            },
+        },
+        {
+            'name': 'update_motion_order',
+            'description': (
+                'Set the session order (session_rank) of motions. Same permission as the session page '
+                'reorder (superuser or session.view). Lower rank is shown first. Motions not listed keep '
+                'their current rank. Every motion must belong to the given session.'
+            ),
+            'inputSchema': {
+                'type': 'object',
+                'properties': {
+                    'session_id': {'type': 'integer', 'description': 'Session primary key'},
+                    'motion_orders': {
+                        'type': 'array',
+                        'description': 'Motions to reorder. Ranks are non-negative integers (the session UI uses 1, 2, 3, …).',
+                        'items': {
+                            'type': 'object',
+                            'properties': {
+                                'motion_id': {'type': 'integer'},
+                                'rank': {'type': 'integer', 'description': 'session_rank; lower appears first'},
+                            },
+                            'required': ['motion_id', 'rank'],
+                        },
+                    },
+                },
+                'required': ['session_id', 'motion_orders'],
+            },
+        },
+        {
+            'name': 'update_inquiry_order',
+            'description': (
+                'Set the session order (session_rank) of inquiries. Same permission as the session page '
+                'reorder (superuser or session.view). Lower rank is shown first. Inquiries not listed keep '
+                'their current rank. Every inquiry must belong to the given session.'
+            ),
+            'inputSchema': {
+                'type': 'object',
+                'properties': {
+                    'session_id': {'type': 'integer', 'description': 'Session primary key'},
+                    'inquiry_orders': {
+                        'type': 'array',
+                        'description': 'Inquiries to reorder. Ranks are non-negative integers (the session UI uses 1, 2, 3, …).',
+                        'items': {
+                            'type': 'object',
+                            'properties': {
+                                'inquiry_id': {'type': 'integer'},
+                                'rank': {'type': 'integer', 'description': 'session_rank; lower appears first'},
+                            },
+                            'required': ['inquiry_id', 'rank'],
+                        },
+                    },
+                },
+                'required': ['session_id', 'inquiry_orders'],
             },
         },
         {
@@ -1741,6 +1796,7 @@ def _serialize_motion(motion, request=None, *, include_status_history=False):
         'motion_type': motion.motion_type,
         'status': motion.status,
         'session_id': motion.session_id,
+        'session_rank': motion.session_rank,
         'group_id': motion.group_id,
         'committee_id': motion.committee_id,
         'party_ids': list(motion.parties.values_list('pk', flat=True)),
@@ -1959,6 +2015,7 @@ def _serialize_inquiry(inquiry, request=None):
         'answer': inquiry.answer,
         'status': inquiry.status,
         'session_id': inquiry.session_id,
+        'session_rank': inquiry.session_rank,
         'group_id': inquiry.group_id,
         'party_ids': list(inquiry.parties.values_list('pk', flat=True)),
         'intervention_ids': list(inquiry.interventions.values_list('pk', flat=True)),
@@ -2134,6 +2191,75 @@ def _get_motion_or_error(motion_id):
         ).get(pk=motion_id)
     except Motion.DoesNotExist as exc:
         raise McpToolError(f'Motion {motion_id} not found.') from exc
+
+
+def _require_session_order_permission(user):
+    if user.is_superuser or user.has_role_permission('session.view'):
+        return
+    raise McpToolError('You do not have permission to update session order.')
+
+
+def _get_session_or_error(session_id):
+    try:
+        return Session.objects.get(pk=session_id)
+    except Session.DoesNotExist as exc:
+        raise McpToolError(f'Session {session_id} not found.') from exc
+
+
+def _parse_order_rank(value, *, label):
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise McpToolError(f'{label} must be an integer.')
+    if value < 0:
+        raise McpToolError(f'{label} must be zero or greater.')
+    return value
+
+
+def _apply_session_item_order(session, orders, *, model, id_key, label):
+    """Set session_rank for items that belong to the session. Unlisted items stay unchanged."""
+    if not isinstance(orders, list) or not orders:
+        raise McpToolError(f'{label}_orders must be a non-empty array.')
+
+    updates = []
+    seen_ids = set()
+    for index, item in enumerate(orders):
+        if not isinstance(item, dict):
+            raise McpToolError(f'{label}_orders[{index}] must be an object.')
+        item_id = item.get(id_key)
+        if isinstance(item_id, bool) or not isinstance(item_id, int):
+            raise McpToolError(f'{label}_orders[{index}].{id_key} must be an integer.')
+        if item_id in seen_ids:
+            raise McpToolError(f'Duplicate {id_key} {item_id}.')
+        seen_ids.add(item_id)
+        rank = _parse_order_rank(item.get('rank'), label=f'{label}_orders[{index}].rank')
+        updates.append((item_id, rank))
+
+    existing = {
+        obj.pk: obj
+        for obj in model.objects.filter(pk__in=seen_ids, session=session)
+    }
+    missing = [item_id for item_id, _rank in updates if item_id not in existing]
+    if missing:
+        joined = ', '.join(str(item_id) for item_id in missing)
+        raise McpToolError(
+            f'{label.capitalize()} ids not in session {session.pk}: {joined}.'
+        )
+
+    with transaction.atomic():
+        for item_id, rank in updates:
+            obj = existing[item_id]
+            obj.session_rank = rank
+            obj.save(update_fields=['session_rank'])
+
+    ordered = model.objects.filter(session=session).order_by('session_rank', '-submitted_date')
+    return [
+        {
+            'id': obj.pk,
+            'title': obj.title,
+            'status': obj.status,
+            'session_rank': obj.session_rank,
+        }
+        for obj in ordered
+    ]
 
 
 def _get_inquiry_or_error(inquiry_id):
@@ -2342,6 +2468,30 @@ def call_tool(name, arguments, user, request=None):
             _apply_inquiry_status_change(inquiry, user, arguments['status_change'])
             inquiry = _get_inquiry_or_error(inquiry.pk)
         return {'inquiry': _serialize_inquiry(inquiry, request)}
+
+    if name == 'update_motion_order':
+        _require_session_order_permission(user)
+        session = _get_session_or_error(arguments['session_id'])
+        motions = _apply_session_item_order(
+            session,
+            arguments.get('motion_orders'),
+            model=Motion,
+            id_key='motion_id',
+            label='motion',
+        )
+        return {'session_id': session.pk, 'motions': motions}
+
+    if name == 'update_inquiry_order':
+        _require_session_order_permission(user)
+        session = _get_session_or_error(arguments['session_id'])
+        inquiries = _apply_session_item_order(
+            session,
+            arguments.get('inquiry_orders'),
+            model=Inquiry,
+            id_key='inquiry_id',
+            label='inquiry',
+        )
+        return {'session_id': session.pk, 'inquiries': inquiries}
 
     if name == 'upload_session_attachment':
         attachment = _upload_session_attachment(arguments, user)
