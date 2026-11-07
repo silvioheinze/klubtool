@@ -312,6 +312,8 @@ For local development the app still listens on HTTP; Settings always shows `http
 | `get_inquiry` | Single inquiry by id (view access) |
 | `create_inquiry` | Create inquiry as draft (group members / `motion.create`) |
 | `update_inquiry` | Update inquiry; omitted fields unchanged; status not editable |
+| `update_motion_order` | Set `session_rank` for motions in a session (superuser or `session.view`) |
+| `update_inquiry_order` | Set `session_rank` for inquiries in a session (superuser or `session.view`) |
 | `upload_session_attachment` | Upload file to session (superuser only; max 50 MB) |
 | `upload_motion_attachment` | Upload file to motion (superuser, `motion.attach`, or group member) |
 | `upload_inquiry_attachment` | Upload file to inquiry (same permissions as motion attachments) |
@@ -388,6 +390,20 @@ Example `update_motion` with committee referral and votes (requires status-chang
 ```
 
 Allowed `status_change.status` values: `refer_to_committee`, `voted_in_committee`, `approved`, `rejected`. Votes are required for those statuses; at least one party must cast approve or reject votes (no abstention). If referral votes do not show a majority in favor, the motion status becomes `refer_no_majority` and the committee is not assigned.
+
+Example `update_motion_order` (requires `session.view` or superuser; inquiries use `update_inquiry_order` with `inquiry_orders` / `inquiry_id`):
+
+```json
+{
+  "session_id": 42,
+  "motion_orders": [
+    {"motion_id": 10, "rank": 1},
+    {"motion_id": 12, "rank": 2}
+  ]
+}
+```
+
+Items omitted from the list keep their current `session_rank`. Lower rank is shown first.
 
 Example `upload_motion_attachment` with `file_url` (preferred for large files; server downloads via HTTPS):
 

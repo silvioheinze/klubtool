@@ -446,6 +446,8 @@ class McpMotionInquiryTests(TestCase):
             'get_motion',
             'create_inquiry',
             'update_inquiry',
+            'update_motion_order',
+            'update_inquiry_order',
             'get_inquiry',
             'upload_session_attachment',
             'upload_motion_attachment',
@@ -563,6 +565,170 @@ class McpMotionInquiryTests(TestCase):
         self.assertIn('permission', denied['error'].lower())
         motion.refresh_from_db()
         self.assertEqual(motion.title, 'Updated Motion')
+
+    def test_session_viewer_can_update_motion_and_inquiry_order(self):
+        role = Role.objects.create(
+            name='MCP Session Viewer',
+            is_active=True,
+            permissions={'permissions': ['session.view']},
+        )
+        viewer = User.objects.create_user(
+            username='session_viewer',
+            email='session_viewer@example.com',
+            password='viewerpass123',
+            role=role,
+        )
+        _, viewer_token = McpToken.create_token(viewer)
+
+        first = Motion.objects.create(
+            title='First Motion',
+            text='A',
+            session=self.session,
+            group=self.group,
+            submitted_by=self.member,
+            status='submitted',
+            session_rank=1,
+        )
+        second = Motion.objects.create(
+            title='Second Motion',
+            text='B',
+            session=self.session,
+            group=self.group,
+            submitted_by=self.member,
+            status='submitted',
+            session_rank=2,
+        )
+        untouched = Motion.objects.create(
+            title='Untouched Motion',
+            text='C',
+            session=self.session,
+            group=self.group,
+            submitted_by=self.member,
+            status='submitted',
+            session_rank=3,
+        )
+        other = Motion.objects.create(
+            title='Other Session Motion',
+            text='D',
+            session=self.other_session,
+            group=self.other_group,
+            submitted_by=self.member,
+            status='submitted',
+            session_rank=1,
+        )
+        first_inquiry = Inquiry.objects.create(
+            title='First Inquiry',
+            text='Q1',
+            session=self.session,
+            group=self.group,
+            submitted_by=self.member,
+            status='submitted',
+            session_rank=1,
+        )
+        second_inquiry = Inquiry.objects.create(
+            title='Second Inquiry',
+            text='Q2',
+            session=self.session,
+            group=self.group,
+            submitted_by=self.member,
+            status='submitted',
+            session_rank=2,
+        )
+
+        denied, is_error = self._tool_call(
+            'update_motion_order',
+            {
+                'session_id': self.session.pk,
+                'motion_orders': [
+                    {'motion_id': second.pk, 'rank': 1},
+                    {'motion_id': first.pk, 'rank': 2},
+                ],
+            },
+            self.member_token,
+        )
+        self.assertTrue(is_error)
+        self.assertIn('permission', denied['error'].lower())
+        second.refresh_from_db()
+        self.assertEqual(second.session_rank, 2)
+
+        reordered, is_error = self._tool_call(
+            'update_motion_order',
+            {
+                'session_id': self.session.pk,
+                'motion_orders': [
+                    {'motion_id': second.pk, 'rank': 1},
+                    {'motion_id': first.pk, 'rank': 2},
+                ],
+            },
+            viewer_token,
+        )
+        self.assertFalse(is_error)
+        self.assertEqual(
+            [(item['id'], item['session_rank']) for item in reordered['motions']],
+            [
+                (second.pk, 1),
+                (first.pk, 2),
+                (untouched.pk, 3),
+            ],
+        )
+        first.refresh_from_db()
+        second.refresh_from_db()
+        untouched.refresh_from_db()
+        self.assertEqual(first.session_rank, 2)
+        self.assertEqual(second.session_rank, 1)
+        self.assertEqual(untouched.session_rank, 3)
+
+        foreign, is_error = self._tool_call(
+            'update_motion_order',
+            {
+                'session_id': self.session.pk,
+                'motion_orders': [
+                    {'motion_id': second.pk, 'rank': 5},
+                    {'motion_id': other.pk, 'rank': 6},
+                ],
+            },
+            viewer_token,
+        )
+        self.assertTrue(is_error)
+        self.assertIn(str(other.pk), foreign['error'])
+        second.refresh_from_db()
+        other.refresh_from_db()
+        self.assertEqual(second.session_rank, 1)
+        self.assertEqual(other.session_rank, 1)
+
+        invalid, is_error = self._tool_call(
+            'update_inquiry_order',
+            {
+                'session_id': self.session.pk,
+                'inquiry_orders': [{'inquiry_id': first_inquiry.pk, 'rank': -1}],
+            },
+            viewer_token,
+        )
+        self.assertTrue(is_error)
+        self.assertIn('zero or greater', invalid['error'])
+        first_inquiry.refresh_from_db()
+        self.assertEqual(first_inquiry.session_rank, 1)
+
+        inquiry_order, is_error = self._tool_call(
+            'update_inquiry_order',
+            {
+                'session_id': self.session.pk,
+                'inquiry_orders': [
+                    {'inquiry_id': second_inquiry.pk, 'rank': 1},
+                    {'inquiry_id': first_inquiry.pk, 'rank': 2},
+                ],
+            },
+            viewer_token,
+        )
+        self.assertFalse(is_error)
+        self.assertEqual(
+            [item['id'] for item in inquiry_order['inquiries']],
+            [second_inquiry.pk, first_inquiry.pk],
+        )
+        first_inquiry.refresh_from_db()
+        second_inquiry.refresh_from_db()
+        self.assertEqual(first_inquiry.session_rank, 2)
+        self.assertEqual(second_inquiry.session_rank, 1)
 
     def test_member_can_get_and_update_inquiry_outsider_denied(self):
         inquiry = Inquiry.objects.create(
