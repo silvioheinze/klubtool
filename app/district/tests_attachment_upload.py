@@ -20,6 +20,7 @@ from district.models import (
     DistrictEventAttachment,
     Party,
     Session,
+    SessionAttachment,
     Term,
 )
 from motion.models import Inquiry, InquiryAttachment, Motion, MotionAttachment
@@ -345,6 +346,106 @@ class DistrictEventAttachmentPutUploadTests(TestCase):
         path = self._upload_path_from_url(data['upload_url'])
         membership = GroupMember.objects.get(user=self.manager, group=self.group)
         membership.roles.clear()
+        response = self.client.put(path, data=self.PDF_BYTES, content_type='application/pdf')
+        self.assertEqual(response.status_code, 403)
+
+
+@override_settings(CACHES=UPLOAD_TEST_CACHES)
+class SessionAttachmentPutUploadTests(TestCase):
+    PDF_BYTES = b'%PDF-1.4 session put upload test'
+
+    def setUp(self):
+        caches['upload_tokens'].clear()
+        self.client = Client()
+        self.superuser = User.objects.create_superuser(
+            username='put_session_super',
+            email='put_session_super@example.com',
+            password='superpass123',
+        )
+        self.district = District.objects.create(
+            name='PUT Session District',
+            code='PSD',
+            description='Test',
+            is_active=True,
+        )
+        self.council, _ = Council.objects.get_or_create(
+            district=self.district,
+            defaults={'name': 'PUT Session Council', 'is_active': True},
+        )
+        self.term = Term.objects.create(
+            name='PUT Session Term',
+            start_date=timezone.now().date(),
+            end_date=(timezone.now() + timedelta(days=365)).date(),
+        )
+        self.session = Session.objects.create(
+            title='PUT Session',
+            council=self.council,
+            term=self.term,
+            scheduled_date=timezone.now() + timedelta(days=2),
+            is_active=True,
+        )
+        _, self.superuser_token = McpToken.create_token(self.superuser)
+
+    def _mcp_create_upload_url(self, token, **extra):
+        args = {
+            'session_id': self.session.pk,
+            'filename': 'upload.pdf',
+            'file_type': 'agenda',
+        }
+        args.update(extra)
+        payload = {
+            'jsonrpc': '2.0',
+            'id': 1,
+            'method': 'tools/call',
+            'params': {'name': 'create_session_upload_url', 'arguments': args},
+        }
+        response = self.client.post(
+            reverse('mcp'),
+            data=json.dumps(payload),
+            content_type='application/json',
+            HTTP_AUTHORIZATION=f'Bearer {token}',
+        )
+        self.assertEqual(response.status_code, 200, response.content)
+        body = response.json()
+        text = body['result']['content'][0]['text']
+        data = json.loads(text)
+        is_error = body['result'].get('isError', False)
+        return data, is_error
+
+    def _upload_path_from_url(self, upload_url: str) -> str:
+        prefix = 'https://testserver'
+        self.assertTrue(upload_url.startswith(prefix))
+        return upload_url[len(prefix):]
+
+    def test_put_upload_creates_attachment(self):
+        data, is_error = self._mcp_create_upload_url(self.superuser_token)
+        self.assertFalse(is_error)
+        self.assertIn('upload_url', data)
+        self.assertEqual(data['max_bytes'], UPLOAD_PUT_MAX_BYTES)
+        path = self._upload_path_from_url(data['upload_url'])
+        response = self.client.put(
+            path,
+            data=self.PDF_BYTES,
+            content_type='application/pdf',
+        )
+        self.assertEqual(response.status_code, 201, response.content)
+        payload = response.json()
+        self.assertEqual(payload['filename'], 'upload.pdf')
+        self.assertEqual(payload['file_size'], len(self.PDF_BYTES))
+        attachment = SessionAttachment.objects.get(pk=payload['id'])
+        self.assertEqual(attachment.session_id, self.session.pk)
+
+    def test_second_put_returns_409(self):
+        data, _ = self._mcp_create_upload_url(self.superuser_token)
+        path = self._upload_path_from_url(data['upload_url'])
+        first = self.client.put(path, data=self.PDF_BYTES, content_type='application/pdf')
+        self.assertEqual(first.status_code, 201)
+        second = self.client.put(path, data=self.PDF_BYTES, content_type='application/pdf')
+        self.assertEqual(second.status_code, 409)
+
+    def test_tampered_token_rejected(self):
+        data, _ = self._mcp_create_upload_url(self.superuser_token)
+        path = self._upload_path_from_url(data['upload_url']) + 'x'
         response = self.client.put(path, data=self.PDF_BYTES, content_type='application/pdf')
         self.assertEqual(response.status_code, 403)
 

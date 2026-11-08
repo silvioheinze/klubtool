@@ -315,6 +315,7 @@ For local development the app still listens on HTTP; Settings always shows `http
 | `update_motion_order` | Set `session_rank` for motions in a session (superuser or `session.view`) |
 | `update_inquiry_order` | Set `session_rank` for inquiries in a session (superuser or `session.view`) |
 | `upload_session_attachment` | Upload file to session (superuser only; max 50 MB) |
+| `create_session_upload_url` | One-time PUT URL for session upload (10 min, max 25 MB; superuser only; no file content in the tool call) |
 | `upload_motion_attachment` | Upload file to motion (superuser, `motion.attach`, or group member) |
 | `upload_inquiry_attachment` | Upload file to inquiry (same permissions as motion attachments) |
 | `upload_committee_meeting_attachment` | Upload file to committee meeting (superuser or qualifying group leader; max 50 MB) |

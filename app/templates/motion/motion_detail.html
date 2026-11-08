@@ -283,82 +283,8 @@
         <!-- Quick Info Sidebar -->
         <div class="col-lg-4">
 
-            <!-- Comments Section -->
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0"><i class="bi bi-chat"></i> {% trans "Comments" %}</h5>
-                </div>
-                <div class="card-body">
-                    <!-- Add Comment Form -->
-                    <form method="post" action="{% url 'motion:motion-comment' motion.pk %}">
-                        {% csrf_token %}
-                        <div class="mb-3">
-                            {{ comment_form.content }}
-                        </div>
-                        <div class="mb-3">
-                            <div class="form-check">
-                                {{ comment_form.is_public }}
-                                <label class="form-check-label" for="{{ comment_form.is_public.id_for_label }}">
-                                    {% trans "Make this comment public" %}
-                                </label>
-                            </div>
-                        </div>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-chat-plus"></i> {% trans "Add Comment" %}
-                        </button>
-                    </form>
-                    
-                    <!-- Comments List -->
-                    {% if comments %}
-                        <hr>
-                        <h6>{% trans "Comments" %}</h6>
-                        {% for comment in comments %}
-                            <div class="border rounded p-3 mb-3 comment-item" id="comment-{{ comment.pk }}"
-                                 data-edit-url="{% url 'motion:motion-comment-edit' motion.pk comment.pk %}"
-                                 data-delete-url="{% url 'motion:motion-comment-delete' motion.pk comment.pk %}">
-                                <textarea class="d-none" id="comment-content-{{ comment.pk }}">{{ comment.content }}</textarea>
-                                <div class="comment-display">
-                                    <div class="d-flex justify-content-between align-items-start">
-                                        <div>
-                                            <strong>{{ comment.author.username }}</strong>
-                                            <small class="text-muted">{{ comment.created_at|date:"M d, Y H:i" }}</small>
-                                            <span class="comment-badge {% if not comment.is_public %}badge bg-warning ms-1{% endif %}">{% if not comment.is_public %}{% trans "Private" %}{% endif %}</span>
-                                        </div>
-                                        {% if comment.author_id == request.user.id %}
-                                        <div class="btn-group btn-group-sm comment-actions">
-                                            <button type="button" class="btn btn-outline-primary comment-edit-btn" title="{% trans 'Edit' %}" data-comment-id="{{ comment.pk }}">
-                                                <i class="bi bi-pencil"></i>
-                                            </button>
-                                            <button type="button" class="btn btn-outline-danger comment-delete-btn" title="{% trans 'Delete' %}" data-comment-id="{{ comment.pk }}">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
-                                        </div>
-                                        {% endif %}
-                                    </div>
-                                    <p class="mb-0 mt-2 comment-body">{{ comment.content|linebreaks }}</p>
-                                </div>
-                                <div class="comment-edit-form d-none">
-                                    <textarea class="form-control mb-2" rows="4"></textarea>
-                                    <div class="form-check mb-2">
-                                        <input type="checkbox" class="form-check-input comment-is-public">
-                                        <label class="form-check-label">{% trans "Make this comment public" %}</label>
-                                    </div>
-                                    <div class="btn-group btn-group-sm">
-                                        <button type="button" class="btn btn-primary comment-save-btn">{% trans "Save" %}</button>
-                                        <button type="button" class="btn btn-secondary comment-cancel-btn">{% trans "Cancel" %}</button>
-                                    </div>
-                                </div>
-                            </div>
-                        {% endfor %}
-                    {% else %}
-                        <hr>
-                        <p class="text-muted text-center">{% trans "No comments yet." %}</p>
-                    {% endif %}
-                </div>
-            </div>
-
             <!-- Files -->
-            <div class="card mt-3">
+            <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">{% trans "Files" %}</h5>
                     <a href="{% url 'motion:motion-attach' motion.pk %}" class="btn btn-sm btn-primary">
@@ -546,7 +472,80 @@
                     {% endif %}
                 </div>
             </div>
-            
+
+            <!-- Comments Section -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-chat"></i> {% trans "Comments" %}</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Add Comment Form -->
+                    <form method="post" action="{% url 'motion:motion-comment' motion.pk %}">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            {{ comment_form.content }}
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check">
+                                {{ comment_form.is_public }}
+                                <label class="form-check-label" for="{{ comment_form.is_public.id_for_label }}">
+                                    {% trans "Make this comment public" %}
+                                </label>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-chat-plus"></i> {% trans "Add Comment" %}
+                        </button>
+                    </form>
+                    
+                    <!-- Comments List -->
+                    {% if comments %}
+                        <hr>
+                        <h6>{% trans "Comments" %}</h6>
+                        {% for comment in comments %}
+                            <div class="border rounded p-3 mb-3 comment-item" id="comment-{{ comment.pk }}"
+                                 data-edit-url="{% url 'motion:motion-comment-edit' motion.pk comment.pk %}"
+                                 data-delete-url="{% url 'motion:motion-comment-delete' motion.pk comment.pk %}">
+                                <textarea class="d-none" id="comment-content-{{ comment.pk }}">{{ comment.content }}</textarea>
+                                <div class="comment-display">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <strong>{{ comment.author.username }}</strong>
+                                            <small class="text-muted">{{ comment.created_at|date:"M d, Y H:i" }}</small>
+                                            <span class="comment-badge {% if not comment.is_public %}badge bg-warning ms-1{% endif %}">{% if not comment.is_public %}{% trans "Private" %}{% endif %}</span>
+                                        </div>
+                                        {% if comment.author_id == request.user.id %}
+                                        <div class="btn-group btn-group-sm comment-actions">
+                                            <button type="button" class="btn btn-outline-primary comment-edit-btn" title="{% trans 'Edit' %}" data-comment-id="{{ comment.pk }}">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-outline-danger comment-delete-btn" title="{% trans 'Delete' %}" data-comment-id="{{ comment.pk }}">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    <p class="mb-0 mt-2 comment-body">{{ comment.content|linebreaks }}</p>
+                                </div>
+                                <div class="comment-edit-form d-none">
+                                    <textarea class="form-control mb-2" rows="4"></textarea>
+                                    <div class="form-check mb-2">
+                                        <input type="checkbox" class="form-check-input comment-is-public">
+                                        <label class="form-check-label">{% trans "Make this comment public" %}</label>
+                                    </div>
+                                    <div class="btn-group btn-group-sm">
+                                        <button type="button" class="btn btn-primary comment-save-btn">{% trans "Save" %}</button>
+                                        <button type="button" class="btn btn-secondary comment-cancel-btn">{% trans "Cancel" %}</button>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <hr>
+                        <p class="text-muted text-center">{% trans "No comments yet." %}</p>
+                    {% endif %}
+                </div>
+            </div>
             
         </div>
     </div>

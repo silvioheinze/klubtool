@@ -6,8 +6,12 @@ from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
-from district.forms import CommitteeMeetingAttachmentForm, DistrictEventAttachmentForm
-from district.models import CommitteeMeeting, DistrictEvent
+from district.forms import (
+    CommitteeMeetingAttachmentForm,
+    DistrictEventAttachmentForm,
+    SessionAttachmentForm,
+)
+from district.models import CommitteeMeeting, DistrictEvent, Session
 from district.upload_tokens import consume_upload_jti, verify_upload_token
 from district.upload_validation import (
     UPLOAD_MOTION_INQUIRY_PUT_MAX_BYTES,
@@ -28,8 +32,12 @@ from motion.views import user_can_upload_inquiry_attachment, user_can_upload_mot
 User = get_user_model()
 _PROBE_SIZE = 16
 _ALLOWED_PARENTS = frozenset(
-    {'committee_meeting', 'district_event', 'motion', 'inquiry'},
+    {'committee_meeting', 'district_event', 'motion', 'inquiry', 'session'},
 )
+
+
+def _user_can_upload_session_attachment(user, _session) -> bool:
+    return user.is_superuser
 
 
 def _reject(status: int = 403) -> HttpResponse:
@@ -223,6 +231,19 @@ def _finish_inquiry_upload(request, payload, user, inquiry):
     )
 
 
+def _finish_session_upload(request, payload, user, session):
+    return _finish_generic_upload(
+        request,
+        payload,
+        user,
+        max_bytes=UPLOAD_PUT_MAX_BYTES,
+        permission_check=_user_can_upload_session_attachment,
+        form_class=SessionAttachmentForm,
+        parent=session,
+        parent_kwarg='session',
+    )
+
+
 @csrf_exempt
 @require_http_methods(['PUT'])
 def attachment_upload_view(request, token: str):
@@ -260,8 +281,15 @@ def attachment_upload_view(request, token: str):
             return _reject(403)
         return _finish_motion_upload(request, payload, user, motion)
 
+    if parent == 'inquiry':
+        try:
+            inquiry = Inquiry.objects.get(pk=payload['parent_id'])
+        except (Inquiry.DoesNotExist, KeyError, TypeError):
+            return _reject(403)
+        return _finish_inquiry_upload(request, payload, user, inquiry)
+
     try:
-        inquiry = Inquiry.objects.get(pk=payload['parent_id'])
-    except (Inquiry.DoesNotExist, KeyError, TypeError):
+        session = Session.objects.get(pk=payload['parent_id'])
+    except (Session.DoesNotExist, KeyError, TypeError):
         return _reject(403)
-    return _finish_inquiry_upload(request, payload, user, inquiry)
+    return _finish_session_upload(request, payload, user, session)
