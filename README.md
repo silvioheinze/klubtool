@@ -323,6 +323,8 @@ For local development the app still listens on HTTP; Settings always shows `http
 | `list_committees` | List committees in a district (`id`, name, abbreviation) |
 | `list_committee_meetings` | List committee meetings with optional committee and date filters |
 | `list_sessions` | List council sessions in a district with optional date filters |
+| `create_session` | Create council session (superuser only; title auto-generated) |
+| `update_session` | Update council session (superuser only; omitted fields unchanged) |
 | `get_committee_meeting` | Committee meeting details (agenda, participants, attachments, status) |
 | `update_committee_meeting` | Update committee meeting; omitted fields unchanged; status not editable |
 | `list_attachments` | List attachments for a session, motion, inquiry, or committee meeting |
@@ -439,6 +441,29 @@ Example `update_committee_meeting` arguments:
   "title": "Kulturkommission 14.10.2026",
   "location": "Rathaus, Saal 2",
   "agenda": "TOP 1: Budget\nTOP 2: Berichte"
+}
+```
+
+Example `create_session` arguments (superuser only; status is always `scheduled`):
+
+```json
+{
+  "district_id": 1,
+  "scheduled_date": "2026-11-20T18:00:00+01:00",
+  "session_type": "regular",
+  "location": "Rathaus, Plenarsaal",
+  "agenda": "TOP 1: Bürgerfragestunde"
+}
+```
+
+Example `update_session` arguments:
+
+```json
+{
+  "session_id": 42,
+  "location": "Rathaus, Saal 2",
+  "status": "invited",
+  "committee_id": null
 }
 ```
 

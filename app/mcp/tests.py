@@ -463,6 +463,8 @@ class McpMotionInquiryTests(TestCase):
             'list_committees',
             'list_committee_meetings',
             'list_sessions',
+            'create_session',
+            'update_session',
             'get_committee_meeting',
             'update_committee_meeting',
             'list_attachments',
@@ -2171,6 +2173,173 @@ class McpDistrictSessionCommitteeListTests(TestCase):
         )
         self.assertTrue(is_error)
         self.assertIn('access', data['error'].lower())
+
+
+class McpSessionCreateUpdateTests(TestCase):
+    """MCP create_session and update_session tools."""
+
+    def setUp(self):
+        self.client = Client()
+        self.member = User.objects.create_user(
+            username='sess_member',
+            email='sess_member@example.com',
+            password='memberpass123',
+        )
+        self.superuser = User.objects.create_superuser(
+            username='sess_super',
+            email='sess_super@example.com',
+            password='superpass123',
+        )
+        self.district = District.objects.create(
+            name='Session MCP District',
+            code='SMD',
+            description='Test',
+            is_active=True,
+        )
+        self.party = Party.objects.create(
+            name='Session Party',
+            district=self.district,
+            is_active=True,
+        )
+        self.group = Group.objects.create(
+            name='Session Group',
+            party=self.party,
+            is_active=True,
+        )
+        GroupMember.objects.create(user=self.member, group=self.group, is_active=True)
+        self.council, _ = Council.objects.get_or_create(
+            district=self.district,
+            defaults={'name': 'Session Council', 'is_active': True},
+        )
+        self.committee = Committee.objects.create(
+            name='Session Committee',
+            council=self.council,
+            is_active=True,
+        )
+        self.term = Term.objects.create(
+            name='Session Term',
+            start_date=timezone.now().date(),
+            end_date=(timezone.now() + timedelta(days=365)).date(),
+        )
+        self.other_district = District.objects.create(
+            name='Other Session District',
+            code='OSD',
+            description='Other',
+            is_active=True,
+        )
+        self.other_council, _ = Council.objects.get_or_create(
+            district=self.other_district,
+            defaults={'name': 'Other Council', 'is_active': True},
+        )
+        self.foreign_committee = Committee.objects.create(
+            name='Foreign Committee',
+            council=self.other_council,
+            is_active=True,
+        )
+        _, self.member_token = McpToken.create_token(self.member)
+        _, self.superuser_token = McpToken.create_token(self.superuser)
+        self.scheduled = timezone.make_aware(datetime(2026, 11, 20, 18, 0))
+
+    def _tool_call(self, name, arguments, token):
+        payload = {
+            'jsonrpc': '2.0',
+            'id': 1,
+            'method': 'tools/call',
+            'params': {'name': name, 'arguments': arguments},
+        }
+        response = self.client.post(
+            reverse('mcp'),
+            data=json.dumps(payload),
+            content_type='application/json',
+            HTTP_AUTHORIZATION=f'Bearer {token}',
+        )
+        self.assertEqual(response.status_code, 200, response.content)
+        body = response.json()
+        result = body['result']
+        text = result['content'][0]['text']
+        return json.loads(text), result.get('isError', False)
+
+    def test_superuser_can_create_session_with_auto_title(self):
+        data, is_error = self._tool_call(
+            'create_session',
+            {
+                'district_id': self.district.pk,
+                'scheduled_date': self.scheduled.isoformat(),
+                'committee_id': self.committee.pk,
+                'location': 'Plenarsaal',
+            },
+            self.superuser_token,
+        )
+        self.assertFalse(is_error)
+        session = data['session']
+        self.assertIn('Bezirksvertretungssitzung', session['title'])
+        self.assertIn('20.11.2026', session['title'])
+        self.assertEqual(session['status'], 'scheduled')
+        self.assertEqual(session['location'], 'Plenarsaal')
+        self.assertEqual(session['committee']['id'], self.committee.pk)
+        self.assertEqual(session['district_id'], self.district.pk)
+        obj = Session.objects.get(pk=session['id'])
+        self.assertEqual(obj.council_id, self.council.pk)
+        self.assertEqual(obj.term_id, self.term.pk)
+
+    def test_superuser_can_partially_update_session(self):
+        session = Session.objects.create(
+            title='Existing Session',
+            council=self.council,
+            term=self.term,
+            committee=self.committee,
+            scheduled_date=self.scheduled,
+            location='Old room',
+            is_active=True,
+        )
+        data, is_error = self._tool_call(
+            'update_session',
+            {
+                'session_id': session.pk,
+                'location': 'New room',
+                'committee_id': None,
+            },
+            self.superuser_token,
+        )
+        self.assertFalse(is_error)
+        self.assertEqual(data['session']['location'], 'New room')
+        self.assertIsNone(data['session']['committee'])
+        self.assertEqual(data['session']['title'], 'Existing Session')
+
+        session.refresh_from_db()
+        self.assertEqual(session.location, 'New room')
+        self.assertIsNone(session.committee_id)
+
+    def test_member_cannot_create_or_update_session(self):
+        for tool_name, arguments in (
+            (
+                'create_session',
+                {
+                    'district_id': self.district.pk,
+                    'scheduled_date': self.scheduled.isoformat(),
+                },
+            ),
+            (
+                'update_session',
+                {'session_id': 1, 'location': 'Hacked'},
+            ),
+        ):
+            data, is_error = self._tool_call(tool_name, arguments, self.member_token)
+            self.assertTrue(is_error)
+            self.assertIn('permission', data['error'].lower())
+
+    def test_create_session_rejects_foreign_committee(self):
+        data, is_error = self._tool_call(
+            'create_session',
+            {
+                'district_id': self.district.pk,
+                'scheduled_date': self.scheduled.isoformat(),
+                'committee_id': self.foreign_committee.pk,
+            },
+            self.superuser_token,
+        )
+        self.assertTrue(is_error)
+        self.assertNotIn('session', data)
 
 
 class McpAttachmentListDeleteTests(TestCase):

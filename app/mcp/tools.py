@@ -20,6 +20,7 @@ from district.forms import (
     CommitteeMeetingForm,
     DistrictEventForm,
     SessionAttachmentForm,
+    SessionForm,
 )
 from district.models import (
     Committee,
@@ -32,6 +33,7 @@ from district.models import (
     Party,
     Session,
     SessionAttachment,
+    Term,
 )
 from district.upload_tokens import (
     build_attachment_upload_url,
@@ -772,6 +774,74 @@ def list_tools():
             },
         },
         {
+            'name': 'create_session',
+            'description': (
+                'Create a council session (superuser only). Title is set automatically '
+                '(Bezirksvertretungssitzung + date). Status is always scheduled.'
+            ),
+            'inputSchema': {
+                'type': 'object',
+                'properties': {
+                    'district_id': {'type': 'integer'},
+                    'scheduled_date': {
+                        'type': 'string',
+                        'description': 'ISO 8601 datetime, e.g. 2026-09-15T18:00:00+02:00',
+                    },
+                    'session_type': {
+                        'type': 'string',
+                        'enum': ['regular', 'special', 'inaugural'],
+                        'description': 'Defaults to regular',
+                    },
+                    'committee_id': {
+                        'type': 'integer',
+                        'description': 'Optional committee on the district council',
+                    },
+                    'term_id': {
+                        'type': 'integer',
+                        'description': 'Optional; defaults to the latest active term',
+                    },
+                    'location': {'type': 'string'},
+                    'agenda': {'type': 'string'},
+                    'minutes': {'type': 'string'},
+                    'notes': {'type': 'string'},
+                },
+                'required': ['district_id', 'scheduled_date'],
+            },
+        },
+        {
+            'name': 'update_session',
+            'description': (
+                'Update a council session (superuser only). Omitted fields stay unchanged. '
+                'Pass committee_id as null to clear the committee.'
+            ),
+            'inputSchema': {
+                'type': 'object',
+                'properties': {
+                    'session_id': {'type': 'integer'},
+                    'title': {'type': 'string'},
+                    'scheduled_date': {'type': 'string', 'description': 'ISO 8601 datetime'},
+                    'session_type': {
+                        'type': 'string',
+                        'enum': ['regular', 'special', 'inaugural'],
+                    },
+                    'status': {
+                        'type': 'string',
+                        'enum': ['scheduled', 'in_progress', 'completed', 'cancelled', 'invited'],
+                    },
+                    'committee_id': {
+                        'type': ['integer', 'null'],
+                        'description': 'Optional; null clears the committee',
+                    },
+                    'term_id': {'type': 'integer'},
+                    'location': {'type': 'string'},
+                    'agenda': {'type': 'string'},
+                    'minutes': {'type': 'string'},
+                    'notes': {'type': 'string'},
+                },
+                'required': ['session_id'],
+            },
+        },
+        {
             'name': 'get_committee_meeting',
             'description': 'Get committee meeting details: agenda, participants, attachments, and status.',
             'inputSchema': {
@@ -1370,6 +1440,38 @@ def _serialize_session_list_item(session, request=None):
     }
 
 
+def _serialize_session_detail(session, request=None):
+    url = session.get_absolute_url()
+    if request is not None:
+        url = request.build_absolute_uri(url)
+    committee = None
+    if session.committee_id:
+        committee = _serialize_committee_ref(session.committee)
+    district_id = None
+    if session.council_id and hasattr(session, 'council') and session.council is not None:
+        district_id = session.council.district_id
+    return {
+        'id': session.pk,
+        'title': session.title,
+        'council_id': session.council_id,
+        'district_id': district_id,
+        'committee': committee,
+        'term_id': session.term_id,
+        'session_type': session.session_type,
+        'status': session.status,
+        'scheduled_date': session.scheduled_date.isoformat(),
+        'location': session.location or '',
+        'agenda': session.agenda or '',
+        'minutes': session.minutes or '',
+        'notes': session.notes or '',
+        'url': url,
+        'attachments': [
+            _serialize_attachment(attachment, request)
+            for attachment in session.attachments.all()
+        ],
+    }
+
+
 def _serialize_committee_meeting_detail(meeting, request=None):
     role_order = Case(
         When(role='chairperson', then=Value(1)),
@@ -1514,6 +1616,106 @@ def _delete_attachment_by_type(parent_type, attachment_id, user, request):
 
 def _user_can_upload_session_attachment(user):
     return user.is_superuser
+
+
+def _require_manage_session(user):
+    if not user.is_superuser:
+        raise McpToolError('You do not have permission to manage sessions.')
+
+
+def _get_district_council_or_error(user, district_id):
+    district = _get_district_or_error(user, district_id)
+    council = getattr(district, 'council', None)
+    if council is None or not council.is_active:
+        raise McpToolError('This district has no active council.')
+    return district, council
+
+
+def _session_scheduled_date_form_value(dt):
+    local_dt = timezone.localtime(dt)
+    return local_dt.strftime('%Y-%m-%dT%H:%M')
+
+
+def _resolve_session_term_id(arguments):
+    if arguments.get('term_id') is not None:
+        return arguments['term_id']
+    latest = Term.objects.filter(is_active=True).order_by('-start_date').first()
+    if latest is None:
+        raise McpToolError('No active term found; provide term_id.')
+    return latest.pk
+
+
+def _build_session_form_data_create(arguments, *, council, term_id):
+    data = QueryDict(mutable=True)
+    data['council'] = str(council.pk)
+    data['term'] = str(term_id)
+    data['session_type'] = arguments.get('session_type', 'regular')
+    data['status'] = 'scheduled'
+    scheduled = _parse_scheduled_date(arguments['scheduled_date'])
+    data['scheduled_date'] = _session_scheduled_date_form_value(scheduled)
+    data['location'] = arguments.get('location', '')
+    data['agenda'] = arguments.get('agenda', '')
+    data['minutes'] = arguments.get('minutes', '')
+    data['notes'] = arguments.get('notes', '')
+    if arguments.get('committee_id') is not None:
+        data['committee'] = str(arguments['committee_id'])
+    else:
+        data['committee'] = ''
+    return data
+
+
+def _build_session_form_data_update(arguments, *, instance):
+    data = QueryDict(mutable=True)
+    data['title'] = arguments.get('title', instance.title)
+    data['council'] = str(instance.council_id)
+    if 'term_id' in arguments and arguments['term_id'] is not None:
+        data['term'] = str(arguments['term_id'])
+    elif instance.term_id:
+        data['term'] = str(instance.term_id)
+    else:
+        data['term'] = ''
+    data['session_type'] = arguments.get('session_type', instance.session_type)
+    data['status'] = arguments.get('status', instance.status)
+    if 'scheduled_date' in arguments:
+        scheduled = _parse_scheduled_date(arguments['scheduled_date'])
+        data['scheduled_date'] = _session_scheduled_date_form_value(scheduled)
+    else:
+        data['scheduled_date'] = _session_scheduled_date_form_value(instance.scheduled_date)
+    data['location'] = arguments.get('location', instance.location or '')
+    data['agenda'] = arguments.get('agenda', instance.agenda or '')
+    data['minutes'] = arguments.get('minutes', instance.minutes or '')
+    data['notes'] = arguments.get('notes', instance.notes or '')
+    if 'committee_id' in arguments:
+        if arguments['committee_id'] is None:
+            data['committee'] = ''
+        else:
+            data['committee'] = str(arguments['committee_id'])
+    elif instance.committee_id:
+        data['committee'] = str(instance.committee_id)
+    else:
+        data['committee'] = ''
+    return data
+
+
+def _validate_session_form(arguments, *, instance=None, council=None, term_id=None):
+    if instance is None:
+        form_data = _build_session_form_data_create(arguments, council=council, term_id=term_id)
+        form = SessionForm(data=form_data)
+    else:
+        form_data = _build_session_form_data_update(arguments, instance=instance)
+        form = SessionForm(data=form_data, instance=instance)
+    if not form.is_valid():
+        raise McpToolError(json.dumps(form.errors, ensure_ascii=False))
+    return form
+
+
+def _reload_session_for_detail(session_pk):
+    return (
+        Session.objects.filter(pk=session_pk)
+        .select_related('council', 'committee')
+        .prefetch_related('attachments')
+        .get()
+    )
 
 
 def _get_session_or_error(session_id):
@@ -2659,6 +2861,25 @@ def call_tool(name, arguments, user, request=None):
                 for session in queryset
             ],
         }
+
+    if name == 'create_session':
+        _require_manage_session(user)
+        _, council = _get_district_council_or_error(user, arguments['district_id'])
+        term_id = _resolve_session_term_id(arguments)
+        form = _validate_session_form(
+            arguments, council=council, term_id=term_id,
+        )
+        session = form.save()
+        session = _reload_session_for_detail(session.pk)
+        return {'session': _serialize_session_detail(session, request)}
+
+    if name == 'update_session':
+        _require_manage_session(user)
+        session = _get_session_or_error(arguments['session_id'])
+        form = _validate_session_form(arguments, instance=session)
+        session = form.save()
+        session = _reload_session_for_detail(session.pk)
+        return {'session': _serialize_session_detail(session, request)}
 
     if name == 'get_committee_meeting':
         meeting = _get_committee_meeting_or_error(arguments['id'])
