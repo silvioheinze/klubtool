@@ -54,6 +54,28 @@ def build_committee_meeting_upload_payload(
     }
 
 
+def build_session_upload_payload(
+    *,
+    session_id: int,
+    user_id: int,
+    filename: str,
+    file_type: str,
+    description: str = '',
+) -> dict:
+    safe_name = normalize_upload_filename(filename)
+    validate_upload_extension(safe_name)
+    desc = (description or '')[:UPLOAD_DESCRIPTION_MAX_LENGTH]
+    return {
+        'parent': 'session',
+        'parent_id': session_id,
+        'user_id': user_id,
+        'filename': safe_name,
+        'file_type': file_type,
+        'description': desc,
+        'jti': secrets.token_urlsafe(16),
+    }
+
+
 def build_motion_upload_payload(
     *,
     motion_id: int,

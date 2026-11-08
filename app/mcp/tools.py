@@ -39,6 +39,7 @@ from district.upload_tokens import (
     build_district_event_upload_payload,
     build_inquiry_upload_payload,
     build_motion_upload_payload,
+    build_session_upload_payload,
     upload_url_response_fields,
 )
 from district.upload_validation import (
@@ -551,6 +552,28 @@ def list_tools():
                     'session_id': {'type': 'integer'},
                     'filename': {'type': 'string', 'description': 'Original filename including extension'},
                     **_UPLOAD_FILE_SOURCE_SCHEMA,
+                    'file_type': {
+                        'type': 'string',
+                        'enum': ['agenda', 'budget', 'invitation', 'minutes', 'other'],
+                        'description': 'Defaults to other',
+                    },
+                    'description': {'type': 'string'},
+                },
+                'required': ['session_id', 'filename'],
+            },
+        },
+        {
+            'name': 'create_session_upload_url',
+            'description': (
+                'Create a one-time HTTPS PUT URL for uploading a council session attachment '
+                '(superuser only). '
+                'Does not accept file content; use the returned upload_url with HTTP PUT.'
+            ),
+            'inputSchema': {
+                'type': 'object',
+                'properties': {
+                    'session_id': {'type': 'integer'},
+                    'filename': {'type': 'string', 'description': 'Original filename including extension'},
                     'file_type': {
                         'type': 'string',
                         'enum': ['agenda', 'budget', 'invitation', 'minutes', 'other'],
@@ -1685,6 +1708,35 @@ def _create_district_event_upload_url(arguments, user, request):
     }
 
 
+def _create_session_upload_url(arguments, user, request):
+    session = _get_session_or_error(arguments['session_id'])
+    if not _user_can_upload_session_attachment(user):
+        raise McpToolError('You do not have permission to upload session attachments.')
+    file_type = _validate_choice(
+        arguments.get('file_type', 'other'),
+        SessionAttachment.ATTACHMENT_TYPE_CHOICES,
+        'file_type',
+    ) or 'other'
+    try:
+        safe_filename = normalize_upload_filename(arguments['filename'])
+        validate_upload_extension(safe_filename)
+    except ValueError as exc:
+        raise McpToolError(str(exc)) from exc
+    payload = build_session_upload_payload(
+        session_id=session.pk,
+        user_id=user.pk,
+        filename=safe_filename,
+        file_type=file_type,
+        description=arguments.get('description', ''),
+    )
+    upload_url = build_attachment_upload_url(request, payload)
+    return {
+        'upload_url': upload_url,
+        'session_id': session.pk,
+        **upload_url_response_fields(),
+    }
+
+
 def _create_committee_meeting_upload_url(arguments, user, request):
     meeting = _get_committee_meeting_or_error(arguments['committee_meeting_id'])
     if not _can_user_edit_committee_meeting(user, meeting):
@@ -2512,6 +2564,11 @@ def call_tool(name, arguments, user, request=None):
             'committee_meeting_id': meeting.pk,
             'meeting_status': meeting.status,
         }
+
+    if name == 'create_session_upload_url':
+        if request is None:
+            raise McpToolError('Request context is required to build an upload URL.')
+        return _create_session_upload_url(arguments, user, request)
 
     if name == 'create_committee_meeting_upload_url':
         if request is None:

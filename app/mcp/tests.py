@@ -450,6 +450,7 @@ class McpMotionInquiryTests(TestCase):
             'update_inquiry_order',
             'get_inquiry',
             'upload_session_attachment',
+            'create_session_upload_url',
             'upload_motion_attachment',
             'upload_inquiry_attachment',
             'upload_committee_meeting_attachment',
@@ -1462,6 +1463,45 @@ class McpAttachmentTests(TestCase):
         self.assertTrue(is_error)
         self.assertIn('permission', denied['error'].lower())
         self.assertEqual(SessionAttachment.objects.filter(session=self.session).count(), 1)
+
+    def test_create_session_upload_url_superuser_and_member_denied(self):
+        data, is_error = self._tool_call(
+            'create_session_upload_url',
+            {
+                'session_id': self.session.pk,
+                'filename': 'agenda.pdf',
+                'file_type': 'agenda',
+            },
+            self.superuser_token,
+        )
+        self.assertFalse(is_error, data)
+        self.assertTrue(data['upload_url'].startswith('https://'))
+        self.assertEqual(data['session_id'], self.session.pk)
+        self.assertEqual(data['method'], 'PUT')
+        self.assertEqual(data['max_bytes'], 25 * 1024 * 1024)
+
+        denied, is_error = self._tool_call(
+            'create_session_upload_url',
+            {
+                'session_id': self.session.pk,
+                'filename': 'blocked.pdf',
+            },
+            self.member_token,
+        )
+        self.assertTrue(is_error)
+        self.assertIn('permission', denied['error'].lower())
+
+    def test_create_session_upload_url_invalid_extension(self):
+        data, is_error = self._tool_call(
+            'create_session_upload_url',
+            {
+                'session_id': self.session.pk,
+                'filename': 'bad.exe',
+            },
+            self.superuser_token,
+        )
+        self.assertTrue(is_error)
+        self.assertIn('not allowed', data['error'].lower())
 
     def test_invalid_file_extension_returns_form_error(self):
         data, is_error = self._tool_call(
