@@ -126,26 +126,6 @@
                             </div>
                         </div>
 
-                        <div class="mb-3">
-                            <label for="{{ form.notes.id_for_label }}" class="form-label">
-                                {{ form.notes.label }}
-                                {% if form.notes.field.required %}
-                                    <span class="text-danger">*</span>
-                                {% endif %}
-                            </label>
-                            {{ form.notes }}
-                            {% if form.notes.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {% for error in form.notes.errors %}
-                                        {{ error }}
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
-                            {% if form.notes.help_text %}
-                                <div class="form-text">{{ form.notes.help_text }}</div>
-                            {% endif %}
-                        </div>
-
                         <div class="d-flex justify-content-between">
                             <a href="{% url 'district:term-seat-distribution-list' %}" class="btn btn-secondary">
                                 <i class="bi bi-x-circle"></i> {% trans "Cancel" %}

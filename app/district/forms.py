@@ -1,4 +1,5 @@
 from django import forms
+from django.core.exceptions import ValidationError as ModelValidationError
 from django.forms import inlineformset_factory, BaseInlineFormSet
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
@@ -86,7 +87,8 @@ class TermForm(forms.ModelForm):
         model = Term
         fields = ['name', 'start_date', 'end_date', 'total_seats', 'description']
         widgets = {
-            'description': forms.Textarea(attrs={'rows': 3}),
+            'name': forms.TextInput(attrs={'class': 'form-control'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'start_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}, format='%Y-%m-%d'),
             'end_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}, format='%Y-%m-%d'),
             'total_seats': forms.NumberInput(attrs={'class': 'form-control', 'min': '0'}),
@@ -107,8 +109,17 @@ class TermForm(forms.ModelForm):
         end_date = cleaned_data.get('end_date')
         
         if start_date and end_date and start_date >= end_date:
-            raise forms.ValidationError("End date must be after start date.")
-        
+            raise forms.ValidationError(_("End date must be after start date."))
+
+        total_seats = cleaned_data.get('total_seats')
+        if self.instance.pk and total_seats is not None:
+            allocated = self.instance.allocated_seats
+            if total_seats < allocated:
+                raise forms.ValidationError(
+                    _("Total seats cannot be less than already allocated seats (%(allocated)s).")
+                    % {'allocated': allocated}
+                )
+
         return cleaned_data
 
 
@@ -198,6 +209,21 @@ class TermSeatDistributionForm(forms.ModelForm):
                 self.fields['term'].widget = forms.HiddenInput()
             except Term.DoesNotExist:
                 pass
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if not cleaned_data:
+            return cleaned_data
+        instance = self.instance or TermSeatDistribution()
+        if not instance.pk:
+            instance.term = cleaned_data.get('term')
+            instance.party = cleaned_data.get('party')
+        instance.seats = cleaned_data.get('seats', 0)
+        try:
+            instance.clean()
+        except ModelValidationError as e:
+            raise forms.ValidationError(e.messages)
+        return cleaned_data
 
 
 class SessionForm(forms.ModelForm):

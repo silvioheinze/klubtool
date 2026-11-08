@@ -413,6 +413,11 @@ class Term(models.Model):
         """Calculate total allocated seats across all parties"""
         return sum(distribution.seats for distribution in self.seat_distributions.all())
 
+    @property
+    def unallocated_seats(self):
+        """Seats not yet assigned to parties"""
+        return max(0, self.total_seats - self.allocated_seats)
+
 
 class Party(models.Model):
     """Model representing a political party"""
@@ -458,11 +463,35 @@ class TermSeatDistribution(models.Model):
     def __str__(self):
         return f"{self.party.name} - {self.seats} seats in {self.term.name}"
 
+    @property
+    def percentage(self):
+        if self.term.total_seats > 0:
+            return round(self.seats / self.term.total_seats * 100, 1)
+        return None
+
     def clean(self):
-        """Validate that total seats don't exceed term total"""
+        """Validate seat counts against term limits"""
         from django.core.exceptions import ValidationError
+        from django.db.models import Sum
+
+        if not self.term_id:
+            return
+
         if self.seats > self.term.total_seats:
-            raise ValidationError(f"Seats cannot exceed term total of {self.term.total_seats}")
+            raise ValidationError(
+                _("Seats cannot exceed term total of %(total)s.")
+                % {'total': self.term.total_seats}
+            )
+
+        other_allocated = (
+            TermSeatDistribution.objects.filter(term_id=self.term_id)
+            .exclude(pk=self.pk)
+            .aggregate(total=Sum('seats'))['total']
+        ) or 0
+        if other_allocated + self.seats > self.term.total_seats:
+            raise ValidationError(
+                _("Total allocated seats cannot exceed the term's total seats.")
+            )
 
 
 class Session(models.Model):

@@ -9,6 +9,7 @@ from .views import (
     TermUpdateView, TermDeleteView,
     TermSeatDistributionListView, TermSeatDistributionDetailView, TermSeatDistributionCreateView,
     TermSeatDistributionUpdateView, TermSeatDistributionDeleteView, TermSeatDistributionView,
+    term_seat_distribution_update_term, term_seat_distribution_save, term_seat_distribution_delete_ajax,
     PartyListView, PartyDetailView, PartyCreateView, PartyUpdateView, PartyDeleteView,
     SessionDetailView, SessionCreateView, SessionUpdateView, SessionDeleteView, SessionExportPDFView, SessionExcuseView, SessionAttachmentView, session_attachment_delete_view, SessionInvitationUploadView, SessionCancelView, SessionMinutesUpdateView, update_motion_order, update_inquiry_order, update_session_presence, session_export_ics,
     CommitteeListView, CommitteeDetailView, CommitteeCreateView, CommitteeUpdateView, CommitteeDeleteView,
@@ -68,6 +69,9 @@ urlpatterns = [
     path('term-seat-distributions/<int:pk>/edit/', TermSeatDistributionUpdateView.as_view(), name='term-seat-distribution-edit'),
     path('term-seat-distributions/<int:pk>/delete/', TermSeatDistributionDeleteView.as_view(), name='term-seat-distribution-delete'),
     path('terms/<int:pk>/seat-distribution/', TermSeatDistributionView.as_view(), name='term-seat-distribution'),
+    path('terms/<int:pk>/seat-distribution/term/', term_seat_distribution_update_term, name='term-seat-distribution-update-term'),
+    path('terms/<int:pk>/seat-distribution/save/', term_seat_distribution_save, name='term-seat-distribution-save'),
+    path('terms/<int:pk>/seat-distribution/<int:distribution_pk>/delete/', term_seat_distribution_delete_ajax, name='term-seat-distribution-delete-ajax'),
     
     # Party URLs
     path('parties/', PartyListView.as_view(), name='party-list'),
