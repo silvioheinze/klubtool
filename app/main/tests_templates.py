@@ -188,12 +188,6 @@ class DistrictTemplatesTests(TestCase):
     def test_term_confirm_delete_template_exists(self):
         get_template('district/term_confirm_delete.html')
 
-    def test_term_seat_distribution_list_template_exists(self):
-        get_template('district/term_seat_distribution_list.html')
-
-    def test_term_seat_distribution_form_template_exists(self):
-        get_template('district/term_seat_distribution_form.html')
-
     def test_term_seat_distribution_template_exists(self):
         get_template('district/term_seat_distribution.html')
 

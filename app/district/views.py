@@ -747,11 +747,13 @@ class TermCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     model = Term
     form_class = TermForm
     template_name = 'district/term_form.html'
-    success_url = reverse_lazy('district:term-list')
 
     def test_func(self):
         """Check if user has permission to create Term objects"""
         return self.request.user.is_superuser
+
+    def get_success_url(self):
+        return reverse('district:term-seat-distribution', kwargs={'pk': self.object.pk})
 
     def form_valid(self, form):
         """Display success message on form validation"""
@@ -759,21 +761,13 @@ class TermCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
         return super().form_valid(form)
 
 
-class TermUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
-    """View for updating an existing Term object"""
-    model = Term
-    form_class = TermForm
-    template_name = 'district/term_form.html'
-    success_url = reverse_lazy('district:term-list')
-
-    def test_func(self):
-        """Check if user has permission to edit Term objects"""
-        return self.request.user.is_superuser
-
-    def form_valid(self, form):
-        """Display success message on form validation"""
-        messages.success(self.request, f"Term '{form.instance.name}' updated successfully.")
-        return super().form_valid(form)
+@login_required
+def term_edit_redirect(request, pk):
+    """Redirect term edit to the seat distribution page."""
+    if not request.user.is_superuser:
+        raise PermissionDenied
+    term = get_object_or_404(Term, pk=pk)
+    return redirect('district:term-seat-distribution', pk=term.pk)
 
 
 class TermDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
@@ -790,129 +784,6 @@ class TermDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
         """Display success message on deletion"""
         term_obj = self.get_object()
         messages.success(request, f"Term '{term_obj.name}' deleted successfully.")
-        return super().delete(request, *args, **kwargs)
-
-
-# TermSeatDistribution Views
-class TermSeatDistributionListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
-    """View for listing all TermSeatDistribution objects"""
-    model = TermSeatDistribution
-    context_object_name = 'seat_distributions'
-    template_name = 'district/term_seat_distribution_list.html'
-    paginate_by = 20
-
-    def test_func(self):
-        """Check if user has permission to view TermSeatDistribution objects"""
-        return self.request.user.is_superuser
-
-    def get_queryset(self):
-        """Filter queryset based on search parameters"""
-        queryset = TermSeatDistribution.objects.select_related('term', 'party').all().order_by('-term__start_date', '-seats')
-        
-        # Filter by term
-        term_filter = self.request.GET.get('term', '')
-        if term_filter:
-            queryset = queryset.filter(term_id=term_filter)
-        
-        # Filter by party
-        party_filter = self.request.GET.get('party', '')
-        if party_filter:
-            queryset = queryset.filter(party_id=party_filter)
-        
-        # Filter by seats range
-        min_seats = self.request.GET.get('min_seats', '')
-        if min_seats:
-            queryset = queryset.filter(seats__gte=min_seats)
-        
-        max_seats = self.request.GET.get('max_seats', '')
-        if max_seats:
-            queryset = queryset.filter(seats__lte=max_seats)
-        
-        return queryset
-
-    def get_context_data(self, **kwargs):
-        """Add filter form to context"""
-        context = super().get_context_data(**kwargs)
-        context['term_filter'] = self.request.GET.get('term', '')
-        context['party_filter'] = self.request.GET.get('party', '')
-        context['min_seats'] = self.request.GET.get('min_seats', '')
-        context['max_seats'] = self.request.GET.get('max_seats', '')
-        context['terms'] = Term.objects.filter(is_active=True)
-        context['parties'] = Party.objects.filter(is_active=True)
-        return context
-
-
-class TermSeatDistributionDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
-    """View for displaying a single TermSeatDistribution object"""
-    model = TermSeatDistribution
-    context_object_name = 'seat_distribution'
-    template_name = 'district/term_seat_distribution_detail.html'
-
-    def test_func(self):
-        """Check if user has permission to view TermSeatDistribution objects"""
-        return self.request.user.is_superuser
-
-
-class TermSeatDistributionCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
-    """View for creating a new TermSeatDistribution object"""
-    model = TermSeatDistribution
-    form_class = TermSeatDistributionForm
-    template_name = 'district/term_seat_distribution_form.html'
-    success_url = reverse_lazy('district:term-seat-distribution-list')
-
-    def test_func(self):
-        """Check if user has permission to create TermSeatDistribution objects"""
-        return self.request.user.is_superuser
-
-    def get_initial(self):
-        """Set initial term if provided in URL"""
-        initial = super().get_initial()
-        term_id = self.request.GET.get('term')
-        if term_id:
-            try:
-                term = Term.objects.get(pk=term_id)
-                initial['term'] = term.pk
-            except Term.DoesNotExist:
-                pass
-        return initial
-
-    def form_valid(self, form):
-        """Display success message on form validation"""
-        messages.success(self.request, f"Seat distribution for {form.instance.party.name} in {form.instance.term.name} created successfully.")
-        return super().form_valid(form)
-
-
-class TermSeatDistributionUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
-    """View for updating an existing TermSeatDistribution object"""
-    model = TermSeatDistribution
-    form_class = TermSeatDistributionForm
-    template_name = 'district/term_seat_distribution_form.html'
-    success_url = reverse_lazy('district:term-seat-distribution-list')
-
-    def test_func(self):
-        """Check if user has permission to edit TermSeatDistribution objects"""
-        return self.request.user.is_superuser
-
-    def form_valid(self, form):
-        """Display success message on form validation"""
-        messages.success(self.request, f"Seat distribution for {form.instance.party.name} in {form.instance.term.name} updated successfully.")
-        return super().form_valid(form)
-
-
-class TermSeatDistributionDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
-    """View for deleting a TermSeatDistribution object"""
-    model = TermSeatDistribution
-    template_name = 'district/term_seat_distribution_confirm_delete.html'
-    success_url = reverse_lazy('district:term-seat-distribution-list')
-
-    def test_func(self):
-        """Check if user has permission to delete TermSeatDistribution objects"""
-        return self.request.user.is_superuser
-
-    def delete(self, request, *args, **kwargs):
-        """Display success message on deletion"""
-        seat_distribution_obj = self.get_object()
-        messages.success(request, f"Seat distribution for {seat_distribution_obj.party.name} in {seat_distribution_obj.term.name} deleted successfully.")
         return super().delete(request, *args, **kwargs)
 
 

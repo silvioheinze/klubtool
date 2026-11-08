@@ -849,80 +849,6 @@ class PartyCreateViewTests(TestCase):
         self.assertRedirects(response, reverse('district:party-list'))
 
 
-class TermSeatDistributionCreateViewTests(TestCase):
-    """Test cases for TermSeatDistributionCreateView"""
-    
-    def setUp(self):
-        """Set up test data"""
-        self.client = Client()
-        self.superuser = User.objects.create_superuser(
-            username='admin',
-            email='admin@example.com',
-            password='adminpass123'
-        )
-        from datetime import date
-        self.term = Term.objects.create(
-            name='Test Term',
-            start_date=date(2025, 1, 1),
-            end_date=date(2030, 12, 31),
-            total_seats=40,
-            is_active=True
-        )
-        self.district = District.objects.create(
-            name='Test Local',
-            code='TL',
-            description='Test local description',
-            is_active=True
-        )
-        self.party = Party.objects.create(
-            name='Test Party',
-            district=self.district,
-            color='#FF0000',
-            is_active=True
-        )
-    
-    def test_term_seat_distribution_create_view_requires_superuser(self):
-        """Test that TermSeatDistributionCreateView requires superuser"""
-        response = self.client.get(reverse('district:term-seat-distribution-create'))
-        self.assertEqual(response.status_code, 302)  # Redirect to login
-    
-    def test_term_seat_distribution_create_view_superuser_access(self):
-        """Test that superuser can access TermSeatDistributionCreateView"""
-        self.client.login(username='admin', password='adminpass123')
-        response = self.client.get(reverse('district:term-seat-distribution-create'))
-        self.assertEqual(response.status_code, 200)
-    
-    def test_term_seat_distribution_create_view_with_term_parameter(self):
-        """Test that TermSeatDistributionCreateView handles term parameter correctly"""
-        self.client.login(username='admin', password='adminpass123')
-        response = self.client.get(f"{reverse('district:term-seat-distribution-create')}?term={self.term.pk}")
-        
-        self.assertEqual(response.status_code, 200)
-        # Check that the form has the term field hidden and pre-set
-        self.assertContains(response, f'value="{self.term.pk}"')
-    
-    def test_term_seat_distribution_create_view_successful_creation(self):
-        """Test that TermSeatDistributionCreateView successfully creates a seat distribution"""
-        self.client.login(username='admin', password='adminpass123')
-        
-        response = self.client.post(reverse('district:term-seat-distribution-create'), {
-            'term': self.term.pk,
-            'party': self.party.pk,
-            'seats': 10
-        })
-        
-        # Should redirect to seat distribution list
-        self.assertEqual(response.status_code, 302)
-        self.assertRedirects(response, reverse('district:term-seat-distribution-list'))
-        
-        # Check that the seat distribution was created
-        self.assertTrue(TermSeatDistribution.objects.filter(
-            term=self.term, 
-            party=self.party, 
-            seats=10
-        ).exists())
-
-
 class TermSeatDistributionFormTests(TestCase):
     """Test cases for TermSeatDistributionForm"""
     
@@ -1165,6 +1091,14 @@ class TermSeatDistributionAjaxTests(TestCase):
         )
         self.assertEqual(response.status_code, 400)
         self.assertIn('__all__', response.json()['errors'])
+
+    def test_term_edit_redirects_to_seat_distribution(self):
+        self.client.login(username='admin', password='adminpass123')
+        response = self.client.get(reverse('district:term-edit', args=[self.term.pk]))
+        self.assertRedirects(
+            response,
+            reverse('district:term-seat-distribution', args=[self.term.pk]),
+        )
 
 
 class SessionFilterFormTests(TestCase):
