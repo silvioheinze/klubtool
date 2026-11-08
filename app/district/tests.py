@@ -1004,6 +1004,169 @@ class TermSeatDistributionFormTests(TestCase):
         )
 
 
+class TermSeatDistributionAjaxTests(TestCase):
+    """AJAX endpoints for interactive seat distribution page"""
+
+    def setUp(self):
+        self.client = Client()
+        User = get_user_model()
+        self.superuser = User.objects.create_superuser(
+            username='admin',
+            email='admin@example.com',
+            password='adminpass123',
+        )
+        self.regular_user = User.objects.create_user(
+            username='user',
+            email='user@example.com',
+            password='userpass123',
+        )
+        from datetime import date
+        self.term = Term.objects.create(
+            name='Ajax Term',
+            start_date=date(2025, 1, 1),
+            end_date=date(2030, 12, 31),
+            total_seats=40,
+            is_active=True,
+        )
+        self.district = District.objects.create(
+            name='Ajax Local',
+            code='AL',
+            is_active=True,
+        )
+        self.party = Party.objects.create(
+            name='Ajax Party',
+            district=self.district,
+            is_active=True,
+        )
+        self.other_party = Party.objects.create(
+            name='Other Party',
+            district=self.district,
+            is_active=True,
+        )
+
+    def test_save_requires_superuser(self):
+        url = reverse('district:term-seat-distribution-save', args=[self.term.pk])
+        response = self.client.post(url, {'party_id': self.party.pk, 'seats': 5})
+        self.assertEqual(response.status_code, 302)
+
+        self.client.login(username='user', password='userpass123')
+        response = self.client.post(url, {'party_id': self.party.pk, 'seats': 5})
+        self.assertEqual(response.status_code, 403)
+
+    def test_save_creates_and_updates_distribution(self):
+        self.client.login(username='admin', password='adminpass123')
+        url = reverse('district:term-seat-distribution-save', args=[self.term.pk])
+        response = self.client.post(
+            url,
+            {'party_id': self.party.pk, 'seats': 10},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data['success'])
+        self.assertEqual(data['distribution']['seats'], 10)
+        self.assertEqual(data['totals']['allocated'], 10)
+
+        response = self.client.post(
+            url,
+            {'party_id': self.party.pk, 'seats': 12},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+        data = response.json()
+        self.assertTrue(data['success'])
+        self.assertEqual(
+            TermSeatDistribution.objects.get(term=self.term, party=self.party).seats,
+            12,
+        )
+
+    def test_save_rejects_over_allocation(self):
+        TermSeatDistribution.objects.create(term=self.term, party=self.party, seats=30)
+        self.client.login(username='admin', password='adminpass123')
+        url = reverse('district:term-seat-distribution-save', args=[self.term.pk])
+        response = self.client.post(
+            url,
+            {'party_id': self.other_party.pk, 'seats': 15},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(response.json()['success'])
+
+    def test_delete_distribution_ajax(self):
+        dist = TermSeatDistribution.objects.create(term=self.term, party=self.party, seats=5)
+        self.client.login(username='admin', password='adminpass123')
+        url = reverse(
+            'district:term-seat-distribution-delete-ajax',
+            args=[self.term.pk, dist.pk],
+        )
+        response = self.client.post(
+            url,
+            data='{}',
+            content_type='application/json',
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data['success'])
+        self.assertFalse(TermSeatDistribution.objects.filter(pk=dist.pk).exists())
+        self.assertEqual(data['totals']['allocated'], 0)
+
+    def test_update_term_ajax_success(self):
+        self.client.login(username='admin', password='adminpass123')
+        url = reverse('district:term-seat-distribution-update-term', args=[self.term.pk])
+        response = self.client.post(
+            url,
+            {
+                'name': 'Updated Term',
+                'start_date': '2025-01-01',
+                'end_date': '2031-12-31',
+                'total_seats': 45,
+                'description': 'Updated',
+            },
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data['success'])
+        self.term.refresh_from_db()
+        self.assertEqual(self.term.name, 'Updated Term')
+        self.assertEqual(self.term.total_seats, 45)
+
+    def test_update_term_ajax_rejects_end_before_start(self):
+        self.client.login(username='admin', password='adminpass123')
+        url = reverse('district:term-seat-distribution-update-term', args=[self.term.pk])
+        response = self.client.post(
+            url,
+            {
+                'name': self.term.name,
+                'start_date': '2030-01-01',
+                'end_date': '2025-01-01',
+                'total_seats': 40,
+                'description': '',
+            },
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(response.json()['success'])
+
+    def test_update_term_ajax_rejects_total_below_allocated(self):
+        TermSeatDistribution.objects.create(term=self.term, party=self.party, seats=25)
+        self.client.login(username='admin', password='adminpass123')
+        url = reverse('district:term-seat-distribution-update-term', args=[self.term.pk])
+        response = self.client.post(
+            url,
+            {
+                'name': self.term.name,
+                'start_date': '2025-01-01',
+                'end_date': '2030-12-31',
+                'total_seats': 20,
+                'description': '',
+            },
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('__all__', response.json()['errors'])
+
+
 class SessionFilterFormTests(TestCase):
     """Test cases for SessionFilterForm"""
     

@@ -13,7 +13,7 @@ from django.http import JsonResponse, HttpResponse
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.views.decorators.http import require_http_methods, require_POST
-from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext_lazy as _, gettext
 from django.utils.http import url_has_allowed_host_and_scheme
 import json
 
@@ -930,8 +930,152 @@ class TermSeatDistributionView(LoginRequiredMixin, UserPassesTestMixin, DetailVi
         """Add seat distributions to context"""
         context = super().get_context_data(**kwargs)
         context['seat_distributions'] = self.object.seat_distributions.select_related('party').all().order_by('-seats')
-        context['parties'] = Party.objects.filter(is_active=True)
+        context['term_form'] = TermForm(instance=self.object)
+        assigned_party_ids = self.object.seat_distributions.values_list('party_id', flat=True)
+        context['available_parties'] = Party.objects.filter(is_active=True).exclude(
+            pk__in=assigned_party_ids
+        ).order_by('name')
         return context
+
+
+def _term_seat_distribution_totals(term):
+    allocated = term.allocated_seats
+    return {
+        'total': term.total_seats,
+        'allocated': allocated,
+        'unallocated': max(0, term.total_seats - allocated),
+    }
+
+
+def _distribution_to_json(distribution):
+    term = distribution.term
+    percentage = None
+    if term.total_seats > 0:
+        percentage = round(distribution.seats / term.total_seats * 100, 1)
+    return {
+        'id': distribution.pk,
+        'party_id': distribution.party_id,
+        'party_name': distribution.party.name,
+        'party_short_name': distribution.party.short_name or '',
+        'party_color': distribution.party.color,
+        'seats': distribution.seats,
+        'percentage': percentage,
+    }
+
+
+def _form_errors_to_json(form):
+    return {field: [str(error) for error in errors] for field, errors in form.errors.items()}
+
+
+@login_required
+@require_POST
+def term_seat_distribution_update_term(request, pk):
+    """AJAX: update term fields from the seat distribution page"""
+    if not request.user.is_superuser:
+        return JsonResponse({'success': False, 'error': gettext('Permission denied')}, status=403)
+
+    term = get_object_or_404(Term, pk=pk)
+    form = TermForm(request.POST, instance=term)
+    if not form.is_valid():
+        return JsonResponse({'success': False, 'errors': _form_errors_to_json(form)}, status=400)
+
+    form.save()
+    term.refresh_from_db()
+    return JsonResponse({
+        'success': True,
+        'message': gettext('Term saved successfully.'),
+        'term': {
+            'name': term.name,
+            'start_date': term.start_date.isoformat(),
+            'end_date': term.end_date.isoformat(),
+            'total_seats': term.total_seats,
+            'description': term.description,
+            'is_current': term.is_current,
+            'is_active': term.is_active,
+        },
+        'totals': _term_seat_distribution_totals(term),
+    })
+
+
+@login_required
+@require_POST
+def term_seat_distribution_save(request, pk):
+    """AJAX: create or update a party's seat count for a term"""
+    if not request.user.is_superuser:
+        return JsonResponse({'success': False, 'error': gettext('Permission denied')}, status=403)
+
+    term = get_object_or_404(Term, pk=pk)
+
+    if request.content_type == 'application/json':
+        try:
+            payload = json.loads(request.body.decode('utf-8'))
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            return JsonResponse({'success': False, 'error': gettext('Invalid JSON')}, status=400)
+        party_id = payload.get('party_id')
+        seats = payload.get('seats')
+    else:
+        party_id = request.POST.get('party_id')
+        seats = request.POST.get('seats')
+
+    if party_id is None or seats is None or seats == '':
+        return JsonResponse(
+            {'success': False, 'errors': {'__all__': [gettext('Party and seats are required.')]}},
+            status=400,
+        )
+
+    try:
+        seats = int(seats)
+    except (TypeError, ValueError):
+        return JsonResponse(
+            {'success': False, 'errors': {'seats': [gettext('Enter a valid number.')]}},
+            status=400,
+        )
+
+    if seats < 0:
+        return JsonResponse(
+            {'success': False, 'errors': {'seats': [gettext('Enter a valid number.')]}},
+            status=400,
+        )
+
+    party = get_object_or_404(Party, pk=party_id, is_active=True)
+    distribution, _created = TermSeatDistribution.objects.get_or_create(term=term, party=party)
+
+    form = TermSeatDistributionForm(
+        data={'term': term.pk, 'party': party.pk, 'seats': seats},
+        instance=distribution,
+    )
+    if not form.is_valid():
+        return JsonResponse({'success': False, 'errors': _form_errors_to_json(form)}, status=400)
+
+    distribution = form.save()
+    distribution = TermSeatDistribution.objects.select_related('party', 'term').get(pk=distribution.pk)
+    term.refresh_from_db()
+
+    return JsonResponse({
+        'success': True,
+        'message': gettext('Seat distribution saved.'),
+        'distribution': _distribution_to_json(distribution),
+        'totals': _term_seat_distribution_totals(term),
+    })
+
+
+@login_required
+@require_POST
+def term_seat_distribution_delete_ajax(request, pk, distribution_pk):
+    """AJAX: remove a party's seat distribution for a term"""
+    if not request.user.is_superuser:
+        return JsonResponse({'success': False, 'error': gettext('Permission denied')}, status=403)
+
+    distribution = get_object_or_404(TermSeatDistribution, pk=distribution_pk, term_id=pk)
+    party_id = distribution.party_id
+    distribution.delete()
+    term = get_object_or_404(Term, pk=pk)
+    return JsonResponse({
+        'success': True,
+        'message': gettext('Seat distribution deleted.'),
+        'totals': _term_seat_distribution_totals(term),
+        'party_id': party_id,
+    })
 
 
 # Party Views

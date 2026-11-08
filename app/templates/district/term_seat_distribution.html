@@ -6,20 +6,29 @@
 {% block title %}{{ term.name }} - {% trans "Seat Distribution" %}{% endblock title %}
 
 {% block content %}
-<div class="container mt-4">
+<div class="container mt-4" id="seat-distribution-root"
+     data-term-id="{{ term.pk }}"
+     data-update-term-url="{% url 'district:term-seat-distribution-update-term' term.pk %}"
+     data-save-url="{% url 'district:term-seat-distribution-save' term.pk %}"
+     data-delete-url-template="{% url 'district:term-seat-distribution-delete-ajax' term.pk 0 %}"
+     data-msg-saved="{% trans 'Saved' %}"
+     data-msg-delete-confirm="{% trans 'Are you sure you want to delete this seat distribution?' %}"
+     data-msg-select-party="{% trans 'Please select a party.' %}"
+     data-msg-error="{% trans 'An error occurred. Please try again.' %}">
     <div class="row">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1><i class="bi bi-bar-chart"></i> {% trans "Seat Distribution" %} - {{ term.name }}</h1>
+                <h1 class="mb-0">
+                    <i class="bi bi-bar-chart"></i>
+                    <span id="term-page-title">{% trans "Seat Distribution" %} – {{ term.name }}</span>
+                </h1>
                 <div>
-                    <a href="{% url 'district:term-seat-distribution-create' %}?term={{ term.pk }}" class="btn btn-primary">
-                        <i class="bi bi-plus-circle"></i> {% trans "Add Seat Distribution" %}
-                    </a>
                     <a href="{% url 'district:term-detail' term.pk %}" class="btn btn-secondary">
                         <i class="bi bi-arrow-left"></i> {% trans "Back to Term" %}
                     </a>
                 </div>
             </div>
+            <div id="global-flash" class="alert d-none" role="status" aria-live="polite"></div>
         </div>
     </div>
 
@@ -30,137 +39,424 @@
                     <h5 class="mb-0">{% trans "Seat Distribution Overview" %}</h5>
                 </div>
                 <div class="card-body">
-                    <div class="row mb-4">
+                    <div class="row mb-4" id="seat-totals">
                         <div class="col-md-4">
                             <div class="text-center">
-                                <h3 class="text-primary">{{ term.total_seats }}</h3>
-                                <p class="text-muted">{% trans "Total Seats" %}</p>
+                                <h3 class="text-primary mb-0" data-total-seats>{{ term.total_seats }}</h3>
+                                <p class="text-muted mb-0">{% trans "Total Seats" %}</p>
                             </div>
                         </div>
                         <div class="col-md-4">
                             <div class="text-center">
-                                <h3 class="text-success">{{ term.allocated_seats }}</h3>
-                                <p class="text-muted">{% trans "Allocated Seats" %}</p>
+                                <h3 class="text-success mb-0" data-allocated-seats>{{ term.allocated_seats }}</h3>
+                                <p class="text-muted mb-0">{% trans "Allocated Seats" %}</p>
                             </div>
                         </div>
                         <div class="col-md-4">
                             <div class="text-center">
-                                <h3 class="text-warning">{{ term.unallocated_seats }}</h3>
-                                <p class="text-muted">{% trans "Unallocated Seats" %}</p>
+                                <h3 class="text-warning mb-0" data-unallocated-seats>{{ term.unallocated_seats }}</h3>
+                                <p class="text-muted mb-0">{% trans "Unallocated Seats" %}</p>
                             </div>
                         </div>
                     </div>
 
-                    {% if seat_distributions %}
-                        <div class="table-responsive">
-                            <table class="table table-striped table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>{% trans "Party" %}</th>
-                                        <th>{% trans "Seats" %}</th>
-                                        <th>{% trans "Percentage" %}</th>
-                                        <th>{% trans "Actions" %}</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for distribution in seat_distributions %}
-                                        <tr>
-                                            <td>
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover align-middle" id="seat-distribution-table">
+                            <thead>
+                                <tr>
+                                    <th>{% trans "Party" %}</th>
+                                    <th style="width: 8rem;">{% trans "Seats" %}</th>
+                                    <th style="width: 6rem;">{% trans "Percentage" %}</th>
+                                    <th style="width: 6rem;">{% trans "Actions" %}</th>
+                                </tr>
+                            </thead>
+                            <tbody id="seat-distribution-rows">
+                                {% for distribution in seat_distributions %}
+                                <tr data-distribution-id="{{ distribution.pk }}" data-party-id="{{ distribution.party_id }}">
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span style="width:12px;height:12px;border-radius:2px;background-color:{{ distribution.party.color|default:'#6c757d' }};"></span>
+                                            <span>
                                                 <strong>{{ distribution.party.name }}</strong>
                                                 {% if distribution.party.short_name %}
-                                                    <br><small class="text-muted">{{ distribution.party.short_name }}</small>
+                                                <br><small class="text-muted">{{ distribution.party.short_name }}</small>
                                                 {% endif %}
-                                            </td>
-                                            <td>
-                                                <span class="badge bg-primary fs-6">{{ distribution.seats }}</span>
-                                            </td>
-                                            <td>
-                                                {% if distribution.percentage %}
-                                                    <span class="text-muted">{{ distribution.percentage|floatformat:1 }}%</span>
-                                                {% else %}
-                                                    <span class="text-muted">-</span>
-                                                {% endif %}
-                                            </td>
-                                            <td>
-                                                <div class="btn-group" role="group">
-                                                    <a href="{% url 'district:term-seat-distribution-detail' distribution.pk %}" class="btn btn-sm btn-outline-info">
-                                                        <i class="bi bi-eye"></i> {% trans "View" %}
-                                                    </a>
-                                                    <a href="{% url 'district:term-seat-distribution-edit' distribution.pk %}" class="btn btn-sm btn-outline-primary">
-                                                        <i class="bi bi-pencil"></i> {% trans "Edit" %}
-                                                    </a>
-                                                    <a href="{% url 'district:term-seat-distribution-delete' distribution.pk %}" class="btn btn-sm btn-outline-danger"
-                                                       onclick="return confirm('{% trans 'Are you sure you want to delete this seat distribution?' %}')">
-                                                        <i class="bi bi-trash"></i> {% trans "Delete" %}
-                                                    </a>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    {% else %}
-                        <div class="text-center py-4">
-                            <i class="bi bi-bar-chart fs-1 text-muted"></i>
-                            <h5 class="mt-3">{% trans "No Seat Distributions found" %}</h5>
-                            <p class="text-muted">{% trans "Add seat distributions to manage party representation in this term." %}</p>
-                            <a href="{% url 'district:term-seat-distribution-create' %}?term={{ term.pk }}" class="btn btn-primary">
-                                <i class="bi bi-plus-circle"></i> {% trans "Add First Distribution" %}
-                            </a>
-                        </div>
-                    {% endif %}
+                                            </span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <input type="number" class="form-control form-control-sm seat-input"
+                                               min="0" max="{{ term.total_seats }}"
+                                               value="{{ distribution.seats }}"
+                                               aria-label="{% trans 'Seats' %}">
+                                    </td>
+                                    <td>
+                                        <span class="percentage-cell text-muted">
+                                            {% if distribution.percentage is not None %}
+                                                {{ distribution.percentage|floatformat:1 }}%
+                                            {% else %}
+                                                –
+                                            {% endif %}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <button type="button" class="btn btn-sm btn-outline-danger btn-delete-distribution"
+                                                title="{% trans 'Delete' %}">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot>
+                                <tr id="add-seat-row">
+                                    <td>
+                                        <select class="form-select form-select-sm" id="add-party-select"
+                                                aria-label="{% trans 'Party' %}">
+                                            <option value="">{% trans "Select party" %}</option>
+                                            {% for party in available_parties %}
+                                            <option value="{{ party.pk }}">{{ party.name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                        <div class="text-danger small d-none add-party-error"></div>
+                                    </td>
+                                    <td>
+                                        <input type="number" class="form-control form-control-sm" id="add-seats-input"
+                                               min="0" max="{{ term.total_seats }}" value="0"
+                                               aria-label="{% trans 'Seats' %}">
+                                    </td>
+                                    <td colspan="2">
+                                        <button type="button" class="btn btn-sm btn-primary" id="btn-add-distribution">
+                                            <i class="bi bi-plus-circle"></i> {% trans "Add party" %}
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    <p class="text-muted small mb-0" id="empty-distribution-hint" {% if seat_distributions %}style="display:none"{% endif %}>
+                        {% trans "Add seat distributions to manage party representation in this term." %}
+                    </p>
                 </div>
             </div>
         </div>
-        
+
         <div class="col-md-4">
             <div class="card">
-                <div class="card-header">
+                <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">{% trans "Term Information" %}</h5>
+                    <span class="badge bg-success d-none" id="term-save-badge">{% trans "Saved" %}</span>
                 </div>
                 <div class="card-body">
-                    <dl class="row">
-                        <dt class="col-sm-4">{% trans "Name" %}</dt>
-                        <dd class="col-sm-8">{{ term.name }}</dd>
-                        
-                        <dt class="col-sm-4">{% trans "Period" %}</dt>
-                        <dd class="col-sm-8">{{ term.start_date|date:"M Y" }} - {{ term.end_date|date:"M Y" }}</dd>
-                        
-                        <dt class="col-sm-4">{% trans "Status" %}</dt>
-                        <dd class="col-sm-8">
-                            {% if term.is_active %}
-                                <span class="badge bg-success">{% trans "Active" %}</span>
-                            {% else %}
-                                <span class="badge bg-danger">{% trans "Inactive" %}</span>
-                            {% endif %}
-                            {% if term.is_current %}
-                                <span class="badge bg-primary">{% trans "Current" %}</span>
-                            {% endif %}
+                    <form id="term-edit-form" novalidate>
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label" for="id_name">{% trans "Term Name" %}</label>
+                            {{ term_form.name }}
+                            <div class="invalid-feedback d-block term-field-error" data-field="name"></div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="id_total_seats">{% trans "Total Seats" %}</label>
+                            {{ term_form.total_seats }}
+                            <div class="invalid-feedback d-block term-field-error" data-field="total_seats"></div>
+                        </div>
+                        <div class="row">
+                            <div class="col-6 mb-3">
+                                <label class="form-label" for="id_start_date">{% trans "Start Date" %}</label>
+                                {{ term_form.start_date }}
+                                <div class="invalid-feedback d-block term-field-error" data-field="start_date"></div>
+                            </div>
+                            <div class="col-6 mb-3">
+                                <label class="form-label" for="id_end_date">{% trans "End Date" %}</label>
+                                {{ term_form.end_date }}
+                                <div class="invalid-feedback d-block term-field-error" data-field="end_date"></div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="id_description">{% trans "Description" %}</label>
+                            {{ term_form.description }}
+                            <div class="invalid-feedback d-block term-field-error" data-field="description"></div>
+                        </div>
+                        <div class="alert alert-danger d-none" id="term-form-non-field-errors"></div>
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-check-circle"></i> {% trans "Save term" %}
+                        </button>
+                    </form>
+                    <dl class="row mt-3 mb-0 small text-muted" id="term-status-readout">
+                        <dt class="col-5">{% trans "Status" %}</dt>
+                        <dd class="col-7" id="term-status-badges">
+                            {% if term.is_active %}<span class="badge bg-success">{% trans "Active" %}</span>{% else %}<span class="badge bg-danger">{% trans "Inactive" %}</span>{% endif %}
+                            {% if term.is_current %}<span class="badge bg-primary">{% trans "Current" %}</span>{% endif %}
                         </dd>
+                        <dt class="col-5">{% trans "Period" %}</dt>
+                        <dd class="col-7" id="term-period-readout">{{ term.start_date|date:"M Y" }} – {{ term.end_date|date:"M Y" }}</dd>
                     </dl>
                 </div>
             </div>
-            
+
             <div class="card mt-3">
-                <div class="card-header">
-                    <h5 class="mb-0">{% trans "Actions" %}</h5>
-                </div>
                 <div class="card-body">
-                    <div class="d-grid gap-2">
-                        <a href="{% url 'district:term-seat-distribution-create' %}?term={{ term.pk }}" class="btn btn-primary">
-                            <i class="bi bi-plus-circle"></i> {% trans "Add Seat Distribution" %}
-                        </a>
-                        <a href="{% url 'district:term-seat-distribution-list' %}" class="btn btn-outline-secondary">
-                            <i class="bi bi-list"></i> {% trans "View All Distributions" %}
-                        </a>
-                        <a href="{% url 'district:term-detail' term.pk %}" class="btn btn-outline-info">
-                            <i class="bi bi-calendar-event"></i> {% trans "View Term Details" %}
-                        </a>
-                    </div>
+                    <a href="{% url 'district:term-seat-distribution-list' %}" class="btn btn-outline-secondary w-100 mb-2">
+                        <i class="bi bi-list"></i> {% trans "View All Distributions" %}
+                    </a>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const root = document.getElementById('seat-distribution-root');
+    if (!root) return;
+
+    const csrfToken = document.querySelector('#term-edit-form [name=csrfmiddlewaretoken]').value;
+    const deleteUrlTemplate = root.dataset.deleteUrlTemplate;
+    const labels = {
+        saved: root.dataset.msgSaved,
+        deleteConfirm: root.dataset.msgDeleteConfirm,
+        selectParty: root.dataset.msgSelectParty,
+        error: root.dataset.msgError,
+    };
+
+    function getCsrfHeaders(extra) {
+        return Object.assign({
+            'X-CSRFToken': csrfToken,
+            'X-Requested-With': 'XMLHttpRequest',
+        }, extra || {});
+    }
+
+    function updateTotals(totals) {
+        root.querySelector('[data-total-seats]').textContent = totals.total;
+        root.querySelector('[data-allocated-seats]').textContent = totals.allocated;
+        root.querySelector('[data-unallocated-seats]').textContent = totals.unallocated;
+        root.querySelectorAll('.seat-input, #add-seats-input').forEach(function (el) {
+            el.setAttribute('max', totals.total);
+        });
+    }
+
+    function flash(message, isError) {
+        const el = document.getElementById('global-flash');
+        el.textContent = message;
+        el.className = 'alert alert-' + (isError ? 'danger' : 'success');
+        el.classList.remove('d-none');
+        setTimeout(function () { el.classList.add('d-none'); }, 3000);
+    }
+
+    function clearRowError(row) {
+        const err = row.querySelector('.row-error');
+        if (err) err.remove();
+        row.querySelector('.seat-input')?.classList.remove('is-invalid');
+    }
+
+    function showRowError(row, messages) {
+        clearRowError(row);
+        const input = row.querySelector('.seat-input');
+        if (input) input.classList.add('is-invalid');
+        const div = document.createElement('div');
+        div.className = 'text-danger small row-error';
+        div.textContent = messages.join(' ');
+        row.querySelector('td:nth-child(2)')?.appendChild(div);
+    }
+
+    function formatPercentage(pct) {
+        if (pct === null || pct === undefined) return '–';
+        return pct.toFixed(1) + '%';
+    }
+
+    function buildRowHtml(dist) {
+        const shortLine = dist.party_short_name
+            ? '<br><small class="text-muted">' + escapeHtml(dist.party_short_name) + '</small>'
+            : '';
+        return (
+            '<tr data-distribution-id="' + dist.id + '" data-party-id="' + dist.party_id + '">' +
+            '<td><div class="d-flex align-items-center gap-2">' +
+            '<span style="width:12px;height:12px;border-radius:2px;background-color:' + escapeHtml(dist.party_color || '#6c757d') + ';"></span>' +
+            '<span><strong>' + escapeHtml(dist.party_name) + '</strong>' + shortLine + '</span></div></td>' +
+            '<td><input type="number" class="form-control form-control-sm seat-input" min="0" value="' + dist.seats + '"></td>' +
+            '<td><span class="percentage-cell text-muted">' + formatPercentage(dist.percentage) + '</span></td>' +
+            '<td><button type="button" class="btn btn-sm btn-outline-danger btn-delete-distribution"><i class="bi bi-trash"></i></button></td>' +
+            '</tr>'
+        );
+    }
+
+    function escapeHtml(text) {
+        const d = document.createElement('div');
+        d.textContent = text;
+        return d.innerHTML;
+    }
+
+    function removePartyFromSelect(partyId) {
+        const opt = document.querySelector('#add-party-select option[value="' + partyId + '"]');
+        if (opt) opt.remove();
+    }
+
+    function saveDistribution(partyId, seats, row) {
+        const body = new FormData();
+        body.append('party_id', partyId);
+        body.append('seats', seats);
+        body.append('csrfmiddlewaretoken', csrfToken);
+
+        return fetch(root.dataset.saveUrl, {
+            method: 'POST',
+            body: body,
+            headers: getCsrfHeaders(),
+            credentials: 'same-origin',
+        }).then(function (r) { return r.json().then(function (data) { return { ok: r.ok, data: data }; }); });
+    }
+
+    function attachRowHandlers(row) {
+        const input = row.querySelector('.seat-input');
+        if (!input) return;
+        let debounceTimer;
+        input.addEventListener('input', function () {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(function () {
+                const partyId = row.dataset.partyId;
+                const seats = input.value;
+                saveDistribution(partyId, seats, row).then(function (result) {
+                    if (result.ok && result.data.success) {
+                        clearRowError(row);
+                        row.dataset.distributionId = result.data.distribution.id;
+                        row.querySelector('.percentage-cell').textContent = formatPercentage(result.data.distribution.percentage);
+                        updateTotals(result.data.totals);
+                        flash(labels.saved, false);
+                    } else if (result.data.errors) {
+                        const msgs = [];
+                        Object.keys(result.data.errors).forEach(function (k) {
+                            msgs.push.apply(msgs, result.data.errors[k]);
+                        });
+                        showRowError(row, msgs.length ? msgs : [labels.error]);
+                    } else {
+                        showRowError(row, [result.data.error || labels.error]);
+                    }
+                }).catch(function () { showRowError(row, [labels.error]); });
+            }, 400);
+        });
+
+        const delBtn = row.querySelector('.btn-delete-distribution');
+        if (delBtn) {
+            delBtn.addEventListener('click', function () {
+                if (!confirm(labels.deleteConfirm)) return;
+                const distId = row.dataset.distributionId;
+                if (!distId) {
+                    row.remove();
+                    return;
+                }
+                const url = deleteUrlTemplate.replace('/0/delete/', '/' + distId + '/delete/');
+                fetch(url, {
+                    method: 'POST',
+                    headers: getCsrfHeaders({'Content-Type': 'application/json'}),
+                    body: '{}',
+                    credentials: 'same-origin',
+                }).then(function (r) { return r.json(); })
+                .then(function (data) {
+                    if (data.success) {
+                        const select = document.getElementById('add-party-select');
+                        const partyName = row.querySelector('strong')?.textContent;
+                        if (data.party_id && partyName) {
+                            const opt = document.createElement('option');
+                            opt.value = data.party_id;
+                            opt.textContent = partyName;
+                            select.appendChild(opt);
+                        }
+                        row.remove();
+                        updateTotals(data.totals);
+                        const rows = document.querySelectorAll('#seat-distribution-rows tr');
+                        document.getElementById('empty-distribution-hint').style.display = rows.length ? 'none' : '';
+                        flash(labels.saved, false);
+                    } else {
+                        flash(data.error || labels.error, true);
+                    }
+                }).catch(function () { flash(labels.error, true); });
+            });
+        }
+    }
+
+    document.querySelectorAll('#seat-distribution-rows tr').forEach(attachRowHandlers);
+
+    document.getElementById('btn-add-distribution')?.addEventListener('click', function () {
+        const select = document.getElementById('add-party-select');
+        const seatsInput = document.getElementById('add-seats-input');
+        const partyId = select.value;
+        if (!partyId) {
+            const err = document.querySelector('.add-party-error');
+            err.textContent = labels.selectParty;
+            err.classList.remove('d-none');
+            return;
+        }
+        document.querySelector('.add-party-error')?.classList.add('d-none');
+
+        saveDistribution(partyId, seatsInput.value, null).then(function (result) {
+            if (result.ok && result.data.success) {
+                const tbody = document.getElementById('seat-distribution-rows');
+                const wrapper = document.createElement('tbody');
+                wrapper.innerHTML = buildRowHtml(result.data.distribution);
+                const row = wrapper.querySelector('tr');
+                tbody.appendChild(row);
+                attachRowHandlers(row);
+                removePartyFromSelect(partyId);
+                select.value = '';
+                seatsInput.value = '0';
+                updateTotals(result.data.totals);
+                document.getElementById('empty-distribution-hint').style.display = 'none';
+                flash(labels.saved, false);
+            } else {
+                const msgs = [];
+                if (result.data.errors) {
+                    Object.keys(result.data.errors).forEach(function (k) {
+                        msgs.push.apply(msgs, result.data.errors[k]);
+                    });
+                }
+                flash(msgs.join(' ') || result.data.error || labels.error, true);
+            }
+        }).catch(function () { flash(labels.error, true); });
+    });
+
+    function clearTermErrors() {
+        document.querySelectorAll('.term-field-error').forEach(function (el) { el.textContent = ''; });
+        const nf = document.getElementById('term-form-non-field-errors');
+        nf.classList.add('d-none');
+        nf.textContent = '';
+    }
+
+    document.getElementById('term-edit-form')?.addEventListener('submit', function (e) {
+        e.preventDefault();
+        clearTermErrors();
+        const formData = new FormData(this);
+
+        fetch(root.dataset.updateTermUrl, {
+            method: 'POST',
+            body: formData,
+            headers: getCsrfHeaders(),
+            credentials: 'same-origin',
+        }).then(function (r) { return r.json().then(function (data) { return { ok: r.ok, data: data }; }); })
+        .then(function (result) {
+            if (result.ok && result.data.success) {
+                const t = result.data.term;
+                document.getElementById('term-page-title').textContent =
+                    document.getElementById('term-page-title').textContent.split('–')[0].trim() + ' – ' + t.name;
+                updateTotals(result.data.totals);
+                const badge = document.getElementById('term-save-badge');
+                badge.classList.remove('d-none');
+                setTimeout(function () { badge.classList.add('d-none'); }, 2000);
+                flash(labels.saved, false);
+            } else if (result.data.errors) {
+                Object.keys(result.data.errors).forEach(function (field) {
+                    if (field === '__all__') {
+                        const nf = document.getElementById('term-form-non-field-errors');
+                        nf.textContent = result.data.errors[field].join(' ');
+                        nf.classList.remove('d-none');
+                    } else {
+                        const el = document.querySelector('.term-field-error[data-field="' + field + '"]');
+                        if (el) el.textContent = result.data.errors[field].join(' ');
+                    }
+                });
+            } else {
+                flash(result.data.error || labels.error, true);
+            }
+        }).catch(function () { flash(labels.error, true); });
+    });
+});
+</script>
 {% endblock content %}
