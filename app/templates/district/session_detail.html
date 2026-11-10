@@ -178,6 +178,8 @@
                                                     <span class="badge bg-warning text-dark">{% trans "Refer to Committee (no majority)" %}</span>
                                                 {% elif motion.status == 'voted_in_committee' %}
                                                     <span class="badge bg-warning">{% trans "Voted upon in Committee" %}</span>
+                                                {% elif motion.status == 'committee_voted' %}
+                                                    <span class="badge bg-warning">{% trans "Voted in Committee/Commission" %}</span>
                                                 {% elif motion.status == 'approved' %}
                                                     <span class="badge bg-success">{% trans "Approved" %}</span>
                                                 {% elif motion.status == 'rejected' %}
@@ -188,6 +190,8 @@
                                                     <span class="badge bg-dark">{% trans "Nicht zugelassen" %}</span>
                                                 {% elif motion.status == 'answered' %}
                                                     <span class="badge bg-success">{% trans "Answered" %}</span>
+                                                {% elif motion.status == 'declared_done' %}
+                                                    <span class="badge bg-success">{% trans "Declared done" %}</span>
                                                 {% elif motion.status == 'deleted' %}
                                                     <span class="badge bg-secondary">{% trans "Deleted" %}</span>
                                                 {% else %}
@@ -316,6 +320,57 @@
                     {% endif %}
                 </div>
             </div>
+
+            {% if committee_returned_motions %}
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-arrow-return-left"></i> {% trans "Voted in Committee/Commission" %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>{% trans "Title" %}</th>
+                                    <th>{% trans "Status" %}</th>
+                                    <th>{% trans "Parties" %}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for motion in committee_returned_motions %}
+                                    <tr>
+                                        <td>
+                                            <a href="{% url 'motion:motion-detail' motion.pk %}">
+                                                {{ motion.title }}
+                                            </a>
+                                            {% if not motion.is_active %}
+                                                <span class="badge bg-danger ms-1">{% trans "Inactive" %}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-warning">{% trans "Voted in Committee/Commission" %}</span>
+                                        </td>
+                                        <td>
+                                            {% if motion.parties.exists %}
+                                                {% for party in motion.parties.all %}
+                                                    <span class="badge" style="background-color: {{ party.color }}; color: white; margin-right: 2px;">
+                                                        {{ party.short_name|default:party.name }}
+                                                    </span>
+                                                {% endfor %}
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
         </div>
 
         <div class="col-lg-4">

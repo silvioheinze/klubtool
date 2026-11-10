@@ -192,6 +192,8 @@
                                                     <span class="badge bg-warning text-dark">{% trans "Refer to Committee (no majority)" %}</span>
                                                 {% elif motion.status == 'voted_in_committee' %}
                                                     <span class="badge bg-warning">{% trans "Voted upon in Committee" %}</span>
+                                                {% elif motion.status == 'committee_voted' %}
+                                                    <span class="badge bg-warning">{% trans "Voted in Committee/Commission" %}</span>
                                                 {% elif motion.status == 'approved' %}
                                                     <span class="badge bg-success">{% trans "Approved" %}</span>
                                                 {% elif motion.status == 'rejected' %}
@@ -202,6 +204,8 @@
                                                     <span class="badge bg-dark">{% trans "Nicht zugelassen" %}</span>
                                                 {% elif motion.status == 'answered' %}
                                                     <span class="badge bg-success">{% trans "Answered" %}</span>
+                                                {% elif motion.status == 'declared_done' %}
+                                                    <span class="badge bg-success">{% trans "Declared done" %}</span>
                                                 {% elif motion.status == 'deleted' %}
                                                     <span class="badge bg-secondary">{% trans "Deleted" %}</span>
                                                 {% else %}

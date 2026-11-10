@@ -6,7 +6,7 @@ from django.views.generic import ListView, DetailView, CreateView, UpdateView, D
 from django.urls import reverse_lazy, reverse
 from django.http import JsonResponse, HttpResponseRedirect
 from django.utils.html import linebreaks
-from django.db.models import Q, Count
+from django.db.models import Q, Count, Max
 from django.core.paginator import Paginator
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
@@ -227,7 +227,25 @@ def can_change_inquiry_status(user, inquiry):
 
 def motion_status_requires_votes(status):
     """Return True if the given target status requires party vote counts."""
-    return status in ['approved', 'rejected', 'refer_to_committee', 'voted_in_committee']
+    return status in ['approved', 'rejected', 'refer_to_committee', 'voted_in_committee', 'committee_voted']
+
+
+def next_plenary_session(motion):
+    """Next upcoming council session (Bezirksvertretung), not a committee session."""
+    current = getattr(motion, 'session', None)
+    if current is None or not current.council_id:
+        return None
+    return (
+        Session.objects.filter(
+            council_id=current.council_id,
+            committee__isnull=True,
+            is_active=True,
+            scheduled_date__gt=timezone.now(),
+        )
+        .exclude(status='cancelled')
+        .order_by('scheduled_date')
+        .first()
+    )
 
 
 def party_seat_map_for_motion(motion):
@@ -266,7 +284,8 @@ def record_motion_status_change(
 ):
     """
     Apply a motion status change and optionally persist votes from a validated formset.
-    Returns dict with new_status, refer_no_majority (bool), and votes_created (int).
+    Returns dict with new_status, refer_no_majority (bool), votes_created (int),
+    and moved_to_session (Session or None when status is committee_voted).
     """
     import logging
 
@@ -274,6 +293,7 @@ def record_motion_status_change(
     requires_votes = motion_status_requires_votes(initial_status)
     new_status = initial_status
     reason = (reason or '').strip()
+    moved_to_session = None
 
     if initial_status == 'refer_to_committee' and requires_votes and vote_formset is not None:
         total_approve = 0
@@ -306,6 +326,20 @@ def record_motion_status_change(
 
     if new_status in ['refer_to_committee', 'voted_in_committee'] and committee:
         motion.committee = committee
+    if new_status == 'committee_voted':
+        # Leave the committee and place the motion on the next plenary session.
+        next_session = next_plenary_session(motion)
+        if next_session is not None:
+            if next_session.pk != motion.session_id:
+                max_rank = (
+                    Motion.objects.filter(session=next_session).aggregate(max_rank=Max('session_rank'))['max_rank']
+                    or 0
+                )
+                motion.session = next_session
+                motion.session_rank = max_rank + 1
+            motion._status_session = next_session
+            moved_to_session = next_session
+        motion.committee = None
     if new_status == 'tabled' and session:
         motion.session = session
 
@@ -321,7 +355,7 @@ def record_motion_status_change(
         _save_motion_status_answer_files(status_entry, answer_files)
 
     votes_created = 0
-    if new_status in ['approved', 'rejected', 'refer_to_committee', 'refer_no_majority', 'voted_in_committee']:
+    if new_status in ['approved', 'rejected', 'refer_to_committee', 'refer_no_majority', 'voted_in_committee', 'committee_voted']:
         if status_entry is None:
             logger.error(
                 'Status entry was not created for motion %s with status %s',
@@ -364,6 +398,7 @@ def record_motion_status_change(
         'new_status': new_status,
         'refer_no_majority': new_status == 'refer_no_majority',
         'votes_created': votes_created,
+        'moved_to_session': moved_to_session,
     }
 
 
@@ -1141,7 +1176,7 @@ def motion_status_change_view(request, pk):
         return redirect('motion:motion-detail', pk=pk)
     
     # Check if votes are required for this status
-    requires_votes = initial_status in ['approved', 'rejected', 'refer_to_committee', 'voted_in_committee']
+    requires_votes = initial_status in ['approved', 'rejected', 'refer_to_committee', 'voted_in_committee', 'committee_voted']
     
     if request.method == 'POST':
         # Use the status from query parameter, not from POST data (include FILES for answer file uploads)

@@ -89,6 +89,8 @@
                                         <span class="badge bg-warning text-dark">{% trans "Refer to Committee (no majority)" %}</span>
                                     {% elif motion.status == 'voted_in_committee' %}
                                         <span class="badge bg-warning">{% trans "Voted upon in Committee" %}</span>
+                                    {% elif motion.status == 'committee_voted' %}
+                                        <span class="badge bg-warning">{% trans "Voted in Committee/Commission" %}</span>
                                     {% elif motion.status == 'approved' %}
                                         <span class="badge bg-success">{% trans "Approved" %}</span>
                                     {% elif motion.status == 'rejected' %}
@@ -106,6 +108,8 @@
                                                 </a>
                                             {% endfor %}
                                         {% endwith %}
+                                    {% elif motion.status == 'declared_done' %}
+                                        <span class="badge bg-success">{% trans "Declared done" %}</span>
                                     {% elif motion.status == 'deleted' %}
                                         <span class="badge bg-secondary">{% trans "Deleted" %}</span>
                                     {% endif %}
@@ -149,10 +153,13 @@
                                 <a href="{% url 'motion:motion-status-change' motion.pk %}?status=voted_in_committee" class="btn btn-warning btn-sm">
                                     <i class="bi bi-check-circle"></i> {% trans "Voted in Committee" %}
                                 </a>
+                                <a href="{% url 'motion:motion-status-change' motion.pk %}?status=committee_voted" class="btn btn-warning btn-sm">
+                                    <i class="bi bi-check-circle"></i> {% trans "Voted in Committee/Commission" %}
+                                </a>
                                 <a href="{% url 'motion:motion-status-change' motion.pk %}?status=withdrawn" class="btn btn-warning btn-sm">
                                     <i class="bi bi-x-circle"></i> {% trans "Withdraw" %}
                                 </a>
-                            {% elif status_for_buttons == 'voted_in_committee' %}
+                            {% elif status_for_buttons == 'voted_in_committee' or status_for_buttons == 'committee_voted' %}
                                 <a href="{% url 'motion:motion-status-change' motion.pk %}?status=tabled" class="btn btn-warning btn-sm">
                                     <i class="bi bi-table"></i> {% trans "Table" %}
                                 </a>
@@ -165,6 +172,9 @@
                             {% elif status_for_buttons == 'approved' %}
                                 <a href="{% url 'motion:motion-status-change' motion.pk %}?status=answered" class="btn btn-warning btn-sm">
                                     <i class="bi bi-check2-all"></i> {% trans "Mark as Answered" %}
+                                </a>
+                                <a href="{% url 'motion:motion-status-change' motion.pk %}?status=declared_done" class="btn btn-warning btn-sm">
+                                    <i class="bi bi-check2-all"></i> {% trans "Declare done" %}
                                 </a>
                             {% endif %}
                         </div>
@@ -352,11 +362,13 @@
                                                 {% elif status_entry.status == 'refer_to_committee' %}background-color: #ffc107; color: black;
                                                 {% elif status_entry.status == 'refer_no_majority' %}background-color: #e0a800; color: black;
                                                 {% elif status_entry.status == 'voted_in_committee' %}background-color: #ffc107; color: black;
+                                                {% elif status_entry.status == 'committee_voted' %}background-color: #ffc107; color: black;
                                                 {% elif status_entry.status == 'approved' %}background-color: #28a745; color: white;
                                                 {% elif status_entry.status == 'rejected' %}background-color: #dc3545; color: white;
                                                 {% elif status_entry.status == 'withdrawn' %}background-color: #ffc107; color: black;
                                                 {% elif status_entry.status == 'not_admitted' %}background-color: #343a40; color: white;
                                                 {% elif status_entry.status == 'answered' %}background-color: #28a745; color: white;
+                                                {% elif status_entry.status == 'declared_done' %}background-color: #28a745; color: white;
                                                 {% elif status_entry.status == 'deleted' %}background-color: #6c757d; color: white;
                                                 {% endif %}">
                                                 {% if status_entry.status == 'draft' %}
@@ -371,6 +383,8 @@
                                                     <i class="bi bi-people" title="{% trans 'Referral rejected – no majority' %}"></i>
                                                 {% elif status_entry.status == 'voted_in_committee' %}
                                                     <i class="bi bi-people"></i>
+                                                {% elif status_entry.status == 'committee_voted' %}
+                                                    <i class="bi bi-people"></i>
                                                 {% elif status_entry.status == 'approved' %}
                                                     <i class="bi bi-check"></i>
                                                 {% elif status_entry.status == 'rejected' %}
@@ -381,6 +395,8 @@
                                                     <i class="bi bi-x-octagon"></i>
                                                 {% elif status_entry.status == 'answered' %}
                                                     <i class="bi bi-check"></i>
+                                                {% elif status_entry.status == 'declared_done' %}
+                                                    <i class="bi bi-check-all"></i>
                                                 {% elif status_entry.status == 'deleted' %}
                                                     <i class="bi bi-trash"></i>
                                                 {% endif %}
@@ -427,6 +443,13 @@
                                                 </div>
                                             {% endif %}
                                             {% if status_entry.status == 'voted_in_committee' and status_entry.committee %}
+                                                <div class="mt-1">
+                                                    <small class="text-muted">
+                                                        <i class="bi bi-check-circle"></i> {% trans "Voted in" %}: {{ status_entry.committee.name }}
+                                                    </small>
+                                                </div>
+                                            {% endif %}
+                                            {% if status_entry.status == 'committee_voted' and status_entry.committee %}
                                                 <div class="mt-1">
                                                     <small class="text-muted">
                                                         <i class="bi bi-check-circle"></i> {% trans "Voted in" %}: {{ status_entry.committee.name }}

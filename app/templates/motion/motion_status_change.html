@@ -375,7 +375,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Toggle committee field
         if (committeeField) {
-            if (selectedStatus === 'refer_to_committee' || selectedStatus === 'voted_in_committee') {
+            if (selectedStatus === 'refer_to_committee' || selectedStatus === 'voted_in_committee' || selectedStatus === 'committee_voted') {
                 committeeField.style.display = 'block';
             } else {
                 committeeField.style.display = 'none';
@@ -402,7 +402,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Toggle vote section
         if (voteSection) {
-            if (selectedStatus === 'approved' || selectedStatus === 'rejected' || selectedStatus === 'refer_to_committee' || selectedStatus === 'voted_in_committee') {
+            if (selectedStatus === 'approved' || selectedStatus === 'rejected' || selectedStatus === 'refer_to_committee' || selectedStatus === 'voted_in_committee' || selectedStatus === 'committee_voted') {
                 voteSection.style.display = 'block';
             } else {
                 voteSection.style.display = 'none';

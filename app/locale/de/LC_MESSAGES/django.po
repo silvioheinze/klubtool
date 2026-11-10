@@ -1230,7 +1230,19 @@ msgstr "An Ausschuss verweisen"
 msgid "Voted upon in Committee"
 msgstr "Kommissionen und Ausschüsse"
 
-#: motion/models.py:47 motion/models.py:565
+#: motion/models.py:47
+msgid "Voted in Committee/Commission"
+msgstr "Im Ausschuss/Kommission abgestimmt"
+
+#: motion/models.py:54
+msgid "Declared done"
+msgstr "Für erledigt erklärt"
+
+#: templates/motion/motion_detail.html:174
+msgid "Declare done"
+msgstr "Für erledigt erklärt"
+
+#: motion/models.py:48 motion/models.py:565
 #: templates/district/committee_detail.html:147
 #: templates/district/session_detail.html:182
 #: templates/district/session_detail.html:281

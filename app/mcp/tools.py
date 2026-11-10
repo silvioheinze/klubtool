@@ -348,14 +348,16 @@ def list_tools():
                                     'not_admitted',
                                     'refer_to_committee',
                                     'voted_in_committee',
+                                    'committee_voted',
                                     'approved',
                                     'rejected',
                                     'answered',
+                                    'declared_done',
                                 ],
                             },
                             'committee_id': {
                                 'type': 'integer',
-                                'description': 'Required for refer_to_committee and voted_in_committee',
+                                'description': 'Required for refer_to_committee, voted_in_committee, and committee_voted',
                             },
                             'session_id': {
                                 'type': 'integer',
@@ -380,7 +382,7 @@ def list_tools():
                                 },
                                 'description': (
                                     'Party votes: required for approved, rejected, refer_to_committee, '
-                                    'and voted_in_committee (use stance or counts)'
+                                    'voted_in_committee, and committee_voted (use stance or counts)'
                                 ),
                             },
                             'answer_files': {
@@ -2003,9 +2005,11 @@ _MOTION_MCP_STATUS_CHANGE_STATUSES = frozenset({
     'not_admitted',
     'refer_to_committee',
     'voted_in_committee',
+    'committee_voted',
     'approved',
     'rejected',
     'answered',
+    'declared_done',
 })
 
 _INQUIRY_MCP_STATUS_CHANGE_STATUSES = frozenset(dict(Inquiry.STATUS_CHOICES).keys())

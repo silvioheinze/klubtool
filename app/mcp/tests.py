@@ -1184,6 +1184,69 @@ class McpMotionStatusChangeTests(TestCase):
         motion.refresh_from_db()
         self.assertEqual(motion.status, 'voted_in_committee')
 
+    def test_committee_voted_requires_prior_referral(self):
+        motion = self._create_motion()
+        denied, is_error = self._tool_call(
+            'update_motion',
+            {
+                'motion_id': motion.pk,
+                'status_change': {
+                    'status': 'committee_voted',
+                    'committee_id': self.committee.pk,
+                    'votes': [
+                        {'party_id': self.party.pk, 'stance': 'approve'},
+                    ],
+                },
+            },
+            self.editor_token,
+        )
+        self.assertTrue(is_error)
+
+        motion.status = 'refer_to_committee'
+        motion.committee = self.committee
+        motion.save()
+        MotionStatus.objects.create(
+            motion=motion,
+            status='refer_to_committee',
+            committee=self.committee,
+        )
+
+        data, is_error = self._tool_call(
+            'update_motion',
+            {
+                'motion_id': motion.pk,
+                'status_change': {
+                    'status': 'committee_voted',
+                    'committee_id': self.committee.pk,
+                    'votes': [
+                        {'party_id': self.party.pk, 'stance': 'approve'},
+                    ],
+                },
+            },
+            self.editor_token,
+        )
+        self.assertFalse(is_error)
+        motion.refresh_from_db()
+        self.assertEqual(motion.status, 'committee_voted')
+
+    def test_declared_done_without_votes(self):
+        motion = self._create_motion(status='approved')
+        data, is_error = self._tool_call(
+            'update_motion',
+            {
+                'motion_id': motion.pk,
+                'status_change': {
+                    'status': 'declared_done',
+                    'reason': 'Für erledigt erklärt',
+                },
+            },
+            self.editor_token,
+        )
+        self.assertFalse(is_error)
+        motion.refresh_from_db()
+        self.assertEqual(motion.status, 'declared_done')
+        self.assertEqual(data['motion']['status_history'][-1]['status'], 'declared_done')
+
     def test_excessive_votes_rejected(self):
         motion = self._create_motion()
         data, is_error = self._tool_call(

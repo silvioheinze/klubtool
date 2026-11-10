@@ -1195,8 +1195,9 @@ class SessionDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['can_see_export_and_participants'] = self.object.council_id in accessible_council_ids
 
         # Get all motions for this session
-        # Order: regular motions by session_rank, then not_admitted motions at the end
-        motions_queryset = self.object.motions.filter(is_active=True)
+        # Order: regular motions by session_rank, then not_admitted motions at the end.
+        # Motions voted in committee are listed in their own section below inquiries.
+        motions_queryset = self.object.motions.filter(is_active=True).exclude(status='committee_voted')
         context['motions'] = motions_queryset.annotate(
             status_order=Case(
                 When(status='not_admitted', then=1),
@@ -1213,7 +1214,11 @@ class SessionDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             is_active=True
         ).select_related('group', 'submitted_by').prefetch_related('parties', 'interventions').order_by('session_rank', '-submitted_date')
         context['total_inquiries'] = context['inquiries'].count()
-        
+        context['committee_returned_motions'] = self.object.motions.filter(
+            is_active=True,
+            status='committee_voted',
+        ).prefetch_related('parties').order_by('session_rank', '-submitted_date')
+
         # Get presence tracking data
         session = self.object
         if session.council and session.council.district:
@@ -1546,6 +1551,8 @@ class SessionExportPDFView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             is_active=True
         ).exclude(
             status='not_admitted'
+        ).exclude(
+            status='committee_voted'
         ).prefetch_related(
             'parties',
             'interventions',
@@ -1565,6 +1572,17 @@ class SessionExportPDFView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             'interventions'
         ).order_by('session_rank', '-submitted_date')
         context['total_inquiries'] = context['inquiries'].count()
+        context['committee_returned_motions'] = self.object.motions.filter(
+            is_active=True,
+            status='committee_voted',
+        ).prefetch_related(
+            'parties',
+            'interventions',
+            Prefetch(
+                'group_decisions',
+                queryset=MotionGroupDecision.objects.select_related('committee').order_by('-decision_time')
+            )
+        ).order_by('session_rank', '-submitted_date')
         return context
 
     def render_to_response(self, context, **response_kwargs):
