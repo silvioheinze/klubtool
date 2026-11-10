@@ -8,6 +8,7 @@ from django.utils.datastructures import MultiValueDict
 from django.urls import reverse
 from datetime import datetime, timedelta
 
+from .views import record_motion_status_change
 from .forms import (
     MotionForm, MotionVoteForm, MotionVoteFormSetFactory,
     MotionStatusForm, MotionCommentForm, MotionAttachmentForm,
@@ -1563,3 +1564,210 @@ class StatusAnswerFileTests(TestCase):
         self.assertIsNotNone(status_entry)
         answer_file = status_entry.answer_files.get()
         self.assertEqual(answer_file.filename, self.LONG_DOTTED_ANSWER_PDF)
+
+
+class MotionNewStatusTests(TestCase):
+    """Tests for declared_done and committee_voted motion statuses."""
+
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username='newstatus_user',
+            email='newstatus@example.com',
+            password='testpass123',
+        )
+        self.district = District.objects.create(name='NewStatus Local', code='NSL')
+        self.council, _ = Council.objects.get_or_create(
+            district=self.district,
+            defaults={'name': 'NewStatus Council', 'is_active': True},
+        )
+        self.session = Session.objects.create(
+            title='NewStatus Session',
+            council=self.council,
+            scheduled_date=timezone.now() + timedelta(days=1),
+            is_active=True,
+        )
+        self.party = Party.objects.create(name='NewStatus Party', district=self.district, is_active=True)
+        self.group = Group.objects.create(name='NewStatus Group', party=self.party)
+        self.committee = Committee.objects.create(name='NewStatus Committee', council=self.council)
+        self.motion = Motion.objects.create(
+            title='NewStatus Motion',
+            text='Body',
+            session=self.session,
+            group=self.group,
+            submitted_by=self.user,
+            status='approved',
+        )
+
+    def test_declared_done_form_valid_without_votes(self):
+        form = MotionStatusForm(
+            data={'status': 'declared_done', 'reason': 'Erledigt'},
+            motion=self.motion,
+            changed_by=self.user,
+            locked_status='declared_done',
+        )
+        self.assertTrue(form.is_valid())
+
+    def test_committee_voted_requires_committee(self):
+        motion = Motion.objects.create(
+            title='Referred Motion',
+            text='Body',
+            session=self.session,
+            group=self.group,
+            submitted_by=self.user,
+            status='refer_to_committee',
+            committee=self.committee,
+        )
+        form = MotionStatusForm(
+            data={'status': 'committee_voted', 'reason': 'Abgestimmt', 'committee': ''},
+            motion=motion,
+            changed_by=self.user,
+            locked_status='committee_voted',
+        )
+        self.assertFalse(form.is_valid())
+        self.assertIn('committee', form.errors)
+
+    def test_committee_voted_requires_prior_referral(self):
+        motion = Motion.objects.create(
+            title='Not Referred Motion',
+            text='Body',
+            session=self.session,
+            group=self.group,
+            submitted_by=self.user,
+            status='submitted',
+        )
+        form = MotionStatusForm(
+            data={
+                'status': 'committee_voted',
+                'reason': 'Abgestimmt',
+                'committee': self.committee.pk,
+            },
+            motion=motion,
+            changed_by=self.user,
+            locked_status='committee_voted',
+        )
+        self.assertFalse(form.is_valid())
+        self.assertIn('status', form.errors)
+
+    def test_committee_voted_valid_after_referral(self):
+        motion = Motion.objects.create(
+            title='Referred Motion 2',
+            text='Body',
+            session=self.session,
+            group=self.group,
+            submitted_by=self.user,
+            status='refer_to_committee',
+            committee=self.committee,
+        )
+        MotionStatus.objects.create(
+            motion=motion,
+            status='refer_to_committee',
+            committee=self.committee,
+        )
+        form = MotionStatusForm(
+            data={
+                'status': 'committee_voted',
+                'reason': 'Abgestimmt',
+                'committee': self.committee.pk,
+            },
+            motion=motion,
+            changed_by=self.user,
+            locked_status='committee_voted',
+        )
+        self.assertTrue(form.is_valid())
+
+    def test_committee_voted_moves_motion_to_next_plenary_session(self):
+        self.session.scheduled_date = timezone.now() - timedelta(days=1)
+        self.session.save(update_fields=['scheduled_date'])
+        past = Session.objects.create(
+            title='Past Plenary',
+            council=self.council,
+            scheduled_date=timezone.now() - timedelta(days=10),
+            is_active=True,
+        )
+        Session.objects.create(
+            title='Future Committee Session',
+            council=self.council,
+            committee=self.committee,
+            scheduled_date=timezone.now() + timedelta(days=3),
+            is_active=True,
+        )
+        Session.objects.create(
+            title='Cancelled Plenary',
+            council=self.council,
+            scheduled_date=timezone.now() + timedelta(days=5),
+            status='cancelled',
+            is_active=True,
+        )
+        next_plenary = Session.objects.create(
+            title='Next Plenary',
+            council=self.council,
+            scheduled_date=timezone.now() + timedelta(days=12),
+            is_active=True,
+        )
+        Session.objects.create(
+            title='Later Plenary',
+            council=self.council,
+            scheduled_date=timezone.now() + timedelta(days=40),
+            is_active=True,
+        )
+        Motion.objects.create(
+            title='Already there',
+            text='Body',
+            session=next_plenary,
+            group=self.group,
+            submitted_by=self.user,
+            session_rank=4,
+        )
+        motion = Motion.objects.create(
+            title='Leaving Committee',
+            text='Body',
+            session=past,
+            group=self.group,
+            submitted_by=self.user,
+            status='refer_to_committee',
+            committee=self.committee,
+        )
+
+        result = record_motion_status_change(
+            motion=motion,
+            initial_status='committee_voted',
+            changed_by=self.user,
+            committee=self.committee,
+        )
+
+        motion.refresh_from_db()
+        self.assertEqual(result['moved_to_session'], next_plenary)
+        self.assertEqual(motion.session, next_plenary)
+        self.assertEqual(motion.status, 'committee_voted')
+        self.assertIsNone(motion.committee)
+        self.assertEqual(motion.session_rank, 5)
+        entry = motion.status_history.filter(status='committee_voted').first()
+        self.assertEqual(entry.committee, self.committee)
+        self.assertEqual(entry.session, next_plenary)
+
+    def test_committee_voted_keeps_session_when_no_upcoming_plenary(self):
+        motion = Motion.objects.create(
+            title='Stays Put',
+            text='Body',
+            session=self.session,
+            group=self.group,
+            submitted_by=self.user,
+            status='refer_to_committee',
+            committee=self.committee,
+        )
+        # The setup session is in the future, so retire it and leave no plenary ahead.
+        self.session.scheduled_date = timezone.now() - timedelta(days=2)
+        self.session.save(update_fields=['scheduled_date'])
+
+        result = record_motion_status_change(
+            motion=motion,
+            initial_status='committee_voted',
+            changed_by=self.user,
+            committee=self.committee,
+        )
+
+        motion.refresh_from_db()
+        self.assertIsNone(result['moved_to_session'])
+        self.assertEqual(motion.session, self.session)
+        self.assertIsNone(motion.committee)
+        self.assertEqual(motion.status, 'committee_voted')

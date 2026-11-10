@@ -1710,6 +1710,34 @@ class SessionViewTests(TestCase):
         self.assertContains(response, self.session.title)
         self.assertContains(response, self.session.get_session_type_display())
 
+    def test_session_detail_lists_committee_voted_motions_below_inquiries(self):
+        party = Party.objects.create(name='Returned Party', district=self.district, is_active=True)
+        group = Group.objects.create(name='Returned Group', party=party)
+        agenda_motion = Motion.objects.create(
+            title='Agenda Motion',
+            session=self.session,
+            group=group,
+            submitted_by=self.superuser,
+            status='submitted',
+        )
+        returned = Motion.objects.create(
+            title='Returned From Committee',
+            session=self.session,
+            group=group,
+            submitted_by=self.superuser,
+            status='committee_voted',
+        )
+        self.client.login(username='admin', password='adminpass123')
+        response = self.client.get(reverse('district:session-detail', kwargs={'pk': self.session.pk}))
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(agenda_motion, list(response.context['motions']))
+        self.assertNotIn(returned, list(response.context['motions']))
+        self.assertEqual(list(response.context['committee_returned_motions']), [returned])
+        content = response.content.decode()
+        inquiries_heading = content.find('Anfragen der Sitzung')
+        self.assertGreater(inquiries_heading, content.find('Agenda Motion'))
+        self.assertLess(inquiries_heading, content.find('Returned From Committee'))
+
     def test_session_detail_shows_compact_participants(self):
         """Session participants card shows compact view with Edit toggle."""
         from group.models import Group, GroupMember, MembershipPeriod

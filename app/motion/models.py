@@ -44,11 +44,13 @@ class Motion(models.Model):
         ('refer_to_committee', _('Refer to Committee')),
         ('refer_no_majority', _('Refer to Committee (no majority)')),
         ('voted_in_committee', _('Voted upon in Committee')),
+        ('committee_voted', _('Voted in Committee/Commission')),
         ('approved', _('Approved')),
         ('rejected', _('Rejected')),
         ('withdrawn', _('Withdrawn')),
         ('not_admitted', _('Nicht zugelassen')),
         ('answered', _('Answered')),
+        ('declared_done', _('Declared done')),
         ('deleted', _('Deleted')),
     ]
     
@@ -491,7 +493,7 @@ class MotionStatus(models.Model):
     
     motion = models.ForeignKey(Motion, on_delete=models.CASCADE, related_name='status_history')
     status = models.CharField(max_length=20, choices=Motion.STATUS_CHOICES)
-    committee = models.ForeignKey('district.Committee', on_delete=models.SET_NULL, null=True, blank=True, related_name='motion_status_changes', help_text="Committee when status is 'refer_to_committee' or 'voted_in_committee'")
+    committee = models.ForeignKey('district.Committee', on_delete=models.SET_NULL, null=True, blank=True, related_name='motion_status_changes', help_text="Committee when status is 'refer_to_committee', 'voted_in_committee', or 'committee_voted'")
     session = models.ForeignKey(Session, on_delete=models.SET_NULL, null=True, blank=True, related_name='motion_status_changes', help_text="Session when status is 'tabled'")
     changed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='motion_status_changes')
     changed_at = models.DateTimeField(auto_now_add=True)

@@ -1217,8 +1217,8 @@ class MotionStatusForm(forms.ModelForm):
                     'session': 'A session must be selected when tabling a motion.'
                 })
         
-        # If status is 'voted_in_committee', committee is required and motion must have been previously referred
-        if status == 'voted_in_committee':
+        # If status is 'voted_in_committee' or 'committee_voted', committee is required and motion must have been previously referred
+        if status in ('voted_in_committee', 'committee_voted'):
             if not committee:
                 raise forms.ValidationError({
                     'committee': 'A committee must be selected when marking a motion as voted upon in committee.'
