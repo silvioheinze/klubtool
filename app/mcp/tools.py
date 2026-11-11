@@ -845,7 +845,10 @@ def list_tools():
         },
         {
             'name': 'get_committee_meeting',
-            'description': 'Get committee meeting details: agenda, participants, attachments, and status.',
+            'description': (
+                'Get committee meeting details: agenda, minutes (Protokoll), '
+                'participants, attachments, and status.'
+            ),
             'inputSchema': {
                 'type': 'object',
                 'properties': {
@@ -857,7 +860,10 @@ def list_tools():
         {
             'name': 'update_committee_meeting',
             'description': (
-                'Update a committee meeting. Omitted fields stay unchanged; status cannot be changed.'
+                'Update a committee meeting. Writable fields: title, location, agenda, '
+                'and minutes (Protokoll, meeting protocol text). '
+                'Omitted fields stay unchanged; pass minutes as an empty string to clear it. '
+                'Status cannot be changed.'
             ),
             'inputSchema': {
                 'type': 'object',
