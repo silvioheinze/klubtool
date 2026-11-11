@@ -182,6 +182,7 @@ class CommitteeMeeting(models.Model):
     scheduled_date = models.DateTimeField(help_text="Date and time when the meeting is scheduled")
     location = models.CharField(max_length=300, blank=True, help_text="Location where the meeting will be held")
     description = models.TextField(blank=True, help_text="Description or agenda of the meeting")
+    minutes = models.TextField(blank=True, help_text="Minutes / protocol from the meeting")
     status = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,

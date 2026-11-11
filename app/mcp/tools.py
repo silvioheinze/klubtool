@@ -869,6 +869,10 @@ def list_tools():
                         'type': 'string',
                         'description': 'Meeting agenda (stored as description)',
                     },
+                    'minutes': {
+                        'type': 'string',
+                        'description': 'Meeting protocol / minutes (Protokoll); empty string clears',
+                    },
                 },
                 'required': ['committee_meeting_id'],
             },
@@ -1524,6 +1528,7 @@ def _serialize_committee_meeting_detail(meeting, request=None):
         'location': meeting.location or '',
         'status': meeting.status,
         'agenda': meeting.description or '',
+        'minutes': meeting.minutes or '',
         'attachments': [
             _serialize_attachment(attachment, request)
             for attachment in meeting.attachments.all()
@@ -2428,6 +2433,8 @@ def _validate_committee_meeting_form(arguments, *, instance):
     )
     if not form.is_valid():
         raise McpToolError(json.dumps(form.errors, ensure_ascii=False))
+    if 'minutes' in arguments:
+        form.instance.minutes = arguments['minutes']
     return form
 
 

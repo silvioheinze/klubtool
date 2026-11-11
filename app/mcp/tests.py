@@ -1921,6 +1921,49 @@ class McpCommitteeMeetingAttachmentTests(TestCase):
         self.assertEqual(self.meeting.title, 'CM MCP Meeting')
         self.assertEqual(self.meeting.description, 'Original agenda')
 
+    def test_update_committee_meeting_sets_and_clears_minutes(self):
+        data, is_error = self._tool_call(
+            'update_committee_meeting',
+            {
+                'committee_meeting_id': self.meeting.pk,
+                'minutes': 'MCP protocol text',
+            },
+            self.leader_token,
+        )
+        self.assertFalse(is_error)
+        self.assertEqual(data['committee_meeting']['minutes'], 'MCP protocol text')
+        self.assertEqual(data['committee_meeting']['agenda'], 'Original agenda')
+        self.meeting.refresh_from_db()
+        self.assertEqual(self.meeting.minutes, 'MCP protocol text')
+
+        data, is_error = self._tool_call(
+            'update_committee_meeting',
+            {
+                'committee_meeting_id': self.meeting.pk,
+                'location': 'Room 404',
+            },
+            self.leader_token,
+        )
+        self.assertFalse(is_error)
+        self.assertEqual(data['committee_meeting']['minutes'], 'MCP protocol text')
+        self.meeting.refresh_from_db()
+        self.assertEqual(self.meeting.minutes, 'MCP protocol text')
+        self.assertEqual(self.meeting.description, 'Original agenda')
+
+        data, is_error = self._tool_call(
+            'update_committee_meeting',
+            {
+                'committee_meeting_id': self.meeting.pk,
+                'minutes': '',
+            },
+            self.leader_token,
+        )
+        self.assertFalse(is_error)
+        self.assertEqual(data['committee_meeting']['minutes'], '')
+        self.meeting.refresh_from_db()
+        self.assertEqual(self.meeting.minutes, '')
+        self.assertEqual(self.meeting.description, 'Original agenda')
+
     def test_committee_member_and_outsider_cannot_update_committee_meeting(self):
         for token in (self.committee_member_token, self.outsider_token):
             data, is_error = self._tool_call(

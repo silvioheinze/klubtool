@@ -67,11 +67,16 @@
                         </div>
                     </div>
                     <hr>
-                    <h6>{% trans "Agenda" %}</h6>
-                    {% if meeting.description %}
-                        <p class="mb-0">{{ meeting.description|linebreaks }}</p>
+                    {% if meeting.minutes %}
+                        <h6>{% trans "Minutes" %}</h6>
+                        <p class="mb-0">{{ meeting.minutes|linebreaks }}</p>
                     {% else %}
-                        <p class="text-muted mb-0">{% trans "No agenda available." %}</p>
+                        <h6>{% trans "Agenda" %}</h6>
+                        {% if meeting.description %}
+                            <p class="mb-0">{{ meeting.description|linebreaks }}</p>
+                        {% else %}
+                            <p class="text-muted mb-0">{% trans "No agenda available." %}</p>
+                        {% endif %}
                     {% endif %}
                 </div>
             </div>

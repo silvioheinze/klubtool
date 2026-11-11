@@ -2000,6 +2000,29 @@ class CommitteeMeetingViewTests(TestCase):
         self.assertContains(response, self.meeting.title)
         self.assertContains(response, self.committee.name)
 
+    def test_committee_meeting_detail_shows_agenda_when_no_minutes(self):
+        """Detail page shows agenda when minutes field is empty."""
+        self.meeting.description = 'Planned agenda topics'
+        self.meeting.minutes = ''
+        self.meeting.save(update_fields=['description', 'minutes'])
+        self.client.login(username='admin', password='adminpass123')
+        response = self.client.get(
+            reverse('district:committee-meeting-detail', kwargs={'pk': self.meeting.pk})
+        )
+        self.assertContains(response, 'Planned agenda topics')
+
+    def test_committee_meeting_detail_shows_minutes_instead_of_agenda(self):
+        """When minutes exist, detail shows protocol and not the agenda text."""
+        self.meeting.description = 'Planned agenda topics'
+        self.meeting.minutes = 'Protocol body from the meeting'
+        self.meeting.save(update_fields=['description', 'minutes'])
+        self.client.login(username='admin', password='adminpass123')
+        response = self.client.get(
+            reverse('district:committee-meeting-detail', kwargs={'pk': self.meeting.pk})
+        )
+        self.assertContains(response, 'Protocol body from the meeting')
+        self.assertNotContains(response, 'Planned agenda topics')
+
     def test_committee_meeting_edit_view_requires_superuser(self):
         """Test that CommitteeMeetingUpdateView requires superuser"""
         self.client.login(username='testuser', password='testpass123')
