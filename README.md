@@ -325,8 +325,8 @@ For local development the app still listens on HTTP; Settings always shows `http
 | `list_sessions` | List council sessions in a district with optional date filters |
 | `create_session` | Create council session (superuser only; title auto-generated) |
 | `update_session` | Update council session (superuser only; omitted fields unchanged) |
-| `get_committee_meeting` | Committee meeting details (agenda, participants, attachments, status) |
-| `update_committee_meeting` | Update committee meeting; omitted fields unchanged; status not editable |
+| `get_committee_meeting` | Committee meeting details (agenda, minutes/Protokoll, participants, attachments, status) |
+| `update_committee_meeting` | Update committee meeting (`title`, `location`, `agenda`, `minutes`/Protokoll); omitted fields unchanged; status not editable |
 | `list_attachments` | List attachments for a session, motion, inquiry, or committee meeting |
 | `delete_attachment` | Delete an attachment (same rules as web; confirm with user first) |
 
@@ -440,7 +440,8 @@ Example `update_committee_meeting` arguments:
   "committee_meeting_id": 12,
   "title": "Kulturkommission 14.10.2026",
   "location": "Rathaus, Saal 2",
-  "agenda": "TOP 1: Budget\nTOP 2: Berichte"
+  "agenda": "TOP 1: Budget\nTOP 2: Berichte",
+  "minutes": "Protokolltext. Weglassen lässt den bestehenden Text unverändert; \"\" löscht ihn."
 }
 ```
 
