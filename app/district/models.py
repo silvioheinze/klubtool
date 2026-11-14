@@ -504,11 +504,11 @@ class Session(models.Model):
     ]
     
     STATUS_CHOICES = [
-        ('scheduled', 'Scheduled'),
-        ('in_progress', 'In Progress'),
-        ('completed', 'Completed'),
-        ('cancelled', 'Cancelled'),
-        ('invited', 'Invited'),
+        ('scheduled', _('Scheduled')),
+        ('in_progress', _('In Progress')),
+        ('completed', _('Completed')),
+        ('cancelled', _('Cancelled')),
+        ('invited', _('Invited')),
     ]
     
     title = models.CharField(max_length=200, blank=True, default='', help_text="Title of the session (set automatically on create: Bezirksvertretungssitzung + date)")

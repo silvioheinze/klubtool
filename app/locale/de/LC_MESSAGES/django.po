@@ -549,11 +549,11 @@ msgstr "Einladung hochgeladen und Sitzungsstatus auf „Eingeladen“ gesetzt."
 
 #: district/views.py:3140
 msgid "Only scheduled or invited sessions can be cancelled."
-msgstr "Nur geplante oder eingeladene Sitzungen können storniert werden."
+msgstr "Nur geplante oder eingeladene Sitzungen können abgesetzt werden."
 
 #: district/views.py:3148
 msgid "Session has been cancelled."
-msgstr "Die Sitzung wurde abgesagt."
+msgstr "Die Sitzung wurde abgesetzt."
 
 #: district/views.py:3166
 msgid "Minutes can only be added for completed sessions."
@@ -3816,27 +3816,26 @@ msgstr "Zurück zur Sitzung"
 #: templates/district/session_cancel_confirm.html:12
 #: templates/district/session_cancel_confirm.html:66
 msgid "Cancel Session"
-msgstr "Sitzung absagen"
+msgstr "Sitzung absetzen"
 
 #: templates/district/session_cancel_confirm.html:14
 msgid "Confirm cancellation of this session."
-msgstr "Bestätige das Absagen dieser Sitzung."
+msgstr "Bestätige das Absetzen dieser Sitzung."
 
 #: templates/district/session_cancel_confirm.html:28
 msgid "Cancel this session?"
-msgstr "Diese Sitzung absagen?"
+msgstr "Diese Sitzung absetzen?"
 
 #: templates/district/session_cancel_confirm.html:33
 msgid "Are you sure you want to cancel this session?"
-msgstr "Bist du sicher, dass du diese Sitzung absagen möchtest?"
+msgstr "Bist du sicher, dass du diese Sitzung absetzen möchtest?"
 
 #: templates/district/session_cancel_confirm.html:35
-#, fuzzy
 msgid ""
 "The session status will be set to Cancelled. You can still edit the session "
 "later if needed."
 msgstr ""
-"Der Status der Sitzung wird auf „Abgebrochen“ gesetzt. Du kannst die Sitzung "
+"Der Status der Sitzung wird auf „Abgesetzt“ gesetzt. Du kannst die Sitzung "
 "bei Bedarf später noch bearbeiten."
 
 #: templates/district/session_confirm_delete.html:5
@@ -3900,7 +3899,7 @@ msgstr "Einladung hinzufügen"
 
 #: templates/district/session_detail.html:99
 msgid "Cancel session"
-msgstr "Sitzung absagen"
+msgstr "Sitzung absetzen"
 
 #: templates/district/session_detail.html:105
 msgid "Add minutes"
@@ -4139,7 +4138,7 @@ msgstr "Die Sitzung ist beendet"
 
 #: templates/district/session_form.html:310
 msgid "Session was cancelled"
-msgstr "Die Sitzung wurde abgesagt"
+msgstr "Die Sitzung wurde abgesetzt"
 
 #: templates/district/session_form.html:311
 #, fuzzy
