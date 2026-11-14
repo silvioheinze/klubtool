@@ -776,6 +776,20 @@ def list_tools():
             },
         },
         {
+            'name': 'get_session',
+            'description': (
+                'Get one council session by id: agenda, minutes, notes, attachments, and status. '
+                'Same view access as the web session page.'
+            ),
+            'inputSchema': {
+                'type': 'object',
+                'properties': {
+                    'session_id': {'type': 'integer', 'description': 'Session primary key'},
+                },
+                'required': ['session_id'],
+            },
+        },
+        {
             'name': 'create_session',
             'description': (
                 'Create a council session (superuser only). Title is set automatically '
@@ -855,6 +869,29 @@ def list_tools():
                     'id': {'type': 'integer', 'description': 'Committee meeting primary key'},
                 },
                 'required': ['id'],
+            },
+        },
+        {
+            'name': 'create_committee_meeting',
+            'description': (
+                'Create a committee meeting (superuser only). Title is set automatically '
+                '(committee name + date). Status is always scheduled.'
+            ),
+            'inputSchema': {
+                'type': 'object',
+                'properties': {
+                    'committee_id': {'type': 'integer', 'description': 'Committee primary key'},
+                    'scheduled_date': {
+                        'type': 'string',
+                        'description': 'ISO 8601 datetime, e.g. 2026-09-15T18:00:00+02:00',
+                    },
+                    'location': {'type': 'string'},
+                    'agenda': {
+                        'type': 'string',
+                        'description': 'Meeting agenda (stored as description)',
+                    },
+                },
+                'required': ['committee_id', 'scheduled_date'],
             },
         },
         {
@@ -1636,6 +1673,11 @@ def _require_manage_session(user):
         raise McpToolError('You do not have permission to manage sessions.')
 
 
+def _require_create_committee_meeting(user):
+    if not user.is_superuser:
+        raise McpToolError('You do not have permission to create committee meetings.')
+
+
 def _get_district_council_or_error(user, district_id):
     district = _get_district_or_error(user, district_id)
     council = getattr(district, 'council', None)
@@ -1743,6 +1785,22 @@ def _get_committee_meeting_or_error(committee_meeting_id):
         return CommitteeMeeting.objects.get(pk=committee_meeting_id)
     except CommitteeMeeting.DoesNotExist as exc:
         raise McpToolError(f'Committee meeting {committee_meeting_id} not found.') from exc
+
+
+def _get_active_committee_or_error(committee_id):
+    try:
+        return Committee.objects.get(pk=committee_id, is_active=True)
+    except Committee.DoesNotExist as exc:
+        raise McpToolError(f'Committee {committee_id} not found.') from exc
+
+
+def _reload_committee_meeting_for_detail(meeting_pk):
+    return (
+        CommitteeMeeting.objects.filter(pk=meeting_pk)
+        .select_related('committee')
+        .prefetch_related('attachments')
+        .get()
+    )
 
 
 def _validate_attachment_form(form):
@@ -2419,6 +2477,24 @@ def _committee_meeting_scheduled_date_form_value(meeting):
     return local_dt.strftime('%Y-%m-%dT%H:%M')
 
 
+def _build_committee_meeting_form_data_create(arguments, *, committee):
+    data = QueryDict(mutable=True)
+    data['committee'] = str(committee.pk)
+    scheduled = _parse_scheduled_date(arguments['scheduled_date'])
+    data['scheduled_date'] = _session_scheduled_date_form_value(scheduled)
+    data['location'] = arguments.get('location', '')
+    data['description'] = arguments.get('agenda', '')
+    return data
+
+
+def _validate_committee_meeting_form_create(arguments, *, committee):
+    form_data = _build_committee_meeting_form_data_create(arguments, committee=committee)
+    form = CommitteeMeetingForm(data=form_data, committee=committee)
+    if not form.is_valid():
+        raise McpToolError(json.dumps(form.errors, ensure_ascii=False))
+    return form
+
+
 def _build_committee_meeting_form_data(arguments, *, instance):
     data = QueryDict(mutable=True)
     data['committee'] = str(instance.committee_id)
@@ -2879,6 +2955,15 @@ def call_tool(name, arguments, user, request=None):
             ],
         }
 
+    if name == 'get_session':
+        session = _get_session_or_error(arguments['session_id'])
+        if not session.is_active:
+            raise McpToolError(f'Session {arguments["session_id"]} not found.')
+        if not _user_can_view_session(user, session):
+            raise McpToolError('You do not have permission to view this session.')
+        session = _reload_session_for_detail(session.pk)
+        return {'session': _serialize_session_detail(session, request)}
+
     if name == 'create_session':
         _require_manage_session(user)
         _, council = _get_district_council_or_error(user, arguments['district_id'])
@@ -2910,6 +2995,14 @@ def call_tool(name, arguments, user, request=None):
             .prefetch_related('attachments')
             .get()
         )
+        return {'committee_meeting': _serialize_committee_meeting_detail(meeting, request)}
+
+    if name == 'create_committee_meeting':
+        _require_create_committee_meeting(user)
+        committee = _get_active_committee_or_error(arguments['committee_id'])
+        form = _validate_committee_meeting_form_create(arguments, committee=committee)
+        meeting = form.save()
+        meeting = _reload_committee_meeting_for_detail(meeting.pk)
         return {'committee_meeting': _serialize_committee_meeting_detail(meeting, request)}
 
     if name == 'update_committee_meeting':

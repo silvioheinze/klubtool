@@ -323,6 +323,7 @@ For local development the app still listens on HTTP; Settings always shows `http
 | `list_committees` | List committees in a district (`id`, name, abbreviation) |
 | `list_committee_meetings` | List committee meetings with optional committee and date filters |
 | `list_sessions` | List council sessions in a district with optional date filters |
+| `get_session` | Single council session by id (agenda, minutes, notes, attachments; view access) |
 | `create_session` | Create council session (superuser only; title auto-generated) |
 | `update_session` | Update council session (superuser only; omitted fields unchanged) |
 | `get_committee_meeting` | Committee meeting details (agenda, minutes/Protokoll, participants, attachments, status) |
