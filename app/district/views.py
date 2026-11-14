@@ -387,6 +387,7 @@ def user_can_edit_district_event_attachment(user, attachment):
 
 
 COUNCIL_SESSIONS_PER_PAGE = 10
+COMMITTEE_MOTIONS_PER_PAGE = 10
 
 
 def _council_sessions_queryset(council):
@@ -398,12 +399,21 @@ def _council_sessions_queryset(council):
     )
 
 
+def _committee_motions_queryset(committee):
+    """Active motions assigned to committee (newest submitted first)."""
+    return (
+        committee.motions.filter(is_active=True)
+        .prefetch_related('parties')
+        .order_by('-submitted_date')
+    )
+
+
 def _council_party_year_statistics(council):
     """
     Count motions (by type) and inquiries per supporting party and session year.
 
     Year is taken from session.scheduled_date in the project timezone.
-    Only active motions/inquiries with at least one supporting party are included.
+    Only active, non-draft motions/inquiries with at least one supporting party are included.
     """
     from motion.models import Motion, Inquiry
 
@@ -411,6 +421,7 @@ def _council_party_year_statistics(council):
 
     motion_ann = (
         Motion.objects.filter(session__council=council, is_active=True)
+        .exclude(status='draft')
         .filter(parties__id__isnull=False)
         .annotate(year=ExtractYear('session__scheduled_date', tzinfo=tz))
         .values('parties__id', 'year', 'motion_type')
@@ -418,6 +429,7 @@ def _council_party_year_statistics(council):
     )
     inquiry_ann = (
         Inquiry.objects.filter(session__council=council, is_active=True)
+        .exclude(status='draft')
         .filter(parties__id__isnull=False)
         .annotate(year=ExtractYear('session__scheduled_date', tzinfo=tz))
         .values('parties__id', 'year')
@@ -518,6 +530,35 @@ def council_sessions_partial(request, pk):
             'sessions_page_obj': page_obj,
             'sessions_show_pagination': paginator.count > COUNCIL_SESSIONS_PER_PAGE,
             'council_sessions_partial_url': reverse('district:council-sessions-partial', kwargs={'pk': pk}),
+        },
+    )
+
+
+@login_required
+def committee_motions_partial(request, pk):
+    """
+    HTML fragment for committee motions list + pagination (AJAX).
+    Non-AJAX requests redirect to committee detail.
+    """
+    if request.headers.get('X-Requested-With') != 'XMLHttpRequest':
+        return redirect('district:committee-detail', pk=pk)
+
+    committee = get_object_or_404(Committee, pk=pk)
+    if not request.user.is_superuser and committee.council_id not in _get_user_accessible_council_ids(request.user):
+        raise PermissionDenied
+
+    paginator = Paginator(_committee_motions_queryset(committee), COMMITTEE_MOTIONS_PER_PAGE)
+    page_obj = paginator.get_page(request.GET.get('page', 1))
+
+    return render(
+        request,
+        'district/committee_motions_list_partial.html',
+        {
+            'committee': committee,
+            'motions': page_obj.object_list,
+            'motions_page_obj': page_obj,
+            'motions_show_pagination': paginator.count > COMMITTEE_MOTIONS_PER_PAGE,
+            'committee_motions_partial_url': reverse('district:committee-motions-partial', kwargs={'pk': pk}),
         },
     )
 
@@ -2326,9 +2367,15 @@ class CommitteeDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             )
         ).order_by('role_order', 'user__first_name', 'user__last_name')
         context['total_members'] = self.object.members.count()
-        # Get motions assigned to this committee
-        context['motions'] = self.object.motions.filter(is_active=True).prefetch_related('parties').order_by('-submitted_date')[:5]
-        context['total_motions'] = self.object.motions.count()
+        motions_qs = _committee_motions_queryset(self.object)
+        motions_paginator = Paginator(motions_qs, COMMITTEE_MOTIONS_PER_PAGE)
+        motions_page_obj = motions_paginator.get_page(1)
+        context['motions'] = motions_page_obj.object_list
+        context['motions_page_obj'] = motions_page_obj
+        context['motions_show_pagination'] = motions_paginator.count > COMMITTEE_MOTIONS_PER_PAGE
+        context['committee_motions_partial_url'] = reverse(
+            'district:committee-motions-partial', kwargs={'pk': self.object.pk}
+        )
         # Get committee meetings (replaces committee sessions)
         context['meetings'] = self.object.meetings.filter(is_active=True).order_by('-scheduled_date')
         context['total_meetings'] = self.object.meetings.count()

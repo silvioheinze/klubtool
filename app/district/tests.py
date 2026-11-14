@@ -1624,6 +1624,38 @@ class CouncilViewTests(TestCase):
             submitted_date=timezone.make_aware(datetime(2023, 1, 1, 0, 0, 0))
         )
 
+        m_draft_general = Motion.objects.create(
+            title='Draft general motion',
+            session=s2023,
+            group=group_a,
+            motion_type='general',
+            status='draft',
+            submitted_by=self.superuser,
+            is_active=True,
+        )
+        m_draft_general.parties.add(party_a)
+
+        m_draft_resolution = Motion.objects.create(
+            title='Draft resolution',
+            session=s2023,
+            group=group_a,
+            motion_type='resolution',
+            status='draft',
+            submitted_by=self.superuser,
+            is_active=True,
+        )
+        m_draft_resolution.parties.add(party_a)
+
+        inq_draft = Inquiry.objects.create(
+            title='Draft inquiry',
+            session=s2024,
+            group=group_b,
+            status='draft',
+            submitted_by=self.superuser,
+            is_active=True,
+        )
+        inq_draft.parties.add(party_b)
+
         stats = _council_party_year_statistics(self.council)
         self.assertEqual(stats['years'], [2023, 2024])
 
@@ -3037,6 +3069,84 @@ class CommitteeViewTests(TestCase):
         response = self.client.get(reverse('district:committee-detail', kwargs={'pk': self.committee.pk}))
         self.assertContains(response, self.committee.name)
         self.assertContains(response, self.committee.get_committee_type_display())
+
+    def _committee_motion_fixtures(self):
+        term = Term.objects.create(
+            name='Motions Pagination Term',
+            start_date=timezone.now().date(),
+            end_date=timezone.now().date() + timedelta(days=365),
+        )
+        session = Session.objects.create(
+            title='Motions Pagination Session',
+            council=self.council,
+            term=term,
+            session_type='regular',
+            status='scheduled',
+            scheduled_date=timezone.now() + timedelta(days=1),
+        )
+        party = Party.objects.create(name='Motions Party', district=self.district, is_active=True)
+        group = Group.objects.create(name='Motions Group', party=party)
+        return session, group
+
+    def test_committee_detail_motions_no_pagination_when_ten_or_fewer(self):
+        """Committee motions list shows no pagination when at most 10 active motions."""
+        session, group = self._committee_motion_fixtures()
+        self.client.login(username='admin', password='adminpass123')
+        for i in range(10):
+            motion = Motion.objects.create(
+                title=f'Committee Motion Page Test {i}',
+                session=session,
+                committee=self.committee,
+                group=group,
+                submitted_by=self.superuser,
+                status='submitted',
+            )
+            Motion.objects.filter(pk=motion.pk).update(
+                submitted_date=timezone.now() - timedelta(days=i)
+            )
+        response = self.client.get(reverse('district:committee-detail', kwargs={'pk': self.committee.pk}))
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, 'committee-motions-pagination')
+        for i in range(10):
+            self.assertContains(response, f'Committee Motion Page Test {i}')
+
+    def test_committee_detail_motions_pagination_when_more_than_ten(self):
+        """With 11+ active committee motions, pagination appears; AJAX partial page 2 returns the oldest row."""
+        session, group = self._committee_motion_fixtures()
+        self.client.login(username='admin', password='adminpass123')
+        for i in range(11):
+            motion = Motion.objects.create(
+                title=f'Committee Motion Eleven Test {i}',
+                session=session,
+                committee=self.committee,
+                group=group,
+                submitted_by=self.superuser,
+                status='submitted',
+            )
+            Motion.objects.filter(pk=motion.pk).update(
+                submitted_date=timezone.now() - timedelta(days=i)
+            )
+        response = self.client.get(reverse('district:committee-detail', kwargs={'pk': self.committee.pk}))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'committee-motions-pagination')
+        self.assertContains(response, 'Committee Motion Eleven Test 0')
+        self.assertNotContains(response, 'Committee Motion Eleven Test 10')
+
+        partial_url = reverse('district:committee-motions-partial', kwargs={'pk': self.committee.pk})
+        r2 = self.client.get(
+            partial_url + '?page=2',
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+        self.assertEqual(r2.status_code, 200)
+        self.assertContains(r2, 'Committee Motion Eleven Test 10')
+        self.assertNotContains(r2, 'Committee Motion Eleven Test 0')
+
+    def test_committee_motions_partial_forbidden_without_access(self):
+        """Partial endpoint returns 403 for users who cannot access the committee's council."""
+        self.client.login(username='testuser', password='testpass123')
+        partial_url = reverse('district:committee-motions-partial', kwargs={'pk': self.committee.pk})
+        response = self.client.get(partial_url, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 403)
     
     def test_committee_create_view_requires_superuser(self):
         """Test that CommitteeCreateView requires superuser"""

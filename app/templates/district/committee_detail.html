@@ -48,7 +48,6 @@
                                     <tr>
                                         <th>{% trans "Title" %}</th>
                                         <th>{% trans "Scheduled Date" %}</th>
-                                        <th>{% trans "Location" %}</th>
                                         <th>{% trans "Status" %}</th>
                                         <th>{% trans "Actions" %}</th>
                                     </tr>
@@ -63,9 +62,6 @@
                                             </td>
                                             <td>
                                                 {{ meeting.scheduled_date|date:"M d, Y H:i" }}
-                                            </td>
-                                            <td>
-                                                {{ meeting.location|default:"-" }}
                                             </td>
                                             <td>
                                                 <span class="badge {% if meeting.status == 'cancelled' %}bg-danger{% elif meeting.status == 'completed' %}bg-secondary{% elif meeting.status == 'invited' %}bg-info{% else %}bg-success{% endif %}">{{ meeting.get_status_display }}</span>
@@ -109,93 +105,11 @@
                     <div></div>
                 </div>
                 <div class="card-body">
-                    {% if motions %}
-                        <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>{% trans "Title" %}</th>
-                                        <th>{% trans "Status" %}</th>
-                                        <th>{% trans "Party" %}</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for motion in motions %}
-                                        <tr>
-                                            <td>
-                                                <a href="{% url 'motion:motion-detail' motion.pk %}">
-                                                    {{ motion.title }}
-                                                </a>
-                                                {% if not motion.is_active %}
-                                                    <span class="badge bg-danger ms-1">{% trans "Inactive" %}</span>
-                                                {% endif %}
-                                            </td>
-                                            <td>
-                                                {% if motion.status == 'draft' %}
-                                                    <span class="badge bg-secondary">{% trans "Draft" %}</span>
-                                                {% elif motion.status == 'submitted' %}
-                                                    <span class="badge bg-primary">{% trans "Submitted" %}</span>
-                                                {% elif motion.status == 'tabled' %}
-                                                    <span class="badge bg-info">{% trans "Tabled" %}</span>
-                                                {% elif motion.status == 'refer_to_committee' %}
-                                                    <span class="badge bg-warning">{% trans "Refer to Committee" %}</span>
-                                                {% elif motion.status == 'refer_no_majority' %}
-                                                    <span class="badge bg-warning text-dark">{% trans "Refer to Committee (no majority)" %}</span>
-                                                {% elif motion.status == 'voted_in_committee' %}
-                                                    <span class="badge bg-warning">{% trans "Voted upon in Committee" %}</span>
-                                                {% elif motion.status == 'committee_voted' %}
-                                                    <span class="badge bg-warning">{% trans "Voted in Committee/Commission" %}</span>
-                                                {% elif motion.status == 'approved' %}
-                                                    <span class="badge bg-success">{% trans "Approved" %}</span>
-                                                {% elif motion.status == 'rejected' %}
-                                                    <span class="badge bg-danger">{% trans "Rejected" %}</span>
-                                                {% elif motion.status == 'withdrawn' %}
-                                                    <span class="badge bg-warning">{% trans "Withdrawn" %}</span>
-                                                {% elif motion.status == 'not_admitted' %}
-                                                    <span class="badge bg-dark">{% trans "Nicht zugelassen" %}</span>
-                                                {% elif motion.status == 'answered' %}
-                                                    <span class="badge bg-success">{% trans "Answered" %}</span>
-                                                {% elif motion.status == 'declared_done' %}
-                                                    <span class="badge bg-success">{% trans "Declared done" %}</span>
-                                                {% elif motion.status == 'deleted' %}
-                                                    <span class="badge bg-secondary">{% trans "Deleted" %}</span>
-                                                {% else %}
-                                                    <span class="badge bg-secondary">{{ motion.get_status_display }}</span>
-                                                {% endif %}
-                                            </td>
-                                            <td>
-                                                {% if motion.parties.exists %}
-                                                    {% for party in motion.parties.all %}
-                                                        <span class="badge" style="background-color: {{ party.color }}; color: white; margin-right: 2px;">
-                                                            {{ party.short_name|default:party.name }}
-                                                        </span>
-                                                    {% endfor %}
-                                                {% else %}
-                                                    <span class="text-muted">-</span>
-                                                {% endif %}
-                                            </td>
-                                        </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
+                    <div id="committee-motions-ajax-root" aria-live="polite">
+                        <div class="committee-motions-swap">
+                            {% include "district/committee_motions_list_partial.html" %}
                         </div>
-
-                        {% if total_motions > 5 %}
-                            <div class="text-center mt-3">
-                                <p class="text-muted">
-                                    {% trans "Showing" %} {{ motions|length }} {% trans "of" %} {{ total_motions }} {% trans "motions" %}
-                                </p>
-                                <a href="{% url 'motion:motion-list' %}?committee={{ committee.pk }}" class="btn btn-outline-primary">
-                                    <i class="bi bi-list"></i> {% trans "View All Motions" %}
-                                </a>
-                            </div>
-                        {% endif %}
-                    {% else %}
-                        <div class="text-center py-4">
-                            <i class="bi bi-file-text fs-1 text-muted"></i>
-                            <h6 class="mt-3">{% trans "No Motions found" %}</h6>
-                        </div>
-                    {% endif %}
+                    </div>
                 </div>
             </div>
         </div>
@@ -302,4 +216,31 @@
         </div>
     </div>
 </div>
+{% if motions_show_pagination %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var root = document.getElementById('committee-motions-ajax-root');
+    if (!root) return;
+    root.addEventListener('click', function(e) {
+        var link = e.target.closest('a.committee-motions-page-link');
+        if (!link || !link.href) return;
+        e.preventDefault();
+        var swap = root.querySelector('.committee-motions-swap');
+        if (!swap) return;
+        swap.classList.add('opacity-50');
+        fetch(link.href, {
+            credentials: 'same-origin',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+            .then(function(r) { return r.text(); })
+            .then(function(html) {
+                swap.innerHTML = html.trim();
+            })
+            .finally(function() {
+                swap.classList.remove('opacity-50');
+            });
+    });
+});
+</script>
+{% endif %}
 {% endblock content %}
