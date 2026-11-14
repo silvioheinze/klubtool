@@ -159,7 +159,6 @@
                                 <thead>
                                     <tr>
                                         <th>{% trans "Title" %}</th>
-                                        <th>{% trans "Aktenzahl" %}</th>
                                         <th>{% trans "Status" %}</th>
                                         <th>{% trans "Parties" %}</th>
                                     </tr>
@@ -171,13 +170,6 @@
                                                 <a href="{% url 'motion:motion-detail' motion.pk %}">
                                                     {{ motion.title }}
                                                 </a>
-                                            </td>
-                                            <td>
-                                                {% if motion.file_number %}
-                                                    {{ motion.file_number }}
-                                                {% else %}
-                                                    <span class="text-muted">—</span>
-                                                {% endif %}
                                             </td>
                                             <td>
                                                 {% if motion.status == 'draft' %}
