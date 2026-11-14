@@ -463,9 +463,11 @@ class McpMotionInquiryTests(TestCase):
             'list_committees',
             'list_committee_meetings',
             'list_sessions',
+            'get_session',
             'create_session',
             'update_session',
             'get_committee_meeting',
+            'create_committee_meeting',
             'update_committee_meeting',
             'list_attachments',
             'delete_attachment',
@@ -2258,6 +2260,53 @@ class McpDistrictSessionCommitteeListTests(TestCase):
         self.assertEqual(len(data['sessions']), 1)
         self.assertEqual(data['sessions'][0]['id'], self.session.pk)
 
+    def test_get_session_includes_detail_fields(self):
+        self.session.agenda = 'TOP 1: Budget'
+        self.session.minutes = 'Session protocol'
+        self.session.save(update_fields=['agenda', 'minutes'])
+        data, is_error = self._tool_call(
+            'get_session',
+            {'session_id': self.session.pk},
+            self.member_token,
+        )
+        self.assertFalse(is_error)
+        session = data['session']
+        self.assertEqual(session['id'], self.session.pk)
+        self.assertEqual(session['title'], 'BV Sitzung')
+        self.assertEqual(session['location'], 'Saal')
+        self.assertEqual(session['agenda'], 'TOP 1: Budget')
+        self.assertEqual(session['minutes'], 'Session protocol')
+        self.assertEqual(session['district_id'], self.district.pk)
+
+    def test_get_session_outsider_denied(self):
+        data, is_error = self._tool_call(
+            'get_session',
+            {'session_id': self.session.pk},
+            self.outsider_token,
+        )
+        self.assertTrue(is_error)
+        self.assertIn('permission', data['error'].lower())
+
+    def test_get_session_inactive_not_found(self):
+        self.session.is_active = False
+        self.session.save(update_fields=['is_active'])
+        data, is_error = self._tool_call(
+            'get_session',
+            {'session_id': self.session.pk},
+            self.member_token,
+        )
+        self.assertTrue(is_error)
+        self.assertIn('not found', data['error'].lower())
+
+    def test_get_session_unknown_not_found(self):
+        data, is_error = self._tool_call(
+            'get_session',
+            {'session_id': 9_999_999},
+            self.member_token,
+        )
+        self.assertTrue(is_error)
+        self.assertIn('not found', data['error'].lower())
+
     def test_get_committee_meeting_includes_agenda_and_participants(self):
         data, is_error = self._tool_call(
             'get_committee_meeting',
@@ -2446,6 +2495,143 @@ class McpSessionCreateUpdateTests(TestCase):
         )
         self.assertTrue(is_error)
         self.assertNotIn('session', data)
+
+
+class McpCommitteeMeetingCreateTests(TestCase):
+    """MCP create_committee_meeting tool."""
+
+    def setUp(self):
+        self.client = Client()
+        self.member = User.objects.create_user(
+            username='cmc_member',
+            email='cmc_member@example.com',
+            password='memberpass123',
+        )
+        self.group_leader = User.objects.create_user(
+            username='cmc_leader',
+            email='cmc_leader@example.com',
+            password='leaderpass123',
+        )
+        self.superuser = User.objects.create_superuser(
+            username='cmc_super',
+            email='cmc_super@example.com',
+            password='superpass123',
+        )
+        self.district = District.objects.create(
+            name='CMC MCP District',
+            code='CMCD',
+            description='Test',
+            is_active=True,
+        )
+        self.party = Party.objects.create(
+            name='CMC Party',
+            district=self.district,
+            is_active=True,
+        )
+        self.group = Group.objects.create(
+            name='CMC Group',
+            party=self.party,
+            is_active=True,
+        )
+        GroupMember.objects.create(user=self.member, group=self.group, is_active=True)
+        leader_membership = GroupMember.objects.create(
+            user=self.group_leader,
+            group=self.group,
+            is_active=True,
+        )
+        leader_role = Role.objects.get_or_create(name='Leader', defaults={'is_active': True})[0]
+        leader_membership.roles.add(leader_role)
+        self.council, _ = Council.objects.get_or_create(
+            district=self.district,
+            defaults={'name': 'CMC Council', 'is_active': True},
+        )
+        self.committee = Committee.objects.create(
+            name='CMC Committee',
+            council=self.council,
+            is_active=True,
+        )
+        self.inactive_committee = Committee.objects.create(
+            name='Inactive CMC Committee',
+            council=self.council,
+            is_active=False,
+        )
+        _, self.member_token = McpToken.create_token(self.member)
+        _, self.leader_token = McpToken.create_token(self.group_leader)
+        _, self.superuser_token = McpToken.create_token(self.superuser)
+        self.scheduled = timezone.make_aware(datetime(2026, 12, 5, 14, 30))
+
+    def _tool_call(self, name, arguments, token):
+        payload = {
+            'jsonrpc': '2.0',
+            'id': 1,
+            'method': 'tools/call',
+            'params': {'name': name, 'arguments': arguments},
+        }
+        response = self.client.post(
+            reverse('mcp'),
+            data=json.dumps(payload),
+            content_type='application/json',
+            HTTP_AUTHORIZATION=f'Bearer {token}',
+        )
+        self.assertEqual(response.status_code, 200, response.content)
+        body = response.json()
+        result = body['result']
+        text = result['content'][0]['text']
+        return json.loads(text), result.get('isError', False)
+
+    def test_superuser_can_create_committee_meeting_with_auto_title(self):
+        count_before = CommitteeMeeting.objects.count()
+        data, is_error = self._tool_call(
+            'create_committee_meeting',
+            {
+                'committee_id': self.committee.pk,
+                'scheduled_date': self.scheduled.isoformat(),
+                'location': 'Sitzungsraum',
+                'agenda': 'TOP 1',
+            },
+            self.superuser_token,
+        )
+        self.assertFalse(is_error)
+        meeting = data['committee_meeting']
+        self.assertEqual(meeting['title'], 'CMC Committee 05.12.2026')
+        self.assertEqual(meeting['status'], 'scheduled')
+        self.assertEqual(meeting['location'], 'Sitzungsraum')
+        self.assertEqual(meeting['agenda'], 'TOP 1')
+        self.assertEqual(meeting['committee']['id'], self.committee.pk)
+        obj = CommitteeMeeting.objects.get(pk=meeting['id'])
+        self.assertEqual(CommitteeMeeting.objects.count(), count_before + 1)
+        self.assertTrue(obj.is_active)
+        self.assertEqual(obj.description, 'TOP 1')
+
+    def test_non_superusers_cannot_create_committee_meeting(self):
+        count_before = CommitteeMeeting.objects.count()
+        for token in (self.member_token, self.leader_token):
+            data, is_error = self._tool_call(
+                'create_committee_meeting',
+                {
+                    'committee_id': self.committee.pk,
+                    'scheduled_date': self.scheduled.isoformat(),
+                },
+                token,
+            )
+            self.assertTrue(is_error)
+            self.assertIn('permission', data['error'].lower())
+        self.assertEqual(CommitteeMeeting.objects.count(), count_before)
+
+    def test_create_rejects_unknown_and_inactive_committee(self):
+        count_before = CommitteeMeeting.objects.count()
+        for committee_id in (99999, self.inactive_committee.pk):
+            data, is_error = self._tool_call(
+                'create_committee_meeting',
+                {
+                    'committee_id': committee_id,
+                    'scheduled_date': self.scheduled.isoformat(),
+                },
+                self.superuser_token,
+            )
+            self.assertTrue(is_error)
+            self.assertNotIn('committee_meeting', data)
+        self.assertEqual(CommitteeMeeting.objects.count(), count_before)
 
 
 class McpAttachmentListDeleteTests(TestCase):
